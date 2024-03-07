@@ -1,2 +1,2 @@
-# zyglo
+# zyg
 WIP
