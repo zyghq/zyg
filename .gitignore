@@ -19,3 +19,11 @@
 
 # Go workspace file
 go.work
+
+# Python virtual environments
+venv/
+
+
+# Secret or Envs
+.env
+env.sh
