@@ -27,3 +27,12 @@ venv/
 # Secret or Envs
 .env
 env.sh
+
+
+# Python
+*.pyc
+*.pyo
+__pycache__/
+*.so
+*.egg
+*.egg-info
