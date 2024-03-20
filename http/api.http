@@ -1,7 +1,7 @@
 ### GET ROOT
-GET http://localhost:8080/?v=1 HTTP/1.1
+GET http://localhost:8080/ HTTP/1.1
 
 
 ### POST ROOT
-POST http://localhost:8080/asdf HTTP/1.1
+POST http://localhost:8080/something/ HTTP/1.1
 

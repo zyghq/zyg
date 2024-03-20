@@ -17,10 +17,10 @@ var addr = flag.String("addr", "127.0.0.1:8080", "listen address")
 func handleGetIndex(w http.ResponseWriter, r *http.Request) {
 	//
 	// from: https://github.com/golang/go/issues/4799
-	if r.URL.Path != "/" {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
+	// if r.URL.Path != "/" {
+	// 	w.WriteHeader(http.StatusNotFound)
+	// 	return
+	// }
 
 	log.Printf("Got a %s request for : %v", r.Method, r.URL.Path)
 	tm := time.Now().Format(time.RFC1123)
@@ -66,7 +66,7 @@ func run() error {
 	log.Printf("datbase ready with datetime: %s", dbTime)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /", handleGetIndex)
+	mux.HandleFunc("GET /{$}", handleGetIndex)
 
 	srv := &http.Server{
 		Addr:              *addr,
