@@ -1,39 +1,13 @@
+import logging
 from typing import List
 from uuid import uuid4
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 
-from core.base import WebPageContent
+from indexer.base import ChunkNode, WebPageContent
 
-
-class ChunkNode:
-    def __init__(
-        self,
-        *,
-        chunk_id: str,
-        chunk_counter: int,
-        content: str,
-        metadata: dict,
-        parent: "ChunkNode | None" = None,
-        child: "ChunkNode | None" = None,
-    ):
-        self.chunk_id = chunk_id
-        self.chunk_counter = chunk_counter
-        self.content = content
-        self.metadata = metadata
-        self.parent = parent
-        self.child = child
-
-    def to_dict(self):
-        return {
-            "chunk_id": self.chunk_id,
-            "chunk_counter": self.chunk_counter,
-            "content": self.content,
-            "metadata": self.metadata,
-            "parent": self.parent.chunk_id if self.parent else None,
-            "child": self.child.chunk_id if self.child else None,
-        }
+logger = logging.getLogger(__name__)
 
 
 class WebDocumentSplitter:
@@ -60,6 +34,9 @@ class WebDocumentSplitter:
 
     def split(self) -> List[ChunkNode]:
         splits = self._split()
+        if len(self.chunks) > 0:
+            logger.warning("existing chunks will be cleared.")
+            self.chunks = []
         prev = None
         for i, item in enumerate(splits):
             chunk = ChunkNode(
@@ -76,4 +53,10 @@ class WebDocumentSplitter:
         return self.chunks
 
     def to_dict(self):
-        return [chunk.to_dict() for chunk in self.chunks]
+        chunks = [chunk.to_dict() for chunk in self.chunks]
+        return {
+            "uid": self.content.uid,
+            "chunk_size": self.chunk_size,
+            "chunk_overlap": self.chunk_overlap,
+            "chunks": chunks,
+        }

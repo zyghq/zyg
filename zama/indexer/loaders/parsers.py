@@ -2,7 +2,7 @@ from typing import Any
 
 from bs4 import BeautifulSoup
 
-from core.base import WebPageContent
+from indexer.base import WebPageContent
 
 
 class WebPageParser:
