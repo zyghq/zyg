@@ -20,16 +20,14 @@
 # Go workspace file
 go.work
 
-# Python virtual environments
-venv/
 
-
-# Secret or Envs
+# Secrets or Envs
 .env
 env.sh
 
 
-# Python
+# Python files and directories
+venv/
 *.pyc
 *.pyo
 __pycache__/
@@ -37,5 +35,5 @@ __pycache__/
 *.egg
 *.egg-info
 
-
+# Other files and directories
 vectordb/
