@@ -10,7 +10,7 @@ from indexer.base import ChunkNode, WebPageContent
 logger = logging.getLogger(__name__)
 
 
-class WebDocumentSplitter:
+class WebPageContentSplitter:
     content_type = "text/html"
 
     def __init__(
@@ -22,13 +22,24 @@ class WebDocumentSplitter:
 
         self.chunks = []
 
+    def _build_metadata(self, metadata: dict | None, **kwargs) -> dict:
+        """Remove None values from metadata"""
+        cleaned = {k: v for k, v in kwargs.items() if v is not None}
+        if metadata is None:
+            d = dict(**cleaned)
+            return d
+        d = {k: v for k, v in metadata.items() if v is not None}
+        d.update(cleaned)
+        return d
+
     def _split(self) -> List[Document]:
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=self.chunk_size, chunk_overlap=self.chunk_overlap
         )
-        docs = [
-            Document(page_content=self.content.content, metadata=self.content.metadata)
-        ]
+        metadata = self._build_metadata(
+            self.content.metadata,
+        )
+        docs = [Document(page_content=self.content.content, metadata=metadata)]
         splits = splitter.split_documents(documents=docs)
         return splits
 
@@ -40,6 +51,9 @@ class WebDocumentSplitter:
         prev = None
         for i, item in enumerate(splits):
             chunk = ChunkNode(
+                uid=self.content.uid,
+                source=self.content.source,
+                uri=self.content.uri,
                 chunk_id=str(uuid4()),
                 chunk_counter=i,
                 content=item.page_content,
@@ -56,6 +70,8 @@ class WebDocumentSplitter:
         chunks = [chunk.to_dict() for chunk in self.chunks]
         return {
             "uid": self.content.uid,
+            "source": self.content.source,
+            "uri": self.content.uri,
             "chunk_size": self.chunk_size,
             "chunk_overlap": self.chunk_overlap,
             "chunks": chunks,

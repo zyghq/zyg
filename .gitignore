@@ -37,3 +37,6 @@ __pycache__/
 
 # Other files and directories
 vectordb/
+converse/storage/
+converse/data/
+converse/store/

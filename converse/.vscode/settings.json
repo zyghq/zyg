@@ -14,7 +14,7 @@
     "**/__pycache__": true,
     "**/.ruff_cache": true
   },
-  "editor.rulers": [88],
+  "editor.rulers": [119],
   "python.testing.pytestPath": "${workspaceFolder}/.venv/bin/pytest",
   "python.testing.cwd": "${workspaceFolder}",
   "[python]": {
