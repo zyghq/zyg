@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package converse;
+
+service QueryService {
+  rpc Query(QueryRequest) returns (QueryResponse);
+}
+
+
+message QueryRequest {
+  string query = 1;
+}
+
+message QueryResponse {
+  string response = 1;
+}
