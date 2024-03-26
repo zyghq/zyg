@@ -6,6 +6,12 @@ from typing import Dict
 from uuid import uuid4
 
 import chromadb
+from langchain import hub
+from langchain_community.embeddings import OllamaEmbeddings
+from langchain_community.llms import Ollama
+from langchain_community.vectorstores import Chroma
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
 
 from indexer.embedders.embedder import LocalOllamaEmbedding
 from indexer.loaders.parsers import WebPageParser
@@ -14,10 +20,18 @@ from indexer.splitters.splitter import WebPageContentSplitter
 logger = logging.getLogger(__name__)
 
 
-VECTOR_DB = "./vectordb"
+_CHROMA_VECTOR_DIR = "./vectordb"
+_CHROMA_DEFAULT_COLLECTION = "devcollection"
 
 
-client = chromadb.PersistentClient(VECTOR_DB)
+vectorstore = Chroma(
+    collection_name=_CHROMA_DEFAULT_COLLECTION,
+    embedding_function=OllamaEmbeddings(model="nomic-embed-text"),
+    persist_directory=_CHROMA_VECTOR_DIR,
+)
+
+
+client = chromadb.PersistentClient(_CHROMA_VECTOR_DIR)
 
 
 def build_metadata(metadata: Dict[str, str] | None, **kwargs) -> Dict[str, str]:
@@ -94,3 +108,24 @@ class WebPageIndexerCommand:
         )
 
         logger.info("eta: ", time.time() - start)
+
+
+class QueryCommand:
+
+    def __init__(self) -> None:
+        pass
+
+    def query(self, q: str) -> str:
+        retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+        prompt = hub.pull("rlm/rag-prompt")
+        llm = Ollama(model="llama2")
+
+        chain = (
+            {"context": retriever, "question": RunnablePassthrough()}
+            | prompt
+            | llm
+            | StrOutputParser()
+        )
+
+        response = chain.invoke(q)
+        return response

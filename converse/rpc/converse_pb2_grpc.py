@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import converse_pb2 as converse__pb2
+import rpc.converse_pb2 as converse__pb2
 
 
 class QueryServiceStub(object):
