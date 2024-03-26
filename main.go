@@ -24,8 +24,15 @@ type Workspace struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
+func LoggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		log.Println(r.Method, r.URL.Path, time.Since(start))
+	})
+}
+
 func handleGetIndex(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Got a %s request for : %v", r.Method, r.URL.Path)
 	tm := time.Now().Format(time.RFC1123)
 	w.Header().Set("x-datetime", tm)
 	w.WriteHeader(http.StatusOK)
@@ -34,8 +41,6 @@ func handleGetIndex(w http.ResponseWriter, r *http.Request) {
 
 func handleGetWorkspaces(ctx context.Context, db *pgx.Conn) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("Got a %s request for : %v", r.Method, r.URL.Path)
-
 		rows, err := db.Query(ctx, `SELECT
 			workspace_id, account_id,
 			slug, name,
@@ -117,7 +122,7 @@ func run(ctx context.Context) error {
 
 	srv := &http.Server{
 		Addr:              *addr,
-		Handler:           mux,
+		Handler:           LoggingMiddleware(mux),
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      90 * time.Second,
 		IdleTimeout:       time.Minute,
