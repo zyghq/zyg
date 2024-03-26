@@ -32,6 +32,13 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func authenticatedOnly(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Println("checking authentication...")
+		next.ServeHTTP(w, r)
+	})
+}
+
 func handleGetIndex(w http.ResponseWriter, r *http.Request) {
 	tm := time.Now().Format(time.RFC1123)
 	w.Header().Set("x-datetime", tm)
@@ -118,7 +125,7 @@ func run(ctx context.Context) error {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /{$}", handleGetIndex)
-	mux.Handle("GET /workspaces/{$}", handleGetWorkspaces(ctx, db))
+	mux.Handle("GET /workspaces/{$}", authenticatedOnly(handleGetWorkspaces(ctx, db)))
 
 	srv := &http.Server{
 		Addr:              *addr,
