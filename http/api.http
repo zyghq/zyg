@@ -2,10 +2,5 @@
 GET http://localhost:8080/ HTTP/1.1
 
 
-### POST ROOT
-POST http://localhost:8080/something/ HTTP/1.1
-
-
-
 ### GET Workspaces
 GET http://localhost:8080/workspaces/ HTTP/1.1

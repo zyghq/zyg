@@ -1,7 +1,7 @@
 package main
 
 import (
-	"database/sql"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5"
 )
 
 var addr = flag.String("addr", "127.0.0.1:8080", "listen address")
@@ -32,24 +32,21 @@ func handleGetIndex(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("ok"))
 }
 
-// some variations of the below
-// https://www.alexedwards.net/blog/organising-database-access#:~:text=func%20booksIndex(env%20*Env)%20http.HandlerFunc%20%7B
-func handleGetWorkspaces(db *sql.DB) http.Handler {
+func handleGetWorkspaces(ctx context.Context, db *pgx.Conn) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Got a %s request for : %v", r.Method, r.URL.Path)
 
-		rows, err := db.Query(`
-			SELECT 
-			workspace_id, account_id, 
-			slug, name, 
+		rows, err := db.Query(ctx, `SELECT
+			workspace_id, account_id,
+			slug, name,
 			created_at, updated_at
 			FROM workspace LIMIT 100
 		`)
 		if err != nil {
+			log.Printf("error: %v", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
-
 		defer rows.Close()
 
 		workspaces := make([]Workspace, 0)
@@ -61,10 +58,17 @@ func handleGetWorkspaces(db *sql.DB) http.Handler {
 				&workspace.CreatedAt, &workspace.UpdatedAt,
 			)
 			if err != nil {
+				log.Printf("error: %v", err)
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
 			workspaces = append(workspaces, workspace)
+		}
+
+		if err := rows.Err(); err != nil {
+			log.Printf("error: %v", err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -77,7 +81,10 @@ func handleGetWorkspaces(db *sql.DB) http.Handler {
 	})
 }
 
-func run() error {
+func run(ctx context.Context) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	var err error
 
 	pgConnStr, pgConnStatus := os.LookupEnv("POSTGRES_URI")
@@ -85,38 +92,28 @@ func run() error {
 		return fmt.Errorf("env `POSTGRES_URI` is not set")
 	}
 
-	db, err := sql.Open("pgx", pgConnStr)
+	db, err := pgx.Connect(ctx, pgConnStr)
 
 	if err != nil {
-		return fmt.Errorf("failed to open database: %v", err)
+		return fmt.Errorf("failed to connect database: %v", err)
 	}
 
-	err = db.Ping()
-	if err != nil {
-		return fmt.Errorf("failed to ping database: %v", err)
-	}
+	defer db.Close(ctx)
 
-	rows, err := db.Query("SELECT NOW()")
+	var tm time.Time
+
+	err = db.QueryRow(ctx, "SELECT NOW()").Scan(&tm)
+
 	if err != nil {
 		return fmt.Errorf("failed to query database: %v", err)
 	}
 
-	defer rows.Close()
-
-	var dbTime string
-	for rows.Next() {
-		err = rows.Scan(&dbTime)
-		if err != nil {
-			return fmt.Errorf("failed to scan database: %v", err)
-		}
-	}
-
-	log.Printf("database ready with date time: %s", dbTime)
+	log.Printf("database ready with db time: %s\n", tm.Format(time.RFC1123))
 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /{$}", handleGetIndex)
-	mux.Handle("GET /workspaces/{$}", handleGetWorkspaces(db))
+	mux.Handle("GET /workspaces/{$}", handleGetWorkspaces(ctx, db))
 
 	srv := &http.Server{
 		Addr:              *addr,
@@ -137,7 +134,8 @@ func run() error {
 
 func main() {
 	flag.Parse()
-	if err := run(); err != nil {
+	ctx := context.Background()
+	if err := run(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}

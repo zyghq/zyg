@@ -1,7 +1,7 @@
 package main
 
 import (
-	"database/sql"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +9,8 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	"github.com/jackc/pgx/v5"
 )
 
 func TestHandleGetIndexRR(t *testing.T) {
@@ -45,41 +47,38 @@ func TestHandleGetIndexRR(t *testing.T) {
 	}
 }
 
-func DB() (*sql.DB, error) {
+func DB(ctx context.Context) (*pgx.Conn, error) {
 	var err error
-	var db *sql.DB
+	var db *pgx.Conn
+
 	pgConnStr, pgConnStatus := os.LookupEnv("POSTGRES_URI")
 	if !pgConnStatus {
 		err = fmt.Errorf("env `POSTGRES_URI` is not set")
 		return db, err
 	}
 
-	db, err = sql.Open("pgx", pgConnStr)
+	db, err = pgx.Connect(ctx, pgConnStr)
 	if err != nil {
-		err = fmt.Errorf("failed to open database: %v", err)
+		err = fmt.Errorf("failed to connect database: %v", err)
 		return db, err
-	}
-
-	err = db.Ping()
-	if err != nil {
-		err = fmt.Errorf("failed to ping database: %v", err)
 	}
 	return db, err
 }
 
 func TestHandleGetWorkspacesRR(t *testing.T) {
+	ctx := context.Background()
 	rr := httptest.NewRecorder()
 	req, err := http.NewRequest(http.MethodGet, "/workspaces/", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	db, err := DB()
+	db, err := DB(ctx)
 	if err != nil {
 		t.Fatalf("could not make connection to DB %v", err)
 	}
 
-	handler := handleGetWorkspaces(db)
+	handler := handleGetWorkspaces(ctx, db)
 	handler.ServeHTTP(rr, req)
 
 	resp := rr.Result()
