@@ -35,25 +35,6 @@ type LLM struct {
 }
 
 func (llm LLM) Generate() (string, error) {
-	// 	curl http://localhost:11434/api/generate -d '{
-	//   "model": "llama2",
-	//   "prompt": "Why is the sky blue?",
-	//   "stream": false
-	// }'
-
-	// {
-	//   "model": "llama2",
-	//   "created_at": "2023-08-04T19:22:45.499127Z",
-	//   "response": "The sky is blue because it is the color of the sky.",
-	//   "done": true,
-	//   "context": [1, 2, 3],
-	//   "total_duration": 5043500667,
-	//   "load_duration": 5025959,
-	//   "prompt_eval_count": 26,
-	//   "prompt_eval_duration": 325953000,
-	//   "eval_count": 290,
-	//   "eval_duration": 4709213000
-	// }
 
 	var err error
 
@@ -80,7 +61,7 @@ func (llm LLM) Generate() (string, error) {
 		return "", err
 	}
 
-	_ = resp.Body.Close()
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("expected status %d; but got %d", http.StatusOK, resp.StatusCode)
