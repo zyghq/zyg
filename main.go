@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/rs/cors"
 )
 
 var addr = flag.String("addr", "127.0.0.1:8080", "listen address")
@@ -235,9 +236,15 @@ func run(ctx context.Context) error {
 	mux.Handle("GET /workspaces/{$}", authenticatedOnly(handleGetWorkspaces(ctx, db)))
 	mux.Handle("POST /queries/{$}", authenticatedOnly(handleLLMQuery()))
 
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"},
+		AllowedHeaders: []string{"*"},
+	})
+
 	srv := &http.Server{
 		Addr:              *addr,
-		Handler:           LoggingMiddleware(mux),
+		Handler:           LoggingMiddleware(c.Handler(mux)),
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      90 * time.Second,
 		IdleTimeout:       time.Minute,
