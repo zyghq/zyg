@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -35,7 +36,7 @@ func TestHandleGetIndexRR(t *testing.T) {
 		t.Fatal("Expected non-empty `x-datetime` header")
 	}
 
-	t.Log("requested at: ", tm)
+	t.Logf("requested at: %v", tm)
 
 	expected := "ok"
 	b, err := io.ReadAll(resp.Body)
@@ -75,8 +76,10 @@ func TestHandleGetWorkspacesRR(t *testing.T) {
 
 	db, err := DB(ctx)
 	if err != nil {
-		t.Fatalf("could not make connection to DB %v", err)
+		t.Fatalf("could not connect to database %v", err)
 	}
+
+	defer db.Close(ctx)
 
 	handler := handleGetWorkspaces(ctx, db)
 	handler.ServeHTTP(rr, req)
@@ -94,6 +97,30 @@ func TestHandleGetWorkspacesRR(t *testing.T) {
 	err = json.NewDecoder(resp.Body).Decode(&workspaces)
 
 	if err != nil {
-		t.Fatalf("could not decode response %v", err)
+		t.Fatalf("could not decode json response %v", err)
 	}
+}
+
+func TestHeadTime(t *testing.T) {
+	resp, err := http.Head("https://www.time.gov/")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer resp.Body.Close()
+
+	now := time.Now().Round(time.Second)
+	date := resp.Header.Get("Date")
+
+	if date == "" {
+		t.Fatal("Expected non-empty `Date` header")
+	}
+
+	dt, err := time.Parse(time.RFC1123, date)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("now: %v, date: %v", now, dt)
 }

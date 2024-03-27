@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -24,6 +26,89 @@ type Workspace struct {
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
+type LLMRequestQuery struct {
+	Q string `json:"q"`
+}
+
+type LLM struct {
+	Prompt string
+}
+
+func (llm LLM) Generate() (string, error) {
+	// 	curl http://localhost:11434/api/generate -d '{
+	//   "model": "llama2",
+	//   "prompt": "Why is the sky blue?",
+	//   "stream": false
+	// }'
+
+	// {
+	//   "model": "llama2",
+	//   "created_at": "2023-08-04T19:22:45.499127Z",
+	//   "response": "The sky is blue because it is the color of the sky.",
+	//   "done": true,
+	//   "context": [1, 2, 3],
+	//   "total_duration": 5043500667,
+	//   "load_duration": 5025959,
+	//   "prompt_eval_count": 26,
+	//   "prompt_eval_duration": 325953000,
+	//   "eval_count": 290,
+	//   "eval_duration": 4709213000
+	// }
+
+	var err error
+
+	buf := new(bytes.Buffer)
+	body := struct {
+		Model  string `json:"model"`
+		Prompt string `json:"prompt"`
+		Stream bool   `json:"stream"`
+	}{
+		Model:  "llama2",
+		Prompt: llm.Prompt,
+		Stream: false,
+	}
+
+	err = json.NewEncoder(buf).Encode(&body)
+	if err != nil {
+		log.Printf("llm request body encode error: %v", err)
+		return "", err
+	}
+
+	resp, err := http.Post("http://0.0.0.0:11434/api/generate", "application/json", buf)
+	if err != nil {
+		log.Printf("llm request error: %v", err)
+		return "", err
+	}
+
+	_ = resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("expected status %d; but got %d", http.StatusOK, resp.StatusCode)
+	}
+
+	rb := struct {
+		Model              string `json:"model"`
+		CreatedAt          string `json:"created_at"`
+		Response           string `json:"response"`
+		Done               bool   `json:"done"`
+		Context            []int  `json:"context"`
+		TotalDuration      int    `json:"total_duration"`
+		LoadDuration       int    `json:"load_duration"`
+		PromptEvalCount    int    `json:"prompt_eval_count"`
+		PromptEvalDuration int    `json:"prompt_eval_duration"`
+		EvalCount          int    `json:"eval_count"`
+		EvalDuration       int    `json:"eval_duration"`
+	}{}
+
+	err = json.NewDecoder(resp.Body).Decode(&rb)
+	if err != nil {
+		log.Printf("llm response body decode error: %v", err)
+		return "", err
+	}
+
+	return rb.Response, err
+}
+
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -34,7 +119,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 
 func authenticatedOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("checking authentication...")
+		log.Println("do some authentication before invoking the actual route...")
 		next.ServeHTTP(w, r)
 	})
 }
@@ -93,6 +178,46 @@ func handleGetWorkspaces(ctx context.Context, db *pgx.Conn) http.Handler {
 	})
 }
 
+func handleLLMQuery() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func(r io.ReadCloser) {
+			_, _ = io.Copy(io.Discard, r)
+			_ = r.Close()
+		}(r.Body)
+
+		var query LLMRequestQuery
+		err := json.NewDecoder(r.Body).Decode(&query)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		llm := LLM{Prompt: query.Q}
+
+		text, err := llm.Generate()
+
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		response := struct {
+			Text string `json:"text"`
+		}{
+			Text: text,
+		}
+
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+	})
+}
+
 func run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -125,7 +250,9 @@ func run(ctx context.Context) error {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /{$}", handleGetIndex)
+
 	mux.Handle("GET /workspaces/{$}", authenticatedOnly(handleGetWorkspaces(ctx, db)))
+	mux.Handle("POST /queries/{$}", authenticatedOnly(handleLLMQuery()))
 
 	srv := &http.Server{
 		Addr:              *addr,
