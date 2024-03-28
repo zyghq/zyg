@@ -14,9 +14,18 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/rs/cors"
+	"github.com/rs/xid"
 )
 
 var addr = flag.String("addr", "127.0.0.1:8080", "listen address")
+
+func GetEnv(key string) (string, error) {
+	value, status := os.LookupEnv(key)
+	if !status {
+		return "", fmt.Errorf("env `%s` is not set", key)
+	}
+	return value, nil
+}
 
 type Workspace struct {
 	WorkspaceId string    `json:"workspaceId"`
@@ -32,12 +41,21 @@ type LLMRequestQuery struct {
 }
 
 type LLM struct {
-	Prompt string
+	Prompt    string
+	RequestId string
 }
 
-func (llm LLM) Generate() (string, error) {
+type LLMResponse struct {
+	Text      string `json:"text"`
+	RequestId string `json:"requestId"`
+}
+
+// for now we are directly using the Ollama server
+// later will update to use our `converse` server probably with grpc.
+func (llm LLM) Generate() (LLMResponse, error) {
 
 	var err error
+	var response LLMResponse
 
 	buf := new(bytes.Buffer)
 	body := struct {
@@ -52,20 +70,21 @@ func (llm LLM) Generate() (string, error) {
 
 	err = json.NewEncoder(buf).Encode(&body)
 	if err != nil {
-		log.Printf("llm request body encode error: %v", err)
-		return "", err
+		log.Printf("failed to encode LLM request body for requestId: %s with error: %v", llm.RequestId, err)
+		return response, err
 	}
 
+	log.Printf("making LLM request with requestId: %s", llm.RequestId)
 	resp, err := http.Post("http://0.0.0.0:11434/api/generate", "application/json", buf)
 	if err != nil {
-		log.Printf("llm request error: %v", err)
-		return "", err
+		log.Printf("LLM request failed for requestId: %s with error: %v", llm.RequestId, err)
+		return response, err
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("expected status %d; but got %d", http.StatusOK, resp.StatusCode)
+		return response, fmt.Errorf("expected status %d; but got %d", http.StatusOK, resp.StatusCode)
 	}
 
 	rb := struct {
@@ -84,11 +103,14 @@ func (llm LLM) Generate() (string, error) {
 
 	err = json.NewDecoder(resp.Body).Decode(&rb)
 	if err != nil {
-		log.Printf("llm response body decode error: %v", err)
-		return "", err
+		log.Printf("failed to decode LLM response for requestId: %s with error: %v", llm.RequestId, err)
+		return response, err
 	}
 
-	return rb.Response, err
+	return LLMResponse{
+		Text:      rb.Response,
+		RequestId: llm.RequestId,
+	}, err
 }
 
 func LoggingMiddleware(next http.Handler) http.Handler {
@@ -101,7 +123,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 
 func authenticatedOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("do some authentication before invoking the actual route...")
+		log.Println("TODO: add authentication logic before invoking the next handler...")
 		next.ServeHTTP(w, r)
 	})
 }
@@ -174,9 +196,10 @@ func handleLLMQuery() http.Handler {
 			return
 		}
 
-		llm := LLM{Prompt: query.Q}
+		requestId := xid.New()
+		llm := LLM{Prompt: query.Q, RequestId: requestId.String()}
 
-		text, err := llm.Generate()
+		resp, err := llm.Generate()
 
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -186,13 +209,7 @@ func handleLLMQuery() http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 
-		response := struct {
-			Text string `json:"text"`
-		}{
-			Text: text,
-		}
-
-		if err := json.NewEncoder(w).Encode(response); err != nil {
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
@@ -206,13 +223,12 @@ func run(ctx context.Context) error {
 
 	var err error
 
-	pgConnStr, pgConnStatus := os.LookupEnv("POSTGRES_URI")
-	if !pgConnStatus {
-		return fmt.Errorf("env `POSTGRES_URI` is not set")
+	pgConnStr, err := GetEnv("POSTGRES_URI")
+	if err != nil {
+		return err
 	}
 
 	db, err := pgx.Connect(ctx, pgConnStr)
-
 	if err != nil {
 		return fmt.Errorf("failed to connect database: %v", err)
 	}
@@ -234,7 +250,7 @@ func run(ctx context.Context) error {
 	mux.HandleFunc("GET /{$}", handleGetIndex)
 
 	mux.Handle("GET /workspaces/{$}", authenticatedOnly(handleGetWorkspaces(ctx, db)))
-	mux.Handle("POST /queries/{$}", authenticatedOnly(handleLLMQuery()))
+	mux.Handle("POST /-/queries/{$}", authenticatedOnly(handleLLMQuery()))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},

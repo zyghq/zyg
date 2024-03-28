@@ -6,9 +6,9 @@ GET http://localhost:8080/ HTTP/1.1
 GET http://localhost:8080/workspaces/ HTTP/1.1
 
 ### Make Query
-POST http://localhost:8080/queries/ HTTP/1.1
+POST http://localhost:8080/-/queries/ HTTP/1.1
 Content-Type: application/json
 
 {
-    "q": "why is the sky blue?"
+    "q": "hello How are you, What is you name?"
 }
