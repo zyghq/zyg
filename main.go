@@ -49,6 +49,10 @@ type LLMRequestQuery struct {
 	Q string `json:"q"`
 }
 
+type LLMRREval struct {
+	Eval int `json:"eval"`
+}
+
 type LLM struct {
 	WorkspaceId string
 	Prompt      string
@@ -267,6 +271,62 @@ func handleLLMQuery(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	})
 }
 
+func handleLLMQueryEval(ctx context.Context, db *pgxpool.Pool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func(r io.ReadCloser) {
+			_, _ = io.Copy(io.Discard, r)
+			_ = r.Close()
+		}(r.Body)
+
+		var workspace Workspace
+
+		var eval LLMRREval
+		err := json.NewDecoder(r.Body).Decode(&eval)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		workspaceId := r.PathValue("workspaceId")
+
+		row, err := db.Query(ctx, `SELECT workspace_id, account_id,
+			name, created_at, updated_at
+			FROM workspace WHERE workspace_id = $1`,
+			workspaceId)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+		defer row.Close()
+
+		if !row.Next() {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		err = row.Scan(
+			&workspace.WorkspaceId, &workspace.AccountId,
+			&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		requestId := r.PathValue("requestId")
+
+		_, err = db.Exec(ctx, `UPDATE llm_rr_log SET eval = $1
+			WHERE workspace_id = $2 AND request_id = $3`,
+			eval.Eval, workspace.WorkspaceId, requestId)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNoContent)
+	})
+}
+
 func run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -301,6 +361,7 @@ func run(ctx context.Context) error {
 
 	mux.Handle("GET /workspaces/{$}", authenticatedOnly(handleGetWorkspaces(ctx, db)))
 	mux.Handle("POST /workspaces/{workspaceId}/-/queries/{$}", authenticatedOnly(handleLLMQuery(ctx, db)))
+	mux.Handle("POST /workspaces/{workspaceId}/-/queries/{requestId}/{$}", authenticatedOnly(handleLLMQueryEval(ctx, db)))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
