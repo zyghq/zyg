@@ -10,5 +10,5 @@ POST http://localhost:8080/workspaces/3a690e9f85544f6f82e6bdc432418b11/-/queries
 Content-Type: application/json
 
 {
-    "q": "How built you name some engineers?"
+    "q": "How is the weather?"
 }

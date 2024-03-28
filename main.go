@@ -13,7 +13,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/cors"
 	"github.com/rs/xid"
 )
@@ -58,6 +58,7 @@ type LLM struct {
 type LLMResponse struct {
 	Text      string `json:"text"`
 	RequestId string `json:"requestId"`
+	Model     string `json:"model"`
 }
 
 // for now we are directly using the Ollama server
@@ -125,6 +126,7 @@ func (llm LLM) Generate() (LLMResponse, error) {
 	return LLMResponse{
 		Text:      rb.Response,
 		RequestId: llm.RequestId,
+		Model:     rb.Model,
 	}, err
 }
 
@@ -150,7 +152,7 @@ func handleGetIndex(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("ok"))
 }
 
-func handleGetWorkspaces(ctx context.Context, db *pgx.Conn) http.Handler {
+func handleGetWorkspaces(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rows, err := db.Query(ctx, `SELECT
 			workspace_id, account_id,
@@ -197,7 +199,7 @@ func handleGetWorkspaces(ctx context.Context, db *pgx.Conn) http.Handler {
 	})
 }
 
-func handleLLMQuery(ctx context.Context, db *pgx.Conn) http.Handler {
+func handleLLMQuery(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func(r io.ReadCloser) {
 			_, _ = io.Copy(io.Discard, r)
@@ -216,7 +218,7 @@ func handleLLMQuery(ctx context.Context, db *pgx.Conn) http.Handler {
 		workspaceId := r.PathValue("workspaceId")
 
 		row, err := db.Query(ctx, `SELECT workspace_id, account_id,
-			name, created_at, updated_at 
+			name, created_at, updated_at
 			FROM workspace WHERE workspace_id = $1`,
 			workspaceId)
 		if err != nil {
@@ -238,8 +240,6 @@ func handleLLMQuery(ctx context.Context, db *pgx.Conn) http.Handler {
 			return
 		}
 
-		log.Printf("workspace: %v", workspace)
-
 		requestId := xid.New()
 		wrkLLM := LLM{WorkspaceId: workspaceId, Prompt: query.Q, RequestId: requestId.String()}
 
@@ -247,6 +247,14 @@ func handleLLMQuery(ctx context.Context, db *pgx.Conn) http.Handler {
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
+		}
+
+		_, err = db.Exec(ctx, `INSERT INTO
+			llm_rr_log(workspace_id, request_id, prompt, response, model)
+			VALUES ($1, $2, $3, $4, $5)`,
+			workspace.WorkspaceId, wrkLLM.RequestId, wrkLLM.Prompt, resp.Text, resp.Model)
+		if err != nil {
+			log.Printf("failed to insert into llm request response log with error: %v", err)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -270,12 +278,12 @@ func run(ctx context.Context) error {
 		return err
 	}
 
-	db, err := pgx.Connect(ctx, pgConnStr)
+	db, err := pgxpool.New(ctx, pgConnStr)
 	if err != nil {
-		return fmt.Errorf("failed to connect database: %v", err)
+		return fmt.Errorf("unable to create pg connection pool: %v", err)
 	}
 
-	defer db.Close(ctx)
+	defer db.Close()
 
 	var tm time.Time
 

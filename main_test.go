@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func TestHandleGetIndexRR(t *testing.T) {
@@ -48,9 +48,9 @@ func TestHandleGetIndexRR(t *testing.T) {
 	}
 }
 
-func DB(ctx context.Context) (*pgx.Conn, error) {
+func DB(ctx context.Context) (*pgxpool.Pool, error) {
 	var err error
-	var db *pgx.Conn
+	var db *pgxpool.Pool
 
 	pgConnStr, pgConnStatus := os.LookupEnv("POSTGRES_URI")
 	if !pgConnStatus {
@@ -58,7 +58,7 @@ func DB(ctx context.Context) (*pgx.Conn, error) {
 		return db, err
 	}
 
-	db, err = pgx.Connect(ctx, pgConnStr)
+	db, err = pgxpool.New(ctx, pgConnStr)
 	if err != nil {
 		err = fmt.Errorf("failed to connect database: %v", err)
 		return db, err
@@ -79,7 +79,7 @@ func TestHandleGetWorkspacesRR(t *testing.T) {
 		t.Fatalf("could not connect to database %v", err)
 	}
 
-	defer db.Close(ctx)
+	defer db.Close()
 
 	handler := handleGetWorkspaces(ctx, db)
 	handler.ServeHTTP(rr, req)

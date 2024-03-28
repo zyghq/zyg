@@ -51,7 +51,7 @@ CREATE TABLE workspace (
 );
 
 
--- Represents LLM request-response table
+-- Represents LLM request-response log table
 -- This table is used to store the request-response information linked to the workspace.
 CREATE TABLE llm_rr_log (
     workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
