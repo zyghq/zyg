@@ -41,13 +41,29 @@ CREATE TABLE account (
 CREATE TABLE workspace (
     workspace_id VARCHAR(255) NOT NULL,
     account_id VARCHAR(255) NOT NULL,
-    slug VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL, -- deprecate this field from backend logic and APIs
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT workspace_workspace_id_pkey PRIMARY KEY (workspace_id),
     CONSTRAINT workspace_account_id_fkey FOREIGN KEY (account_id) REFERENCES account (account_id),
     CONSTRAINT workspace_slug_key UNIQUE (slug)
+);
+
+
+-- Represents LLM request-response table
+-- This table is used to store the request-response information linked to the workspace.
+CREATE TABLE llm_rr_log (
+    workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
+    request_id VARCHAR(255) NOT NULL, -- primary key
+    prompt TEXT NOT NULL, -- prompt for the request
+    response TEXT NOT NULL, -- response for the request
+    model VARCHAR NOT NULL, -- model used for the request
+    eval INT NULL DEFAULT NULL, -- evaluation of the response
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT llm_rr_log_request_id_pkey PRIMARY KEY (request_id),
+    CONSTRAINT llm_rr_log_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id)
 );
 
 -- Represents the member table

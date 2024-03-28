@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -30,10 +31,18 @@ func GetEnv(key string) (string, error) {
 type Workspace struct {
 	WorkspaceId string    `json:"workspaceId"`
 	AccountId   string    `json:"accountId"`
-	Slug        string    `json:"slug"`
 	Name        string    `json:"name"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+type LLMRRLog struct {
+	WorkspaceId string        `json:"workspaceId"`
+	RequestId   string        `json:"requestId"`
+	Prompt      string        `json:"prompt"`
+	Response    string        `json:"response"`
+	Model       string        `json:"model"`
+	Eval        sql.NullInt64 `json:"eval"`
 }
 
 type LLMRequestQuery struct {
@@ -41,8 +50,9 @@ type LLMRequestQuery struct {
 }
 
 type LLM struct {
-	Prompt    string
-	RequestId string
+	WorkspaceId string
+	Prompt      string
+	RequestId   string
 }
 
 type LLMResponse struct {
@@ -52,12 +62,15 @@ type LLMResponse struct {
 
 // for now we are directly using the Ollama server
 // later will update to use our `converse` server probably with grpc.
+// similarly the `LLMResponse` will be updated to include other specific fields.
 func (llm LLM) Generate() (LLMResponse, error) {
 
 	var err error
 	var response LLMResponse
 
 	buf := new(bytes.Buffer)
+	// for now this is specific to the Ollama server
+	// will update to use our `converse` server probably with grpc.
 	body := struct {
 		Model  string `json:"model"`
 		Prompt string `json:"prompt"`
@@ -74,7 +87,7 @@ func (llm LLM) Generate() (LLMResponse, error) {
 		return response, err
 	}
 
-	log.Printf("making LLM request with requestId: %s", llm.RequestId)
+	log.Printf("LLM request for workspaceId: %s with requestId: %s", llm.WorkspaceId, llm.RequestId)
 	resp, err := http.Post("http://0.0.0.0:11434/api/generate", "application/json", buf)
 	if err != nil {
 		log.Printf("LLM request failed for requestId: %s with error: %v", llm.RequestId, err)
@@ -87,6 +100,8 @@ func (llm LLM) Generate() (LLMResponse, error) {
 		return response, fmt.Errorf("expected status %d; but got %d", http.StatusOK, resp.StatusCode)
 	}
 
+	// response structure from Ollama server
+	// will be updated based on the `converse` server response.
 	rb := struct {
 		Model              string `json:"model"`
 		CreatedAt          string `json:"created_at"`
@@ -139,9 +154,9 @@ func handleGetWorkspaces(ctx context.Context, db *pgx.Conn) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rows, err := db.Query(ctx, `SELECT
 			workspace_id, account_id,
-			slug, name,
-			created_at, updated_at
-			FROM workspace LIMIT 100
+			name, created_at, updated_at
+			FROM workspace ORDER BY created_at
+			DESC LIMIT 100
 		`)
 		if err != nil {
 			log.Printf("error: %v", err)
@@ -155,7 +170,7 @@ func handleGetWorkspaces(ctx context.Context, db *pgx.Conn) http.Handler {
 			var workspace Workspace
 			err = rows.Scan(
 				&workspace.WorkspaceId, &workspace.AccountId,
-				&workspace.Slug, &workspace.Name,
+				&workspace.Name,
 				&workspace.CreatedAt, &workspace.UpdatedAt,
 			)
 			if err != nil {
@@ -182,12 +197,14 @@ func handleGetWorkspaces(ctx context.Context, db *pgx.Conn) http.Handler {
 	})
 }
 
-func handleLLMQuery() http.Handler {
+func handleLLMQuery(ctx context.Context, db *pgx.Conn) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func(r io.ReadCloser) {
 			_, _ = io.Copy(io.Discard, r)
 			_ = r.Close()
 		}(r.Body)
+
+		var workspace Workspace
 
 		var query LLMRequestQuery
 		err := json.NewDecoder(r.Body).Decode(&query)
@@ -196,11 +213,37 @@ func handleLLMQuery() http.Handler {
 			return
 		}
 
+		workspaceId := r.PathValue("workspaceId")
+
+		row, err := db.Query(ctx, `SELECT workspace_id, account_id,
+			name, created_at, updated_at 
+			FROM workspace WHERE workspace_id = $1`,
+			workspaceId)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+		defer row.Close()
+
+		if !row.Next() {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		err = row.Scan(
+			&workspace.WorkspaceId, &workspace.AccountId,
+			&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		log.Printf("workspace: %v", workspace)
+
 		requestId := xid.New()
-		llm := LLM{Prompt: query.Q, RequestId: requestId.String()}
+		wrkLLM := LLM{WorkspaceId: workspaceId, Prompt: query.Q, RequestId: requestId.String()}
 
-		resp, err := llm.Generate()
-
+		resp, err := wrkLLM.Generate()
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
@@ -213,7 +256,6 @@ func handleLLMQuery() http.Handler {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
-
 	})
 }
 
@@ -250,7 +292,7 @@ func run(ctx context.Context) error {
 	mux.HandleFunc("GET /{$}", handleGetIndex)
 
 	mux.Handle("GET /workspaces/{$}", authenticatedOnly(handleGetWorkspaces(ctx, db)))
-	mux.Handle("POST /-/queries/{$}", authenticatedOnly(handleLLMQuery()))
+	mux.Handle("POST /workspaces/{workspaceId}/-/queries/{$}", authenticatedOnly(handleLLMQuery(ctx, db)))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
