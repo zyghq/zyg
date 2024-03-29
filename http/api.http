@@ -13,11 +13,25 @@ Content-Type: application/json
     "q": "How is the weather?"
 }
 
-
 ### LLM Response Query Evaluation Score 1 or 0
 POST http://localhost:8080/workspaces/3a690e9f85544f6f82e6bdc432418b11/-/queries/co2nkqstidu8n5uej9a0/ HTTP/1.1
 Content-Type: application/json
 
 {
     "eval": 1
+}
+
+### CUSTOMER ISSUE TOKEN
+POST http://localhost:8080/-/tokens/ HTTP/1.1
+Content-Type: application/json
+Authorization: Token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiSm9obiBEb2UifQ.1
+
+{
+    "customer": {
+        "externalId": "xxxx-111-zzzz",
+        "email": "johndoe@gmail.com",
+        "phone": "+1234567890"
+    },
+    "create": false,
+    "createBy": "externalId"
 }

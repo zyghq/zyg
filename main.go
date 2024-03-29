@@ -28,12 +28,25 @@ func GetEnv(key string) (string, error) {
 	return value, nil
 }
 
+// do we need the json tags?
+// for json response we can have a separate struct with json tags.
 type Workspace struct {
 	WorkspaceId string    `json:"workspaceId"`
 	AccountId   string    `json:"accountId"`
 	Name        string    `json:"name"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+type Customer struct {
+	WorkspaceId string `json:"workspaceId"`
+	CustomerId  string `json:"customerId"`
+	ExternalId  string `json:"externalId"`
+	Email       string `json:"email"`
+	Phone       string `json:"phone"`
+	Name        string `json:"name"`
+	UpdatedAt   string `json:"updatedAt"`
+	CreatedAt   string `json:"createdAt"`
 }
 
 type LLMRRLog struct {
@@ -63,6 +76,16 @@ type LLMResponse struct {
 	Text      string `json:"text"`
 	RequestId string `json:"requestId"`
 	Model     string `json:"model"`
+}
+
+type CustomerTIRequest struct {
+	Create   bool   `json:"create"`
+	CreateBy string `json:"createBy"`
+	Customer struct {
+		ExternalId string `json:"externalId"`
+		Email      string `json:"email"`
+		Phone      string `json:"phone"`
+	} `json:"customer"`
 }
 
 // for now we are directly using the Ollama server
@@ -134,6 +157,36 @@ func (llm LLM) Generate() (LLMResponse, error) {
 	}, err
 }
 
+func (c Customer) GetById(ctx context.Context, db *pgxpool.Pool, id string) (Customer, error) {
+	var customer Customer
+
+	row, err := db.Query(ctx, `SELECT 
+		workspace_id, customer_id,
+		external_id, email,
+		phone, name, created_at, updated_at
+		FROM customer WHERE customer_id = $1`, id)
+	if err != nil {
+		return customer, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return customer, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&customer.WorkspaceId, &customer.CustomerId,
+		&customer.ExternalId, &customer.Email,
+		&customer.Phone, &customer.Name,
+		&customer.CreatedAt, &customer.UpdatedAt,
+	)
+	if err != nil {
+		return customer, err
+	}
+
+	return customer, nil
+}
+
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -142,7 +195,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func authenticatedOnly(next http.Handler) http.Handler {
+func AuthenticateMember(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println("TODO: add authentication logic before invoking the next handler...")
 		next.ServeHTTP(w, r)
@@ -327,6 +380,79 @@ func handleLLMQueryEval(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	})
 }
 
+func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func(r io.ReadCloser) {
+			_, _ = io.Copy(io.Discard, r)
+			_ = r.Close()
+		}(r.Body)
+
+		worskpaceId := "3a690e9f85544f6f82e6bdc432418b11"
+
+		fmt.Printf("issue token for customer in workspaceId: %v", worskpaceId)
+
+		var rb CustomerTIRequest
+		err := json.NewDecoder(r.Body).Decode(&rb)
+		if err != nil {
+			fmt.Printf("failed to decode request body error: %v", err)
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		var customer Customer
+		work := func() (bool, error) {
+			fmt.Println("Make some DB call do some work...")
+			return true, nil
+		}
+		if rb.Create {
+			fmt.Printf("create the customer if does not exists by %s\n", rb.CreateBy)
+			switch rb.CreateBy {
+			case "email":
+				fmt.Printf("create the customer by email %s\n", rb.Customer.Email)
+				_, _ = work()
+			case "phone":
+				fmt.Printf("create the customer by phone %s\n", rb.Customer.Phone)
+				_, _ = work()
+			case "externalId":
+				fmt.Printf("create the customer by externalId %s\n", rb.Customer.ExternalId)
+				_, _ = work()
+			default:
+				fmt.Println("unsupported `createBy` field value")
+				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+				return
+			}
+		} else {
+			fmt.Printf("based on identifiers check for customer in workspaceId: %v\n", worskpaceId)
+			if rb.Customer.ExternalId != "" {
+				fmt.Printf("get customer by externalId %s\n", rb.Customer.ExternalId)
+				customer, err := customer.GetById(ctx, db, rb.Customer.ExternalId)
+				if err != nil {
+					fmt.Printf("failed to get customer by externalId %s with error: %v\n", rb.Customer.ExternalId, err)
+					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+					return
+				}
+				fmt.Printf("customer: %v\n", customer)
+			} else if rb.Customer.Email != "" {
+				fmt.Printf("get customer by email %s\n", rb.Customer.Email)
+			} else if rb.Customer.Phone != "" {
+				fmt.Printf("get customer by phone %s\n", rb.Customer.Phone)
+			} else {
+				fmt.Println("unsupported customer identifier")
+				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+				return
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		if err := json.NewEncoder(w).Encode(rb); err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
 func run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -357,11 +483,24 @@ func run(ctx context.Context) error {
 
 	mux := http.NewServeMux()
 
+	// member - TODO: add member authentication
 	mux.HandleFunc("GET /{$}", handleGetIndex)
 
-	mux.Handle("GET /workspaces/{$}", authenticatedOnly(handleGetWorkspaces(ctx, db)))
-	mux.Handle("POST /workspaces/{workspaceId}/-/queries/{$}", authenticatedOnly(handleLLMQuery(ctx, db)))
-	mux.Handle("POST /workspaces/{workspaceId}/-/queries/{requestId}/{$}", authenticatedOnly(handleLLMQueryEval(ctx, db)))
+	// member - TODO: add member authentication
+	mux.Handle("GET /workspaces/{$}", AuthenticateMember(handleGetWorkspaces(ctx, db)))
+
+	// sess customer - TODO: add customer session authentication
+	mux.Handle(
+		"POST /workspaces/{workspaceId}/-/queries/{$}",
+		AuthenticateMember(handleLLMQuery(ctx, db)))
+
+	// sess customer - TODO: add customer session authentication
+	mux.Handle(
+		"POST /workspaces/{workspaceId}/-/queries/{requestId}/{$}",
+		AuthenticateMember(handleLLMQueryEval(ctx, db)))
+
+	// sst customer API
+	mux.Handle("POST /-/tokens/{$}", handleCustomerTokenIssue(ctx, db))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
