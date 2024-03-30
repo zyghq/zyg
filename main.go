@@ -28,6 +28,17 @@ func GetEnv(key string) (string, error) {
 	return value, nil
 }
 
+// type NullString struct {
+// 	sql.NullString
+// }
+
+// func (ns *NullString) MarshalJSON() ([]byte, error) {
+// 	if !ns.Valid {
+// 		return []byte("null"), nil
+// 	}
+// 	return json.Marshal(ns.String)
+// }
+
 // do we need the json tags?
 // for json response we can have a separate struct with json tags.
 type Workspace struct {
@@ -39,14 +50,14 @@ type Workspace struct {
 }
 
 type Customer struct {
-	WorkspaceId string `json:"workspaceId"`
-	CustomerId  string `json:"customerId"`
-	ExternalId  string `json:"externalId"`
-	Email       string `json:"email"`
-	Phone       string `json:"phone"`
-	Name        string `json:"name"`
-	UpdatedAt   string `json:"updatedAt"`
-	CreatedAt   string `json:"createdAt"`
+	WorkspaceId string         `json:"workspaceId"`
+	CustomerId  string         `json:"customerId"`
+	ExternalId  sql.NullString `json:"externalId"`
+	Email       sql.NullString `json:"email"`
+	Phone       sql.NullString `json:"phone"`
+	Name        sql.NullString `json:"name"`
+	UpdatedAt   time.Time      `json:"updatedAt"`
+	CreatedAt   time.Time      `json:"createdAt"`
 }
 
 type LLMRRLog struct {
@@ -86,6 +97,11 @@ type CustomerTIRequest struct {
 		Email      string `json:"email"`
 		Phone      string `json:"phone"`
 	} `json:"customer"`
+}
+
+type CustomerGoC struct {
+	Customer  Customer
+	IsCreated bool
 }
 
 // for now we are directly using the Ollama server
@@ -157,14 +173,18 @@ func (llm LLM) Generate() (LLMResponse, error) {
 	}, err
 }
 
-func (c Customer) GetById(ctx context.Context, db *pgxpool.Pool, id string) (Customer, error) {
+func (c Customer) GenId() string {
+	return "c_" + xid.New().String()
+}
+
+func (c Customer) GetByExtId(ctx context.Context, db *pgxpool.Pool, workspaceId string, extId string) (Customer, error) {
 	var customer Customer
 
 	row, err := db.Query(ctx, `SELECT 
 		workspace_id, customer_id,
 		external_id, email,
 		phone, name, created_at, updated_at
-		FROM customer WHERE customer_id = $1`, id)
+		FROM customer WHERE workspace_id = $1 AND customer_id = $2`, workspaceId, extId)
 	if err != nil {
 		return customer, err
 	}
@@ -185,6 +205,198 @@ func (c Customer) GetById(ctx context.Context, db *pgxpool.Pool, id string) (Cus
 	}
 
 	return customer, nil
+}
+
+func (c Customer) GetByEmail(ctx context.Context, db *pgxpool.Pool, workspaceId string, email string) (Customer, error) {
+	var customer Customer
+
+	row, err := db.Query(ctx, `SELECT 
+		workspace_id, customer_id,
+		external_id, email,
+		phone, name, created_at, updated_at
+		FROM customer WHERE workspace_id = $1 AND email = $2`, workspaceId, email)
+	if err != nil {
+		return customer, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return customer, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&customer.WorkspaceId, &customer.CustomerId,
+		&customer.ExternalId, &customer.Email,
+		&customer.Phone, &customer.Name,
+		&customer.CreatedAt, &customer.UpdatedAt,
+	)
+	if err != nil {
+		return customer, err
+	}
+
+	return customer, nil
+}
+
+func (c Customer) GetByPhone(ctx context.Context, db *pgxpool.Pool, workspaceId string, phone string) (Customer, error) {
+	var customer Customer
+
+	row, err := db.Query(ctx, `SELECT 
+		workspace_id, customer_id,
+		external_id, email,
+		phone, name, created_at, updated_at
+		FROM customer WHERE workspace_id = $1 AND phone = $2`, workspaceId, phone)
+	if err != nil {
+		return customer, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return customer, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&customer.WorkspaceId, &customer.CustomerId,
+		&customer.ExternalId, &customer.Email,
+		&customer.Phone, &customer.Name,
+		&customer.CreatedAt, &customer.UpdatedAt,
+	)
+	if err != nil {
+		return customer, err
+	}
+
+	return customer, nil
+}
+
+func (c Customer) GetOrCreateByExtId(ctx context.Context, db *pgxpool.Pool) (CustomerGoC, error) {
+
+	cId := c.GenId()
+	st := `WITH ins AS (
+		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (workspace_id, external_id) DO NOTHING
+		RETURNING
+		customer_id, workspace_id,
+		external_id, email, phone,
+		created_at, updated_at,
+		TRUE AS is_created
+	)
+	SELECT * FROM ins
+	UNION ALL
+	SELECT customer_id, workspace_id, external_id, email, phone,
+	created_at, updated_at, FALSE AS is_created FROM customer
+	WHERE (workspace_id, external_id) = ($2, $3) AND NOT EXISTS (SELECT 1 FROM ins)`
+
+	var cGoC CustomerGoC
+
+	row, err := db.Query(ctx, st, cId, c.WorkspaceId, c.ExternalId, c.Email, c.Phone)
+	if err != nil {
+		return cGoC, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return cGoC, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&cGoC.Customer.CustomerId, &cGoC.Customer.WorkspaceId,
+		&cGoC.Customer.ExternalId, &cGoC.Customer.Email,
+		&cGoC.Customer.Phone, &cGoC.Customer.CreatedAt,
+		&cGoC.Customer.UpdatedAt, &cGoC.IsCreated,
+	)
+	if err != nil {
+		return cGoC, err
+	}
+
+	return cGoC, nil
+}
+
+func (c Customer) GetOrCreateByEmail(ctx context.Context, db *pgxpool.Pool) (CustomerGoC, error) {
+
+	cId := c.GenId()
+	st := `WITH ins AS (
+		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (workspace_id, email) DO NOTHING
+		RETURNING
+		customer_id, workspace_id,
+		external_id, email, phone,
+		created_at, updated_at,
+		TRUE AS is_created
+	)
+	SELECT * FROM ins
+	UNION ALL
+	SELECT customer_id, workspace_id, external_id, email, phone,
+	created_at, updated_at, FALSE AS is_created FROM customer
+	WHERE (workspace_id, email) = ($2, $4) AND NOT EXISTS (SELECT 1 FROM ins)`
+
+	var cGoC CustomerGoC
+
+	row, err := db.Query(ctx, st, cId, c.WorkspaceId, c.ExternalId, c.Email, c.Phone)
+	if err != nil {
+		return cGoC, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return cGoC, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&cGoC.Customer.CustomerId, &cGoC.Customer.WorkspaceId,
+		&cGoC.Customer.ExternalId, &cGoC.Customer.Email,
+		&cGoC.Customer.Phone, &cGoC.Customer.CreatedAt,
+		&cGoC.Customer.UpdatedAt, &cGoC.IsCreated,
+	)
+	if err != nil {
+		return cGoC, err
+	}
+
+	return cGoC, nil
+}
+
+func (c Customer) GetOrCreateByPhone(ctx context.Context, db *pgxpool.Pool) (CustomerGoC, error) {
+
+	cId := c.GenId()
+	st := `WITH ins AS (
+		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (workspace_id, phone) DO NOTHING
+		RETURNING
+		customer_id, workspace_id,
+		external_id, email, phone,
+		created_at, updated_at,
+		TRUE AS is_created
+	)
+	SELECT * FROM ins
+	UNION ALL
+	SELECT customer_id, workspace_id, external_id, email, phone,
+	created_at, updated_at, FALSE AS is_created FROM customer
+	WHERE (workspace_id, phone) = ($2, $5) AND NOT EXISTS (SELECT 1 FROM ins)`
+
+	var cGoC CustomerGoC
+
+	row, err := db.Query(ctx, st, cId, c.WorkspaceId, c.ExternalId, c.Email, c.Phone)
+	if err != nil {
+		return cGoC, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return cGoC, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&cGoC.Customer.CustomerId, &cGoC.Customer.WorkspaceId,
+		&cGoC.Customer.ExternalId, &cGoC.Customer.Email,
+		&cGoC.Customer.Phone, &cGoC.Customer.CreatedAt,
+		&cGoC.Customer.UpdatedAt, &cGoC.IsCreated,
+	)
+	if err != nil {
+		return cGoC, err
+	}
+
+	return cGoC, nil
 }
 
 func LoggingMiddleware(next http.Handler) http.Handler {
@@ -387,9 +599,8 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 			_ = r.Close()
 		}(r.Body)
 
-		worskpaceId := "3a690e9f85544f6f82e6bdc432418b11"
-
-		fmt.Printf("issue token for customer in workspaceId: %v", worskpaceId)
+		worskpaceId := "3a690e9f85544f6f82e6bdc432418b11" // TODO: for now just mocking the workspace.
+		fmt.Printf("issue token for customer in workspaceId: %v\n", worskpaceId)
 
 		var rb CustomerTIRequest
 		err := json.NewDecoder(r.Body).Decode(&rb)
@@ -400,22 +611,73 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 		}
 
 		var customer Customer
-		work := func() (bool, error) {
-			fmt.Println("Make some DB call do some work...")
-			return true, nil
-		}
+
 		if rb.Create {
+			tc := Customer{
+				WorkspaceId: worskpaceId,
+				ExternalId:  sql.NullString{String: rb.Customer.ExternalId, Valid: rb.Customer.ExternalId != ""},
+				Email:       sql.NullString{String: rb.Customer.Email, Valid: rb.Customer.Email != ""},
+				Phone:       sql.NullString{String: rb.Customer.Phone, Valid: rb.Customer.Phone != ""},
+			}
 			fmt.Printf("create the customer if does not exists by %s\n", rb.CreateBy)
 			switch rb.CreateBy {
 			case "email":
 				fmt.Printf("create the customer by email %s\n", rb.Customer.Email)
-				_, _ = work()
+				cGoC, err := tc.GetOrCreateByEmail(ctx, db)
+				if err != nil {
+					fmt.Printf("failed to get or create customer by email %s with error: %v\n", rb.Customer.Email, err)
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
+				}
+				fmt.Printf("customerId: %s is created: %v\n", cGoC.Customer.CustomerId, cGoC.IsCreated)
+				customer = Customer{
+					WorkspaceId: cGoC.Customer.WorkspaceId,
+					CustomerId:  cGoC.Customer.CustomerId,
+					ExternalId:  cGoC.Customer.ExternalId,
+					Email:       cGoC.Customer.Email,
+					Phone:       cGoC.Customer.Phone,
+					Name:        cGoC.Customer.Name,
+					CreatedAt:   cGoC.Customer.CreatedAt,
+					UpdatedAt:   cGoC.Customer.UpdatedAt,
+				}
 			case "phone":
 				fmt.Printf("create the customer by phone %s\n", rb.Customer.Phone)
-				_, _ = work()
+				cGoC, err := tc.GetOrCreateByPhone(ctx, db)
+				if err != nil {
+					fmt.Printf("failed to get or create customer by phone %s with error: %v\n", rb.Customer.Phone, err)
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
+				}
+				fmt.Printf("customerId: %s is created: %v\n", cGoC.Customer.CustomerId, cGoC.IsCreated)
+				customer = Customer{
+					WorkspaceId: cGoC.Customer.WorkspaceId,
+					CustomerId:  cGoC.Customer.CustomerId,
+					ExternalId:  cGoC.Customer.ExternalId,
+					Email:       cGoC.Customer.Email,
+					Phone:       cGoC.Customer.Phone,
+					Name:        cGoC.Customer.Name,
+					CreatedAt:   cGoC.Customer.CreatedAt,
+					UpdatedAt:   cGoC.Customer.UpdatedAt,
+				}
 			case "externalId":
 				fmt.Printf("create the customer by externalId %s\n", rb.Customer.ExternalId)
-				_, _ = work()
+				cGoC, err := tc.GetOrCreateByExtId(ctx, db)
+				if err != nil {
+					fmt.Printf("failed to get or create customer by externalId %s with error: %v\n", rb.Customer.ExternalId, err)
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
+				}
+				fmt.Printf("customerId: %s is created: %v\n", cGoC.Customer.CustomerId, cGoC.IsCreated)
+				customer = Customer{
+					WorkspaceId: cGoC.Customer.WorkspaceId,
+					CustomerId:  cGoC.Customer.CustomerId,
+					ExternalId:  cGoC.Customer.ExternalId,
+					Email:       cGoC.Customer.Email,
+					Phone:       cGoC.Customer.Phone,
+					Name:        cGoC.Customer.Name,
+					CreatedAt:   cGoC.Customer.CreatedAt,
+					UpdatedAt:   cGoC.Customer.UpdatedAt,
+				}
 			default:
 				fmt.Println("unsupported `createBy` field value")
 				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -425,17 +687,32 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 			fmt.Printf("based on identifiers check for customer in workspaceId: %v\n", worskpaceId)
 			if rb.Customer.ExternalId != "" {
 				fmt.Printf("get customer by externalId %s\n", rb.Customer.ExternalId)
-				customer, err := customer.GetById(ctx, db, rb.Customer.ExternalId)
+				customer, err := customer.GetByExtId(ctx, db, worskpaceId, rb.Customer.ExternalId)
 				if err != nil {
 					fmt.Printf("failed to get customer by externalId %s with error: %v\n", rb.Customer.ExternalId, err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 					return
 				}
-				fmt.Printf("customer: %v\n", customer)
+				fmt.Printf("found customer with customer id: %s\n", customer.CustomerId)
 			} else if rb.Customer.Email != "" {
 				fmt.Printf("get customer by email %s\n", rb.Customer.Email)
+				customer, err := customer.GetByEmail(ctx, db, worskpaceId, rb.Customer.Email)
+				if err != nil {
+					fmt.Printf("failed to get customer by email %s with error: %v\n", rb.Customer.Email, err)
+					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+					return
+				}
+				fmt.Printf("found customer with customer id: %s\n", customer.CustomerId)
+
 			} else if rb.Customer.Phone != "" {
 				fmt.Printf("get customer by phone %s\n", rb.Customer.Phone)
+				customer, err := customer.GetByPhone(ctx, db, worskpaceId, rb.Customer.Phone)
+				if err != nil {
+					fmt.Printf("failed to get customer by phone %s with error: %v\n", rb.Customer.Phone, err)
+					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+					return
+				}
+				fmt.Printf("found customer with customer id: %s\n", customer.CustomerId)
 			} else {
 				fmt.Println("unsupported customer identifier")
 				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -446,7 +723,7 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 
-		if err := json.NewEncoder(w).Encode(rb); err != nil {
+		if err := json.NewEncoder(w).Encode(customer); err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}

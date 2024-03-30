@@ -29,9 +29,9 @@ Authorization: Token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiSm9obiBEb2
 {
     "customer": {
         "externalId": "xxxx-111-zzzz",
-        "email": "johndoe@gmail.com",
-        "phone": "+1234567890"
+        "email": "sanchitrrk@gmail.com",
+        "phone": "+917760686068"
     },
-    "create": false,
-    "createBy": "externalId"
+    "create": true,
+    "createBy": "email"
 }
