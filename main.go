@@ -28,17 +28,6 @@ func GetEnv(key string) (string, error) {
 	return value, nil
 }
 
-// type NullString struct {
-// 	sql.NullString
-// }
-
-// func (ns *NullString) MarshalJSON() ([]byte, error) {
-// 	if !ns.Valid {
-// 		return []byte("null"), nil
-// 	}
-// 	return json.Marshal(ns.String)
-// }
-
 // do we need the json tags?
 // for json response we can have a separate struct with json tags.
 type Workspace struct {
@@ -90,12 +79,12 @@ type LLMResponse struct {
 }
 
 type CustomerTIRequest struct {
-	Create   bool   `json:"create"`
-	CreateBy string `json:"createBy"`
+	Create   bool    `json:"create"`
+	CreateBy *string `json:"createBy"` // optional
 	Customer struct {
-		ExternalId string `json:"externalId"`
-		Email      string `json:"email"`
-		Phone      string `json:"phone"`
+		ExternalId *string `json:"externalId"` // optional
+		Email      *string `json:"email"`      // optional
+		Phone      *string `json:"phone"`      // optional
 	} `json:"customer"`
 }
 
@@ -599,7 +588,8 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 			_ = r.Close()
 		}(r.Body)
 
-		worskpaceId := "3a690e9f85544f6f82e6bdc432418b11" // TODO: for now just mocking the workspace.
+		// TODO: for now just mocking the workspace
+		worskpaceId := "3a690e9f85544f6f82e6bdc432418b11"
 		fmt.Printf("issue token for customer in workspaceId: %v\n", worskpaceId)
 
 		var rb CustomerTIRequest
@@ -610,19 +600,38 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 			return
 		}
 
-		var customer Customer
+		// create temporary customer
+		tc := Customer{
+			WorkspaceId: worskpaceId,
+			ExternalId:  sql.NullString{String: *rb.Customer.ExternalId, Valid: rb.Customer.ExternalId != nil},
+			Email:       sql.NullString{String: *rb.Customer.Email, Valid: rb.Customer.Email != nil},
+			Phone:       sql.NullString{String: *rb.Customer.Phone, Valid: rb.Customer.Phone != nil},
+		}
 
+		if !tc.ExternalId.Valid && !tc.Email.Valid && !tc.Phone.Valid {
+			fmt.Println("at least one of `externalId`, `email` or `phone` is required")
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		var customer Customer
 		if rb.Create {
-			tc := Customer{
-				WorkspaceId: worskpaceId,
-				ExternalId:  sql.NullString{String: rb.Customer.ExternalId, Valid: rb.Customer.ExternalId != ""},
-				Email:       sql.NullString{String: rb.Customer.Email, Valid: rb.Customer.Email != ""},
-				Phone:       sql.NullString{String: rb.Customer.Phone, Valid: rb.Customer.Phone != ""},
+			if rb.CreateBy == nil {
+				fmt.Println("requires `createBy` when `create` is enabled")
+				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+				return
 			}
+
+			createBy := *rb.CreateBy
 			fmt.Printf("create the customer if does not exists by %s\n", rb.CreateBy)
-			switch rb.CreateBy {
+			switch createBy {
 			case "email":
 				fmt.Printf("create the customer by email %s\n", rb.Customer.Email)
+				if !tc.Email.Valid {
+					fmt.Println("`email` is required for `createBy` email")
+					http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+					return
+				}
 				cGoC, err := tc.GetOrCreateByEmail(ctx, db)
 				if err != nil {
 					fmt.Printf("failed to get or create customer by email %s with error: %v\n", rb.Customer.Email, err)
@@ -642,6 +651,11 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 				}
 			case "phone":
 				fmt.Printf("create the customer by phone %s\n", rb.Customer.Phone)
+				if !tc.Phone.Valid {
+					fmt.Println("`phone` is required for `createBy` phone")
+					http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+					return
+				}
 				cGoC, err := tc.GetOrCreateByPhone(ctx, db)
 				if err != nil {
 					fmt.Printf("failed to get or create customer by phone %s with error: %v\n", rb.Customer.Phone, err)
@@ -661,6 +675,11 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 				}
 			case "externalId":
 				fmt.Printf("create the customer by externalId %s\n", rb.Customer.ExternalId)
+				if !tc.ExternalId.Valid {
+					fmt.Println("`externalId` is required for `createBy` externalId")
+					http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+					return
+				}
 				cGoC, err := tc.GetOrCreateByExtId(ctx, db)
 				if err != nil {
 					fmt.Printf("failed to get or create customer by externalId %s with error: %v\n", rb.Customer.ExternalId, err)
