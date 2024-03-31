@@ -11,8 +11,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/cors"
 	"github.com/rs/xid"
@@ -26,6 +28,45 @@ func GetEnv(key string) (string, error) {
 		return "", fmt.Errorf("env `%s` is not set", key)
 	}
 	return value, nil
+}
+
+type Account struct {
+	AccountId  string
+	Email      string
+	Provider   string
+	AuthUserId string
+	Name       string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+}
+
+func (a Account) MarshalJSON() ([]byte, error) {
+	aux := &struct {
+		AccountId string `json:"accountId"`
+		Email     string `json:"email"`
+		Provider  string `json:"provider"`
+		Name      string `json:"name"`
+		CreatedAt string `json:"createdAt"`
+		UpdatedAt string `json:"updatedAt"`
+	}{
+		AccountId: a.AccountId,
+		Email:     a.Email,
+		Provider:  a.Provider,
+		Name:      a.Name,
+		CreatedAt: a.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: a.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
+}
+
+type AccountPat struct {
+	AccountId   string
+	PatId       string
+	Token       string
+	Name        string
+	Description sql.NullString
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 type Workspace struct {
@@ -151,6 +192,11 @@ type CustomerGoC struct {
 	IsCreated bool
 }
 
+type AccountGoC struct {
+	Account   Account
+	IsCreated bool
+}
+
 // for now we are directly using the Ollama server
 // later will update to use our `converse` server probably with grpc.
 // similarly the `LLMResponse` will be updated to include other specific fields.
@@ -229,6 +275,84 @@ func NullString(s *string) sql.NullString {
 		return sql.NullString{String: "", Valid: false}
 	}
 	return sql.NullString{String: *s, Valid: true}
+}
+
+func AuthenticatePat(ctx context.Context, db *pgxpool.Pool, token string) (Account, error) {
+	var account Account
+
+	stmt := `SELECT 
+		a.account_id, a.email,
+		a.provider, a.auth_user_id, a.name,
+		a.created_at, a.updated_at
+		FROM account a
+		INNER JOIN account_pat ap ON a.account_id = ap.account_id
+		WHERE ap.token = $1`
+
+	row, err := db.Query(ctx, stmt, token)
+	if err != nil {
+		return account, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		fmt.Printf("no linked account found for token: %s\n", token)
+		return account, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&account.AccountId, &account.Email,
+		&account.Provider, &account.AuthUserId, &account.Name,
+		&account.CreatedAt, &account.UpdatedAt,
+	)
+	if err != nil {
+		fmt.Printf("failed to scan linked account for token: %s with error: %v\n", token, err)
+		return account, err
+	}
+
+	return account, nil
+}
+
+func (a Account) GetOrCreateByAuthUserId(ctx context.Context, db *pgxpool.Pool) (AccountGoC, error) {
+	aId := "a_" + xid.New().String()
+
+	st := `WITH ins AS (
+		INSERT INTO account(account_id, auth_user_id, email, provider, name)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (auth_user_id) DO NOTHING
+		RETURNING
+		account_id, auth_user_id,
+		email, provider, name,
+		created_at, updated_at,
+		TRUE AS is_created
+	)
+	SELECT * FROM ins
+	UNION ALL
+	SELECT account_id, auth_user_id, email, provider, name,
+	created_at, updated_at, FALSE AS is_created FROM account
+	WHERE auth_user_id = $2 AND NOT EXISTS (SELECT 1 FROM ins)`
+
+	var aGoC AccountGoC
+	row, err := db.Query(ctx, st, aId, a.AuthUserId, a.Email, a.Provider, a.Name)
+	if err != nil {
+		return aGoC, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return aGoC, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&aGoC.Account.AccountId, &aGoC.Account.AuthUserId,
+		&aGoC.Account.Email, &aGoC.Account.Provider,
+		&aGoC.Account.Name, &aGoC.Account.CreatedAt,
+		&aGoC.Account.UpdatedAt, &aGoC.IsCreated,
+	)
+	if err != nil {
+		return aGoC, err
+	}
+
+	return aGoC, nil
 }
 
 func (c Customer) GetByExtId(ctx context.Context, db *pgxpool.Pool, workspaceId string, extId string) (Customer, error) {
@@ -461,10 +585,114 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func AuthenticateMember(next http.Handler) http.Handler {
+// TODO: deprecate this
+func AuthenticateMember(r *http.Request) bool {
+	ath := r.Header.Get("Authorization")
+	return ath != ""
+}
+
+// Claims taken from Supabase JWT encoding
+type Claims struct {
+	Email string `json:"email"`
+	jwt.RegisteredClaims
+}
+
+type AuthUserId struct {
+	Id    string `json:"id"`
+	Email string `json:"email"`
+}
+
+func parseJWTToken(token string, hmacSecret []byte) (auid AuthUserId, err error) {
+	t, err := jwt.ParseWithClaims(token, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return hmacSecret, nil
+	})
+
+	if err != nil {
+		return auid, fmt.Errorf("error validating jwt token with error: %v", err)
+	} else if claims, ok := t.Claims.(*Claims); ok {
+		sub, err := claims.RegisteredClaims.GetSubject()
+		if err != nil {
+			return auid, fmt.Errorf("cannot get subject from parsed token: %v", err)
+		}
+		return AuthUserId{Id: sub, Email: claims.Email}, nil
+	}
+
+	return auid, fmt.Errorf("error parsing token: %v", token)
+}
+
+func handleMakeAuthAccount(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("TODO: add authentication logic before invoking the next handler...")
-		next.ServeHTTP(w, r)
+		defer func(r io.ReadCloser) {
+			_, _ = io.Copy(io.Discard, r)
+			_ = r.Close()
+		}(r.Body)
+
+		ath := r.Header.Get("Authorization")
+		if ath == "" {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		cred := strings.Split(ath, " ")
+		scheme := strings.ToLower(cred[0])
+
+		if scheme == "token" {
+			fmt.Println("authenticate via PAT")
+			account, err := AuthenticatePat(ctx, db, cred[1])
+			if err != nil {
+				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+				return
+			}
+			fmt.Printf("authenticated account with accountId: %s\n", account.AccountId)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			if err := json.NewEncoder(w).Encode(account); err != nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+		} else if scheme == "bearer" {
+			fmt.Println("authenticate via JWTs")
+			hmacSecret, err := GetEnv("SUPABASE_JWT_SECRET")
+			if err != nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+			auid, err := parseJWTToken(cred[1], []byte(hmacSecret))
+			if err != nil {
+				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+				return
+			}
+			fmt.Printf("authenticated account with id: %s\n", auid.Id)
+			ta := Account{AuthUserId: auid.Id, Email: auid.Email, Provider: "supabase"}
+			aGoC, err := ta.GetOrCreateByAuthUserId(ctx, db)
+			if err != nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+			if aGoC.IsCreated {
+				fmt.Printf("account created with accountId: %s\n", aGoC.Account.AccountId)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusCreated)
+				if err := json.NewEncoder(w).Encode(aGoC.Account); err != nil {
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
+				}
+			} else {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				if err := json.NewEncoder(w).Encode(aGoC.Account); err != nil {
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
+				}
+			}
+		} else {
+			fmt.Printf("unsupported scheme: `%s` cannot authenticate request\n", scheme)
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
 	})
 }
 
@@ -477,6 +705,11 @@ func handleGetIndex(w http.ResponseWriter, r *http.Request) {
 
 func handleGetWorkspaces(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !AuthenticateMember(r) {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
 		rows, err := db.Query(ctx, `SELECT
 			workspace_id, account_id,
 			name, created_at, updated_at
@@ -648,6 +881,12 @@ func handleLLMQueryEval(ctx context.Context, db *pgxpool.Pool) http.Handler {
 
 func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		if !AuthenticateMember(r) {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
 		defer func(r io.ReadCloser) {
 			_, _ = io.Copy(io.Discard, r)
 			_ = r.Close()
@@ -876,24 +1115,27 @@ func run(ctx context.Context) error {
 
 	mux := http.NewServeMux()
 
-	// member - TODO: add member authentication
+	// sdk+web
+	mux.Handle("POST /accounts/auth/{$}", handleMakeAuthAccount(ctx, db))
+
+	// sdk+web - TODO: add member authentication
 	mux.HandleFunc("GET /{$}", handleGetIndex)
 
-	// member - TODO: add member authentication
-	mux.Handle("GET /workspaces/{$}", AuthenticateMember(handleGetWorkspaces(ctx, db)))
+	// sdk+web - TODO: add member authentication
+	mux.Handle("GET /workspaces/{$}",
+		handleGetWorkspaces(ctx, db))
 
-	// sess customer - TODO: add customer session authentication
-	mux.Handle(
-		"POST /workspaces/{workspaceId}/-/queries/{$}",
-		AuthenticateMember(handleLLMQuery(ctx, db)))
+	// customer
+	mux.Handle("POST /workspaces/{workspaceId}/-/queries/{$}",
+		handleLLMQuery(ctx, db))
 
-	// sess customer - TODO: add customer session authentication
-	mux.Handle(
-		"POST /workspaces/{workspaceId}/-/queries/{requestId}/{$}",
-		AuthenticateMember(handleLLMQueryEval(ctx, db)))
+	// customer
+	mux.Handle("POST /workspaces/{workspaceId}/-/queries/{requestId}/{$}",
+		handleLLMQueryEval(ctx, db))
 
-	// sst customer API
-	mux.Handle("POST /-/tokens/{$}", handleCustomerTokenIssue(ctx, db))
+	// sdk+web
+	mux.Handle("POST /tokens/{$}",
+		handleCustomerTokenIssue(ctx, db))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
@@ -915,7 +1157,6 @@ func run(ctx context.Context) error {
 	err = srv.ListenAndServe()
 
 	return err
-
 }
 
 func main() {

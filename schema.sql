@@ -20,7 +20,7 @@
 -- Represents the auth account table
 -- This table is used to store the account information of the user pertaining to auth.
 -- Attributes will depend on the auth provider.
--- Done
+-- Is Confirmed
 CREATE TABLE account (
     account_id VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
@@ -34,10 +34,26 @@ CREATE TABLE account (
     CONSTRAINT account_auth_user_id_key UNIQUE (auth_user_id)
 );
 
+
+-- Represents the account PAT table
+-- Personal Access Token
+CREATE TABLE account_pat (
+    account_id VARCHAR(255) NOT NULL, -- fk to account
+    pat_id VARCHAR(255) NOT NULL, -- primary key
+    token VARCHAR(255) NOT NULL, -- unique token across the system
+    name VARCHAR(255) NOT NULL, -- name of the PAT
+    description TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT account_pat_pat_id_pkey PRIMARY KEY (pat_id),
+    CONSTRAINT account_pat_account_id_fkey FOREIGN KEY (account_id) REFERENCES account (account_id),
+    CONSTRAINT account_pat_token_key UNIQUE (token)
+);
+
 -- Represents the workspace table
 -- This table is used to store the workspace information linked to the account.
 -- Account can own multiple workspaces.
--- Done
+-- Is Confirmed
 CREATE TABLE workspace (
     workspace_id VARCHAR(255) NOT NULL,
     account_id VARCHAR(255) NOT NULL,
@@ -53,6 +69,8 @@ CREATE TABLE workspace (
 
 -- Represents LLM request-response log table
 -- This table is used to store the request-response information linked to the workspace.
+-- Currently their is no provision of follow up queries.
+-- Done
 CREATE TABLE llm_rr_log (
     workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
     request_id VARCHAR(255) NOT NULL, -- primary key

@@ -3,6 +3,7 @@ module github.com/zyghq/zyg
 go 1.22.0
 
 require (
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/rs/cors v1.10.1
 	github.com/rs/xid v1.5.0

@@ -4,6 +4,10 @@
       "path": "converse",
       "name": "converse"
     },
+ {
+      "path": "webapp",
+      "name": "webapp"
+    },
     {
       "path": ".",
       "name": "root"
