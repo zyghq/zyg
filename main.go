@@ -151,7 +151,7 @@ func (llm LLM) Generate() (LLMResponse, error) {
 
 	err = json.NewDecoder(resp.Body).Decode(&rb)
 	if err != nil {
-		log.Printf("failed to decode LLM response for requestId: %s with error: %v", llm.RequestId, err)
+		log.Printf("failed to decode LLM response for requestId: %s with error: %v\n", llm.RequestId, err)
 		return response, err
 	}
 
@@ -164,6 +164,13 @@ func (llm LLM) Generate() (LLMResponse, error) {
 
 func (c Customer) GenId() string {
 	return "c_" + xid.New().String()
+}
+
+func (c *Customer) NullString(s *string) sql.NullString {
+	if s == nil {
+		return sql.NullString{String: "", Valid: false}
+	}
+	return sql.NullString{String: *s, Valid: true}
 }
 
 func (c Customer) GetByExtId(ctx context.Context, db *pgxpool.Pool, workspaceId string, extId string) (Customer, error) {
@@ -600,13 +607,13 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 			return
 		}
 
-		// create temporary customer
 		tc := Customer{
 			WorkspaceId: worskpaceId,
-			ExternalId:  sql.NullString{String: *rb.Customer.ExternalId, Valid: rb.Customer.ExternalId != nil},
-			Email:       sql.NullString{String: *rb.Customer.Email, Valid: rb.Customer.Email != nil},
-			Phone:       sql.NullString{String: *rb.Customer.Phone, Valid: rb.Customer.Phone != nil},
 		}
+
+		tc.ExternalId = tc.NullString(rb.Customer.ExternalId)
+		tc.Email = tc.NullString(rb.Customer.Email)
+		tc.Phone = tc.NullString(rb.Customer.Phone)
 
 		if !tc.ExternalId.Valid && !tc.Email.Valid && !tc.Phone.Valid {
 			fmt.Println("at least one of `externalId`, `email` or `phone` is required")
@@ -621,20 +628,20 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 				return
 			}
-
 			createBy := *rb.CreateBy
-			fmt.Printf("create the customer if does not exists by %s\n", rb.CreateBy)
+			fmt.Printf("create the customer if does not exists by %s\n", createBy)
 			switch createBy {
 			case "email":
-				fmt.Printf("create the customer by email %s\n", rb.Customer.Email)
 				if !tc.Email.Valid {
 					fmt.Println("`email` is required for `createBy` email")
 					http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 					return
 				}
+				email := tc.Email.String
+				fmt.Printf("create the customer by email %s\n", email)
 				cGoC, err := tc.GetOrCreateByEmail(ctx, db)
 				if err != nil {
-					fmt.Printf("failed to get or create customer by email %s with error: %v\n", rb.Customer.Email, err)
+					fmt.Printf("failed to get or create customer by email %s with error: %v\n", email, err)
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
@@ -650,15 +657,16 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 					UpdatedAt:   cGoC.Customer.UpdatedAt,
 				}
 			case "phone":
-				fmt.Printf("create the customer by phone %s\n", rb.Customer.Phone)
 				if !tc.Phone.Valid {
 					fmt.Println("`phone` is required for `createBy` phone")
 					http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 					return
 				}
+				phone := tc.Phone.String
+				fmt.Printf("create the customer by phone %s\n", phone)
 				cGoC, err := tc.GetOrCreateByPhone(ctx, db)
 				if err != nil {
-					fmt.Printf("failed to get or create customer by phone %s with error: %v\n", rb.Customer.Phone, err)
+					fmt.Printf("failed to get or create customer by phone %s with error: %v\n", phone, err)
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
@@ -674,15 +682,16 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 					UpdatedAt:   cGoC.Customer.UpdatedAt,
 				}
 			case "externalId":
-				fmt.Printf("create the customer by externalId %s\n", rb.Customer.ExternalId)
 				if !tc.ExternalId.Valid {
 					fmt.Println("`externalId` is required for `createBy` externalId")
 					http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 					return
 				}
+				extId := tc.ExternalId.String
+				fmt.Printf("create the customer by externalId %s\n", extId)
 				cGoC, err := tc.GetOrCreateByExtId(ctx, db)
 				if err != nil {
-					fmt.Printf("failed to get or create customer by externalId %s with error: %v\n", rb.Customer.ExternalId, err)
+					fmt.Printf("failed to get or create customer by externalId %s with error: %v\n", extId, err)
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
@@ -704,30 +713,33 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 			}
 		} else {
 			fmt.Printf("based on identifiers check for customer in workspaceId: %v\n", worskpaceId)
-			if rb.Customer.ExternalId != "" {
-				fmt.Printf("get customer by externalId %s\n", rb.Customer.ExternalId)
-				customer, err := customer.GetByExtId(ctx, db, worskpaceId, rb.Customer.ExternalId)
+			if tc.ExternalId.Valid {
+				extId := tc.ExternalId.String
+				fmt.Printf("get customer by externalId %s\n", extId)
+				customer, err := customer.GetByExtId(ctx, db, worskpaceId, extId)
 				if err != nil {
-					fmt.Printf("failed to get customer by externalId %s with error: %v\n", rb.Customer.ExternalId, err)
+					fmt.Printf("failed to get customer by externalId %s with error: %v\n", extId, err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 					return
 				}
 				fmt.Printf("found customer with customer id: %s\n", customer.CustomerId)
-			} else if rb.Customer.Email != "" {
-				fmt.Printf("get customer by email %s\n", rb.Customer.Email)
-				customer, err := customer.GetByEmail(ctx, db, worskpaceId, rb.Customer.Email)
+			} else if tc.Email.Valid {
+				email := tc.Email.String
+				fmt.Printf("get customer by email %s\n", email)
+				customer, err := customer.GetByEmail(ctx, db, worskpaceId, email)
 				if err != nil {
-					fmt.Printf("failed to get customer by email %s with error: %v\n", rb.Customer.Email, err)
+					fmt.Printf("failed to get customer by email %s with error: %v\n", email, err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 					return
 				}
 				fmt.Printf("found customer with customer id: %s\n", customer.CustomerId)
 
-			} else if rb.Customer.Phone != "" {
-				fmt.Printf("get customer by phone %s\n", rb.Customer.Phone)
-				customer, err := customer.GetByPhone(ctx, db, worskpaceId, rb.Customer.Phone)
+			} else if tc.Phone.Valid {
+				phone := tc.Phone.String
+				fmt.Printf("get customer by phone %s\n", phone)
+				customer, err := customer.GetByPhone(ctx, db, worskpaceId, phone)
 				if err != nil {
-					fmt.Printf("failed to get customer by phone %s with error: %v\n", rb.Customer.Phone, err)
+					fmt.Printf("failed to get customer by phone %s with error: %v\n", phone, err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 					return
 				}

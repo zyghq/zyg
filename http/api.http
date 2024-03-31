@@ -28,10 +28,10 @@ Authorization: Token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiSm9obiBEb2
 
 {
     "customer": {
-        "externalId": "xxxx-111-zzzz",
-        "email": "sanchitrrk@gmail.com",
-        "phone": "+917760686068"
+        "externalId": "xxxx-111-zzzz"
+        # "email": "sanchitrrk@gmail.com",
+        # "phone": "+917760686068"
     },
     "create": true,
-    "createBy": "email"
+    "createBy": "externalId"
 }
