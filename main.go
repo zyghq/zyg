@@ -28,25 +28,77 @@ func GetEnv(key string) (string, error) {
 	return value, nil
 }
 
-// do we need the json tags?
-// for json response we can have a separate struct with json tags.
 type Workspace struct {
-	WorkspaceId string    `json:"workspaceId"`
-	AccountId   string    `json:"accountId"`
-	Name        string    `json:"name"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+	WorkspaceId string
+	AccountId   string
+	Name        string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+func (w Workspace) MarshalJSON() ([]byte, error) {
+	aux := &struct {
+		WorkspaceId string `json:"workspaceId"`
+		AccountId   string `json:"accountId"`
+		Name        string `json:"name"`
+		CreatedAt   string `json:"createdAt"`
+		UpdatedAt   string `json:"updatedAt"`
+	}{
+		WorkspaceId: w.WorkspaceId,
+		AccountId:   w.AccountId,
+		Name:        w.Name,
+		CreatedAt:   w.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   w.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
 }
 
 type Customer struct {
-	WorkspaceId string         `json:"workspaceId"`
-	CustomerId  string         `json:"customerId"`
-	ExternalId  sql.NullString `json:"externalId"`
-	Email       sql.NullString `json:"email"`
-	Phone       sql.NullString `json:"phone"`
-	Name        sql.NullString `json:"name"`
-	UpdatedAt   time.Time      `json:"updatedAt"`
-	CreatedAt   time.Time      `json:"createdAt"`
+	WorkspaceId string
+	CustomerId  string
+	ExternalId  sql.NullString
+	Email       sql.NullString
+	Phone       sql.NullString
+	Name        sql.NullString
+	UpdatedAt   time.Time
+	CreatedAt   time.Time
+}
+
+func (c Customer) MarshalJSON() ([]byte, error) {
+	var externalId, email, phone, name *string
+	if c.ExternalId.Valid {
+		externalId = &c.ExternalId.String
+	}
+	if c.Email.Valid {
+		email = &c.Email.String
+	}
+	if c.Phone.Valid {
+		phone = &c.Phone.String
+	}
+	if c.Name.Valid {
+		name = &c.Name.String
+	}
+
+	aux := &struct {
+		WorkspaceId string  `json:"workspaceId"`
+		CustomerId  string  `json:"customerId"`
+		ExternalId  *string `json:"externalId"`
+		Email       *string `json:"email"`
+		Phone       *string `json:"phone"`
+		Name        *string `json:"name"`
+		CreatedAt   string  `json:"createdAt"`
+		UpdatedAt   string  `json:"updatedAt"`
+	}{
+		WorkspaceId: c.WorkspaceId,
+		CustomerId:  c.CustomerId,
+		ExternalId:  externalId,
+		Email:       email,
+		Phone:       phone,
+		Name:        name,
+		CreatedAt:   c.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   c.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
 }
 
 type LLMRRLog struct {
@@ -86,6 +138,12 @@ type CustomerTIRequest struct {
 		Email      *string `json:"email"`      // optional
 		Phone      *string `json:"phone"`      // optional
 	} `json:"customer"`
+}
+
+type CustomerTIResp struct {
+	Create     bool   `json:"create"`
+	CustomerId string `json:"customerId"`
+	Jwt        string `json:"jwt"`
 }
 
 type CustomerGoC struct {
@@ -166,7 +224,7 @@ func (c Customer) GenId() string {
 	return "c_" + xid.New().String()
 }
 
-func (c *Customer) NullString(s *string) sql.NullString {
+func NullString(s *string) sql.NullString {
 	if s == nil {
 		return sql.NullString{String: "", Valid: false}
 	}
@@ -180,7 +238,7 @@ func (c Customer) GetByExtId(ctx context.Context, db *pgxpool.Pool, workspaceId 
 		workspace_id, customer_id,
 		external_id, email,
 		phone, name, created_at, updated_at
-		FROM customer WHERE workspace_id = $1 AND customer_id = $2`, workspaceId, extId)
+		FROM customer WHERE workspace_id = $1 AND external_id = $2`, workspaceId, extId)
 	if err != nil {
 		return customer, err
 	}
@@ -610,10 +668,9 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 		tc := Customer{
 			WorkspaceId: worskpaceId,
 		}
-
-		tc.ExternalId = tc.NullString(rb.Customer.ExternalId)
-		tc.Email = tc.NullString(rb.Customer.Email)
-		tc.Phone = tc.NullString(rb.Customer.Phone)
+		tc.ExternalId = NullString(rb.Customer.ExternalId)
+		tc.Email = NullString(rb.Customer.Email)
+		tc.Phone = NullString(rb.Customer.Phone)
 
 		if !tc.ExternalId.Valid && !tc.Email.Valid && !tc.Phone.Valid {
 			fmt.Println("at least one of `externalId`, `email` or `phone` is required")
@@ -621,7 +678,6 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 			return
 		}
 
-		var customer Customer
 		if rb.Create {
 			if rb.CreateBy == nil {
 				fmt.Println("requires `createBy` when `create` is enabled")
@@ -646,16 +702,18 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 					return
 				}
 				fmt.Printf("customerId: %s is created: %v\n", cGoC.Customer.CustomerId, cGoC.IsCreated)
-				customer = Customer{
-					WorkspaceId: cGoC.Customer.WorkspaceId,
-					CustomerId:  cGoC.Customer.CustomerId,
-					ExternalId:  cGoC.Customer.ExternalId,
-					Email:       cGoC.Customer.Email,
-					Phone:       cGoC.Customer.Phone,
-					Name:        cGoC.Customer.Name,
-					CreatedAt:   cGoC.Customer.CreatedAt,
-					UpdatedAt:   cGoC.Customer.UpdatedAt,
+				resp := CustomerTIResp{
+					Create:     cGoC.IsCreated,
+					CustomerId: cGoC.Customer.CustomerId,
+					Jwt:        "TODO: generate jwt token",
 				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				if err := json.NewEncoder(w).Encode(resp); err != nil {
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
+				}
+				return
 			case "phone":
 				if !tc.Phone.Valid {
 					fmt.Println("`phone` is required for `createBy` phone")
@@ -671,15 +729,16 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 					return
 				}
 				fmt.Printf("customerId: %s is created: %v\n", cGoC.Customer.CustomerId, cGoC.IsCreated)
-				customer = Customer{
-					WorkspaceId: cGoC.Customer.WorkspaceId,
-					CustomerId:  cGoC.Customer.CustomerId,
-					ExternalId:  cGoC.Customer.ExternalId,
-					Email:       cGoC.Customer.Email,
-					Phone:       cGoC.Customer.Phone,
-					Name:        cGoC.Customer.Name,
-					CreatedAt:   cGoC.Customer.CreatedAt,
-					UpdatedAt:   cGoC.Customer.UpdatedAt,
+				resp := CustomerTIResp{
+					Create:     cGoC.IsCreated,
+					CustomerId: cGoC.Customer.CustomerId,
+					Jwt:        "TODO: generate jwt token",
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				if err := json.NewEncoder(w).Encode(resp); err != nil {
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
 				}
 			case "externalId":
 				if !tc.ExternalId.Valid {
@@ -696,15 +755,16 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 					return
 				}
 				fmt.Printf("customerId: %s is created: %v\n", cGoC.Customer.CustomerId, cGoC.IsCreated)
-				customer = Customer{
-					WorkspaceId: cGoC.Customer.WorkspaceId,
-					CustomerId:  cGoC.Customer.CustomerId,
-					ExternalId:  cGoC.Customer.ExternalId,
-					Email:       cGoC.Customer.Email,
-					Phone:       cGoC.Customer.Phone,
-					Name:        cGoC.Customer.Name,
-					CreatedAt:   cGoC.Customer.CreatedAt,
-					UpdatedAt:   cGoC.Customer.UpdatedAt,
+				resp := CustomerTIResp{
+					Create:     cGoC.IsCreated,
+					CustomerId: cGoC.Customer.CustomerId,
+					Jwt:        "TODO: generate jwt token",
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				if err := json.NewEncoder(w).Encode(resp); err != nil {
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
 				}
 			default:
 				fmt.Println("unsupported `createBy` field value")
@@ -712,51 +772,76 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 				return
 			}
 		} else {
+			var customer Customer
 			fmt.Printf("based on identifiers check for customer in workspaceId: %v\n", worskpaceId)
 			if tc.ExternalId.Valid {
 				extId := tc.ExternalId.String
 				fmt.Printf("get customer by externalId %s\n", extId)
-				customer, err := customer.GetByExtId(ctx, db, worskpaceId, extId)
+				customer, err = customer.GetByExtId(ctx, db, worskpaceId, extId)
 				if err != nil {
 					fmt.Printf("failed to get customer by externalId %s with error: %v\n", extId, err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 					return
 				}
 				fmt.Printf("found customer with customer id: %s\n", customer.CustomerId)
+				resp := CustomerTIResp{
+					Create:     false,
+					CustomerId: customer.CustomerId,
+					Jwt:        "TODO: generate jwt token",
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				if err := json.NewEncoder(w).Encode(resp); err != nil {
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
+				}
 			} else if tc.Email.Valid {
 				email := tc.Email.String
 				fmt.Printf("get customer by email %s\n", email)
-				customer, err := customer.GetByEmail(ctx, db, worskpaceId, email)
+				customer, err = customer.GetByEmail(ctx, db, worskpaceId, email)
 				if err != nil {
 					fmt.Printf("failed to get customer by email %s with error: %v\n", email, err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 					return
 				}
 				fmt.Printf("found customer with customer id: %s\n", customer.CustomerId)
-
+				resp := CustomerTIResp{
+					Create:     false,
+					CustomerId: customer.CustomerId,
+					Jwt:        "TODO: generate jwt token",
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				if err := json.NewEncoder(w).Encode(resp); err != nil {
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
+				}
 			} else if tc.Phone.Valid {
 				phone := tc.Phone.String
 				fmt.Printf("get customer by phone %s\n", phone)
-				customer, err := customer.GetByPhone(ctx, db, worskpaceId, phone)
+				customer, err = customer.GetByPhone(ctx, db, worskpaceId, phone)
 				if err != nil {
 					fmt.Printf("failed to get customer by phone %s with error: %v\n", phone, err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 					return
 				}
 				fmt.Printf("found customer with customer id: %s\n", customer.CustomerId)
+				resp := CustomerTIResp{
+					Create:     false,
+					CustomerId: customer.CustomerId,
+					Jwt:        "TODO: generate jwt token",
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				if err := json.NewEncoder(w).Encode(resp); err != nil {
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
+				}
 			} else {
 				fmt.Println("unsupported customer identifier")
 				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 				return
 			}
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-
-		if err := json.NewEncoder(w).Encode(customer); err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
 		}
 	})
 }
