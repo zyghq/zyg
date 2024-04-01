@@ -30,6 +30,7 @@ func GetEnv(key string) (string, error) {
 	return value, nil
 }
 
+// models
 type Account struct {
 	AccountId  string
 	Email      string
@@ -59,6 +60,7 @@ func (a Account) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
+// models
 type AccountPat struct {
 	AccountId   string
 	PatId       string
@@ -69,6 +71,7 @@ type AccountPat struct {
 	UpdatedAt   time.Time
 }
 
+// models
 type Workspace struct {
 	WorkspaceId string
 	AccountId   string
@@ -94,6 +97,7 @@ func (w Workspace) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
+// models
 type Customer struct {
 	WorkspaceId string
 	CustomerId  string
@@ -142,35 +146,34 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
+// models
 type LLMRRLog struct {
-	WorkspaceId string        `json:"workspaceId"`
-	RequestId   string        `json:"requestId"`
-	Prompt      string        `json:"prompt"`
-	Response    string        `json:"response"`
-	Model       string        `json:"model"`
-	Eval        sql.NullInt64 `json:"eval"`
+	WorkspaceId string
+	RequestId   string
+	Prompt      string
+	Response    string
+	Model       string
+	Eval        sql.NullInt64
 }
 
+// request
 type LLMRequestQuery struct {
 	Q string `json:"q"`
 }
 
+// request
 type LLMRREval struct {
 	Eval int `json:"eval"`
 }
 
-type LLM struct {
-	WorkspaceId string
-	Prompt      string
-	RequestId   string
-}
-
+// response
 type LLMResponse struct {
 	Text      string `json:"text"`
 	RequestId string `json:"requestId"`
 	Model     string `json:"model"`
 }
 
+// request
 type CustomerTIRequest struct {
 	Create   bool    `json:"create"`
 	CreateBy *string `json:"createBy"` // optional
@@ -181,20 +184,17 @@ type CustomerTIRequest struct {
 	} `json:"customer"`
 }
 
+// response
 type CustomerTIResp struct {
 	Create     bool   `json:"create"`
 	CustomerId string `json:"customerId"`
 	Jwt        string `json:"jwt"`
 }
 
-type CustomerGoC struct {
-	Customer  Customer
-	IsCreated bool
-}
-
-type AccountGoC struct {
-	Account   Account
-	IsCreated bool
+type LLM struct {
+	WorkspaceId string
+	Prompt      string
+	RequestId   string
 }
 
 // for now we are directly using the Ollama server
@@ -266,10 +266,6 @@ func (llm LLM) Generate() (LLMResponse, error) {
 	}, err
 }
 
-func (c Customer) GenId() string {
-	return "c_" + xid.New().String()
-}
-
 func NullString(s *string) sql.NullString {
 	if s == nil {
 		return sql.NullString{String: "", Valid: false}
@@ -312,16 +308,20 @@ func AuthenticatePat(ctx context.Context, db *pgxpool.Pool, token string) (Accou
 	return account, nil
 }
 
-func (a Account) GetOrCreateByAuthUserId(ctx context.Context, db *pgxpool.Pool) (AccountGoC, error) {
-	aId := "a_" + xid.New().String()
+func (a Account) GenId() string {
+	return "a_" + xid.New().String()
+}
+
+func (a Account) GetOrCreateByAuthUserId(ctx context.Context, db *pgxpool.Pool) (Account, bool, error) {
+	aId := a.GenId()
 
 	st := `WITH ins AS (
 		INSERT INTO account(account_id, auth_user_id, email, provider, name)
 		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (auth_user_id) DO NOTHING
 		RETURNING
-		account_id, auth_user_id,
-		email, provider, name,
+		account_id, auth_user_id, email,
+		provider, name,
 		created_at, updated_at,
 		TRUE AS is_created
 	)
@@ -331,28 +331,63 @@ func (a Account) GetOrCreateByAuthUserId(ctx context.Context, db *pgxpool.Pool) 
 	created_at, updated_at, FALSE AS is_created FROM account
 	WHERE auth_user_id = $2 AND NOT EXISTS (SELECT 1 FROM ins)`
 
-	var aGoC AccountGoC
+	var account Account
+	var isCreated bool
 	row, err := db.Query(ctx, st, aId, a.AuthUserId, a.Email, a.Provider, a.Name)
 	if err != nil {
-		return aGoC, err
+		return account, isCreated, err
 	}
 	defer row.Close()
 
 	if !row.Next() {
-		return aGoC, sql.ErrNoRows
+		return account, isCreated, sql.ErrNoRows
 	}
 
 	err = row.Scan(
-		&aGoC.Account.AccountId, &aGoC.Account.AuthUserId,
-		&aGoC.Account.Email, &aGoC.Account.Provider,
-		&aGoC.Account.Name, &aGoC.Account.CreatedAt,
-		&aGoC.Account.UpdatedAt, &aGoC.IsCreated,
+		&account.AccountId, &account.AuthUserId,
+		&account.Email, &account.Provider, &account.Name,
+		&account.CreatedAt, &account.UpdatedAt,
+		&isCreated,
 	)
 	if err != nil {
-		return aGoC, err
+		return account, isCreated, err
 	}
 
-	return aGoC, nil
+	return account, isCreated, nil
+
+}
+
+func (a Account) GetByAuthUserId(ctx context.Context, db *pgxpool.Pool) (Account, error) {
+	var account Account
+
+	row, err := db.Query(ctx, `SELECT 
+		account_id, auth_user_id, email,
+		provider, name, created_at, updated_at
+		FROM account WHERE auth_user_id = $1`, a.AuthUserId)
+	if err != nil {
+		return account, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return account, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&account.AccountId, &account.AuthUserId,
+		&account.Email, &account.Provider,
+		&account.Name, &account.CreatedAt,
+		&account.UpdatedAt,
+	)
+	if err != nil {
+		return account, err
+	}
+
+	return account, nil
+}
+
+func (c Customer) GenId() string {
+	return "c_" + xid.New().String()
 }
 
 func (c Customer) GetByExtId(ctx context.Context, db *pgxpool.Pool, workspaceId string, extId string) (Customer, error) {
@@ -445,7 +480,7 @@ func (c Customer) GetByPhone(ctx context.Context, db *pgxpool.Pool, workspaceId 
 	return customer, nil
 }
 
-func (c Customer) GetOrCreateByExtId(ctx context.Context, db *pgxpool.Pool) (CustomerGoC, error) {
+func (c Customer) GetOrCreateByExtId(ctx context.Context, db *pgxpool.Pool) (Customer, bool, error) {
 
 	cId := c.GenId()
 	st := `WITH ins AS (
@@ -464,32 +499,32 @@ func (c Customer) GetOrCreateByExtId(ctx context.Context, db *pgxpool.Pool) (Cus
 	created_at, updated_at, FALSE AS is_created FROM customer
 	WHERE (workspace_id, external_id) = ($2, $3) AND NOT EXISTS (SELECT 1 FROM ins)`
 
-	var cGoC CustomerGoC
-
+	var customer Customer
+	var isCreated bool
 	row, err := db.Query(ctx, st, cId, c.WorkspaceId, c.ExternalId, c.Email, c.Phone)
 	if err != nil {
-		return cGoC, err
+		return customer, isCreated, err
 	}
 	defer row.Close()
 
 	if !row.Next() {
-		return cGoC, sql.ErrNoRows
+		return customer, isCreated, sql.ErrNoRows
 	}
 
 	err = row.Scan(
-		&cGoC.Customer.CustomerId, &cGoC.Customer.WorkspaceId,
-		&cGoC.Customer.ExternalId, &cGoC.Customer.Email,
-		&cGoC.Customer.Phone, &cGoC.Customer.CreatedAt,
-		&cGoC.Customer.UpdatedAt, &cGoC.IsCreated,
+		&customer.CustomerId, &customer.WorkspaceId,
+		&customer.ExternalId, &customer.Email,
+		&customer.Phone, &customer.CreatedAt,
+		&customer.UpdatedAt, &isCreated,
 	)
 	if err != nil {
-		return cGoC, err
+		return customer, isCreated, err
 	}
 
-	return cGoC, nil
+	return customer, isCreated, nil
 }
 
-func (c Customer) GetOrCreateByEmail(ctx context.Context, db *pgxpool.Pool) (CustomerGoC, error) {
+func (c Customer) GetOrCreateByEmail(ctx context.Context, db *pgxpool.Pool) (Customer, bool, error) {
 
 	cId := c.GenId()
 	st := `WITH ins AS (
@@ -508,32 +543,32 @@ func (c Customer) GetOrCreateByEmail(ctx context.Context, db *pgxpool.Pool) (Cus
 	created_at, updated_at, FALSE AS is_created FROM customer
 	WHERE (workspace_id, email) = ($2, $4) AND NOT EXISTS (SELECT 1 FROM ins)`
 
-	var cGoC CustomerGoC
-
+	var customer Customer
+	var isCreated bool
 	row, err := db.Query(ctx, st, cId, c.WorkspaceId, c.ExternalId, c.Email, c.Phone)
 	if err != nil {
-		return cGoC, err
+		return customer, isCreated, err
 	}
 	defer row.Close()
 
 	if !row.Next() {
-		return cGoC, sql.ErrNoRows
+		return customer, isCreated, sql.ErrNoRows
 	}
 
 	err = row.Scan(
-		&cGoC.Customer.CustomerId, &cGoC.Customer.WorkspaceId,
-		&cGoC.Customer.ExternalId, &cGoC.Customer.Email,
-		&cGoC.Customer.Phone, &cGoC.Customer.CreatedAt,
-		&cGoC.Customer.UpdatedAt, &cGoC.IsCreated,
+		&customer.CustomerId, &customer.WorkspaceId,
+		&customer.ExternalId, &customer.Email,
+		&customer.Phone, &customer.CreatedAt,
+		&customer.UpdatedAt, &isCreated,
 	)
 	if err != nil {
-		return cGoC, err
+		return customer, isCreated, err
 	}
 
-	return cGoC, nil
+	return customer, isCreated, nil
 }
 
-func (c Customer) GetOrCreateByPhone(ctx context.Context, db *pgxpool.Pool) (CustomerGoC, error) {
+func (c Customer) GetOrCreateByPhone(ctx context.Context, db *pgxpool.Pool) (Customer, bool, error) {
 
 	cId := c.GenId()
 	st := `WITH ins AS (
@@ -552,29 +587,29 @@ func (c Customer) GetOrCreateByPhone(ctx context.Context, db *pgxpool.Pool) (Cus
 	created_at, updated_at, FALSE AS is_created FROM customer
 	WHERE (workspace_id, phone) = ($2, $5) AND NOT EXISTS (SELECT 1 FROM ins)`
 
-	var cGoC CustomerGoC
-
+	var customer Customer
+	var isCreated bool
 	row, err := db.Query(ctx, st, cId, c.WorkspaceId, c.ExternalId, c.Email, c.Phone)
 	if err != nil {
-		return cGoC, err
+		return customer, isCreated, err
 	}
 	defer row.Close()
 
 	if !row.Next() {
-		return cGoC, sql.ErrNoRows
+		return customer, isCreated, sql.ErrNoRows
 	}
 
 	err = row.Scan(
-		&cGoC.Customer.CustomerId, &cGoC.Customer.WorkspaceId,
-		&cGoC.Customer.ExternalId, &cGoC.Customer.Email,
-		&cGoC.Customer.Phone, &cGoC.Customer.CreatedAt,
-		&cGoC.Customer.UpdatedAt, &cGoC.IsCreated,
+		&customer.CustomerId, &customer.WorkspaceId,
+		&customer.ExternalId, &customer.Email,
+		&customer.Phone, &customer.CreatedAt,
+		&customer.UpdatedAt, &isCreated,
 	)
 	if err != nil {
-		return cGoC, err
+		return customer, isCreated, err
 	}
 
-	return cGoC, nil
+	return customer, isCreated, nil
 }
 
 func LoggingMiddleware(next http.Handler) http.Handler {
@@ -585,14 +620,49 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// TODO: deprecate this
-func AuthenticateMember(r *http.Request) bool {
+func AuthenticateMember(ctx context.Context, db *pgxpool.Pool, w http.ResponseWriter, r *http.Request) (Account, error) {
+	var account Account
+
 	ath := r.Header.Get("Authorization")
-	return ath != ""
+	if ath == "" {
+		return account, fmt.Errorf("cannot authenticate without authorization header")
+	}
+
+	cred := strings.Split(ath, " ")
+	scheme := strings.ToLower(cred[0])
+
+	if scheme == "token" {
+		fmt.Println("authenticate via PAT")
+		account, err := AuthenticatePat(ctx, db, cred[1])
+		if err != nil {
+			return account, fmt.Errorf("failed to authenticate with error: %v", err)
+		}
+		fmt.Printf("authenticated account with accountId: %s\n", account.AccountId)
+		return account, nil
+	} else if scheme == "bearer" {
+		fmt.Println("authenticate via JWTs")
+		hmacSecret, err := GetEnv("SUPABASE_JWT_SECRET")
+		if err != nil {
+			return account, fmt.Errorf("failed to get env SUPABASE_JWT_SECRET with error: %v", err)
+		}
+		auid, err := parseJWTToken(cred[1], []byte(hmacSecret))
+		if err != nil {
+			return account, fmt.Errorf("failed to parse JWT token with error: %v", err)
+		}
+		fmt.Printf("authenticated account with id: %s\n", auid.Id)
+		ta := Account{AuthUserId: auid.Id, Email: auid.Email, Provider: "supabase"}
+		account, err := ta.GetByAuthUserId(ctx, db)
+		if err != nil {
+			return account, fmt.Errorf("failed to get account by authUserId: %s with error: %v", ta.AuthUserId, err)
+		}
+		return account, nil
+	} else {
+		return account, fmt.Errorf("unsupported scheme: `%s` cannot authenticate", scheme)
+	}
 }
 
-// Claims taken from Supabase JWT encoding
-type Claims struct {
+// JWTClaims taken from Supabase JWT encoding
+type JWTClaims struct {
 	Email string `json:"email"`
 	jwt.RegisteredClaims
 }
@@ -603,7 +673,7 @@ type AuthUserId struct {
 }
 
 func parseJWTToken(token string, hmacSecret []byte) (auid AuthUserId, err error) {
-	t, err := jwt.ParseWithClaims(token, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+	t, err := jwt.ParseWithClaims(token, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -612,7 +682,7 @@ func parseJWTToken(token string, hmacSecret []byte) (auid AuthUserId, err error)
 
 	if err != nil {
 		return auid, fmt.Errorf("error validating jwt token with error: %v", err)
-	} else if claims, ok := t.Claims.(*Claims); ok {
+	} else if claims, ok := t.Claims.(*JWTClaims); ok {
 		sub, err := claims.RegisteredClaims.GetSubject()
 		if err != nil {
 			return auid, fmt.Errorf("cannot get subject from parsed token: %v", err)
@@ -623,7 +693,7 @@ func parseJWTToken(token string, hmacSecret []byte) (auid AuthUserId, err error)
 	return auid, fmt.Errorf("error parsing token: %v", token)
 }
 
-func handleMakeAuthAccount(ctx context.Context, db *pgxpool.Pool) http.Handler {
+func handleAuthAccountMaker(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func(r io.ReadCloser) {
 			_, _ = io.Copy(io.Discard, r)
@@ -640,21 +710,9 @@ func handleMakeAuthAccount(ctx context.Context, db *pgxpool.Pool) http.Handler {
 		scheme := strings.ToLower(cred[0])
 
 		if scheme == "token" {
-			fmt.Println("authenticate via PAT")
-			account, err := AuthenticatePat(ctx, db, cred[1])
-			if err != nil {
-				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-				return
-			}
-			fmt.Printf("authenticated account with accountId: %s\n", account.AccountId)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			if err := json.NewEncoder(w).Encode(account); err != nil {
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				return
-			}
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
 		} else if scheme == "bearer" {
-			fmt.Println("authenticate via JWTs")
 			hmacSecret, err := GetEnv("SUPABASE_JWT_SECRET")
 			if err != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -665,31 +723,30 @@ func handleMakeAuthAccount(ctx context.Context, db *pgxpool.Pool) http.Handler {
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
 			}
-			fmt.Printf("authenticated account with id: %s\n", auid.Id)
 			ta := Account{AuthUserId: auid.Id, Email: auid.Email, Provider: "supabase"}
-			aGoC, err := ta.GetOrCreateByAuthUserId(ctx, db)
+			account, isCreated, err := ta.GetOrCreateByAuthUserId(ctx, db)
 			if err != nil {
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
 			}
-			if aGoC.IsCreated {
-				fmt.Printf("account created with accountId: %s\n", aGoC.Account.AccountId)
+
+			if isCreated {
+				fmt.Printf("account created with accountId: %s\n", account.AccountId)
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusCreated)
-				if err := json.NewEncoder(w).Encode(aGoC.Account); err != nil {
+				if err := json.NewEncoder(w).Encode(account); err != nil {
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
 			} else {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
-				if err := json.NewEncoder(w).Encode(aGoC.Account); err != nil {
+				if err := json.NewEncoder(w).Encode(account); err != nil {
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
 			}
 		} else {
-			fmt.Printf("unsupported scheme: `%s` cannot authenticate request\n", scheme)
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
@@ -705,7 +762,9 @@ func handleGetIndex(w http.ResponseWriter, r *http.Request) {
 
 func handleGetWorkspaces(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !AuthenticateMember(r) {
+
+		account, err := AuthenticateMember(ctx, db, w, r)
+		if err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
@@ -713,9 +772,9 @@ func handleGetWorkspaces(ctx context.Context, db *pgxpool.Pool) http.Handler {
 		rows, err := db.Query(ctx, `SELECT
 			workspace_id, account_id,
 			name, created_at, updated_at
-			FROM workspace ORDER BY created_at
-			DESC LIMIT 100
-		`)
+			FROM workspace WHERE account_id = $1
+			ORDER BY created_at
+			DESC LIMIT 100`, account.AccountId)
 		if err != nil {
 			log.Printf("error: %v", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -881,25 +940,18 @@ func handleLLMQueryEval(ctx context.Context, db *pgxpool.Pool) http.Handler {
 
 func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-		if !AuthenticateMember(r) {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-			return
-		}
-
 		defer func(r io.ReadCloser) {
 			_, _ = io.Copy(io.Discard, r)
 			_ = r.Close()
 		}(r.Body)
 
-		// TODO: for now just mocking the workspace
-		worskpaceId := "3a690e9f85544f6f82e6bdc432418b11"
+		worskpaceId := r.PathValue("workspaceId")
 		fmt.Printf("issue token for customer in workspaceId: %v\n", worskpaceId)
 
 		var rb CustomerTIRequest
 		err := json.NewDecoder(r.Body).Decode(&rb)
 		if err != nil {
-			fmt.Printf("failed to decode request body error: %v", err)
+			fmt.Printf("failed to decode request body error: %v\n", err)
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
@@ -934,16 +986,16 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 				}
 				email := tc.Email.String
 				fmt.Printf("create the customer by email %s\n", email)
-				cGoC, err := tc.GetOrCreateByEmail(ctx, db)
+				customer, isCreated, err := tc.GetOrCreateByEmail(ctx, db)
 				if err != nil {
 					fmt.Printf("failed to get or create customer by email %s with error: %v\n", email, err)
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
-				fmt.Printf("customerId: %s is created: %v\n", cGoC.Customer.CustomerId, cGoC.IsCreated)
+				fmt.Printf("customerId: %s is created: %v\n", customer.CustomerId, isCreated)
 				resp := CustomerTIResp{
-					Create:     cGoC.IsCreated,
-					CustomerId: cGoC.Customer.CustomerId,
+					Create:     isCreated,
+					CustomerId: customer.CustomerId,
 					Jwt:        "TODO: generate jwt token",
 				}
 				w.Header().Set("Content-Type", "application/json")
@@ -961,16 +1013,16 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 				}
 				phone := tc.Phone.String
 				fmt.Printf("create the customer by phone %s\n", phone)
-				cGoC, err := tc.GetOrCreateByPhone(ctx, db)
+				customer, isCreated, err := tc.GetOrCreateByPhone(ctx, db)
 				if err != nil {
 					fmt.Printf("failed to get or create customer by phone %s with error: %v\n", phone, err)
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
-				fmt.Printf("customerId: %s is created: %v\n", cGoC.Customer.CustomerId, cGoC.IsCreated)
+				fmt.Printf("customerId: %s is created: %v\n", customer.CustomerId, isCreated)
 				resp := CustomerTIResp{
-					Create:     cGoC.IsCreated,
-					CustomerId: cGoC.Customer.CustomerId,
+					Create:     isCreated,
+					CustomerId: customer.CustomerId,
 					Jwt:        "TODO: generate jwt token",
 				}
 				w.Header().Set("Content-Type", "application/json")
@@ -987,16 +1039,16 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 				}
 				extId := tc.ExternalId.String
 				fmt.Printf("create the customer by externalId %s\n", extId)
-				cGoC, err := tc.GetOrCreateByExtId(ctx, db)
+				customer, isCreated, err := tc.GetOrCreateByExtId(ctx, db)
 				if err != nil {
 					fmt.Printf("failed to get or create customer by externalId %s with error: %v\n", extId, err)
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
-				fmt.Printf("customerId: %s is created: %v\n", cGoC.Customer.CustomerId, cGoC.IsCreated)
+				fmt.Printf("customerId: %s is created: %v\n", customer.CustomerId, isCreated)
 				resp := CustomerTIResp{
-					Create:     cGoC.IsCreated,
-					CustomerId: cGoC.Customer.CustomerId,
+					Create:     isCreated,
+					CustomerId: customer.CustomerId,
 					Jwt:        "TODO: generate jwt token",
 				}
 				w.Header().Set("Content-Type", "application/json")
@@ -1116,7 +1168,7 @@ func run(ctx context.Context) error {
 	mux := http.NewServeMux()
 
 	// sdk+web
-	mux.Handle("POST /accounts/auth/{$}", handleMakeAuthAccount(ctx, db))
+	mux.Handle("POST /accounts/auth/{$}", handleAuthAccountMaker(ctx, db))
 
 	// sdk+web - TODO: add member authentication
 	mux.HandleFunc("GET /{$}", handleGetIndex)
@@ -1134,7 +1186,7 @@ func run(ctx context.Context) error {
 		handleLLMQueryEval(ctx, db))
 
 	// sdk+web
-	mux.Handle("POST /tokens/{$}",
+	mux.Handle("POST /workspaces/{workspaceId}/tokens/{$}",
 		handleCustomerTokenIssue(ctx, db))
 
 	c := cors.New(cors.Options{
