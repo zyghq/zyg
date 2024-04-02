@@ -199,6 +199,10 @@ type Workspace struct {
 	UpdatedAt   time.Time
 }
 
+func (w Workspace) GenId() string {
+	return "wrk" + xid.New().String()
+}
+
 func (w Workspace) MarshalJSON() ([]byte, error) {
 	aux := &struct {
 		WorkspaceId string `json:"workspaceId"`
@@ -214,6 +218,68 @@ func (w Workspace) MarshalJSON() ([]byte, error) {
 		UpdatedAt:   w.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
+}
+
+func (w Workspace) Create(ctx context.Context, db *pgxpool.Pool) (Workspace, error) {
+	var workspace Workspace
+	var member Member
+
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		fmt.Printf("failed to start db transaction with error: %v\n", err)
+		return workspace, err
+	}
+	defer tx.Rollback(ctx)
+
+	wId := w.GenId()
+	ws := xid.New().String() // TODO: deprecate
+	err = tx.QueryRow(ctx, `INSERT INTO workspace(workspace_id, account_id, name, slug)
+		VALUES ($1, $2, $3, $4)
+		RETURNING
+		workspace_id, account_id, name, created_at, updated_at`, wId, w.AccountId, w.Name, ws).Scan(
+		&workspace.WorkspaceId, &workspace.AccountId,
+		&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt,
+	)
+	if err != nil {
+		fmt.Printf("failed to insert workspace with error: %v\n", err)
+		return workspace, err
+	}
+
+	mId := member.GenId()
+	ms := xid.New().String() // TODO: deprecate
+	err = tx.QueryRow(ctx, `INSERT INTO member(workspace_id, account_id, member_id, slug, role)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING
+		workspace_id, account_id, member_id, role, created_at, updated_at`,
+		wId, workspace.AccountId, mId, ms, "primary").Scan(
+		&member.WorkspaceId, &member.AccountId,
+		&member.MemberId, &member.role,
+		&member.CreatedAt, &member.UpdatedAt,
+	)
+	if err != nil {
+		fmt.Printf("failed to insert member with error: %v\n", err)
+		return workspace, err
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		fmt.Printf("failed to commit db transaction with error: %v\n", err)
+		return workspace, err
+	}
+	return workspace, nil
+}
+
+type Member struct {
+	WorkspaceId string
+	AccountId   string
+	MemberId    string
+	role        string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+func (m Member) GenId() string {
+	return "m_" + xid.New().String()
 }
 
 // models
@@ -310,9 +376,15 @@ type CustomerTIResp struct {
 	Jwt        string `json:"jwt"`
 }
 
+// request
 type PATReq struct {
 	Name        string  `json:"name"`
 	Description *string `json:"description"`
+}
+
+// request
+type WorkspaceReq struct {
+	Name string `json:"name"`
 }
 
 type LLM struct {
@@ -876,7 +948,7 @@ func handleAuthAccountMaker(ctx context.Context, db *pgxpool.Pool) http.Handler 
 	})
 }
 
-func handleAccountPATMaker(ctx context.Context, db *pgxpool.Pool) http.Handler {
+func handleCreateAccountPAT(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func(r io.ReadCloser) {
 			_, _ = io.Copy(io.Discard, r)
@@ -918,7 +990,7 @@ func handleAccountPATMaker(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	})
 }
 
-func handleAccountPATGetter(ctx context.Context, db *pgxpool.Pool) http.Handler {
+func handleGetAccountPAT(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		account, err := AuthenticateMember(ctx, db, w, r)
 		if err != nil {
@@ -947,6 +1019,42 @@ func handleGetIndex(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("x-datetime", tm)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("ok"))
+}
+
+func handleCreateWorkspace(ctx context.Context, db *pgxpool.Pool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func(r io.ReadCloser) {
+			_, _ = io.Copy(io.Discard, r)
+			_ = r.Close()
+		}(r.Body)
+
+		var rb WorkspaceReq
+		err := json.NewDecoder(r.Body).Decode(&rb)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		account, err := AuthenticateMember(ctx, db, w, r)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+		workspace := Workspace{AccountId: account.AccountId, Name: rb.Name}
+		workspace, err = workspace.Create(ctx, db)
+		if err != nil {
+			fmt.Printf("failed to create workspace with error: %v\n", err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		if err := json.NewEncoder(w).Encode(workspace); err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+	})
 }
 
 func handleGetWorkspaces(ctx context.Context, db *pgxpool.Pool) http.Handler {
@@ -1363,12 +1471,16 @@ func run(ctx context.Context) error {
 
 	// sdk+web
 	mux.Handle("POST /pats/{$}",
-		handleAccountPATMaker(ctx, db))
+		handleCreateAccountPAT(ctx, db))
 	mux.Handle("GET /pats/{$}",
-		handleAccountPATGetter(ctx, db))
+		handleGetAccountPAT(ctx, db))
 
 	// sdk+web
 	mux.HandleFunc("GET /{$}", handleGetIndex)
+
+	// sdk+web
+	mux.Handle("POST /workspaces/{$}",
+		handleCreateWorkspace(ctx, db))
 
 	// sdk+web
 	mux.Handle("GET /workspaces/{$}",
