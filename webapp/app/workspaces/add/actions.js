@@ -19,15 +19,17 @@ async function createWorkspaceAPI(accessToken, body = {}) {
       const { status, statusText } = response;
       return [
         new Error(
-          `error creating workspace with status: ${status} and statusText: ${statusText}`
+          `error creating workspace with status: ${status} and statusText: ${statusText}`,
         ),
         null,
       ];
     }
     const data = await response.json();
-    const { slug } = data;
-    console.log(`successfully created workspace with slug: ${slug}`);
-    return [null, { slug }];
+    const { workspaceId } = data;
+    console.log(
+      `successfully created workspace with workspaceId: ${workspaceId}`,
+    );
+    return [null, { workspaceId }];
   } catch (err) {
     return [err, null];
   }

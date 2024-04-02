@@ -3,7 +3,7 @@ import { Separator } from "@/components/ui/separator";
 import { WorkspaceEditForm } from "@/components/settings-forms";
 
 export default function SettingsGeneralPage({ params }) {
-  const { slug } = params;
+  const { workspaceId } = params;
   return (
     <div className="container md:mx-auto">
       <div className="max-w-2xl">
@@ -14,7 +14,7 @@ export default function SettingsGeneralPage({ params }) {
           <Separator />
         </div>
         <div className="pt-8">
-          <WorkspaceEditForm workspaceSlug={slug} />
+          <WorkspaceEditForm workspaceId={workspaceId} />
         </div>
       </div>
     </div>

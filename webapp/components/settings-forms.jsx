@@ -23,7 +23,7 @@ const formSchema = z.object({
   }),
 });
 
-export function WorkspaceEditForm({ workspaceSlug }) {
+export function WorkspaceEditForm({ workspaceId }) {
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -63,7 +63,7 @@ export function WorkspaceEditForm({ workspaceSlug }) {
           </div>
           <div className="mt-4 flex w-full items-center">
             <code className="mr-2 rounded-lg border bg-muted p-2">
-              {workspaceSlug}
+              {workspaceId}
             </code>
             <Button variant="ghost" size="sm">
               <ClipboardCopyIcon className="h-4 w-4" />
@@ -85,7 +85,7 @@ const labelFormSchema = z.object({
 // We can use the same form for adding and editing a label.
 // but edit could be displayed inside as card so it can be easily idenfied
 // that it is a edit rather than adding a new label.
-export function WorkspaceLabelAddOrEditForm({ workspaceSlug }) {
+export function WorkspaceLabelAddOrEditForm({ workspaceId }) {
   const form = useForm({
     resolver: zodResolver(labelFormSchema),
     defaultValues: {

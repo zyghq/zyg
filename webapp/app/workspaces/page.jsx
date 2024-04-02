@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { isAuthenticated, getAuthToken } from "@/utils/supabase/helpers";
 
 async function getWorkspaces(authToken) {
-  console.log(authToken);
+  // console.log(authToken);
   try {
     const response = await fetch(`${process.env.ZYG_API_URL}/workspaces/`, {
       method: "GET",
@@ -44,8 +44,8 @@ export default async function SelectWorkspacePage() {
   if (err) {
     return (
       <div className="container">
-        <h1 className="text-3xl font-bold mb-1">Error</h1>
-        <p className="text-red-500 mb-4">
+        <h1 className="mb-1 text-3xl font-bold">Error</h1>
+        <p className="mb-4 text-red-500">
           There was an error fetching your workspaces. Please try again later.
         </p>
       </div>
@@ -54,8 +54,8 @@ export default async function SelectWorkspacePage() {
 
   return (
     <div className="container">
-      <h1 className="text-3xl font-bold mb-1">Create a Workspace</h1>
-      <p className="text-zinc-500 mb-4">
+      <h1 className="mb-1 text-3xl font-bold">Create a Workspace</h1>
+      <p className="mb-4 text-zinc-500">
         Use workspaces to organize your projects and teams, or separate your
         live and test environments.
         <br /> Customers and team members are specific to a workspace.
@@ -63,17 +63,17 @@ export default async function SelectWorkspacePage() {
       <Button asChild>
         <Link href="/workspaces/add/">Create Workspace</Link>
       </Button>
-      <Separator className="md:w-1/3 my-4" />
-      <div className="text-zinc-800 font-semibold">Open a Workspace</div>
-      <div className="space-y-2 mt-4 md:w-3/5 lg:w-2/5">
+      <Separator className="my-4 md:w-1/3" />
+      <div className="font-semibold text-zinc-800">Open a Workspace</div>
+      <div className="mt-4 space-y-2 md:w-3/5 lg:w-2/5">
         {workspaces.map((workspace) => (
-          <Card key={workspace.slug}>
+          <Card key={workspace.workspaceId}>
             <CardHeader>
               <CardTitle>{workspace.name}</CardTitle>
             </CardHeader>
             <CardFooter className="justify-end">
               <Button asChild>
-                <Link href={`/${workspace.slug}/`}>Open</Link>
+                <Link href={`/${workspace.workspaceId}/`}>Open</Link>
               </Button>
             </CardFooter>
           </Card>

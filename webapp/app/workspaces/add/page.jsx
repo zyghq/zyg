@@ -41,7 +41,7 @@ function SubmitButton({ isDisabled }) {
       aria-label="Log In"
     >
       Save & Continue
-      <ArrowRightIcon className="h-4 w-4 ml-2" />
+      <ArrowRightIcon className="ml-2 h-4 w-4" />
     </Button>
   );
 }
@@ -72,12 +72,12 @@ export default function AddWorkspacePage() {
       });
       return;
     }
-    const { slug } = data;
+    const { workspaceId } = data;
     toast({
       description: "Workspace created successfully.",
     });
-    // router.push(`/workspaces/${slug}/`);
-    console.log(`successfully created workspace with slug: ${slug}`);
+    router.push(`/${workspaceId}/`);
+    // console.log(`successfully created workspace with workspaceI: ${workspaceId}`);
   }
 
   return (
