@@ -269,6 +269,32 @@ func (w Workspace) Create(ctx context.Context, db *pgxpool.Pool) (Workspace, err
 	return workspace, nil
 }
 
+func (w Workspace) GetAccountWorkspace(ctx context.Context, db *pgxpool.Pool) (Workspace, error) {
+	var workspace Workspace
+
+	row, err := db.Query(ctx, `SELECT 
+		workspace_id, account_id, name, created_at, updated_at
+		FROM workspace WHERE account_id = $1 AND workspace_id = $2`, w.AccountId, w.WorkspaceId)
+	if err != nil {
+		return workspace, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return workspace, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&workspace.WorkspaceId, &workspace.AccountId,
+		&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt,
+	)
+	if err != nil {
+		return workspace, err
+	}
+
+	return workspace, nil
+}
+
 type Member struct {
 	WorkspaceId string
 	AccountId   string
@@ -807,6 +833,61 @@ func (c Customer) GetOrCreateByPhone(ctx context.Context, db *pgxpool.Pool) (Cus
 	return customer, isCreated, nil
 }
 
+func (c Customer) MakeJWT() (string, error) {
+
+	var externalId string
+	var email string
+	var phone string
+
+	audience := []string{"customer"}
+
+	sk, err := GetEnv("SUPABASE_JWT_SECRET")
+	if err != nil {
+		return "", fmt.Errorf("failed to get env SUPABASE_JWT_SECRET with error: %v", err)
+	}
+
+	if !c.ExternalId.Valid {
+		externalId = ""
+	} else {
+		externalId = c.ExternalId.String
+	}
+
+	if !c.Email.Valid {
+		email = ""
+	} else {
+		email = c.Email.String
+	}
+
+	if !c.Phone.Valid {
+		phone = ""
+	} else {
+		phone = c.Phone.String
+	}
+
+	claims := CustomerJWTClaims{
+		WorkspaceId: c.WorkspaceId,
+		ExternalId:  externalId,
+		Email:       email,
+		Phone:       phone,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    "auth.zyg.ai",
+			Subject:   c.CustomerId,
+			Audience:  audience,
+			ExpiresAt: jwt.NewNumericDate(time.Now().AddDate(1, 0, 0)), // Set ExpiresAt to 1 year from now
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			NotBefore: jwt.NewNumericDate(time.Now()),
+			ID:        c.WorkspaceId + ":" + c.CustomerId,
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	jwt, err := token.SignedString([]byte(sk))
+	if err != nil {
+		return "", fmt.Errorf("failed to sign JWT token with error: %v", err)
+	}
+	return jwt, nil
+}
+
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -856,9 +937,18 @@ func AuthenticateMember(ctx context.Context, db *pgxpool.Pool, w http.ResponseWr
 	}
 }
 
-// JWTClaims taken from Supabase JWT encoding
-type JWTClaims struct {
+// AuthJWTClaims taken from Supabase JWT encoding
+type AuthJWTClaims struct {
 	Email string `json:"email"`
+	jwt.RegisteredClaims
+}
+
+// Custom JWT claims for Customer
+type CustomerJWTClaims struct {
+	WorkspaceId string `json:"workspaceId"`
+	ExternalId  string `json:"externalId"`
+	Email       string `json:"email"`
+	Phone       string `json:"phone"`
 	jwt.RegisteredClaims
 }
 
@@ -868,7 +958,7 @@ type AuthUserId struct {
 }
 
 func parseJWTToken(token string, hmacSecret []byte) (auid AuthUserId, err error) {
-	t, err := jwt.ParseWithClaims(token, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+	t, err := jwt.ParseWithClaims(token, &AuthJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -877,7 +967,7 @@ func parseJWTToken(token string, hmacSecret []byte) (auid AuthUserId, err error)
 
 	if err != nil {
 		return auid, fmt.Errorf("error validating jwt token with error: %v", err)
-	} else if claims, ok := t.Claims.(*JWTClaims); ok {
+	} else if claims, ok := t.Claims.(*AuthJWTClaims); ok {
 		sub, err := claims.RegisteredClaims.GetSubject()
 		if err != nil {
 			return auid, fmt.Errorf("cannot get subject from parsed token: %v", err)
@@ -955,16 +1045,16 @@ func handleCreateAccountPAT(ctx context.Context, db *pgxpool.Pool) http.Handler 
 			_ = r.Close()
 		}(r.Body)
 
-		account, err := AuthenticateMember(ctx, db, w, r)
+		var rb PATReq
+		err := json.NewDecoder(r.Body).Decode(&rb)
 		if err != nil {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 
-		var rb PATReq
-		err = json.NewDecoder(r.Body).Decode(&rb)
+		account, err := AuthenticateMember(ctx, db, w, r)
 		if err != nil {
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
 
@@ -1242,10 +1332,6 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 			_ = r.Close()
 		}(r.Body)
 
-		// TODO: add authentication.
-		worskpaceId := r.PathValue("workspaceId")
-		fmt.Printf("issue token for customer in workspaceId: %v\n", worskpaceId)
-
 		var rb CustomerTIRequest
 		err := json.NewDecoder(r.Body).Decode(&rb)
 		if err != nil {
@@ -1254,8 +1340,24 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 			return
 		}
 
+		account, err := AuthenticateMember(ctx, db, w, r)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+		workspaceId := r.PathValue("workspaceId")
+		fmt.Printf("issue token for customer in workspaceId: %v\n", workspaceId)
+
+		tw := Workspace{WorkspaceId: workspaceId, AccountId: account.AccountId}
+		workspace, err := tw.GetAccountWorkspace(ctx, db)
+		if err != nil {
+			fmt.Printf("failed to get account workspace or does not exist with error: %v\n", err)
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
 		tc := Customer{
-			WorkspaceId: worskpaceId,
+			WorkspaceId: workspace.WorkspaceId,
 		}
 		tc.ExternalId = NullString(rb.Customer.ExternalId)
 		tc.Email = NullString(rb.Customer.Email)
@@ -1291,10 +1393,16 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 					return
 				}
 				fmt.Printf("customerId: %s is created: %v\n", customer.CustomerId, isCreated)
+				jwt, err := customer.MakeJWT()
+				if err != nil {
+					fmt.Printf("failed to make jwt token with error: %v\n", err)
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
+				}
 				resp := CustomerTIResp{
 					Create:     isCreated,
 					CustomerId: customer.CustomerId,
-					Jwt:        "TODO: generate jwt token",
+					Jwt:        jwt,
 				}
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
@@ -1318,10 +1426,16 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 					return
 				}
 				fmt.Printf("customerId: %s is created: %v\n", customer.CustomerId, isCreated)
+				jwt, err := customer.MakeJWT()
+				if err != nil {
+					fmt.Printf("failed to make jwt token with error: %v\n", err)
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
+				}
 				resp := CustomerTIResp{
 					Create:     isCreated,
 					CustomerId: customer.CustomerId,
-					Jwt:        "TODO: generate jwt token",
+					Jwt:        jwt,
 				}
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
@@ -1344,10 +1458,16 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 					return
 				}
 				fmt.Printf("customerId: %s is created: %v\n", customer.CustomerId, isCreated)
+				jwt, err := customer.MakeJWT()
+				if err != nil {
+					fmt.Printf("failed to make jwt token with error: %v\n", err)
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
+				}
 				resp := CustomerTIResp{
 					Create:     isCreated,
 					CustomerId: customer.CustomerId,
-					Jwt:        "TODO: generate jwt token",
+					Jwt:        jwt,
 				}
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
@@ -1362,21 +1482,27 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 			}
 		} else {
 			var customer Customer
-			fmt.Printf("based on identifiers check for customer in workspaceId: %v\n", worskpaceId)
+			fmt.Printf("based on identifiers check for customer in workspaceId: %v\n", workspaceId)
 			if tc.ExternalId.Valid {
 				extId := tc.ExternalId.String
 				fmt.Printf("get customer by externalId %s\n", extId)
-				customer, err = customer.GetByExtId(ctx, db, worskpaceId, extId)
+				customer, err = customer.GetByExtId(ctx, db, workspaceId, extId)
 				if err != nil {
 					fmt.Printf("failed to get customer by externalId %s with error: %v\n", extId, err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 					return
 				}
 				fmt.Printf("found customer with customer id: %s\n", customer.CustomerId)
+				jwt, err := customer.MakeJWT()
+				if err != nil {
+					fmt.Printf("failed to make jwt token with error: %v\n", err)
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
+				}
 				resp := CustomerTIResp{
 					Create:     false,
 					CustomerId: customer.CustomerId,
-					Jwt:        "TODO: generate jwt token",
+					Jwt:        jwt,
 				}
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
@@ -1387,17 +1513,23 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 			} else if tc.Email.Valid {
 				email := tc.Email.String
 				fmt.Printf("get customer by email %s\n", email)
-				customer, err = customer.GetByEmail(ctx, db, worskpaceId, email)
+				customer, err = customer.GetByEmail(ctx, db, workspaceId, email)
 				if err != nil {
 					fmt.Printf("failed to get customer by email %s with error: %v\n", email, err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 					return
 				}
 				fmt.Printf("found customer with customer id: %s\n", customer.CustomerId)
+				jwt, err := customer.MakeJWT()
+				if err != nil {
+					fmt.Printf("failed to make jwt token with error: %v\n", err)
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
+				}
 				resp := CustomerTIResp{
 					Create:     false,
 					CustomerId: customer.CustomerId,
-					Jwt:        "TODO: generate jwt token",
+					Jwt:        jwt,
 				}
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
@@ -1408,17 +1540,23 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 			} else if tc.Phone.Valid {
 				phone := tc.Phone.String
 				fmt.Printf("get customer by phone %s\n", phone)
-				customer, err = customer.GetByPhone(ctx, db, worskpaceId, phone)
+				customer, err = customer.GetByPhone(ctx, db, workspaceId, phone)
 				if err != nil {
 					fmt.Printf("failed to get customer by phone %s with error: %v\n", phone, err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 					return
 				}
 				fmt.Printf("found customer with customer id: %s\n", customer.CustomerId)
+				jwt, err := customer.MakeJWT()
+				if err != nil {
+					fmt.Printf("failed to make jwt token with error: %v\n", err)
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
+				}
 				resp := CustomerTIResp{
 					Create:     false,
 					CustomerId: customer.CustomerId,
-					Jwt:        "TODO: generate jwt token",
+					Jwt:        jwt,
 				}
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
@@ -1464,6 +1602,7 @@ func run(ctx context.Context) error {
 	log.Printf("database ready with db time: %s\n", tm.Format(time.RFC1123))
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /{$}", handleGetIndex)
 
 	// web
 	mux.Handle("POST /accounts/auth/{$}",
@@ -1474,9 +1613,6 @@ func run(ctx context.Context) error {
 		handleCreateAccountPAT(ctx, db))
 	mux.Handle("GET /pats/{$}",
 		handleGetAccountPAT(ctx, db))
-
-	// sdk+web
-	mux.HandleFunc("GET /{$}", handleGetIndex)
 
 	// sdk+web
 	mux.Handle("POST /workspaces/{$}",
