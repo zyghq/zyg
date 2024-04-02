@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -61,14 +63,131 @@ func (a Account) MarshalJSON() ([]byte, error) {
 }
 
 // models
-type AccountPat struct {
+type AccountPAT struct {
 	AccountId   string
 	PatId       string
 	Token       string
 	Name        string
 	Description sql.NullString
+	UnMask      bool
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+}
+
+func (ap AccountPAT) MarshalJSON() ([]byte, error) {
+	var description *string
+	var token string
+	if ap.Description.Valid {
+		description = &ap.Description.String
+	}
+
+	maskLeft := func(s string) string {
+		rs := []rune(s)
+		for i := range rs[:len(rs)-4] {
+			rs[i] = '*'
+		}
+		return string(rs)
+	}
+
+	if !ap.UnMask {
+		token = maskLeft(ap.Token)
+	} else {
+		token = ap.Token
+	}
+
+	aux := &struct {
+		AccountId   string  `json:"accountId"`
+		PatId       string  `json:"patId"`
+		Token       string  `json:"token"`
+		Name        string  `json:"name"`
+		Description *string `json:"description"`
+		CreatedAt   string  `json:"createdAt"`
+		UpdatedAt   string  `json:"updatedAt"`
+	}{
+		AccountId:   ap.AccountId,
+		PatId:       ap.PatId,
+		Token:       token,
+		Name:        ap.Name,
+		Description: description,
+		CreatedAt:   ap.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   ap.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
+}
+
+func (ap AccountPAT) GenId() string {
+	return "ap_" + xid.New().String()
+}
+
+func GenToken(length int, prefix string) (string, error) {
+	buffer := make([]byte, length)
+	_, err := rand.Read(buffer)
+	if err != nil {
+		return "", err
+	}
+	return prefix + base64.URLEncoding.EncodeToString(buffer)[:length], nil
+}
+
+func (ap AccountPAT) Create(ctx context.Context, db *pgxpool.Pool) (AccountPAT, error) {
+	apId := ap.GenId()
+	token, err := GenToken(32, "pt_")
+	if err != nil {
+		return ap, err
+	}
+	stmt := `INSERT INTO account_pat(account_id, pat_id, token, name, description)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING account_id, pat_id, token, name, description, created_at, updated_at`
+
+	row, err := db.Query(ctx, stmt, ap.AccountId, apId, token, ap.Name, ap.Description)
+	if err != nil {
+		return ap, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return ap, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&ap.AccountId, &ap.PatId, &ap.Token,
+		&ap.Name, &ap.Description, &ap.CreatedAt, &ap.UpdatedAt,
+	)
+	if err != nil {
+		return ap, err
+	}
+	return ap, nil
+}
+
+func (ap AccountPAT) GetListByAccountId(ctx context.Context, db *pgxpool.Pool) ([]AccountPAT, error) {
+	stmt := `SELECT account_id, pat_id, token, name, description,
+		created_at, updated_at
+		FROM account_pat WHERE account_id = $1
+		ORDER BY created_at DESC LIMIT 100`
+
+	rows, err := db.Query(ctx, stmt, ap.AccountId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	aps := make([]AccountPAT, 0)
+	for rows.Next() {
+		var ap AccountPAT
+		err = rows.Scan(
+			&ap.AccountId, &ap.PatId, &ap.Token,
+			&ap.Name, &ap.Description, &ap.CreatedAt, &ap.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		aps = append(aps, ap)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return aps, nil
 }
 
 // models
@@ -189,6 +308,11 @@ type CustomerTIResp struct {
 	Create     bool   `json:"create"`
 	CustomerId string `json:"customerId"`
 	Jwt        string `json:"jwt"`
+}
+
+type PATReq struct {
+	Name        string  `json:"name"`
+	Description *string `json:"description"`
 }
 
 type LLM struct {
@@ -354,7 +478,6 @@ func (a Account) GetOrCreateByAuthUserId(ctx context.Context, db *pgxpool.Pool) 
 	}
 
 	return account, isCreated, nil
-
 }
 
 func (a Account) GetByAuthUserId(ctx context.Context, db *pgxpool.Pool) (Account, error) {
@@ -753,6 +876,72 @@ func handleAuthAccountMaker(ctx context.Context, db *pgxpool.Pool) http.Handler 
 	})
 }
 
+func handleAccountPATMaker(ctx context.Context, db *pgxpool.Pool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func(r io.ReadCloser) {
+			_, _ = io.Copy(io.Discard, r)
+			_ = r.Close()
+		}(r.Body)
+
+		account, err := AuthenticateMember(ctx, db, w, r)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		var rb PATReq
+		err = json.NewDecoder(r.Body).Decode(&rb)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		ap := AccountPAT{
+			AccountId: account.AccountId,
+			Name:      rb.Name,
+			UnMask:    true, // unmask only once created
+		}
+		ap.Description = NullString(rb.Description)
+
+		ap, err = ap.Create(ctx, db)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		if err := json.NewEncoder(w).Encode(ap); err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
+func handleAccountPATGetter(ctx context.Context, db *pgxpool.Pool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		account, err := AuthenticateMember(ctx, db, w, r)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		ap := AccountPAT{AccountId: account.AccountId}
+		aps, err := ap.GetListByAccountId(ctx, db)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(aps); err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
 func handleGetIndex(w http.ResponseWriter, r *http.Request) {
 	tm := time.Now().Format(time.RFC1123)
 	w.Header().Set("x-datetime", tm)
@@ -945,6 +1134,7 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 			_ = r.Close()
 		}(r.Body)
 
+		// TODO: add authentication.
 		worskpaceId := r.PathValue("workspaceId")
 		fmt.Printf("issue token for customer in workspaceId: %v\n", worskpaceId)
 
@@ -1167,13 +1357,20 @@ func run(ctx context.Context) error {
 
 	mux := http.NewServeMux()
 
-	// sdk+web
-	mux.Handle("POST /accounts/auth/{$}", handleAuthAccountMaker(ctx, db))
+	// web
+	mux.Handle("POST /accounts/auth/{$}",
+		handleAuthAccountMaker(ctx, db))
 
-	// sdk+web - TODO: add member authentication
+	// sdk+web
+	mux.Handle("POST /pats/{$}",
+		handleAccountPATMaker(ctx, db))
+	mux.Handle("GET /pats/{$}",
+		handleAccountPATGetter(ctx, db))
+
+	// sdk+web
 	mux.HandleFunc("GET /{$}", handleGetIndex)
 
-	// sdk+web - TODO: add member authentication
+	// sdk+web
 	mux.Handle("GET /workspaces/{$}",
 		handleGetWorkspaces(ctx, db))
 
@@ -1219,3 +1416,5 @@ func main() {
 		os.Exit(1)
 	}
 }
+
+// https://pkg.go.dev/github.com/golang-jwt/jwt/v5#example-New-Hmac
