@@ -22,46 +22,40 @@ go.work
 
 
 # Secrets or Envs
-.env
+*.env
+*.env.local
 env.sh
-.env.local
 
 
 # Python files and directories
-venv/
+**/venv/**
 *.pyc
 *.pyo
-__pycache__/
+**/__pycache__/**
 *.so
 *.egg
 *.egg-info
 
-# Other files and directories
-vectordb/
-converse/storage/
-converse/data/
-converse/store/
-
-scratch.txt
 
 # Web related files and directories
-/node_modules
-/.pnp
-.pnp.js
-.yarn/install-state.gz
+**/node_modules/**
+**/.pnp
+**/.pnp.js
+**/.yarn/install-state.gz
+
 
 # testing
-/coverage
+**/coverage/**
 
 # next.js
-/.next/
-/out/
+**/.next/**
+**/out/**
 
 # production
 /build
 
 # misc
-.DS_Store
+**/.DS_Store
 *.pem
 
 # debug
@@ -69,15 +63,18 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
-.env*.local
 
 # vercel
-.vercel
+**/.vercel/**
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
-# custom entries
+# Custom entries
+vectordb/
+converse/storage/
+converse/data/
+converse/store/
+
 scratch.txt
