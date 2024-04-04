@@ -37,6 +37,7 @@ CREATE TABLE account (
 
 -- Represents the account PAT table
 -- Personal Access Token
+-- Is Confirmed
 CREATE TABLE account_pat (
     account_id VARCHAR(255) NOT NULL, -- fk to account
     pat_id VARCHAR(255) NOT NULL, -- primary key
@@ -66,11 +67,44 @@ CREATE TABLE workspace (
     CONSTRAINT workspace_slug_key UNIQUE (slug)
 );
 
+-- Represents the workspace Thread QA table
+-- This table is used to store the QA thread information linked to the workspace.
+CREATE TABLE thread_qa (
+    workspace_id VARCHAR(255) NOT NULL,
+    customer_id VARCHAR(255) NOT NULL,
+    thread_id VARCHAR(255) NOT NULL,
+    parent_thread_id VARCHAR(255) NULL,
+    query TEXT NOT NULL,
+    title TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT thread_qa_thread_id_pkey PRIMARY KEY (thread_id),
+    CONSTRAINT thread_qa_parent_thread_id_fkey FOREIGN KEY (parent_thread_id) REFERENCES thread_qa (thread_id),
+    CONSTRAINT thread_qa_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
+    CONSTRAINT thread_qa_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
+    CONSTRAINT thread_qa_thread_id_parent_thread_id UNIQUE (thread_id, parent_thread_id)
+);
+
+CREATE TABLE thread_qa_answer (
+    workspace_id VARCHAR(255) NOT NULL,
+    thread_qa_id VARCHAR(255) NOT NULL,
+    answer_id VARCHAR(255) NOT NULL,
+    answer TEXT NOT NULL,
+    eval INT NULL DEFAULT NULL,
+    sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT thread_qa_answer_answer_id_pkey PRIMARY KEY (answer_id),
+    CONSTRAINT thread_qa_answer_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
+    CONSTRAINT thread_qa_answer_thread_qa_id_fkey FOREIGN KEY (thread_qa_id) REFERENCES thread_qa (thread_id)
+);
 
 -- Represents LLM request-response log table
 -- This table is used to store the request-response information linked to the workspace.
 -- Currently their is no provision of follow up queries.
--- Done
+-- Deprecate This later 
 CREATE TABLE llm_rr_log (
     workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
     request_id VARCHAR(255) NOT NULL, -- primary key
@@ -128,7 +162,7 @@ CREATE TABLE customer (
 -- There can be multiple keys per Workspace
 -- Think of Member Key as alias for member account.
 -- In the future we can have permissions on API keys
--- Done
+-- Deprecate This later
 CREATE TABLE member_key (
     member_key_id VARCHAR(255) NOT NULL, -- primary key
     workspace_id VARCHAR(255) NOT NULL, -- fk to workspace

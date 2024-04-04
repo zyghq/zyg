@@ -32,7 +32,23 @@ func GetEnv(key string) (string, error) {
 	return value, nil
 }
 
-// models
+func GenToken(length int, prefix string) (string, error) {
+	buffer := make([]byte, length)
+	_, err := rand.Read(buffer)
+	if err != nil {
+		return "", err
+	}
+	return prefix + base64.URLEncoding.EncodeToString(buffer)[:length], nil
+}
+
+func NullString(s *string) sql.NullString {
+	if s == nil {
+		return sql.NullString{String: "", Valid: false}
+	}
+	return sql.NullString{String: *s, Valid: true}
+}
+
+// model
 type Account struct {
 	AccountId  string
 	Email      string
@@ -60,474 +76,6 @@ func (a Account) MarshalJSON() ([]byte, error) {
 		UpdatedAt: a.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
-}
-
-// models
-type AccountPAT struct {
-	AccountId   string
-	PatId       string
-	Token       string
-	Name        string
-	Description sql.NullString
-	UnMask      bool
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
-func (ap AccountPAT) MarshalJSON() ([]byte, error) {
-	var description *string
-	var token string
-	if ap.Description.Valid {
-		description = &ap.Description.String
-	}
-
-	maskLeft := func(s string) string {
-		rs := []rune(s)
-		for i := range rs[:len(rs)-4] {
-			rs[i] = '*'
-		}
-		return string(rs)
-	}
-
-	if !ap.UnMask {
-		token = maskLeft(ap.Token)
-	} else {
-		token = ap.Token
-	}
-
-	aux := &struct {
-		AccountId   string  `json:"accountId"`
-		PatId       string  `json:"patId"`
-		Token       string  `json:"token"`
-		Name        string  `json:"name"`
-		Description *string `json:"description"`
-		CreatedAt   string  `json:"createdAt"`
-		UpdatedAt   string  `json:"updatedAt"`
-	}{
-		AccountId:   ap.AccountId,
-		PatId:       ap.PatId,
-		Token:       token,
-		Name:        ap.Name,
-		Description: description,
-		CreatedAt:   ap.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:   ap.UpdatedAt.Format(time.RFC3339),
-	}
-	return json.Marshal(aux)
-}
-
-func (ap AccountPAT) GenId() string {
-	return "ap_" + xid.New().String()
-}
-
-func GenToken(length int, prefix string) (string, error) {
-	buffer := make([]byte, length)
-	_, err := rand.Read(buffer)
-	if err != nil {
-		return "", err
-	}
-	return prefix + base64.URLEncoding.EncodeToString(buffer)[:length], nil
-}
-
-func (ap AccountPAT) Create(ctx context.Context, db *pgxpool.Pool) (AccountPAT, error) {
-	apId := ap.GenId()
-	token, err := GenToken(32, "pt_")
-	if err != nil {
-		return ap, err
-	}
-	stmt := `INSERT INTO account_pat(account_id, pat_id, token, name, description)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING account_id, pat_id, token, name, description, created_at, updated_at`
-
-	row, err := db.Query(ctx, stmt, ap.AccountId, apId, token, ap.Name, ap.Description)
-	if err != nil {
-		return ap, err
-	}
-	defer row.Close()
-
-	if !row.Next() {
-		return ap, sql.ErrNoRows
-	}
-
-	err = row.Scan(
-		&ap.AccountId, &ap.PatId, &ap.Token,
-		&ap.Name, &ap.Description, &ap.CreatedAt, &ap.UpdatedAt,
-	)
-	if err != nil {
-		return ap, err
-	}
-	return ap, nil
-}
-
-func (ap AccountPAT) GetListByAccountId(ctx context.Context, db *pgxpool.Pool) ([]AccountPAT, error) {
-	stmt := `SELECT account_id, pat_id, token, name, description,
-		created_at, updated_at
-		FROM account_pat WHERE account_id = $1
-		ORDER BY created_at DESC LIMIT 100`
-
-	rows, err := db.Query(ctx, stmt, ap.AccountId)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	aps := make([]AccountPAT, 0)
-	for rows.Next() {
-		var ap AccountPAT
-		err = rows.Scan(
-			&ap.AccountId, &ap.PatId, &ap.Token,
-			&ap.Name, &ap.Description, &ap.CreatedAt, &ap.UpdatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-		aps = append(aps, ap)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return aps, nil
-}
-
-// models
-type Workspace struct {
-	WorkspaceId string
-	AccountId   string
-	Name        string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
-func (w Workspace) GenId() string {
-	return "wrk" + xid.New().String()
-}
-
-func (w Workspace) MarshalJSON() ([]byte, error) {
-	aux := &struct {
-		WorkspaceId string `json:"workspaceId"`
-		AccountId   string `json:"accountId"`
-		Name        string `json:"name"`
-		CreatedAt   string `json:"createdAt"`
-		UpdatedAt   string `json:"updatedAt"`
-	}{
-		WorkspaceId: w.WorkspaceId,
-		AccountId:   w.AccountId,
-		Name:        w.Name,
-		CreatedAt:   w.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:   w.UpdatedAt.Format(time.RFC3339),
-	}
-	return json.Marshal(aux)
-}
-
-func (w Workspace) Create(ctx context.Context, db *pgxpool.Pool) (Workspace, error) {
-	var workspace Workspace
-	var member Member
-
-	tx, err := db.Begin(ctx)
-	if err != nil {
-		fmt.Printf("failed to start db transaction with error: %v\n", err)
-		return workspace, err
-	}
-	defer tx.Rollback(ctx)
-
-	wId := w.GenId()
-	ws := xid.New().String() // TODO: deprecate
-	err = tx.QueryRow(ctx, `INSERT INTO workspace(workspace_id, account_id, name, slug)
-		VALUES ($1, $2, $3, $4)
-		RETURNING
-		workspace_id, account_id, name, created_at, updated_at`, wId, w.AccountId, w.Name, ws).Scan(
-		&workspace.WorkspaceId, &workspace.AccountId,
-		&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt,
-	)
-	if err != nil {
-		fmt.Printf("failed to insert workspace with error: %v\n", err)
-		return workspace, err
-	}
-
-	mId := member.GenId()
-	ms := xid.New().String() // TODO: deprecate
-	err = tx.QueryRow(ctx, `INSERT INTO member(workspace_id, account_id, member_id, slug, role)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING
-		workspace_id, account_id, member_id, role, created_at, updated_at`,
-		wId, workspace.AccountId, mId, ms, "primary").Scan(
-		&member.WorkspaceId, &member.AccountId,
-		&member.MemberId, &member.role,
-		&member.CreatedAt, &member.UpdatedAt,
-	)
-	if err != nil {
-		fmt.Printf("failed to insert member with error: %v\n", err)
-		return workspace, err
-	}
-
-	err = tx.Commit(ctx)
-	if err != nil {
-		fmt.Printf("failed to commit db transaction with error: %v\n", err)
-		return workspace, err
-	}
-	return workspace, nil
-}
-
-func (w Workspace) GetAccountWorkspace(ctx context.Context, db *pgxpool.Pool) (Workspace, error) {
-	var workspace Workspace
-
-	row, err := db.Query(ctx, `SELECT 
-		workspace_id, account_id, name, created_at, updated_at
-		FROM workspace WHERE account_id = $1 AND workspace_id = $2`, w.AccountId, w.WorkspaceId)
-	if err != nil {
-		return workspace, err
-	}
-	defer row.Close()
-
-	if !row.Next() {
-		return workspace, sql.ErrNoRows
-	}
-
-	err = row.Scan(
-		&workspace.WorkspaceId, &workspace.AccountId,
-		&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt,
-	)
-	if err != nil {
-		return workspace, err
-	}
-
-	return workspace, nil
-}
-
-type Member struct {
-	WorkspaceId string
-	AccountId   string
-	MemberId    string
-	role        string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
-func (m Member) GenId() string {
-	return "m_" + xid.New().String()
-}
-
-// models
-type Customer struct {
-	WorkspaceId string
-	CustomerId  string
-	ExternalId  sql.NullString
-	Email       sql.NullString
-	Phone       sql.NullString
-	Name        sql.NullString
-	UpdatedAt   time.Time
-	CreatedAt   time.Time
-}
-
-func (c Customer) MarshalJSON() ([]byte, error) {
-	var externalId, email, phone, name *string
-	if c.ExternalId.Valid {
-		externalId = &c.ExternalId.String
-	}
-	if c.Email.Valid {
-		email = &c.Email.String
-	}
-	if c.Phone.Valid {
-		phone = &c.Phone.String
-	}
-	if c.Name.Valid {
-		name = &c.Name.String
-	}
-
-	aux := &struct {
-		WorkspaceId string  `json:"workspaceId"`
-		CustomerId  string  `json:"customerId"`
-		ExternalId  *string `json:"externalId"`
-		Email       *string `json:"email"`
-		Phone       *string `json:"phone"`
-		Name        *string `json:"name"`
-		CreatedAt   string  `json:"createdAt"`
-		UpdatedAt   string  `json:"updatedAt"`
-	}{
-		WorkspaceId: c.WorkspaceId,
-		CustomerId:  c.CustomerId,
-		ExternalId:  externalId,
-		Email:       email,
-		Phone:       phone,
-		Name:        name,
-		CreatedAt:   c.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:   c.UpdatedAt.Format(time.RFC3339),
-	}
-	return json.Marshal(aux)
-}
-
-// models
-type LLMRRLog struct {
-	WorkspaceId string
-	RequestId   string
-	Prompt      string
-	Response    string
-	Model       string
-	Eval        sql.NullInt64
-}
-
-// request
-type LLMRequestQuery struct {
-	Q string `json:"q"`
-}
-
-// request
-type LLMRREval struct {
-	Eval int `json:"eval"`
-}
-
-// response
-type LLMResponse struct {
-	Text      string `json:"text"`
-	RequestId string `json:"requestId"`
-	Model     string `json:"model"`
-}
-
-// request
-type CustomerTIRequest struct {
-	Create   bool    `json:"create"`
-	CreateBy *string `json:"createBy"` // optional
-	Customer struct {
-		ExternalId *string `json:"externalId"` // optional
-		Email      *string `json:"email"`      // optional
-		Phone      *string `json:"phone"`      // optional
-	} `json:"customer"`
-}
-
-// response
-type CustomerTIResp struct {
-	Create     bool   `json:"create"`
-	CustomerId string `json:"customerId"`
-	Jwt        string `json:"jwt"`
-}
-
-// request
-type PATReq struct {
-	Name        string  `json:"name"`
-	Description *string `json:"description"`
-}
-
-// request
-type WorkspaceReq struct {
-	Name string `json:"name"`
-}
-
-type LLM struct {
-	WorkspaceId string
-	Prompt      string
-	RequestId   string
-}
-
-// for now we are directly using the Ollama server
-// later will update to use our `converse` server probably with grpc.
-// similarly the `LLMResponse` will be updated to include other specific fields.
-func (llm LLM) Generate() (LLMResponse, error) {
-
-	var err error
-	var response LLMResponse
-
-	buf := new(bytes.Buffer)
-	// for now this is specific to the Ollama server
-	// will update to use our `converse` server probably with grpc.
-	body := struct {
-		Model  string `json:"model"`
-		Prompt string `json:"prompt"`
-		Stream bool   `json:"stream"`
-	}{
-		Model:  "llama2",
-		Prompt: llm.Prompt,
-		Stream: false,
-	}
-
-	err = json.NewEncoder(buf).Encode(&body)
-	if err != nil {
-		log.Printf("failed to encode LLM request body for requestId: %s with error: %v", llm.RequestId, err)
-		return response, err
-	}
-
-	log.Printf("LLM request for workspaceId: %s with requestId: %s", llm.WorkspaceId, llm.RequestId)
-	resp, err := http.Post("http://0.0.0.0:11434/api/generate", "application/json", buf)
-	if err != nil {
-		log.Printf("LLM request failed for requestId: %s with error: %v", llm.RequestId, err)
-		return response, err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return response, fmt.Errorf("expected status %d; but got %d", http.StatusOK, resp.StatusCode)
-	}
-
-	// response structure from Ollama server
-	// will be updated based on the `converse` server response.
-	rb := struct {
-		Model              string `json:"model"`
-		CreatedAt          string `json:"created_at"`
-		Response           string `json:"response"`
-		Done               bool   `json:"done"`
-		Context            []int  `json:"context"`
-		TotalDuration      int    `json:"total_duration"`
-		LoadDuration       int    `json:"load_duration"`
-		PromptEvalCount    int    `json:"prompt_eval_count"`
-		PromptEvalDuration int    `json:"prompt_eval_duration"`
-		EvalCount          int    `json:"eval_count"`
-		EvalDuration       int    `json:"eval_duration"`
-	}{}
-
-	err = json.NewDecoder(resp.Body).Decode(&rb)
-	if err != nil {
-		log.Printf("failed to decode LLM response for requestId: %s with error: %v\n", llm.RequestId, err)
-		return response, err
-	}
-
-	return LLMResponse{
-		Text:      rb.Response,
-		RequestId: llm.RequestId,
-		Model:     rb.Model,
-	}, err
-}
-
-func NullString(s *string) sql.NullString {
-	if s == nil {
-		return sql.NullString{String: "", Valid: false}
-	}
-	return sql.NullString{String: *s, Valid: true}
-}
-
-func AuthenticatePat(ctx context.Context, db *pgxpool.Pool, token string) (Account, error) {
-	var account Account
-
-	stmt := `SELECT 
-		a.account_id, a.email,
-		a.provider, a.auth_user_id, a.name,
-		a.created_at, a.updated_at
-		FROM account a
-		INNER JOIN account_pat ap ON a.account_id = ap.account_id
-		WHERE ap.token = $1`
-
-	row, err := db.Query(ctx, stmt, token)
-	if err != nil {
-		return account, err
-	}
-	defer row.Close()
-
-	if !row.Next() {
-		fmt.Printf("no linked account found for token: %s\n", token)
-		return account, sql.ErrNoRows
-	}
-
-	err = row.Scan(
-		&account.AccountId, &account.Email,
-		&account.Provider, &account.AuthUserId, &account.Name,
-		&account.CreatedAt, &account.UpdatedAt,
-	)
-	if err != nil {
-		fmt.Printf("failed to scan linked account for token: %s with error: %v\n", token, err)
-		return account, err
-	}
-
-	return account, nil
 }
 
 func (a Account) GenId() string {
@@ -607,8 +155,351 @@ func (a Account) GetByAuthUserId(ctx context.Context, db *pgxpool.Pool) (Account
 	return account, nil
 }
 
+// model
+type AccountPAT struct {
+	AccountId   string
+	PatId       string
+	Token       string
+	Name        string
+	Description sql.NullString
+	UnMask      bool
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+func (ap AccountPAT) MarshalJSON() ([]byte, error) {
+	var description *string
+	var token string
+	if ap.Description.Valid {
+		description = &ap.Description.String
+	}
+
+	maskLeft := func(s string) string {
+		rs := []rune(s)
+		for i := range rs[:len(rs)-4] {
+			rs[i] = '*'
+		}
+		return string(rs)
+	}
+
+	if !ap.UnMask {
+		token = maskLeft(ap.Token)
+	} else {
+		token = ap.Token
+	}
+
+	aux := &struct {
+		AccountId   string  `json:"accountId"`
+		PatId       string  `json:"patId"`
+		Token       string  `json:"token"`
+		Name        string  `json:"name"`
+		Description *string `json:"description"`
+		CreatedAt   string  `json:"createdAt"`
+		UpdatedAt   string  `json:"updatedAt"`
+	}{
+		AccountId:   ap.AccountId,
+		PatId:       ap.PatId,
+		Token:       token,
+		Name:        ap.Name,
+		Description: description,
+		CreatedAt:   ap.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   ap.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
+}
+
+func (ap AccountPAT) GenId() string {
+	return "ap_" + xid.New().String()
+}
+
+func (ap AccountPAT) Create(ctx context.Context, db *pgxpool.Pool) (AccountPAT, error) {
+	apId := ap.GenId()
+	token, err := GenToken(32, "pt_")
+	if err != nil {
+		return ap, err
+	}
+	stmt := `INSERT INTO account_pat(account_id, pat_id, token, name, description)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING account_id, pat_id, token, name, description, created_at, updated_at`
+
+	row, err := db.Query(ctx, stmt, ap.AccountId, apId, token, ap.Name, ap.Description)
+	if err != nil {
+		return ap, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return ap, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&ap.AccountId, &ap.PatId, &ap.Token,
+		&ap.Name, &ap.Description, &ap.CreatedAt, &ap.UpdatedAt,
+	)
+	if err != nil {
+		return ap, err
+	}
+	return ap, nil
+}
+
+func (ap AccountPAT) GetListByAccountId(ctx context.Context, db *pgxpool.Pool) ([]AccountPAT, error) {
+	stmt := `SELECT account_id, pat_id, token, name, description,
+		created_at, updated_at
+		FROM account_pat WHERE account_id = $1
+		ORDER BY created_at DESC LIMIT 100`
+
+	rows, err := db.Query(ctx, stmt, ap.AccountId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	aps := make([]AccountPAT, 0)
+	for rows.Next() {
+		var ap AccountPAT
+		err = rows.Scan(
+			&ap.AccountId, &ap.PatId, &ap.Token,
+			&ap.Name, &ap.Description, &ap.CreatedAt, &ap.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		aps = append(aps, ap)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return aps, nil
+}
+
+// model
+type Workspace struct {
+	WorkspaceId string
+	AccountId   string
+	Name        string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+func (w Workspace) MarshalJSON() ([]byte, error) {
+	aux := &struct {
+		WorkspaceId string `json:"workspaceId"`
+		AccountId   string `json:"accountId"`
+		Name        string `json:"name"`
+		CreatedAt   string `json:"createdAt"`
+		UpdatedAt   string `json:"updatedAt"`
+	}{
+		WorkspaceId: w.WorkspaceId,
+		AccountId:   w.AccountId,
+		Name:        w.Name,
+		CreatedAt:   w.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   w.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
+}
+
+func (w Workspace) GenId() string {
+	return "wrk" + xid.New().String()
+}
+
+func (w Workspace) Create(ctx context.Context, db *pgxpool.Pool) (Workspace, error) {
+	var workspace Workspace
+	var member Member
+
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		fmt.Printf("failed to start db transaction with error: %v\n", err)
+		return workspace, err
+	}
+	defer tx.Rollback(ctx)
+
+	wId := w.GenId()
+	ws := xid.New().String() // TODO: deprecate
+	err = tx.QueryRow(ctx, `INSERT INTO workspace(workspace_id, account_id, name, slug)
+		VALUES ($1, $2, $3, $4)
+		RETURNING
+		workspace_id, account_id, name, created_at, updated_at`, wId, w.AccountId, w.Name, ws).Scan(
+		&workspace.WorkspaceId, &workspace.AccountId,
+		&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt,
+	)
+	if err != nil {
+		fmt.Printf("failed to insert workspace with error: %v\n", err)
+		return workspace, err
+	}
+
+	mId := member.GenId()
+	ms := xid.New().String() // TODO: deprecate
+	err = tx.QueryRow(ctx, `INSERT INTO member(workspace_id, account_id, member_id, slug, role)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING
+		workspace_id, account_id, member_id, role, created_at, updated_at`,
+		wId, workspace.AccountId, mId, ms, "primary").Scan(
+		&member.WorkspaceId, &member.AccountId,
+		&member.MemberId, &member.role,
+		&member.CreatedAt, &member.UpdatedAt,
+	)
+	if err != nil {
+		fmt.Printf("failed to insert member with error: %v\n", err)
+		return workspace, err
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		fmt.Printf("failed to commit db transaction with error: %v\n", err)
+		return workspace, err
+	}
+	return workspace, nil
+}
+
+func (w Workspace) GetAccountWorkspace(ctx context.Context, db *pgxpool.Pool) (Workspace, error) {
+	var workspace Workspace
+
+	row, err := db.Query(ctx, `SELECT 
+		workspace_id, account_id, name, created_at, updated_at
+		FROM workspace WHERE account_id = $1 AND workspace_id = $2`, w.AccountId, w.WorkspaceId)
+	if err != nil {
+		return workspace, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return workspace, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&workspace.WorkspaceId, &workspace.AccountId,
+		&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt,
+	)
+	if err != nil {
+		return workspace, err
+	}
+
+	return workspace, nil
+}
+
+func (w Workspace) GetWorkspaceById(ctx context.Context, db *pgxpool.Pool) (Workspace, error) {
+	var workspace Workspace
+
+	row, err := db.Query(ctx, `SELECT 
+		workspace_id, account_id, name, created_at, updated_at
+		FROM workspace WHERE workspace_id = $1`, w.WorkspaceId)
+	if err != nil {
+		return workspace, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return workspace, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&workspace.WorkspaceId, &workspace.AccountId,
+		&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt,
+	)
+	if err != nil {
+		return workspace, err
+	}
+
+	return workspace, nil
+}
+
+// model
+type Member struct {
+	WorkspaceId string
+	AccountId   string
+	MemberId    string
+	role        string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+func (m Member) GenId() string {
+	return "m_" + xid.New().String()
+}
+
+// model
+type Customer struct {
+	WorkspaceId string
+	CustomerId  string
+	ExternalId  sql.NullString
+	Email       sql.NullString
+	Phone       sql.NullString
+	Name        sql.NullString
+	UpdatedAt   time.Time
+	CreatedAt   time.Time
+}
+
+func (c Customer) MarshalJSON() ([]byte, error) {
+	var externalId, email, phone, name *string
+	if c.ExternalId.Valid {
+		externalId = &c.ExternalId.String
+	}
+	if c.Email.Valid {
+		email = &c.Email.String
+	}
+	if c.Phone.Valid {
+		phone = &c.Phone.String
+	}
+	if c.Name.Valid {
+		name = &c.Name.String
+	}
+
+	aux := &struct {
+		WorkspaceId string  `json:"workspaceId"`
+		CustomerId  string  `json:"customerId"`
+		ExternalId  *string `json:"externalId"`
+		Email       *string `json:"email"`
+		Phone       *string `json:"phone"`
+		Name        *string `json:"name"`
+		CreatedAt   string  `json:"createdAt"`
+		UpdatedAt   string  `json:"updatedAt"`
+	}{
+		WorkspaceId: c.WorkspaceId,
+		CustomerId:  c.CustomerId,
+		ExternalId:  externalId,
+		Email:       email,
+		Phone:       phone,
+		Name:        name,
+		CreatedAt:   c.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   c.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
+}
+
 func (c Customer) GenId() string {
 	return "c_" + xid.New().String()
+}
+
+func (c Customer) GetById(ctx context.Context, db *pgxpool.Pool) (Customer, error) {
+	var customer Customer
+
+	row, err := db.Query(ctx, `SELECT 
+		workspace_id, customer_id,
+		external_id, email,
+		phone, name, created_at, updated_at
+		FROM customer WHERE workspace_id = $1 AND customer_id = $2`, c.WorkspaceId, c.CustomerId)
+	if err != nil {
+		return customer, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return customer, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&customer.WorkspaceId, &customer.CustomerId,
+		&customer.ExternalId, &customer.Email,
+		&customer.Phone, &customer.Name,
+		&customer.CreatedAt, &customer.UpdatedAt,
+	)
+	if err != nil {
+		return customer, err
+	}
+
+	return customer, nil
 }
 
 func (c Customer) GetByExtId(ctx context.Context, db *pgxpool.Pool, workspaceId string, extId string) (Customer, error) {
@@ -888,12 +779,386 @@ func (c Customer) MakeJWT() (string, error) {
 	return jwt, nil
 }
 
+// model
+type ThreadQA struct {
+	WorkspaceId    string
+	CustomerId     string
+	ThreadId       string
+	ParentThreadId sql.NullString
+	Query          string
+	Title          string
+	Summary        string
+	Sequence       int
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
+func (tq ThreadQA) MarshalJSON() ([]byte, error) {
+	var pth *string
+	if tq.ParentThreadId.Valid {
+		pth = &tq.ParentThreadId.String
+	}
+	aux := &struct {
+		WorkspaceId    string  `json:"workspaceId"`
+		CustomerId     string  `json:"customerId"`
+		ThreadId       string  `json:"threadId"`
+		ParentThreadId *string `json:"parentThreadId"`
+		Query          string  `json:"query"`
+		Title          string  `json:"title"`
+		Summary        string  `json:"summary"`
+		Sequence       int     `json:"sequence"`
+		CreatedAt      string  `json:"createdAt"`
+		UpdatedAt      string  `json:"updatedAt"`
+	}{
+		WorkspaceId:    tq.WorkspaceId,
+		CustomerId:     tq.CustomerId,
+		ThreadId:       tq.ThreadId,
+		ParentThreadId: pth,
+		Query:          tq.Query,
+		Title:          tq.Title,
+		Summary:        tq.Summary,
+		Sequence:       tq.Sequence,
+		CreatedAt:      tq.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:      tq.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
+}
+
+func (tq ThreadQA) GenId() string {
+	return "tq_" + xid.New().String()
+}
+
+func (tq ThreadQA) Create(ctx context.Context, db *pgxpool.Pool) (ThreadQA, error) {
+	var thread ThreadQA
+
+	tqId := tq.GenId()
+	stmt := `INSERT INTO 
+		thread_qa(workspace_id, customer_id, thread_id, parent_thread_id, query, title, summary)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING 
+		workspace_id, customer_id, thread_id, parent_thread_id,
+		query, title, summary, sequence,
+		created_at, updated_at`
+
+	row, err := db.Query(ctx, stmt, tq.WorkspaceId, tq.CustomerId, tqId, tq.ParentThreadId, tq.Query, tq.Title, tq.Summary)
+	if err != nil {
+		return thread, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return thread, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&thread.WorkspaceId, &thread.CustomerId, &thread.ThreadId, &thread.ParentThreadId,
+		&thread.Query, &thread.Title, &thread.Summary, &thread.Sequence,
+		&thread.CreatedAt, &thread.UpdatedAt,
+	)
+	if err != nil {
+		return thread, err
+	}
+
+	return thread, nil
+}
+
+// model
+type ThreadQAA struct {
+	WorkspaceId string
+	ThreadQAId  string
+	AnswerId    string
+	Answer      string
+	Sequence    int
+	Eval        sql.NullInt32
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+func (tqa ThreadQAA) MarshalJSON() ([]byte, error) {
+	var eval *int32
+	if tqa.Eval.Valid {
+		eval = &tqa.Eval.Int32
+	}
+	aux := &struct {
+		WorkspaceId string `json:"workspaceId"`
+		ThreadQAId  string `json:"threadQAId"`
+		AnswerId    string `json:"answerId"`
+		Answer      string `json:"answer"`
+		Sequence    int    `json:"sequence"`
+		Eval        *int32 `json:"eval"`
+		CreatedAt   string `json:"createdAt"`
+		UpdatedAt   string `json:"updatedAt"`
+	}{
+		WorkspaceId: tqa.WorkspaceId,
+		ThreadQAId:  tqa.ThreadQAId,
+		AnswerId:    tqa.AnswerId,
+		Answer:      tqa.Answer,
+		Sequence:    tqa.Sequence,
+		Eval:        eval,
+		CreatedAt:   tqa.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   tqa.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
+}
+func (tqa ThreadQAA) GenId() string {
+	return "tqa_" + xid.New().String()
+}
+
+func (tqa ThreadQAA) Create(ctx context.Context, db *pgxpool.Pool) (ThreadQAA, error) {
+	var thread ThreadQAA
+
+	tqaId := tqa.GenId()
+	stmt := `INSERT INTO 
+		thread_qa_answer(workspace_id, thread_qa_id, answer_id, answer)
+		VALUES ($1, $2, $3, $4)
+		RETURNING 
+		workspace_id, thread_qa_id, answer_id, answer, 
+		eval, sequence, created_at, updated_at`
+
+	row, err := db.Query(ctx, stmt, tqa.WorkspaceId, tqa.ThreadQAId, tqaId, tqa.Answer)
+	if err != nil {
+		return thread, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return thread, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&thread.WorkspaceId, &thread.ThreadQAId, &thread.AnswerId, &thread.Answer,
+		&thread.Eval, &thread.Sequence, &thread.CreatedAt, &thread.UpdatedAt,
+	)
+	if err != nil {
+		return thread, err
+	}
+
+	return thread, nil
+}
+
+// request
+type ThreadQAReq struct {
+	Query string `json:"query"`
+}
+
+// resp
+type ThreadQAAResp struct {
+	AnswerId string        `json:"answerId"`
+	Answer   string        `json:"answer"`
+	Eval     sql.NullInt32 `json:"eval"`
+	Sequence int           `json:"sequence"`
+}
+
+func (tqar ThreadQAAResp) MarshalJSON() ([]byte, error) {
+	var eval *int32
+	if tqar.Eval.Valid {
+		eval = &tqar.Eval.Int32
+	}
+	aux := &struct {
+		AnswerId string `json:"answerId"`
+		Answer   string `json:"answer"`
+		Eval     *int32 `json:"eval"`
+		Sequence int    `json:"sequence"`
+	}{
+		AnswerId: tqar.AnswerId,
+		Answer:   tqar.Answer,
+		Eval:     eval,
+		Sequence: tqar.Sequence,
+	}
+	return json.Marshal(aux)
+}
+
+type ThreadQAResp struct {
+	ThreadId  string          `json:"threadId"`
+	Query     string          `json:"query"`
+	Sequence  int             `json:"sequence"`
+	CreatedAt time.Time       `json:"createdAt"`
+	UpdatedAt time.Time       `json:"updatedAt"`
+	Answers   []ThreadQAAResp `json:"answers"`
+}
+
+func (thr ThreadQAResp) MarshalJSON() ([]byte, error) {
+	aux := &struct {
+		ThreadId  string          `json:"threadId"`
+		Query     string          `json:"query"`
+		Sequence  int             `json:"sequence"`
+		CreatedAt string          `json:"createdAt"`
+		UpdatedAt string          `json:"updatedAt"`
+		Answers   []ThreadQAAResp `json:"answers"`
+	}{
+		ThreadId:  thr.ThreadId,
+		Query:     thr.Query,
+		Sequence:  thr.Sequence,
+		CreatedAt: thr.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: thr.UpdatedAt.Format(time.RFC3339),
+		Answers:   thr.Answers,
+	}
+	return json.Marshal(aux)
+}
+
+// request
+type LLMRREval struct {
+	Eval int `json:"eval"`
+}
+
+// response
+type LLMResponse struct {
+	Text      string `json:"text"`
+	RequestId string `json:"requestId"`
+	Model     string `json:"model"`
+}
+
+// request
+type CustomerTIReq struct {
+	Create   bool    `json:"create"`
+	CreateBy *string `json:"createBy"` // optional
+	Customer struct {
+		ExternalId *string `json:"externalId"` // optional
+		Email      *string `json:"email"`      // optional
+		Phone      *string `json:"phone"`      // optional
+	} `json:"customer"`
+}
+
+// response
+type CustomerTIResp struct {
+	Create     bool   `json:"create"`
+	CustomerId string `json:"customerId"`
+	Jwt        string `json:"jwt"`
+}
+
+// request
+type PATReq struct {
+	Name        string  `json:"name"`
+	Description *string `json:"description"`
+}
+
+// request
+type WorkspaceReq struct {
+	Name string `json:"name"`
+}
+
+type LLM struct {
+	WorkspaceId string
+	Prompt      string
+	RequestId   string
+}
+
+// for now we are directly using the Ollama server
+// later will update to use our `converse` server probably with grpc.
+// similarly the `LLMResponse` will be updated to include other specific fields.
+func (llm LLM) Generate() (LLMResponse, error) {
+
+	var err error
+	var response LLMResponse
+
+	buf := new(bytes.Buffer)
+	// for now this is specific to the Ollama server
+	// will update to use our `converse` server probably with grpc.
+	body := struct {
+		Model  string `json:"model"`
+		Prompt string `json:"prompt"`
+		Stream bool   `json:"stream"`
+	}{
+		Model:  "llama2",
+		Prompt: llm.Prompt,
+		Stream: false,
+	}
+
+	err = json.NewEncoder(buf).Encode(&body)
+	if err != nil {
+		log.Printf("failed to encode LLM request body for requestId: %s with error: %v", llm.RequestId, err)
+		return response, err
+	}
+
+	log.Printf("LLM request for workspaceId: %s with requestId: %s", llm.WorkspaceId, llm.RequestId)
+	resp, err := http.Post("http://0.0.0.0:11434/api/generate", "application/json", buf)
+	if err != nil {
+		log.Printf("LLM request failed for requestId: %s with error: %v", llm.RequestId, err)
+		return response, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return response, fmt.Errorf("expected status %d; but got %d", http.StatusOK, resp.StatusCode)
+	}
+
+	// response structure from Ollama server
+	// will be updated based on the `converse` server response.
+	rb := struct {
+		Model              string `json:"model"`
+		CreatedAt          string `json:"created_at"`
+		Response           string `json:"response"`
+		Done               bool   `json:"done"`
+		Context            []int  `json:"context"`
+		TotalDuration      int    `json:"total_duration"`
+		LoadDuration       int    `json:"load_duration"`
+		PromptEvalCount    int    `json:"prompt_eval_count"`
+		PromptEvalDuration int    `json:"prompt_eval_duration"`
+		EvalCount          int    `json:"eval_count"`
+		EvalDuration       int    `json:"eval_duration"`
+	}{}
+
+	err = json.NewDecoder(resp.Body).Decode(&rb)
+	if err != nil {
+		log.Printf("failed to decode LLM response for requestId: %s with error: %v\n", llm.RequestId, err)
+		return response, err
+	}
+
+	return LLMResponse{
+		Text:      rb.Response,
+		RequestId: llm.RequestId,
+		Model:     rb.Model,
+	}, err
+}
+
+func AuthenticatePAT(ctx context.Context, db *pgxpool.Pool, token string) (Account, error) {
+	var account Account
+
+	stmt := `SELECT 
+		a.account_id, a.email,
+		a.provider, a.auth_user_id, a.name,
+		a.created_at, a.updated_at
+		FROM account a
+		INNER JOIN account_pat ap ON a.account_id = ap.account_id
+		WHERE ap.token = $1`
+
+	row, err := db.Query(ctx, stmt, token)
+	if err != nil {
+		return account, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		fmt.Printf("no linked account found for token: %s\n", token)
+		return account, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&account.AccountId, &account.Email,
+		&account.Provider, &account.AuthUserId, &account.Name,
+		&account.CreatedAt, &account.UpdatedAt,
+	)
+	if err != nil {
+		fmt.Printf("failed to scan linked account for token: %s with error: %v\n", token, err)
+		return account, err
+	}
+
+	return account, nil
+}
+
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		next.ServeHTTP(w, r)
 		log.Println(r.Method, r.URL.Path, time.Since(start))
 	})
+}
+
+// AuthJWTClaims taken from Supabase JWT encoding
+type AuthJWTClaims struct {
+	Email string `json:"email"`
+	jwt.RegisteredClaims
 }
 
 func AuthenticateMember(ctx context.Context, db *pgxpool.Pool, w http.ResponseWriter, r *http.Request) (Account, error) {
@@ -909,7 +1174,7 @@ func AuthenticateMember(ctx context.Context, db *pgxpool.Pool, w http.ResponseWr
 
 	if scheme == "token" {
 		fmt.Println("authenticate via PAT")
-		account, err := AuthenticatePat(ctx, db, cred[1])
+		account, err := AuthenticatePAT(ctx, db, cred[1])
 		if err != nil {
 			return account, fmt.Errorf("failed to authenticate with error: %v", err)
 		}
@@ -921,12 +1186,16 @@ func AuthenticateMember(ctx context.Context, db *pgxpool.Pool, w http.ResponseWr
 		if err != nil {
 			return account, fmt.Errorf("failed to get env SUPABASE_JWT_SECRET with error: %v", err)
 		}
-		auid, err := parseJWTToken(cred[1], []byte(hmacSecret))
+		ac, err := parseJWTToken(cred[1], []byte(hmacSecret))
 		if err != nil {
 			return account, fmt.Errorf("failed to parse JWT token with error: %v", err)
 		}
-		fmt.Printf("authenticated account with id: %s\n", auid.Id)
-		ta := Account{AuthUserId: auid.Id, Email: auid.Email, Provider: "supabase"}
+		sub, err := ac.RegisteredClaims.GetSubject()
+		if err != nil {
+			return account, fmt.Errorf("cannot get subject from parsed token: %v", err)
+		}
+		fmt.Printf("authenticated account with id: %s\n", sub)
+		ta := Account{AuthUserId: sub, Email: ac.Email, Provider: "supabase"}
 		account, err := ta.GetByAuthUserId(ctx, db)
 		if err != nil {
 			return account, fmt.Errorf("failed to get account by authUserId: %s with error: %v", ta.AuthUserId, err)
@@ -935,12 +1204,6 @@ func AuthenticateMember(ctx context.Context, db *pgxpool.Pool, w http.ResponseWr
 	} else {
 		return account, fmt.Errorf("unsupported scheme: `%s` cannot authenticate", scheme)
 	}
-}
-
-// AuthJWTClaims taken from Supabase JWT encoding
-type AuthJWTClaims struct {
-	Email string `json:"email"`
-	jwt.RegisteredClaims
 }
 
 // Custom JWT claims for Customer
@@ -952,12 +1215,44 @@ type CustomerJWTClaims struct {
 	jwt.RegisteredClaims
 }
 
-type AuthUserId struct {
-	Id    string `json:"id"`
-	Email string `json:"email"`
+func AuthenticateCustomer(ctx context.Context, db *pgxpool.Pool, w http.ResponseWriter, r *http.Request) (Customer, error) {
+	var customer Customer
+
+	ath := r.Header.Get("Authorization")
+	if ath == "" {
+		return customer, fmt.Errorf("cannot authenticate without authorization header")
+	}
+
+	cred := strings.Split(ath, " ")
+	scheme := strings.ToLower(cred[0])
+
+	if scheme == "bearer" {
+		fmt.Println("authenticate via JWTs")
+		hmacSecret, err := GetEnv("SUPABASE_JWT_SECRET")
+		if err != nil {
+			return customer, fmt.Errorf("failed to get env SUPABASE_JWT_SECRET with error: %v", err)
+		}
+		cc, err := parseCustomerJWTToken(cred[1], []byte(hmacSecret))
+		if err != nil {
+			return customer, fmt.Errorf("failed to parse JWT token with error: %v", err)
+		}
+		sub, err := cc.RegisteredClaims.GetSubject()
+		if err != nil {
+			return customer, fmt.Errorf("cannot get subject from parsed token: %v", err)
+		}
+		fmt.Printf("authenticated customer with id: %s\n", sub)
+		tc := Customer{WorkspaceId: cc.WorkspaceId, CustomerId: sub}
+		customer, err := tc.GetById(ctx, db)
+		if err != nil {
+			return customer, fmt.Errorf("failed to get customer by customerId: %s with error: %v", tc.CustomerId, err)
+		}
+		return customer, nil
+	} else {
+		return customer, fmt.Errorf("unsupported scheme: `%s` cannot authenticate", scheme)
+	}
 }
 
-func parseJWTToken(token string, hmacSecret []byte) (auid AuthUserId, err error) {
+func parseJWTToken(token string, hmacSecret []byte) (ac AuthJWTClaims, err error) {
 	t, err := jwt.ParseWithClaims(token, &AuthJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -966,16 +1261,32 @@ func parseJWTToken(token string, hmacSecret []byte) (auid AuthUserId, err error)
 	})
 
 	if err != nil {
-		return auid, fmt.Errorf("error validating jwt token with error: %v", err)
+		return ac, fmt.Errorf("error validating jwt token with error: %v", err)
 	} else if claims, ok := t.Claims.(*AuthJWTClaims); ok {
-		sub, err := claims.RegisteredClaims.GetSubject()
-		if err != nil {
-			return auid, fmt.Errorf("cannot get subject from parsed token: %v", err)
-		}
-		return AuthUserId{Id: sub, Email: claims.Email}, nil
+		return *claims, nil
+		// sub, err := claims.RegisteredClaims.GetSubject()
+		// if err != nil {
+		// 	return auid, fmt.Errorf("cannot get subject from parsed token: %v", err)
+		// }
 	}
 
-	return auid, fmt.Errorf("error parsing token: %v", token)
+	return ac, fmt.Errorf("error parsing token: %v", token)
+}
+
+func parseCustomerJWTToken(token string, hmacSecret []byte) (cc CustomerJWTClaims, err error) {
+	t, err := jwt.ParseWithClaims(token, &CustomerJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return hmacSecret, nil
+	})
+
+	if err != nil {
+		return cc, fmt.Errorf("error validating jwt token with error: %v", err)
+	} else if claims, ok := t.Claims.(*CustomerJWTClaims); ok {
+		return *claims, nil
+	}
+	return cc, fmt.Errorf("error parsing token: %v", token)
 }
 
 func handleAuthAccountMaker(ctx context.Context, db *pgxpool.Pool) http.Handler {
@@ -1003,12 +1314,17 @@ func handleAuthAccountMaker(ctx context.Context, db *pgxpool.Pool) http.Handler 
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
-			auid, err := parseJWTToken(cred[1], []byte(hmacSecret))
+			ac, err := parseJWTToken(cred[1], []byte(hmacSecret))
 			if err != nil {
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
 			}
-			ta := Account{AuthUserId: auid.Id, Email: auid.Email, Provider: "supabase"}
+			sub, err := ac.RegisteredClaims.GetSubject()
+			if err != nil {
+				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+				return
+			}
+			ta := Account{AuthUserId: sub, Email: ac.Email, Provider: "supabase"}
 			account, isCreated, err := ta.GetOrCreateByAuthUserId(ctx, db)
 			if err != nil {
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
@@ -1201,127 +1517,148 @@ func handleGetWorkspaces(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	})
 }
 
-func handleLLMQuery(ctx context.Context, db *pgxpool.Pool) http.Handler {
+// func handleLLMQueryEval(ctx context.Context, db *pgxpool.Pool) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		defer func(r io.ReadCloser) {
+// 			_, _ = io.Copy(io.Discard, r)
+// 			_ = r.Close()
+// 		}(r.Body)
+
+// 		var workspace Workspace
+
+// 		var eval LLMRREval
+// 		err := json.NewDecoder(r.Body).Decode(&eval)
+// 		if err != nil {
+// 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+// 			return
+// 		}
+
+// 		workspaceId := r.PathValue("workspaceId")
+
+// 		row, err := db.Query(ctx, `SELECT workspace_id, account_id,
+// 			name, created_at, updated_at
+// 			FROM workspace WHERE workspace_id = $1`,
+// 			workspaceId)
+// 		if err != nil {
+// 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+// 			return
+// 		}
+// 		defer row.Close()
+
+// 		if !row.Next() {
+// 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+// 			return
+// 		}
+
+// 		err = row.Scan(
+// 			&workspace.WorkspaceId, &workspace.AccountId,
+// 			&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt)
+// 		if err != nil {
+// 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+// 			return
+// 		}
+
+// 		requestId := r.PathValue("requestId")
+
+// 		_, err = db.Exec(ctx, `UPDATE llm_rr_log SET eval = $1
+// 			WHERE workspace_id = $2 AND request_id = $3`,
+// 			eval.Eval, workspace.WorkspaceId, requestId)
+// 		if err != nil {
+// 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+// 			return
+// 		}
+
+// 		w.Header().Set("Content-Type", "application/json")
+// 		w.WriteHeader(http.StatusNoContent)
+// 	})
+// }
+
+func handleInitThreadQA(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func(r io.ReadCloser) {
 			_, _ = io.Copy(io.Discard, r)
 			_ = r.Close()
 		}(r.Body)
 
-		var workspace Workspace
+		var query ThreadQAReq
 
-		var query LLMRequestQuery
 		err := json.NewDecoder(r.Body).Decode(&query)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 
-		workspaceId := r.PathValue("workspaceId")
-
-		row, err := db.Query(ctx, `SELECT workspace_id, account_id,
-			name, created_at, updated_at
-			FROM workspace WHERE workspace_id = $1`,
-			workspaceId)
+		customer, err := AuthenticateCustomer(ctx, db, w, r)
 		if err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
-		defer row.Close()
 
-		if !row.Next() {
+		workspace, err := Workspace{WorkspaceId: customer.WorkspaceId}.GetWorkspaceById(ctx, db)
+		if err != nil {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
 		}
 
-		err = row.Scan(
-			&workspace.WorkspaceId, &workspace.AccountId,
-			&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt)
+		tq := ThreadQA{
+			WorkspaceId: workspace.WorkspaceId,
+			CustomerId:  customer.CustomerId,
+			Query:       query.Query,
+		}
+
+		tq, err = tq.Create(ctx, db)
 		if err != nil {
+			fmt.Printf("failed to create thread query with error: %v\n", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
-		requestId := xid.New()
-		wrkLLM := LLM{WorkspaceId: workspaceId, Prompt: query.Q, RequestId: requestId.String()}
-
-		resp, err := wrkLLM.Generate()
+		reqId := xid.New()
+		wrkLLM := LLM{WorkspaceId: workspace.WorkspaceId, Prompt: tq.Query, RequestId: reqId.String()}
+		llmr, err := wrkLLM.Generate()
 		if err != nil {
+			fmt.Printf("failed to generate llm response with error: %v\n", err)
+			http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
+			return
+		}
+
+		answerId := xid.New()
+		tqa := ThreadQAA{
+			WorkspaceId: workspace.WorkspaceId,
+			ThreadQAId:  tq.ThreadId,
+			AnswerId:    answerId.String(),
+			Answer:      llmr.Text,
+		}
+
+		tqa, err = tqa.Create(ctx, db)
+		if err != nil {
+			fmt.Printf("failed to create thread question answer with error: %v\n", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
-		_, err = db.Exec(ctx, `INSERT INTO
-			llm_rr_log(workspace_id, request_id, prompt, response, model)
-			VALUES ($1, $2, $3, $4, $5)`,
-			workspace.WorkspaceId, wrkLLM.RequestId, wrkLLM.Prompt, resp.Text, resp.Model)
-		if err != nil {
-			log.Printf("failed to insert into llm request response log with error: %v", err)
+		ans := make([]ThreadQAAResp, 0, 1)
+		ans = append(ans, ThreadQAAResp{
+			AnswerId: tqa.AnswerId,
+			Answer:   tqa.Answer,
+			Eval:     tqa.Eval,
+			Sequence: tqa.Sequence,
+		})
+		resp := ThreadQAResp{
+			ThreadId:  tq.ThreadId,
+			Query:     tq.Query,
+			Sequence:  tq.Sequence,
+			CreatedAt: tq.CreatedAt,
+			UpdatedAt: tq.UpdatedAt,
+			Answers:   ans,
 		}
-
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusCreated)
 
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
-	})
-}
-
-func handleLLMQueryEval(ctx context.Context, db *pgxpool.Pool) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func(r io.ReadCloser) {
-			_, _ = io.Copy(io.Discard, r)
-			_ = r.Close()
-		}(r.Body)
-
-		var workspace Workspace
-
-		var eval LLMRREval
-		err := json.NewDecoder(r.Body).Decode(&eval)
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-			return
-		}
-
-		workspaceId := r.PathValue("workspaceId")
-
-		row, err := db.Query(ctx, `SELECT workspace_id, account_id,
-			name, created_at, updated_at
-			FROM workspace WHERE workspace_id = $1`,
-			workspaceId)
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
-		defer row.Close()
-
-		if !row.Next() {
-			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-			return
-		}
-
-		err = row.Scan(
-			&workspace.WorkspaceId, &workspace.AccountId,
-			&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt)
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
-
-		requestId := r.PathValue("requestId")
-
-		_, err = db.Exec(ctx, `UPDATE llm_rr_log SET eval = $1
-			WHERE workspace_id = $2 AND request_id = $3`,
-			eval.Eval, workspace.WorkspaceId, requestId)
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusNoContent)
 	})
 }
 
@@ -1332,7 +1669,7 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 			_ = r.Close()
 		}(r.Body)
 
-		var rb CustomerTIRequest
+		var rb CustomerTIReq
 		err := json.NewDecoder(r.Body).Decode(&rb)
 		if err != nil {
 			fmt.Printf("failed to decode request body error: %v\n", err)
@@ -1622,13 +1959,12 @@ func run(ctx context.Context) error {
 	mux.Handle("GET /workspaces/{$}",
 		handleGetWorkspaces(ctx, db))
 
-	// customer
-	mux.Handle("POST /workspaces/{workspaceId}/-/queries/{$}",
-		handleLLMQuery(ctx, db))
+	// // customer
+	// mux.Handle("POST /workspaces/{workspaceId}/-/queries/{requestId}/{$}",
+	// 	handleLLMQueryEval(ctx, db))
 
-	// customer
-	mux.Handle("POST /workspaces/{workspaceId}/-/queries/{requestId}/{$}",
-		handleLLMQueryEval(ctx, db))
+	mux.Handle("POST /-/threads/qa/{$}",
+		handleInitThreadQA(ctx, db))
 
 	// sdk+web
 	mux.Handle("POST /workspaces/{workspaceId}/tokens/{$}",
@@ -1664,5 +2000,3 @@ func main() {
 		os.Exit(1)
 	}
 }
-
-// https://pkg.go.dev/github.com/golang-jwt/jwt/v5#example-New-Hmac
