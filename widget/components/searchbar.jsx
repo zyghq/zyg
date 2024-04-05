@@ -22,18 +22,30 @@ export default function SearchBar() {
   const queryMutation = useMutation({
     mutationFn: (text) => {
       return axios.post(
-        "http://127.0.0.1:8080/workspaces/3a690e9f85544f6f82e6bdc432418b11/-/queries/",
-        { q: text }
+        "http://127.0.0.1:8080/-/threads/qa/",
+        { query: text },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization:
+              "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3b3Jrc3BhY2VJZCI6Indya2NvNjBlcGt0aWR1N3NvZDk2bDkwIiwiZXh0ZXJuYWxJZCI6Inh4eHgtMTExLXp6enoiLCJlbWFpbCI6InNhbmNoaXRycmtAZ21haWwuY29tIiwicGhvbmUiOiIrOTE3NzYwNjg2MDY4IiwiaXNzIjoiYXV0aC56eWcuYWkiLCJzdWIiOiJjX2NvNjFhYmt0aWR1MXQzaTNkbjYwIiwiYXVkIjpbImN1c3RvbWVyIl0sImV4cCI6MTc0Mzc1Nzg3MSwibmJmIjoxNzEyMjIxODcxLCJpYXQiOjE3MTIyMjE4NzEsImp0aSI6Indya2NvNjBlcGt0aWR1N3NvZDk2bDkwOmNfY282MWFia3RpZHUxdDNpM2RuNjAifQ.epCQ4aXvYPXIhVrX6TtfYrq0XxYXT18kIWsOae8HvUQ",
+          },
+        }
       );
     },
     onSuccess: (response) => {
-      setQuery(text);
       const { data } = response;
-      const { text: textResponse, requestId } = data;
-      console.log(textResponse);
-      console.log(requestId);
+      const { threadId, query } = data;
+      setQuery(query);
+      setRequestId(threadId);
       setText("");
-      setRequestId(requestId);
+      // setQuery(text);
+      // const { data } = response;
+      // const { text: textResponse, requestId } = data;
+      // console.log(textResponse);
+      // console.log(requestId);
+      // setText("");
+      // setRequestId(requestId);
     },
   });
 
@@ -80,7 +92,8 @@ export default function SearchBar() {
     if (queryMutation.isSuccess) {
       const { data: result } = queryMutation;
       const { data } = result;
-      const { text = "" } = data;
+      const { answers = [] } = data;
+      const answer = answers[0];
       return (
         <ScrollArea className="h-[calc(100dvh-14rem)]">
           <div className="flex flex-col px-4">
@@ -92,7 +105,7 @@ export default function SearchBar() {
               <div className="font-semibold">Answers</div>
             </div>
             <div className="my-2">
-              <p className="whitespace-pre-line">{text}</p>
+              <p className="whitespace-pre-line">{answer.answer}</p>
             </div>
             <div className="flex justify-end items-center">
               <div className="font-semibold">Helpful?</div>
