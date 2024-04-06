@@ -4,13 +4,21 @@
       "path": "converse",
       "name": "converse"
     },
- {
+    {
       "path": "webapp",
       "name": "webapp"
     },
     {
+      "path": "widget",
+      "name": "widget"
+    },
+    {
+      "path": "backend",
+      "name": "backend"
+    },
+    {
       "path": ".",
-      "name": "root"
+      "name": "zyg"
     }
   ]
 }

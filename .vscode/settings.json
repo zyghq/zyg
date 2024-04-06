@@ -6,7 +6,9 @@
     "**/CVS": true,
     "**/.DS_Store": true,
     "**/Thumbs.db": true,
-    "converse": false,
-    "webapp": false
+    "converse": true,
+    "webapp": true,
+    "widget": true,
+    "backend": true,
   }
 }
