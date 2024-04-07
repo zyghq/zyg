@@ -14,7 +14,7 @@ const identity = async (socket) => {
   console.log("do some auth here....");
   // checkout the nextjs chat sample for example, on
   // how is the _pk is being used.
-  console.log(socket._pk);
+  console.log("socket._pk: ", socket._pk);
 };
 
 function Message({ message }) {

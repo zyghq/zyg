@@ -1,6 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import WidgetCloseButton from "@/components/widget-close-btn";
+import GoHomeButton from "@/components/gohome-btn";
 
 export function Header({ label }) {
   return (
@@ -13,10 +12,8 @@ export function Header({ label }) {
 
 export function ThreadHeader() {
   return (
-    <div className="flex items-center justify-start py-4 border-b">
-      <Button variant="outline" size="icon" className="mr-4">
-        <ArrowLeftIcon className="h-4 w-4" />
-      </Button>
+    <div className="flex items-center justify-start py-4 border-b px-1">
+      <GoHomeButton />
       <div>
         <div className="flex flex-col">
           <div className="font-semibold">Zyg Team</div>

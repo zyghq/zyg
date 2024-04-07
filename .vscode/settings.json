@@ -9,6 +9,6 @@
     "converse": true,
     "webapp": true,
     "widget": true,
-    "backend": true,
+    "backend": true
   }
 }

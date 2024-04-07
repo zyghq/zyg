@@ -77,7 +77,6 @@ export default function AddWorkspacePage() {
       description: "Workspace created successfully.",
     });
     router.push(`/${workspaceId}/`);
-    // console.log(`successfully created workspace with workspaceI: ${workspaceId}`);
   }
 
   return (
@@ -107,7 +106,7 @@ export default function AddWorkspacePage() {
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input type="name" {...field} required />
+                    <Input type="text" {...field} required />
                   </FormControl>
                   <FormDescription>
                     Typically your company name.

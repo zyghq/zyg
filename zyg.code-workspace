@@ -20,5 +20,8 @@
       "path": ".",
       "name": "zyg"
     }
-  ]
+  ],
+  "settings": {
+    "liveServer.settings.multiRootWorkspaceName": "widget"
+  }
 }

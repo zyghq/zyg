@@ -29,6 +29,7 @@ CREATE TABLE account (
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
     CONSTRAINT account_account_id_pkey PRIMARY KEY (account_id),
     CONSTRAINT account_email_key UNIQUE (email),
     CONSTRAINT account_auth_user_id_key UNIQUE (auth_user_id)
@@ -46,6 +47,7 @@ CREATE TABLE account_pat (
     description TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
     CONSTRAINT account_pat_pat_id_pkey PRIMARY KEY (pat_id),
     CONSTRAINT account_pat_account_id_fkey FOREIGN KEY (account_id) REFERENCES account (account_id),
     CONSTRAINT account_pat_token_key UNIQUE (token)
@@ -62,6 +64,7 @@ CREATE TABLE workspace (
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
     CONSTRAINT workspace_workspace_id_pkey PRIMARY KEY (workspace_id),
     CONSTRAINT workspace_account_id_fkey FOREIGN KEY (account_id) REFERENCES account (account_id),
     CONSTRAINT workspace_slug_key UNIQUE (slug)
@@ -80,6 +83,7 @@ CREATE TABLE thread_qa (
     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
     CONSTRAINT thread_qa_thread_id_pkey PRIMARY KEY (thread_id),
     CONSTRAINT thread_qa_parent_thread_id_fkey FOREIGN KEY (parent_thread_id) REFERENCES thread_qa (thread_id),
     CONSTRAINT thread_qa_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
@@ -96,26 +100,46 @@ CREATE TABLE thread_qa_answer (
     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
     CONSTRAINT thread_qa_answer_answer_id_pkey PRIMARY KEY (answer_id),
     CONSTRAINT thread_qa_answer_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
     CONSTRAINT thread_qa_answer_thread_qa_id_fkey FOREIGN KEY (thread_qa_id) REFERENCES thread_qa (thread_id)
 );
 
--- Represents LLM request-response log table
--- This table is used to store the request-response information linked to the workspace.
--- Currently their is no provision of follow up queries.
--- Deprecate This later 
-CREATE TABLE llm_rr_log (
-    workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
-    request_id VARCHAR(255) NOT NULL, -- primary key
-    prompt TEXT NOT NULL, -- prompt for the request
-    response TEXT NOT NULL, -- response for the request
-    model VARCHAR NOT NULL, -- model used for the request
-    eval INT NULL DEFAULT NULL, -- evaluation of the response
+
+-- Represents the chat thread table
+-- This table is used to store the chat thread information linked to the workspace.
+CREATE TABLE thread_chat (
+    workspace_id VARCHAR(255) NOT NULL,
+    thread_id VARCHAR(255) NOT NULL,
+    title TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+    status VARCHAR(127) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT llm_rr_log_request_id_pkey PRIMARY KEY (request_id),
-    CONSTRAINT llm_rr_log_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id)
+    
+    CONSTRAINT thread_chat_thread_id_pkey PRIMARY KEY (thread_id),
+    CONSTRAINT thread_chat_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id)
+);
+
+
+-- Represents the chat message table
+-- This table is used to store the chat message information linked to the chat thread.
+CREATE TABLE thread_chat_message (
+    thread_chat_id VARCHAR(255) NOT NULL,
+    thread_chat_message_id VARCHAR(255) NOT NULL,
+    body TEXT NOT NULL,
+    sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+    customer_id VARCHAR(255) NULL,
+    member_id VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT thread_chat_message_thread_chat_message_id_pkey PRIMARY KEY (thread_chat_message_id),
+    CONSTRAINT thread_chat_message_thread_chat_id_fkey FOREIGN KEY (thread_chat_id) REFERENCES thread_chat (thread_id),
+    CONSTRAINT thread_chat_message_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
+    CONSTRAINT thread_chat_message_member_id_fkey FOREIGN KEY (member_id) REFERENCES member (member_id)
 );
 
 -- Represents the member table

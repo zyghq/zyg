@@ -89,3 +89,36 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3b3Jrc3BhY2VJZCI6I
 {
     "query": "What is a Bengal Tiger?"
 }
+
+
+### CUSTOMER Thread Chat
+POST http://localhost:8080/-/threads/chat/ HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3b3Jrc3BhY2VJZCI6Indya2NvNjBlcGt0aWR1N3NvZDk2bDkwIiwiZXh0ZXJuYWxJZCI6Inh4eHgtMTExLXp6enoiLCJlbWFpbCI6InNhbmNoaXRycmtAZ21haWwuY29tIiwicGhvbmUiOiIrOTE3NzYwNjg2MDY4IiwiaXNzIjoiYXV0aC56eWcuYWkiLCJzdWIiOiJjX2NvNjFhYmt0aWR1MXQzaTNkbjYwIiwiYXVkIjpbImN1c3RvbWVyIl0sImV4cCI6MTc0Mzc1Nzg3MSwibmJmIjoxNzEyMjIxODcxLCJpYXQiOjE3MTIyMjE4NzEsImp0aSI6Indya2NvNjBlcGt0aWR1N3NvZDk2bDkwOmNfY282MWFia3RpZHUxdDNpM2RuNjAifQ.epCQ4aXvYPXIhVrX6TtfYrq0XxYXT18kIWsOae8HvUQ
+
+{
+    "message": "Hi I am having trouble logging into the App. Please help!"
+}
+
+
+### CUSTOMER Thread Chat
+POST http://localhost:8080/-/threads/chat/th_coalb9ktidud7mkk8vvg/messages/ HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3b3Jrc3BhY2VJZCI6Indya2NvNjBlcGt0aWR1N3NvZDk2bDkwIiwiZXh0ZXJuYWxJZCI6Inh4eHgtMTExLXp6enoiLCJlbWFpbCI6InNhbmNoaXRycmtAZ21haWwuY29tIiwicGhvbmUiOiIrOTE3NzYwNjg2MDY4IiwiaXNzIjoiYXV0aC56eWcuYWkiLCJzdWIiOiJjX2NvNjFhYmt0aWR1MXQzaTNkbjYwIiwiYXVkIjpbImN1c3RvbWVyIl0sImV4cCI6MTc0Mzc1Nzg3MSwibmJmIjoxNzEyMjIxODcxLCJpYXQiOjE3MTIyMjE4NzEsImp0aSI6Indya2NvNjBlcGt0aWR1N3NvZDk2bDkwOmNfY282MWFia3RpZHUxdDNpM2RuNjAifQ.epCQ4aXvYPXIhVrX6TtfYrq0XxYXT18kIWsOae8HvUQ
+
+{
+    "message": "can you help me with this issue? I've been trying to debug it for hours and I can't figure out what's wrong. I've checked all the logs and error messages, but nothing seems to be indicating the problem. I've also tried searching online for similar issues, but couldn't find any relevant solutions. It's really frustrating and I'm running out of ideas. Any help would be greatly appreciated. Thank you!"
+}
+
+
+### CUSTOMER Thread Chat
+GET http://localhost:8080/-/threads/chat/ HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3b3Jrc3BhY2VJZCI6Indya2NvNjBlcGt0aWR1N3NvZDk2bDkwIiwiZXh0ZXJuYWxJZCI6Inh4eHgtMTExLXp6enoiLCJlbWFpbCI6InNhbmNoaXRycmtAZ21haWwuY29tIiwicGhvbmUiOiIrOTE3NzYwNjg2MDY4IiwiaXNzIjoiYXV0aC56eWcuYWkiLCJzdWIiOiJjX2NvNjFhYmt0aWR1MXQzaTNkbjYwIiwiYXVkIjpbImN1c3RvbWVyIl0sImV4cCI6MTc0Mzc1Nzg3MSwibmJmIjoxNzEyMjIxODcxLCJpYXQiOjE3MTIyMjE4NzEsImp0aSI6Indya2NvNjBlcGt0aWR1N3NvZDk2bDkwOmNfY282MWFia3RpZHUxdDNpM2RuNjAifQ.epCQ4aXvYPXIhVrX6TtfYrq0XxYXT18kIWsOae8HvUQ
+
+
+
+### CUSTOMER Thread Chat
+GET http://localhost:8080/-/threads/chat/th_coalb9ktidud7mkk8vvg/messages/ HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3b3Jrc3BhY2VJZCI6Indya2NvNjBlcGt0aWR1N3NvZDk2bDkwIiwiZXh0ZXJuYWxJZCI6Inh4eHgtMTExLXp6enoiLCJlbWFpbCI6InNhbmNoaXRycmtAZ21haWwuY29tIiwicGhvbmUiOiIrOTE3NzYwNjg2MDY4IiwiaXNzIjoiYXV0aC56eWcuYWkiLCJzdWIiOiJjX2NvNjFhYmt0aWR1MXQzaTNkbjYwIiwiYXVkIjpbImN1c3RvbWVyIl0sImV4cCI6MTc0Mzc1Nzg3MSwibmJmIjoxNzEyMjIxODcxLCJpYXQiOjE3MTIyMjE4NzEsImp0aSI6Indya2NvNjBlcGt0aWR1N3NvZDk2bDkwOmNfY282MWFia3RpZHUxdDNpM2RuNjAifQ.epCQ4aXvYPXIhVrX6TtfYrq0XxYXT18kIWsOae8HvUQ

@@ -4,14 +4,10 @@ import { useMutation } from "@tanstack/react-query";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/icons";
-import {
-  ArrowLeftIcon,
-  ActivityLogIcon,
-  PaperPlaneIcon,
-} from "@radix-ui/react-icons";
+import { ActivityLogIcon, PaperPlaneIcon } from "@radix-ui/react-icons";
 import { ThumbsUpIcon, ThumbsDownIcon } from "lucide-react";
-import Link from "next/link";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import GoHomeButton from "@/components/gohome-btn";
 import axios from "axios";
 
 export default function SearchBar() {
@@ -136,11 +132,7 @@ export default function SearchBar() {
     <React.Fragment>
       <form onSubmit={onSubmit}>
         <div className="flex items-center justify-between py-4 px-1 border-b">
-          <Button variant="outline" size="sm" className="mr-1" asChild>
-            <Link href="/">
-              <ArrowLeftIcon className="h-4 w-4" />
-            </Link>
-          </Button>
+          <GoHomeButton />
           <Textarea
             name="text"
             type="text"
@@ -150,6 +142,7 @@ export default function SearchBar() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             required
+            className="max-h-4"
           />
           <Button
             variant="outline"

@@ -379,7 +379,7 @@ func (w Workspace) GetAccountWorkspace(ctx context.Context, db *pgxpool.Pool) (W
 	return workspace, nil
 }
 
-func (w Workspace) GetWorkspaceById(ctx context.Context, db *pgxpool.Pool) (Workspace, error) {
+func (w Workspace) GetById(ctx context.Context, db *pgxpool.Pool) (Workspace, error) {
 	var workspace Workspace
 
 	row, err := db.Query(ctx, `SELECT 
@@ -936,17 +936,236 @@ func (tqa ThreadQAA) Create(ctx context.Context, db *pgxpool.Pool) (ThreadQAA, e
 	return thread, nil
 }
 
+// model
+type ThreadChat struct {
+	WorkspaceId string
+	ThreadId    string
+	Title       string
+	Summary     string
+	Sequence    int
+	Status      string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+func (th ThreadChat) GenId() string {
+	return "th_" + xid.New().String()
+}
+
+func (th ThreadChat) CreateCustomerThChat(
+	ctx context.Context, db *pgxpool.Pool, w Workspace, c Customer, m string,
+) (ThreadChat, ThreadChatMessage, error) {
+	var thm ThreadChatMessage
+	var customerId sql.NullString
+
+	if c.CustomerId != "" {
+		customerId = sql.NullString{String: c.CustomerId, Valid: true}
+	} else {
+		customerId = sql.NullString{Valid: false}
+	}
+
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		fmt.Printf("failed to start db transaction with error: %v\n", err)
+		return th, thm, err
+	}
+	defer tx.Rollback(ctx)
+
+	th.ThreadId = th.GenId()
+	err = tx.QueryRow(ctx, `INSERT INTO thread_chat(workspace_id, thread_id, title, summary, status)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING
+		workspace_id, thread_id, title, summary, sequence, status, created_at, updated_at`,
+		w.WorkspaceId, th.ThreadId, th.Title, th.Summary, "todo").Scan(
+		&th.WorkspaceId, &th.ThreadId, &th.Title, &th.Summary,
+		&th.Sequence, &th.Status, &th.CreatedAt, &th.UpdatedAt,
+	)
+	if err != nil {
+		fmt.Printf("failed to insert thread_chat with error: %v\n", err)
+		return th, thm, err
+	}
+
+	thm.ThreadChatMessageId = thm.GenId()
+	err = tx.QueryRow(ctx, `INSERT INTO thread_chat_message(thread_chat_id, thread_chat_message_id, body, customer_id)
+		VALUES ($1, $2, $3, $4)
+		RETURNING
+		thread_chat_id, thread_chat_message_id, body, sequence, customer_id, member_id, created_at, updated_at`,
+		th.ThreadId, thm.ThreadChatMessageId, m, customerId).Scan(
+		&thm.ThreadChatId, &thm.ThreadChatMessageId, &thm.Body,
+		&thm.Sequence, &thm.CustomerId, &thm.MemberId,
+		&thm.CreatedAt, &thm.UpdatedAt,
+	)
+	if err != nil {
+		fmt.Printf("failed to insert thread_chat_message with error: %v\n", err)
+		return th, thm, err
+	}
+	err = tx.Commit(ctx)
+	if err != nil {
+		fmt.Printf("failed to commit db transaction with error: %v\n", err)
+		return th, thm, err
+	}
+	return th, thm, nil
+}
+
+func (th ThreadChat) GetById(ctx context.Context, db *pgxpool.Pool, threadId string) (ThreadChat, error) {
+
+	row, err := db.Query(ctx, `SELECT
+		workspace_id, thread_id, title, summary, sequence, status, created_at, updated_at
+		FROM thread_chat WHERE thread_id = $1`, threadId)
+	if err != nil {
+		return th, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return th, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&th.WorkspaceId, &th.ThreadId, &th.Title, &th.Summary,
+		&th.Sequence, &th.Status, &th.CreatedAt, &th.UpdatedAt,
+	)
+	if err != nil {
+		return th, err
+	}
+
+	return th, nil
+}
+
+func (th ThreadChat) GetListByWorkspaceId(ctx context.Context, db *pgxpool.Pool, workspaceId string) ([]ThreadChat, error) {
+
+	rows, err := db.Query(ctx, `SELECT
+		workspace_id, thread_id, title, summary, sequence, status, created_at, updated_at
+		FROM thread_chat WHERE workspace_id = $1
+		ORDER BY sequence DESC LIMIT 100`, workspaceId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ths := make([]ThreadChat, 0, 100)
+	for rows.Next() {
+		var th ThreadChat
+		err = rows.Scan(
+			&th.WorkspaceId, &th.ThreadId, &th.Title, &th.Summary,
+			&th.Sequence, &th.Status, &th.CreatedAt, &th.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		ths = append(ths, th)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return ths, nil
+}
+
+// model
+type ThreadChatMessage struct {
+	ThreadChatId        string
+	ThreadChatMessageId string
+	Body                string
+	Sequence            int
+	CustomerId          sql.NullString
+	CustomerName        sql.NullString
+	MemberId            sql.NullString
+	MemberName          sql.NullString
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+}
+
+func (thm ThreadChatMessage) GenId() string {
+	return "thm_" + xid.New().String()
+}
+
+func (thm ThreadChatMessage) CreateCustomerThChatMessage(
+	ctx context.Context, db *pgxpool.Pool, th ThreadChat, c Customer, m string,
+) (ThreadChatMessage, error) {
+	var customerId sql.NullString
+
+	if c.CustomerId != "" {
+		customerId = sql.NullString{String: c.CustomerId, Valid: true}
+	} else {
+		return thm, fmt.Errorf("cannot create customer thread chat message without customer id got: %v", c.CustomerId)
+	}
+
+	thm.ThreadChatMessageId = thm.GenId()
+	err := db.QueryRow(ctx, `INSERT INTO thread_chat_message(thread_chat_id, thread_chat_message_id, body, customer_id)
+		VALUES ($1, $2, $3, $4)
+		RETURNING
+		thread_chat_id, thread_chat_message_id, body, sequence, customer_id, member_id, created_at, updated_at`,
+		th.ThreadId, thm.ThreadChatMessageId, m, customerId).Scan(
+		&thm.ThreadChatId, &thm.ThreadChatMessageId, &thm.Body,
+		&thm.Sequence, &thm.CustomerId, &thm.MemberId,
+		&thm.CreatedAt, &thm.UpdatedAt,
+	)
+	if err != nil {
+		fmt.Printf("failed to insert thread_chat_message with error: %v\n", err)
+		return thm, err
+	}
+	// attach customer name before returning
+	// doing this will not require any fancy db query as customer name
+	// is already available and its of the same type.
+	thm.CustomerName = c.Name
+	return thm, nil
+}
+
+func (thm ThreadChatMessage) GetListByThreadId(
+	ctx context.Context, db *pgxpool.Pool, threadId string,
+) ([]ThreadChatMessage, error) {
+
+	stmt := `SELECT
+		thm.thread_chat_id AS thread_chat_id, thm.thread_chat_message_id AS thread_chat_message_id,
+		thm.body AS body, thm.sequence AS sequence,
+		thm.created_at AS created_at, thm.updated_at AS updated_at,
+		c.customer_id AS customer_id, c.name AS customer_name,
+		m.member_id AS member_id
+		FROM thread_chat_message AS thm
+		LEFT JOIN customer AS c ON thm.customer_id = c.customer_id
+		LEFT JOIN member AS m ON thm.member_id = m.member_id
+		WHERE thm.thread_chat_id = $1
+		ORDER BY sequence DESC LIMIT 100`
+
+	rows, err := db.Query(ctx, stmt, threadId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	messages := make([]ThreadChatMessage, 0, 100)
+	for rows.Next() {
+		var m ThreadChatMessage
+		err = rows.Scan(
+			&m.ThreadChatId, &m.ThreadChatMessageId, &m.Body, &m.Sequence,
+			&m.CreatedAt, &m.UpdatedAt, &m.CustomerId, &m.CustomerName,
+			&m.MemberId,
+		)
+		if err != nil {
+			return nil, err
+		}
+		messages = append(messages, m)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return messages, nil
+}
+
 // request
 type ThreadQAReq struct {
 	Query string `json:"query"`
 }
 
-// resp
+// response
 type ThreadQAAResp struct {
-	AnswerId string        `json:"answerId"`
-	Answer   string        `json:"answer"`
-	Eval     sql.NullInt32 `json:"eval"`
-	Sequence int           `json:"sequence"`
+	AnswerId string
+	Answer   string
+	Eval     sql.NullInt32
+	Sequence int
 }
 
 func (tqar ThreadQAAResp) MarshalJSON() ([]byte, error) {
@@ -969,12 +1188,12 @@ func (tqar ThreadQAAResp) MarshalJSON() ([]byte, error) {
 }
 
 type ThreadQAResp struct {
-	ThreadId  string          `json:"threadId"`
-	Query     string          `json:"query"`
-	Sequence  int             `json:"sequence"`
-	CreatedAt time.Time       `json:"createdAt"`
-	UpdatedAt time.Time       `json:"updatedAt"`
-	Answers   []ThreadQAAResp `json:"answers"`
+	ThreadId  string
+	Query     string
+	Sequence  int
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Answers   []ThreadQAAResp
 }
 
 func (thr ThreadQAResp) MarshalJSON() ([]byte, error) {
@@ -1035,6 +1254,143 @@ type PATReq struct {
 // request
 type WorkspaceReq struct {
 	Name string `json:"name"`
+}
+
+// request
+type ThreadChatReq struct {
+	Message string `json:"message"`
+}
+
+// response
+type ThCustomerResp struct {
+	CustomerId sql.NullString
+	Name       sql.NullString
+}
+
+func (c ThCustomerResp) MarshalJSON() ([]byte, error) {
+	var customerId, name *string
+	if c.CustomerId.Valid {
+		customerId = &c.CustomerId.String
+	}
+	if c.Name.Valid {
+		name = &c.Name.String
+	}
+	aux := &struct {
+		CustomerId string  `json:"customerId"`
+		Name       *string `json:"name"`
+	}{
+		CustomerId: *customerId,
+		Name:       name,
+	}
+	return json.Marshal(aux)
+}
+
+// response
+type ThMemberResp struct {
+	MemberId sql.NullString `json:"memberId"`
+	Name     sql.NullString `json:"name"`
+}
+
+func (m ThMemberResp) MarshalJSON() ([]byte, error) {
+	var memberId, name *string
+	if m.MemberId.Valid {
+		memberId = &m.MemberId.String
+	}
+	if m.Name.Valid {
+		name = &m.Name.String
+	}
+	aux := &struct {
+		MemberId string  `json:"memberId"`
+		Name     *string `json:"name"`
+	}{
+		MemberId: *memberId,
+		Name:     name,
+	}
+	return json.Marshal(aux)
+}
+
+// response
+type ThreadChatMessageResp struct {
+	ThreadChatId        string
+	ThreadChatMessageId string
+	Body                string
+	Sequence            int
+	Customer            *ThCustomerResp
+	Member              *ThMemberResp
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+}
+
+func (thcresp ThreadChatMessageResp) MarshalJSON() ([]byte, error) {
+	var customer *ThCustomerResp
+	var member *ThMemberResp
+
+	if thcresp.Customer != nil {
+		customer = thcresp.Customer
+	}
+
+	if thcresp.Member != nil {
+		member = thcresp.Member
+	}
+
+	aux := &struct {
+		ThreadChatId        string          `json:"threadChatId"`
+		ThreadChatMessageId string          `json:"threadChatMessageId"`
+		Body                string          `json:"body"`
+		Sequence            int             `json:"sequence"`
+		Customer            *ThCustomerResp `json:"customer,omitempty"`
+		Member              *ThMemberResp   `json:"member,omitempty"`
+		CreatedAt           string          `json:"createdAt"`
+		UpdatedAt           string          `json:"updatedAt"`
+	}{
+		ThreadChatId:        thcresp.ThreadChatId,
+		ThreadChatMessageId: thcresp.ThreadChatMessageId,
+		Body:                thcresp.Body,
+		Sequence:            thcresp.Sequence,
+		Customer:            customer,
+		Member:              member,
+		CreatedAt:           thcresp.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:           thcresp.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
+}
+
+// response
+type ThreadChatInitResp struct {
+	ThreadId  string
+	Sequence  int
+	Status    string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Messages  []ThreadChatMessageResp
+}
+
+// response
+type ThreadChatResp struct {
+	ThreadId  string `json:"threadId"`
+	Sequence  int    `json:"sequence"`
+	Status    string `json:"status"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
+}
+
+func (thresp ThreadChatInitResp) MarshalJSON() ([]byte, error) {
+	aux := &struct {
+		ThreadId  string                  `json:"threadId"`
+		Sequence  int                     `json:"sequence"`
+		Status    string                  `json:"status"`
+		CreatedAt string                  `json:"createdAt"`
+		UpdatedAt string                  `json:"updatedAt"`
+		Messages  []ThreadChatMessageResp `json:"messages"`
+	}{
+		ThreadId:  thresp.ThreadId,
+		Sequence:  thresp.Sequence,
+		Status:    thresp.Status,
+		CreatedAt: thresp.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: thresp.UpdatedAt.Format(time.RFC3339),
+		Messages:  thresp.Messages,
+	}
+	return json.Marshal(aux)
 }
 
 type LLM struct {
@@ -1594,7 +1950,7 @@ func handleInitThreadQA(ctx context.Context, db *pgxpool.Pool) http.Handler {
 			return
 		}
 
-		workspace, err := Workspace{WorkspaceId: customer.WorkspaceId}.GetWorkspaceById(ctx, db)
+		workspace, err := Workspace{WorkspaceId: customer.WorkspaceId}.GetById(ctx, db)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
@@ -1654,6 +2010,271 @@ func handleInitThreadQA(ctx context.Context, db *pgxpool.Pool) http.Handler {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
+
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
+func handleInitThreadChat(ctx context.Context, db *pgxpool.Pool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func(r io.ReadCloser) {
+			_, _ = io.Copy(io.Discard, r)
+			_ = r.Close()
+		}(r.Body)
+
+		var message ThreadChatReq
+
+		err := json.NewDecoder(r.Body).Decode(&message)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		customer, err := AuthenticateCustomer(ctx, db, w, r)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		workspace, err := Workspace{WorkspaceId: customer.WorkspaceId}.GetById(ctx, db)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		th, thc, err := ThreadChat{}.CreateCustomerThChat(ctx, db, workspace, customer, message.Message)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		customerr := &ThCustomerResp{
+			CustomerId: sql.NullString{String: customer.CustomerId, Valid: true},
+			Name:       customer.Name,
+		}
+
+		var memberr *ThMemberResp
+		thcresp := ThreadChatMessageResp{
+			ThreadChatId:        th.ThreadId,
+			ThreadChatMessageId: thc.ThreadChatMessageId,
+			Body:                thc.Body,
+			Sequence:            thc.Sequence,
+			Customer:            customerr,
+			Member:              memberr,
+			CreatedAt:           thc.CreatedAt,
+			UpdatedAt:           thc.UpdatedAt,
+		}
+
+		messages := make([]ThreadChatMessageResp, 0, 1)
+		messages = append(messages, thcresp)
+		resp := ThreadChatInitResp{
+			ThreadId:  th.ThreadId,
+			Sequence:  th.Sequence,
+			Status:    th.Status,
+			CreatedAt: th.CreatedAt,
+			UpdatedAt: th.UpdatedAt,
+			Messages:  messages,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
+func handleGetThreadChats(ctx context.Context, db *pgxpool.Pool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		customer, err := AuthenticateCustomer(ctx, db, w, r)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		workspace, err := Workspace{WorkspaceId: customer.WorkspaceId}.GetById(ctx, db)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		ths, err := ThreadChat{}.GetListByWorkspaceId(ctx, db, workspace.WorkspaceId)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		threads := make([]ThreadChatResp, 0, len(ths))
+		for _, th := range ths {
+			threads = append(threads, ThreadChatResp{
+				ThreadId:  th.ThreadId,
+				Sequence:  th.Sequence,
+				Status:    th.Status,
+				CreatedAt: th.CreatedAt.Format(time.RFC3339),
+				UpdatedAt: th.UpdatedAt.Format(time.RFC3339),
+			})
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		if err := json.NewEncoder(w).Encode(threads); err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
+func handleCreateThreadChatMessage(ctx context.Context, db *pgxpool.Pool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func(r io.ReadCloser) {
+			_, _ = io.Copy(io.Discard, r)
+			_ = r.Close()
+		}(r.Body)
+
+		threadId := r.PathValue("threadId")
+
+		var message ThreadChatReq
+
+		err := json.NewDecoder(r.Body).Decode(&message)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		customer, err := AuthenticateCustomer(ctx, db, w, r)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+		_, err = Workspace{WorkspaceId: customer.WorkspaceId}.GetById(ctx, db)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		th, err := ThreadChat{}.GetById(ctx, db, threadId)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		thc, err := ThreadChatMessage{}.CreateCustomerThChatMessage(ctx, db, th, customer, message.Message)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		customerr := &ThCustomerResp{
+			CustomerId: sql.NullString{String: customer.CustomerId, Valid: true},
+			Name:       customer.Name,
+		}
+
+		var memberr *ThMemberResp
+
+		thcresp := ThreadChatMessageResp{
+			ThreadChatId:        th.ThreadId,
+			ThreadChatMessageId: thc.ThreadChatMessageId,
+			Body:                thc.Body,
+			Sequence:            thc.Sequence,
+			Customer:            customerr,
+			Member:              memberr,
+			CreatedAt:           thc.CreatedAt,
+			UpdatedAt:           thc.UpdatedAt,
+		}
+
+		messages := make([]ThreadChatMessageResp, 0, 1)
+		messages = append(messages, thcresp)
+		resp := ThreadChatInitResp{
+			ThreadId:  th.ThreadId,
+			Sequence:  th.Sequence,
+			Status:    th.Status,
+			CreatedAt: th.CreatedAt,
+			UpdatedAt: th.UpdatedAt,
+			Messages:  messages,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
+func handleGetThreadChatMessages(ctx context.Context, db *pgxpool.Pool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := AuthenticateCustomer(ctx, db, w, r)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		threadId := r.PathValue("threadId")
+
+		th, err := ThreadChat{}.GetById(ctx, db, threadId)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		results, err := ThreadChatMessage{}.GetListByThreadId(ctx, db, th.ThreadId)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		messages := make([]ThreadChatMessageResp, 0, 100)
+
+		for _, thc := range results {
+			var customerr *ThCustomerResp
+			var memberr *ThMemberResp
+
+			if thc.CustomerId.Valid {
+				customerr = &ThCustomerResp{
+					CustomerId: thc.CustomerId,
+					Name:       thc.CustomerName,
+				}
+			}
+
+			if thc.MemberId.Valid {
+				memberr = &ThMemberResp{
+					MemberId: thc.MemberId,
+					Name:     thc.MemberName,
+				}
+			}
+
+			message := ThreadChatMessageResp{
+				ThreadChatId:        th.ThreadId,
+				ThreadChatMessageId: thc.ThreadChatMessageId,
+				Body:                thc.Body,
+				Sequence:            thc.Sequence,
+				Customer:            customerr,
+				Member:              memberr,
+				CreatedAt:           thc.CreatedAt,
+				UpdatedAt:           thc.UpdatedAt,
+			}
+			messages = append(messages, message)
+		}
+
+		resp := ThreadChatInitResp{
+			ThreadId:  th.ThreadId,
+			Sequence:  th.Sequence,
+			Status:    th.Status,
+			CreatedAt: th.CreatedAt,
+			UpdatedAt: th.UpdatedAt,
+			Messages:  messages,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -1948,6 +2569,8 @@ func run(ctx context.Context) error {
 	// sdk+web
 	mux.Handle("POST /pats/{$}",
 		handleCreateAccountPAT(ctx, db))
+
+	// sdk+web
 	mux.Handle("GET /pats/{$}",
 		handleGetAccountPAT(ctx, db))
 
@@ -1959,12 +2582,25 @@ func run(ctx context.Context) error {
 	mux.Handle("GET /workspaces/{$}",
 		handleGetWorkspaces(ctx, db))
 
-	// // customer
-	// mux.Handle("POST /workspaces/{workspaceId}/-/queries/{requestId}/{$}",
-	// 	handleLLMQueryEval(ctx, db))
-
+	// customer
 	mux.Handle("POST /-/threads/qa/{$}",
 		handleInitThreadQA(ctx, db))
+
+	// customer
+	mux.Handle("POST /-/threads/chat/{$}",
+		handleInitThreadChat(ctx, db))
+
+	// customer
+	mux.Handle("POST /-/threads/chat/{threadId}/messages/{$}",
+		handleCreateThreadChatMessage(ctx, db))
+
+	// customer
+	mux.Handle("GET /-/threads/chat/{$}",
+		handleGetThreadChats(ctx, db))
+
+	// customer
+	mux.Handle("GET /-/threads/chat/{threadId}/messages/{$}",
+		handleGetThreadChatMessages(ctx, db))
 
 	// sdk+web
 	mux.Handle("POST /workspaces/{workspaceId}/tokens/{$}",
