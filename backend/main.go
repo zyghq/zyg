@@ -1929,7 +1929,24 @@ func handleGetWorkspaces(ctx context.Context, db *pgxpool.Pool) http.Handler {
 // 	})
 // }
 
-func handleInitThreadQA(ctx context.Context, db *pgxpool.Pool) http.Handler {
+func handleGetCustomer(ctx context.Context, db *pgxpool.Pool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		customer, err := AuthenticateCustomer(ctx, db, w, r)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(customer); err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
+func handleInitCustomerThreadQA(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func(r io.ReadCloser) {
 			_, _ = io.Copy(io.Discard, r)
@@ -2018,7 +2035,7 @@ func handleInitThreadQA(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	})
 }
 
-func handleInitThreadChat(ctx context.Context, db *pgxpool.Pool) http.Handler {
+func handleInitCustomerThreadChat(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func(r io.ReadCloser) {
 			_, _ = io.Copy(io.Discard, r)
@@ -2089,7 +2106,7 @@ func handleInitThreadChat(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	})
 }
 
-func handleGetThreadChats(ctx context.Context, db *pgxpool.Pool) http.Handler {
+func handleGetCustomerThreadChats(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		customer, err := AuthenticateCustomer(ctx, db, w, r)
 		if err != nil {
@@ -2130,7 +2147,7 @@ func handleGetThreadChats(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	})
 }
 
-func handleCreateThreadChatMessage(ctx context.Context, db *pgxpool.Pool) http.Handler {
+func handleCreateCustomerThreadChatMessage(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func(r io.ReadCloser) {
 			_, _ = io.Copy(io.Discard, r)
@@ -2209,7 +2226,7 @@ func handleCreateThreadChatMessage(ctx context.Context, db *pgxpool.Pool) http.H
 	})
 }
 
-func handleGetThreadChatMessages(ctx context.Context, db *pgxpool.Pool) http.Handler {
+func handleGetCustomerThreadChatMessages(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, err := AuthenticateCustomer(ctx, db, w, r)
 		if err != nil {
@@ -2583,24 +2600,27 @@ func run(ctx context.Context) error {
 		handleGetWorkspaces(ctx, db))
 
 	// customer
+	mux.Handle("GET /-/me/{$}", handleGetCustomer(ctx, db))
+
+	// customer
 	mux.Handle("POST /-/threads/qa/{$}",
-		handleInitThreadQA(ctx, db))
+		handleInitCustomerThreadQA(ctx, db))
 
 	// customer
 	mux.Handle("POST /-/threads/chat/{$}",
-		handleInitThreadChat(ctx, db))
+		handleInitCustomerThreadChat(ctx, db))
 
 	// customer
 	mux.Handle("POST /-/threads/chat/{threadId}/messages/{$}",
-		handleCreateThreadChatMessage(ctx, db))
+		handleCreateCustomerThreadChatMessage(ctx, db))
 
 	// customer
 	mux.Handle("GET /-/threads/chat/{$}",
-		handleGetThreadChats(ctx, db))
+		handleGetCustomerThreadChats(ctx, db))
 
 	// customer
 	mux.Handle("GET /-/threads/chat/{threadId}/messages/{$}",
-		handleGetThreadChatMessages(ctx, db))
+		handleGetCustomerThreadChatMessages(ctx, db))
 
 	// sdk+web
 	mux.Handle("POST /workspaces/{workspaceId}/tokens/{$}",

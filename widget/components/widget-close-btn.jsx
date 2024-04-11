@@ -4,7 +4,6 @@ import { Cross1Icon } from "@radix-ui/react-icons";
 
 export default function WidgetCloseButton() {
   const handleClose = () => {
-    console.log("close called from iframe ....");
     window.parent.postMessage("close", "*");
   };
   return (

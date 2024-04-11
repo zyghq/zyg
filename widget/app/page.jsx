@@ -1,4 +1,5 @@
 import * as React from "react";
+import { cookies } from "next/headers";
 import { Header } from "@/components/headers";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,8 +7,16 @@ import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
 import { Icons } from "@/components/icons";
 import StartThreadLink from "@/components/start-thread-link";
+import { isAuthenticated } from "@/utils/helpers";
+import { redirect } from "next/navigation";
 
-export default function WelcomePage() {
+export default async function WelcomePage() {
+  const cookieStore = cookies();
+
+  if (!(await isAuthenticated(cookieStore))) {
+    return redirect("/authenticate/");
+  }
+
   return (
     <React.Fragment>
       <div className="flex flex-col">

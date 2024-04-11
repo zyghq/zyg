@@ -21,6 +21,7 @@
     "axios": "^1.6.8",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
+    "js-cookie": "^3.0.5",
     "lucide-react": "^0.343.0",
     "next": "14.1.0",
     "partysocket": "^1.0.1",

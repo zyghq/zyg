@@ -1,3 +1,16 @@
+// Reference Docs:
+//
+// https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
+
+// TODO:
+/**
+ * Allow the developer to set the ZygConfig to window object,
+ * Export window.Zyg to the global scope - to allow for programatically control widget.
+ * Also can allow Zyg object pass config, and other options to the widget.
+ * Merge the configs = window.ZygConfig + API Config + Zyg Config
+ *
+ */
+
 const baseUrl = "http://localhost:3000";
 var config,
   isHidden = !0,
@@ -26,6 +39,12 @@ function getWidgetConfig() {
     // header_color: "#9370DB",
     // show_initial_message: true,
   };
+  // attach local config if available
+  // update this once we make an API call.
+  const { zygConfig: localConfig } = window;
+  if (localConfig) {
+    Object.assign(config, localConfig);
+  }
   return Promise.resolve(config);
 }
 
@@ -49,6 +68,10 @@ function showZW() {
 }
 
 function onMessageHandler(evt) {
+  console.log("origin:", evt.origin);
+  console.log("source", evt.source);
+  console.log("data", evt.data);
+  if (evt.origin !== baseUrl) return;
   if (evt.data === "close") {
     hideZW();
   }
@@ -84,6 +107,8 @@ function createZygWidget(config) {
       return;
     }
   }
+
+  var accessToken = config?.identity?.accessToken;
 
   // create the iframe parent div container
   var frameContainer = document.createElement("div");
@@ -149,13 +174,35 @@ function createZygWidget(config) {
   setTimeout(function () {
     (popButton.style.opacity = 1),
       (popButton.style.transform = "scale(1)"),
-      (frameContainer.style.display = "block"),
-      console.log("Zyg Widget Created...");
+      (frameContainer.style.display = "block");
   }, 1e3),
     popButton.addEventListener("click", function () {
       isHidden ? showZW() : hideZW();
     });
+
+  // iframe
+  const iface = {
+    authenticate: () => {
+      const message = {
+        event: "authenticate",
+        payload: {
+          accessToken,
+        },
+      };
+      const messageStr = JSON.stringify(message);
+      iframe.contentWindow.postMessage(messageStr, baseUrl);
+    },
+  };
+  iframe.addEventListener("load", function () {
+    window.addEventListener("zyg:ping", function () {
+      const event = new CustomEvent("zyg:pong", {
+        detail: iface,
+      });
+      window.dispatchEvent(event);
+    });
+  });
 }
+
 async function loadDotLottiePlayer() {
   try {
     await import(
@@ -165,13 +212,45 @@ async function loadDotLottiePlayer() {
     console.error("Failed to load the DotLottie Player module", t);
   }
 }
+
+function widgetPing() {
+  return new Promise((resolve) => {
+    let timeoutId;
+    const widgetLoadedBeat = () => {
+      const event = new Event("zyg:ping");
+      timeoutId = window.setTimeout(widgetLoadedBeat, 1000);
+      window.dispatchEvent(event);
+    };
+
+    window.addEventListener(
+      "zyg:pong",
+      (e) => {
+        const api = e.detail;
+        window.clearTimeout(timeoutId);
+        resolve(api);
+      },
+      {
+        once: true,
+      }
+    );
+    widgetLoadedBeat();
+  });
+}
+
 function init() {
   getWidgetConfig()
     .then((c) => {
       console.log("widget config:", c);
       createZygWidget((config = c)),
         window.addEventListener("message", onMessageHandler),
-        window.addEventListener("resize", handlePageWidthChange);
+        window.addEventListener("resize", handlePageWidthChange),
+        widgetPing()
+          .then((api) => {
+            api.authenticate();
+          })
+          .catch((err) => {
+            console.error("error on widget ping-pong", err);
+          });
     })
     .catch((err) => {
       console.error("error fetching widget config:", err);

@@ -1,8 +1,15 @@
 import * as React from "react";
+import { cookies } from "next/headers";
+import { isAuthenticated } from "@/utils/helpers";
 import { ThreadHeader } from "@/components/headers";
 import StartThreadForm from "@/components/start-thread-form";
 
 export default function ThreadInitPage() {
+  const cookieStore = cookies();
+
+  if (!isAuthenticated(cookieStore)) {
+    return redirect("/authenticate/");
+  }
   return (
     <React.Fragment>
       <ThreadHeader />

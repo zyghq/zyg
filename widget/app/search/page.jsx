@@ -1,8 +1,15 @@
 import * as React from "react";
+import { cookies } from "next/headers";
+import { isAuthenticated } from "@/utils/helpers";
 import SearchBar from "@/components/searchbar";
 import StartThreadLink from "@/components/start-thread-link";
 
 export default function SearchPage() {
+  const cookieStore = cookies();
+
+  if (!isAuthenticated(cookieStore)) {
+    return redirect("/authenticate/");
+  }
   return (
     <React.Fragment>
       <SearchBar />

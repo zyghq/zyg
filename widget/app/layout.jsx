@@ -1,5 +1,6 @@
 import { Inter } from "next/font/google";
 import { ReactQueryClientProvider } from "@/components/providers";
+import PostMessageEvent from "@/components/post-message-event";
 
 import "./globals.css";
 
@@ -16,6 +17,7 @@ export default function RootLayout({ children }) {
       <html lang="en">
         <body className={inter.className}>
           <div className="flex flex-col min-h-screen">{children}</div>
+          <PostMessageEvent />
         </body>
       </html>
     </ReactQueryClientProvider>

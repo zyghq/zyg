@@ -15,7 +15,6 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   message: z.string().min(1, "Message is required"),
@@ -36,8 +35,7 @@ function SubmitButton({ isDisabled }) {
   );
 }
 
-export default function MessageThreadForm({ threadId }) {
-  //   const router = useRouter();
+export default function MessageThreadForm({ threadId, refetch }) {
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -69,8 +67,8 @@ export default function MessageThreadForm({ threadId }) {
       return;
     }
     console.log(data);
-    // const { threadId } = data;
-    // return router.push(`/threads/${threadId}/`);
+    form.reset({ message: "" });
+    refetch();
   }
 
   return (
