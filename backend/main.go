@@ -419,6 +419,55 @@ func (m Member) GenId() string {
 	return "m_" + xid.New().String()
 }
 
+func (m Member) MarshalJSON() ([]byte, error) {
+	aux := &struct {
+		WorkspaceId string `json:"workspaceId"`
+		AccountId   string `json:"accountId"`
+		MemberId    string `json:"memberId"`
+		Role        string `json:"role"`
+		CreatedAt   string `json:"createdAt"`
+		UpdatedAt   string `json:"updatedAt"`
+	}{
+		WorkspaceId: m.WorkspaceId,
+		AccountId:   m.AccountId,
+		MemberId:    m.MemberId,
+		Role:        m.role,
+		CreatedAt:   m.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   m.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
+}
+
+func (m Member) GetWorkspaceMemberByAccountId(
+	ctx context.Context, db *pgxpool.Pool, workspaceId string, accountId string,
+) (Member, error) {
+
+	row, err := db.Query(ctx, `SELECT
+		workspace_id, account_id, member_id, role, created_at, updated_at
+		FROM member WHERE workspace_id = $1 AND account_id = $2`, workspaceId, accountId)
+	if err != nil {
+		return m, err
+	}
+
+	defer row.Close()
+
+	if !row.Next() {
+		return m, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&m.WorkspaceId, &m.AccountId,
+		&m.MemberId, &m.role,
+		&m.CreatedAt, &m.UpdatedAt,
+	)
+
+	if err != nil {
+		return m, err
+	}
+
+	return m, nil
+}
+
 // model
 type Customer struct {
 	WorkspaceId string
@@ -972,11 +1021,12 @@ func (th ThreadChat) CreateCustomerThChat(
 	defer tx.Rollback(ctx)
 
 	th.ThreadId = th.GenId()
+	th.Status = "todo" // default status
 	err = tx.QueryRow(ctx, `INSERT INTO thread_chat(workspace_id, thread_id, title, summary, status)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING
 		workspace_id, thread_id, title, summary, sequence, status, created_at, updated_at`,
-		w.WorkspaceId, th.ThreadId, th.Title, th.Summary, "todo").Scan(
+		w.WorkspaceId, th.ThreadId, th.Title, th.Summary, th.Status).Scan(
 		&th.WorkspaceId, &th.ThreadId, &th.Title, &th.Summary,
 		&th.Sequence, &th.Status, &th.CreatedAt, &th.UpdatedAt,
 	)
@@ -1082,7 +1132,7 @@ func (thm ThreadChatMessage) GenId() string {
 }
 
 func (thm ThreadChatMessage) CreateCustomerThChatMessage(
-	ctx context.Context, db *pgxpool.Pool, th ThreadChat, c Customer, m string,
+	ctx context.Context, db *pgxpool.Pool, th ThreadChat, c Customer, msg string,
 ) (ThreadChatMessage, error) {
 	var customerId sql.NullString
 
@@ -1097,7 +1147,7 @@ func (thm ThreadChatMessage) CreateCustomerThChatMessage(
 		VALUES ($1, $2, $3, $4)
 		RETURNING
 		thread_chat_id, thread_chat_message_id, body, sequence, customer_id, member_id, created_at, updated_at`,
-		th.ThreadId, thm.ThreadChatMessageId, m, customerId).Scan(
+		th.ThreadId, thm.ThreadChatMessageId, msg, customerId).Scan(
 		&thm.ThreadChatId, &thm.ThreadChatMessageId, &thm.Body,
 		&thm.Sequence, &thm.CustomerId, &thm.MemberId,
 		&thm.CreatedAt, &thm.UpdatedAt,
@@ -1110,6 +1160,34 @@ func (thm ThreadChatMessage) CreateCustomerThChatMessage(
 	// doing this will not require any fancy db query as customer name
 	// is already available and its of the same type.
 	thm.CustomerName = c.Name
+	return thm, nil
+}
+
+func (thm ThreadChatMessage) CreateMemberThChatMessage(
+	ctx context.Context, db *pgxpool.Pool, th ThreadChat, m Member, msg string,
+) (ThreadChatMessage, error) {
+	var memberId sql.NullString
+
+	if m.MemberId != "" {
+		memberId = sql.NullString{String: m.MemberId, Valid: true}
+	} else {
+		return thm, fmt.Errorf("cannot create member thread chat message without member id got: %v", m.MemberId)
+	}
+
+	thm.ThreadChatMessageId = thm.GenId()
+	err := db.QueryRow(ctx, `INSERT INTO thread_chat_message(thread_chat_id, thread_chat_message_id, body, member_id)
+		VALUES ($1, $2, $3, $4)
+		RETURNING
+		thread_chat_id, thread_chat_message_id, body, sequence, customer_id, member_id, created_at, updated_at`,
+		th.ThreadId, thm.ThreadChatMessageId, msg, memberId).Scan(
+		&thm.ThreadChatId, &thm.ThreadChatMessageId, &thm.Body,
+		&thm.Sequence, &thm.CustomerId, &thm.MemberId,
+		&thm.CreatedAt, &thm.UpdatedAt,
+	)
+	if err != nil {
+		fmt.Printf("failed to insert thread_chat_message with error: %v\n", err)
+		return thm, err
+	}
 	return thm, nil
 }
 
@@ -1517,7 +1595,7 @@ type AuthJWTClaims struct {
 	jwt.RegisteredClaims
 }
 
-func AuthenticateMember(ctx context.Context, db *pgxpool.Pool, w http.ResponseWriter, r *http.Request) (Account, error) {
+func AuthenticateAccount(ctx context.Context, db *pgxpool.Pool, w http.ResponseWriter, r *http.Request) (Account, error) {
 	var account Account
 
 	ath := r.Header.Get("Authorization")
@@ -1724,7 +1802,7 @@ func handleCreateAccountPAT(ctx context.Context, db *pgxpool.Pool) http.Handler 
 			return
 		}
 
-		account, err := AuthenticateMember(ctx, db, w, r)
+		account, err := AuthenticateAccount(ctx, db, w, r)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
@@ -1754,7 +1832,7 @@ func handleCreateAccountPAT(ctx context.Context, db *pgxpool.Pool) http.Handler 
 
 func handleGetAccountPAT(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		account, err := AuthenticateMember(ctx, db, w, r)
+		account, err := AuthenticateAccount(ctx, db, w, r)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
@@ -1797,7 +1875,7 @@ func handleCreateWorkspace(ctx context.Context, db *pgxpool.Pool) http.Handler {
 			return
 		}
 
-		account, err := AuthenticateMember(ctx, db, w, r)
+		account, err := AuthenticateAccount(ctx, db, w, r)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
@@ -1822,7 +1900,7 @@ func handleCreateWorkspace(ctx context.Context, db *pgxpool.Pool) http.Handler {
 func handleGetWorkspaces(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		account, err := AuthenticateMember(ctx, db, w, r)
+		account, err := AuthenticateAccount(ctx, db, w, r)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
@@ -2226,6 +2304,86 @@ func handleCreateCustomerThreadChatMessage(ctx context.Context, db *pgxpool.Pool
 	})
 }
 
+func handleCreateMemberThreadChatMessage(ctx context.Context, db *pgxpool.Pool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func(r io.ReadCloser) {
+			_, _ = io.Copy(io.Discard, r)
+			_ = r.Close()
+		}(r.Body)
+
+		workspaceId := r.PathValue("workspaceId")
+		threadId := r.PathValue("threadId")
+
+		var message ThreadChatReq
+
+		err := json.NewDecoder(r.Body).Decode(&message)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		account, err := AuthenticateAccount(ctx, db, w, r)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		member, err := Member{}.GetWorkspaceMemberByAccountId(ctx, db, workspaceId, account.AccountId)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		th, err := ThreadChat{}.GetById(ctx, db, threadId)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		thc, err := ThreadChatMessage{}.CreateMemberThChatMessage(ctx, db, th, member, message.Message)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		var customerr *ThCustomerResp
+
+		memberr := &ThMemberResp{
+			MemberId: sql.NullString{String: member.MemberId, Valid: true},
+		}
+
+		thcresp := ThreadChatMessageResp{
+			ThreadChatId:        th.ThreadId,
+			ThreadChatMessageId: thc.ThreadChatMessageId,
+			Body:                thc.Body,
+			Sequence:            thc.Sequence,
+			Customer:            customerr,
+			Member:              memberr,
+			CreatedAt:           thc.CreatedAt,
+			UpdatedAt:           thc.UpdatedAt,
+		}
+
+		messages := make([]ThreadChatMessageResp, 0, 1)
+		messages = append(messages, thcresp)
+		resp := ThreadChatInitResp{
+			ThreadId:  th.ThreadId,
+			Sequence:  th.Sequence,
+			Status:    th.Status,
+			CreatedAt: th.CreatedAt,
+			UpdatedAt: th.UpdatedAt,
+			Messages:  messages,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
 func handleGetCustomerThreadChatMessages(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, err := AuthenticateCustomer(ctx, db, w, r)
@@ -2315,7 +2473,7 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 			return
 		}
 
-		account, err := AuthenticateMember(ctx, db, w, r)
+		account, err := AuthenticateAccount(ctx, db, w, r)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
@@ -2621,6 +2779,10 @@ func run(ctx context.Context) error {
 	// customer
 	mux.Handle("GET /-/threads/chat/{threadId}/messages/{$}",
 		handleGetCustomerThreadChatMessages(ctx, db))
+
+	// sdk+web
+	mux.Handle("POST /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
+		handleCreateMemberThreadChatMessage(ctx, db))
 
 	// sdk+web
 	mux.Handle("POST /workspaces/{workspaceId}/tokens/{$}",

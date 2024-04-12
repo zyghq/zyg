@@ -11,19 +11,38 @@ import { useQuery } from "@tanstack/react-query";
 import Cookies from "js-cookie";
 import { Icons } from "@/components/icons";
 
-function Message({ message, isMe = true }) {
+function Message({ message }) {
+  const { createdAt } = message;
+  const date = new Date(createdAt);
+  const time = date.toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const isMe = typeof message.customer === "object";
+  const memName = () => {
+    return message?.member?.name || "C";
+  };
   return (
-    <div className={`flex max-w-sm ${isMe ? "ml-auto" : "mr-auto"}`}>
-      <div className="flex space-x-2">
-        {isMe ? null : (
-          <Avatar className="h-6 w-6">
-            <AvatarImage alt="User" src="/images/profile.jpg" />
-            <AvatarFallback>U</AvatarFallback>
-          </Avatar>
-        )}
-        <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
-          <div className="text-xs text-muted-foreground">{`${isMe ? "Me" : "C"}`}</div>
-          <p className="text-sm">{message.body}</p>
+    <div className="flex">
+      <div className={`flex max-w-sm ${isMe ? "ml-auto" : "mr-auto"}`}>
+        <div className="flex space-x-2">
+          {isMe ? null : (
+            <Avatar className="h-6 w-6">
+              <AvatarImage alt="User" src="/images/profile.jpg" />
+              <AvatarFallback>U</AvatarFallback>
+            </Avatar>
+          )}
+          <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+            <div className="text-xs text-muted-foreground">{`${isMe ? "Me" : memName()}`}</div>
+            <p className="text-sm">{message.body}</p>
+            <div className="flex text-xs justify-end text-muted-foreground mt-1">
+              {time}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -123,7 +142,7 @@ export default function ThreadPage({ params }) {
   return (
     <React.Fragment>
       <ThreadHeader />
-      <ScrollArea className="p-4 h-[calc(100dvh-12rem)]">
+      <ScrollArea type="always" className="p-4 h-[calc(100dvh-12rem)]">
         {renderContent()}
       </ScrollArea>
       <div className="pt-2 px-2 mt-auto border-t">

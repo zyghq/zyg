@@ -9,12 +9,52 @@ import { Icons } from "@/components/icons";
 import StartThreadLink from "@/components/start-thread-link";
 import { isAuthenticated } from "@/utils/helpers";
 import { redirect } from "next/navigation";
+import ThreadList from "@/components/thread-list";
+
+async function GetThreadsAPI(cookies) {
+  if (!cookies) {
+    return { error: new Error("no cookie store provided"), data: null };
+  }
+  const token = cookies.get("__zygtoken");
+  if (!token) {
+    return { error: new Error("no auth token found or not set"), data: null };
+  }
+  const { value = "" } = token;
+
+  const url = `${process.env.ZYG_API_URL}/-/threads/chat/`;
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${value}`,
+      },
+    });
+    if (!response.ok) {
+      return { error: new Error("Failed to fetch threads"), data: null };
+    }
+    const data = await response.json();
+    return { error: null, data };
+  } catch (error) {
+    console.error("Error fetching threads", error);
+    return { error, data: null };
+  }
+}
 
 export default async function WelcomePage() {
   const cookieStore = cookies();
 
   if (!(await isAuthenticated(cookieStore))) {
     return redirect("/authenticate/");
+  }
+
+  const threads = [];
+  const { error, data } = await GetThreadsAPI(cookieStore);
+  if (error) {
+    console.error("Error fetching threads", error);
+  } else {
+    threads.push(...data);
   }
 
   return (
@@ -43,7 +83,9 @@ export default async function WelcomePage() {
                 </p>
               </div>
             </TabsContent>
-            <TabsContent value="threads">....</TabsContent>
+            <TabsContent value="threads">
+              <ThreadList threads={threads} />
+            </TabsContent>
           </Tabs>
         </div>
       </div>

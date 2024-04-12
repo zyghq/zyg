@@ -206,7 +206,7 @@ function createZygWidget(config) {
 async function loadDotLottiePlayer() {
   try {
     await import(
-      "https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.mjs"
+      "https://unpkg.com/@dotlottie/player-component@2.3.0/dist/dotlottie-player.mjs"
     );
   } catch (t) {
     console.error("Failed to load the DotLottie Player module", t);
