@@ -133,10 +133,10 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3b3Jrc3BhY2VJZCI6I
 
 
 ### CUSTOMER Thread Chat
-POST http://localhost:8080/workspaces/wrkco60epktidu7sod96l90/threads/chat/th_coalb9ktidud7mkk8vvg/messages/ HTTP/1.1
+POST http://localhost:8080/workspaces/wrkco60epktidu7sod96l90/threads/chat/th_coelr0ktidu1s2iaj770/messages/ HTTP/1.1
 Content-Type: application/json
 Authorization: TOKEN pt_fWEwiWeVwjlwwJiKOJsNJU_NewRz8b4e 
 
 {
-    "message": "Message from the Member: Sure I can help you in this."
+    "message": "Member: M1 Message!"
 }

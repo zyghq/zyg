@@ -49,8 +49,9 @@ function Message({ message }) {
   );
 }
 
-export default function ThreadPage({ params }) {
+export default function ThreadChatMessageListPage({ params }) {
   const { threadId } = params;
+  const bottomRef = React.useRef();
   const result = useQuery({
     queryKey: ["thchats", threadId],
     queryFn: async () => {
@@ -72,6 +73,12 @@ export default function ThreadPage({ params }) {
       return response.json();
     },
   });
+
+  React.useEffect(() => {
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [result.data]); // TODO: experiment with this more values
 
   const renderContent = () => {
     if (result.isPending) {
@@ -135,6 +142,7 @@ export default function ThreadPage({ params }) {
         {messagesReversed.map((message) => (
           <Message key={message.threadChatMessageId} message={message} />
         ))}
+        <div ref={bottomRef}></div>
       </div>
     );
   };

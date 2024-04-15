@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
+const ZYG_AUTH_COOKIE_NAME = "__zygtoken";
+
 export async function POST(request) {
   const { token } = await request.json();
   try {
@@ -18,9 +20,16 @@ export async function POST(request) {
       );
     }
     const data = await resp.json();
+    const accessToken = {
+      value: token,
+      name: ZYG_AUTH_COOKIE_NAME,
+    };
 
-    const response = NextResponse.json({ ...data }, { status: 200 });
-    response.cookies.set("__zygtoken", token, {
+    const response = NextResponse.json(
+      { ...data, accessToken },
+      { status: 200 }
+    );
+    response.cookies.set(ZYG_AUTH_COOKIE_NAME, token, {
       httpOnly: false, // make sure it is accessible by the browser (client)
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
@@ -37,7 +46,7 @@ export async function POST(request) {
 }
 
 export async function GET(request) {
-  const token = request.cookies.get("__zygtoken");
+  const token = request.cookies.get(ZYG_AUTH_COOKIE_NAME);
   if (!token) {
     return NextResponse.json(
       { error: "authentication error" },
@@ -61,9 +70,7 @@ export async function GET(request) {
       );
     }
     const data = await resp.json();
-    console.log("response from the ZYG API....", data);
-
-    return NextResponse.json({ ...data }, { status: 200 });
+    return NextResponse.json({ ...data, authToken: token }, { status: 200 });
   } catch (err) {
     return NextResponse.json(
       { error: "authentication error" },
@@ -74,6 +81,6 @@ export async function GET(request) {
 
 export async function DELETE() {
   const cookieStore = cookies();
-  cookieStore.delete("__zygtoken");
+  cookieStore.delete(ZYG_AUTH_COOKIE_NAME);
   return NextResponse.json({ ok: true }, { status: 200 });
 }

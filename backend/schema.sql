@@ -111,7 +111,9 @@ CREATE TABLE thread_qa_answer (
 -- This table is used to store the chat thread information linked to the workspace.
 CREATE TABLE thread_chat (
     workspace_id VARCHAR(255) NOT NULL,
-    thread_id VARCHAR(255) NOT NULL,
+    customer_id VARCHAR(255) NOT NULL,
+    assignee_id VARCHAR(255) NULL,
+    thread_chat_id VARCHAR(255) NOT NULL,
     title TEXT NOT NULL,
     summary TEXT NOT NULL,
     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
@@ -119,8 +121,10 @@ CREATE TABLE thread_chat (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    CONSTRAINT thread_chat_thread_id_pkey PRIMARY KEY (thread_id),
-    CONSTRAINT thread_chat_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id)
+    CONSTRAINT thread_chat_thread_chat_id_pkey PRIMARY KEY (thread_chat_id),
+    CONSTRAINT thread_chat_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
+    CONSTRAINT thread_chat_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
+    CONSTRAINT thread_chat_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES member (member_id)
 );
 
 
@@ -137,7 +141,7 @@ CREATE TABLE thread_chat_message (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT thread_chat_message_thread_chat_message_id_pkey PRIMARY KEY (thread_chat_message_id),
-    CONSTRAINT thread_chat_message_thread_chat_id_fkey FOREIGN KEY (thread_chat_id) REFERENCES thread_chat (thread_id),
+    CONSTRAINT thread_chat_message_thread_chat_id_fkey FOREIGN KEY (thread_chat_id) REFERENCES thread_chat (thread_chat_id),
     CONSTRAINT thread_chat_message_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
     CONSTRAINT thread_chat_message_member_id_fkey FOREIGN KEY (member_id) REFERENCES member (member_id)
 );
@@ -151,7 +155,7 @@ CREATE TABLE member (
     member_id VARCHAR(255) NOT NULL, -- primary key
     workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
     account_id VARCHAR(255) NOT NULL, -- fk to account
-    slug VARCHAR(255) NOT NULL, -- unique slug across the system
+    name VARCHAR NULL, -- name of the member
     role VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

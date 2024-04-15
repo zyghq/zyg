@@ -330,14 +330,13 @@ func (w Workspace) Create(ctx context.Context, db *pgxpool.Pool) (Workspace, err
 	}
 
 	mId := member.GenId()
-	ms := xid.New().String() // TODO: deprecate
-	err = tx.QueryRow(ctx, `INSERT INTO member(workspace_id, account_id, member_id, slug, role)
-		VALUES ($1, $2, $3, $4, $5)
+	err = tx.QueryRow(ctx, `INSERT INTO member(workspace_id, account_id, member_id, role)
+		VALUES ($1, $2, $3, $4)
 		RETURNING
-		workspace_id, account_id, member_id, role, created_at, updated_at`,
-		wId, workspace.AccountId, mId, ms, "primary").Scan(
+		workspace_id, account_id, member_id, name, role, created_at, updated_at`,
+		wId, workspace.AccountId, mId, "primary").Scan(
 		&member.WorkspaceId, &member.AccountId,
-		&member.MemberId, &member.role,
+		&member.MemberId, &member.Name, &member.Role,
 		&member.CreatedAt, &member.UpdatedAt,
 	)
 	if err != nil {
@@ -410,7 +409,8 @@ type Member struct {
 	WorkspaceId string
 	AccountId   string
 	MemberId    string
-	role        string
+	Name        sql.NullString
+	Role        string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -420,18 +420,24 @@ func (m Member) GenId() string {
 }
 
 func (m Member) MarshalJSON() ([]byte, error) {
+	var name *string
+	if m.Name.Valid {
+		name = &m.Name.String
+	}
 	aux := &struct {
-		WorkspaceId string `json:"workspaceId"`
-		AccountId   string `json:"accountId"`
-		MemberId    string `json:"memberId"`
-		Role        string `json:"role"`
-		CreatedAt   string `json:"createdAt"`
-		UpdatedAt   string `json:"updatedAt"`
+		WorkspaceId string  `json:"workspaceId"`
+		AccountId   string  `json:"accountId"`
+		MemberId    string  `json:"memberId"`
+		Name        *string `json:"name"`
+		Role        string  `json:"role"`
+		CreatedAt   string  `json:"createdAt"`
+		UpdatedAt   string  `json:"updatedAt"`
 	}{
 		WorkspaceId: m.WorkspaceId,
 		AccountId:   m.AccountId,
 		MemberId:    m.MemberId,
-		Role:        m.role,
+		Name:        name,
+		Role:        m.Role,
 		CreatedAt:   m.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:   m.UpdatedAt.Format(time.RFC3339),
 	}
@@ -443,7 +449,7 @@ func (m Member) GetWorkspaceMemberByAccountId(
 ) (Member, error) {
 
 	row, err := db.Query(ctx, `SELECT
-		workspace_id, account_id, member_id, role, created_at, updated_at
+		workspace_id, account_id, member_id, name, role, created_at, updated_at
 		FROM member WHERE workspace_id = $1 AND account_id = $2`, workspaceId, accountId)
 	if err != nil {
 		return m, err
@@ -457,7 +463,7 @@ func (m Member) GetWorkspaceMemberByAccountId(
 
 	err = row.Scan(
 		&m.WorkspaceId, &m.AccountId,
-		&m.MemberId, &m.role,
+		&m.MemberId, &m.Name, &m.Role,
 		&m.CreatedAt, &m.UpdatedAt,
 	)
 
@@ -987,14 +993,16 @@ func (tqa ThreadQAA) Create(ctx context.Context, db *pgxpool.Pool) (ThreadQAA, e
 
 // model
 type ThreadChat struct {
-	WorkspaceId string
-	ThreadId    string
-	Title       string
-	Summary     string
-	Sequence    int
-	Status      string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	WorkspaceId  string
+	CustomerId   string
+	AssigneeId   sql.NullString
+	ThreadChatId string
+	Title        string
+	Summary      string
+	Sequence     int
+	Status       string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 func (th ThreadChat) GenId() string {
@@ -1005,29 +1013,25 @@ func (th ThreadChat) CreateCustomerThChat(
 	ctx context.Context, db *pgxpool.Pool, w Workspace, c Customer, m string,
 ) (ThreadChat, ThreadChatMessage, error) {
 	var thm ThreadChatMessage
-	var customerId sql.NullString
-
-	if c.CustomerId != "" {
-		customerId = sql.NullString{String: c.CustomerId, Valid: true}
-	} else {
-		customerId = sql.NullString{Valid: false}
-	}
 
 	tx, err := db.Begin(ctx)
 	if err != nil {
 		fmt.Printf("failed to start db transaction with error: %v\n", err)
 		return th, thm, err
 	}
+
 	defer tx.Rollback(ctx)
 
-	th.ThreadId = th.GenId()
+	th.ThreadChatId = th.GenId()
 	th.Status = "todo" // default status
-	err = tx.QueryRow(ctx, `INSERT INTO thread_chat(workspace_id, thread_id, title, summary, status)
-		VALUES ($1, $2, $3, $4, $5)
+	err = tx.QueryRow(ctx, `INSERT INTO thread_chat(workspace_id, customer_id, thread_chat_id, title, summary, status)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING
-		workspace_id, thread_id, title, summary, sequence, status, created_at, updated_at`,
-		w.WorkspaceId, th.ThreadId, th.Title, th.Summary, th.Status).Scan(
-		&th.WorkspaceId, &th.ThreadId, &th.Title, &th.Summary,
+		workspace_id, customer_id, assignee_id,
+		thread_chat_id, title, summary, sequence, status, created_at, updated_at`,
+		w.WorkspaceId, c.CustomerId, th.ThreadChatId, th.Title, th.Summary, th.Status).Scan(
+		&th.WorkspaceId, &th.CustomerId, &th.AssigneeId,
+		&th.ThreadChatId, &th.Title, &th.Summary,
 		&th.Sequence, &th.Status, &th.CreatedAt, &th.UpdatedAt,
 	)
 	if err != nil {
@@ -1040,7 +1044,7 @@ func (th ThreadChat) CreateCustomerThChat(
 		VALUES ($1, $2, $3, $4)
 		RETURNING
 		thread_chat_id, thread_chat_message_id, body, sequence, customer_id, member_id, created_at, updated_at`,
-		th.ThreadId, thm.ThreadChatMessageId, m, customerId).Scan(
+		th.ThreadChatId, thm.ThreadChatMessageId, m, c.CustomerId).Scan(
 		&thm.ThreadChatId, &thm.ThreadChatMessageId, &thm.Body,
 		&thm.Sequence, &thm.CustomerId, &thm.MemberId,
 		&thm.CreatedAt, &thm.UpdatedAt,
@@ -1058,10 +1062,10 @@ func (th ThreadChat) CreateCustomerThChat(
 }
 
 func (th ThreadChat) GetById(ctx context.Context, db *pgxpool.Pool, threadId string) (ThreadChat, error) {
-
 	row, err := db.Query(ctx, `SELECT
-		workspace_id, thread_id, title, summary, sequence, status, created_at, updated_at
-		FROM thread_chat WHERE thread_id = $1`, threadId)
+		workspace_id, customer_id, assignee_id,
+		thread_chat_id, title, summary, sequence, status, created_at, updated_at
+		FROM thread_chat WHERE thread_chat_id = $1`, threadId)
 	if err != nil {
 		return th, err
 	}
@@ -1072,7 +1076,8 @@ func (th ThreadChat) GetById(ctx context.Context, db *pgxpool.Pool, threadId str
 	}
 
 	err = row.Scan(
-		&th.WorkspaceId, &th.ThreadId, &th.Title, &th.Summary,
+		&th.WorkspaceId, &th.CustomerId, &th.AssigneeId,
+		&th.ThreadChatId, &th.Title, &th.Summary,
 		&th.Sequence, &th.Status, &th.CreatedAt, &th.UpdatedAt,
 	)
 	if err != nil {
@@ -1082,32 +1087,78 @@ func (th ThreadChat) GetById(ctx context.Context, db *pgxpool.Pool, threadId str
 	return th, nil
 }
 
-func (th ThreadChat) GetListByWorkspaceId(ctx context.Context, db *pgxpool.Pool, workspaceId string) ([]ThreadChat, error) {
+func (th ThreadChat) GetListByWorkspaceCustomerId(
+	ctx context.Context, db *pgxpool.Pool, workspaceId string, customerId string,
+) ([]ThreadChatWithMessageList, error) {
 
-	rows, err := db.Query(ctx, `SELECT
-		workspace_id, thread_id, title, summary, sequence, status, created_at, updated_at
-		FROM thread_chat WHERE workspace_id = $1
-		ORDER BY sequence DESC LIMIT 100`, workspaceId)
+	ths := make([]ThreadChatWithMessageList, 0, 100)
+
+	stmt := `SELECT
+			th.workspace_id AS workspace_id,
+			th.customer_id AS customer_id,
+			th.assignee_id AS assignee_id,
+			th.thread_chat_id AS thread_chat_id,
+			th.title AS title,
+			th.summary AS summary,
+			th.sequence AS sequence,
+			th.status AS status,
+			th.created_at AS created_at,
+			th.updated_at AS updated_at,
+			thm.thread_chat_id AS message_thread_chat_id,
+			thm.thread_chat_message_id AS thread_chat_message_id,
+			thm.body AS message_body,
+			thm.sequence AS message_sequence,
+			thm.created_at AS message_created_at,
+			thm.updated_at AS message_updated_at,
+			c.customer_id AS customer_id,
+			c.name AS customer_name,
+			m.member_id AS member_id,
+			m.name AS member_name
+		FROM thread_chat th
+		INNER JOIN thread_chat_message thm ON th.thread_chat_id = thm.thread_chat_id
+		LEFT OUTER JOIN customer c ON thm.customer_id = c.customer_id
+		LEFT OUTER JOIN member m ON thm.member_id = m.member_id
+		INNER JOIN (
+			SELECT thread_chat_id, MAX(sequence) AS sequence
+			FROM thread_chat_message
+			GROUP BY
+			thread_chat_id
+		) latest ON thm.thread_chat_id = latest.thread_chat_id
+		AND thm.sequence = latest.sequence
+		WHERE th.workspace_id = $1 AND th.customer_id = $2
+		ORDER BY sequence DESC LIMIT 100`
+
+	rows, err := db.Query(ctx, stmt, workspaceId, customerId)
 	if err != nil {
-		return nil, err
+		return ths, err
 	}
+
 	defer rows.Close()
 
-	ths := make([]ThreadChat, 0, 100)
 	for rows.Next() {
 		var th ThreadChat
+		var tc ThreadChatMessage
 		err = rows.Scan(
-			&th.WorkspaceId, &th.ThreadId, &th.Title, &th.Summary,
+			&th.WorkspaceId, &th.CustomerId, &th.AssigneeId,
+			&th.ThreadChatId, &th.Title, &th.Summary,
 			&th.Sequence, &th.Status, &th.CreatedAt, &th.UpdatedAt,
+			&tc.ThreadChatId, &tc.ThreadChatMessageId, &tc.Body,
+			&tc.Sequence, &tc.CreatedAt, &tc.UpdatedAt,
+			&tc.CustomerId, &tc.CustomerName, &tc.MemberId, &tc.MemberName,
 		)
 		if err != nil {
-			return nil, err
+			return ths, err
 		}
-		ths = append(ths, th)
+
+		thm := ThreadChatWithMessageList{
+			ThreadChat: th,
+			Message:    tc,
+		}
+		ths = append(ths, thm)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return ths, err
 	}
 
 	return ths, nil
@@ -1147,7 +1198,7 @@ func (thm ThreadChatMessage) CreateCustomerThChatMessage(
 		VALUES ($1, $2, $3, $4)
 		RETURNING
 		thread_chat_id, thread_chat_message_id, body, sequence, customer_id, member_id, created_at, updated_at`,
-		th.ThreadId, thm.ThreadChatMessageId, msg, customerId).Scan(
+		th.ThreadChatId, thm.ThreadChatMessageId, msg, customerId).Scan(
 		&thm.ThreadChatId, &thm.ThreadChatMessageId, &thm.Body,
 		&thm.Sequence, &thm.CustomerId, &thm.MemberId,
 		&thm.CreatedAt, &thm.UpdatedAt,
@@ -1179,7 +1230,7 @@ func (thm ThreadChatMessage) CreateMemberThChatMessage(
 		VALUES ($1, $2, $3, $4)
 		RETURNING
 		thread_chat_id, thread_chat_message_id, body, sequence, customer_id, member_id, created_at, updated_at`,
-		th.ThreadId, thm.ThreadChatMessageId, msg, memberId).Scan(
+		th.ThreadChatId, thm.ThreadChatMessageId, msg, memberId).Scan(
 		&thm.ThreadChatId, &thm.ThreadChatMessageId, &thm.Body,
 		&thm.Sequence, &thm.CustomerId, &thm.MemberId,
 		&thm.CreatedAt, &thm.UpdatedAt,
@@ -1231,6 +1282,11 @@ func (thm ThreadChatMessage) GetListByThreadId(
 		return nil, err
 	}
 	return messages, nil
+}
+
+type ThreadChatWithMessageList struct {
+	ThreadChat ThreadChat
+	Message    ThreadChatMessage
 }
 
 // request
@@ -1341,15 +1397,12 @@ type ThreadChatReq struct {
 
 // response
 type ThCustomerResp struct {
-	CustomerId sql.NullString
+	CustomerId string
 	Name       sql.NullString
 }
 
 func (c ThCustomerResp) MarshalJSON() ([]byte, error) {
-	var customerId, name *string
-	if c.CustomerId.Valid {
-		customerId = &c.CustomerId.String
-	}
+	var name *string
 	if c.Name.Valid {
 		name = &c.Name.String
 	}
@@ -1357,7 +1410,7 @@ func (c ThCustomerResp) MarshalJSON() ([]byte, error) {
 		CustomerId string  `json:"customerId"`
 		Name       *string `json:"name"`
 	}{
-		CustomerId: *customerId,
+		CustomerId: c.CustomerId,
 		Name:       name,
 	}
 	return json.Marshal(aux)
@@ -1365,15 +1418,15 @@ func (c ThCustomerResp) MarshalJSON() ([]byte, error) {
 
 // response
 type ThMemberResp struct {
-	MemberId sql.NullString `json:"memberId"`
-	Name     sql.NullString `json:"name"`
+	MemberId string
+	Name     sql.NullString
 }
 
 func (m ThMemberResp) MarshalJSON() ([]byte, error) {
-	var memberId, name *string
-	if m.MemberId.Valid {
-		memberId = &m.MemberId.String
-	}
+	var name *string
+	// if m.MemberId.Valid {
+	// 	memberId = &m.MemberId.String
+	// }
 	if m.Name.Valid {
 		name = &m.Name.String
 	}
@@ -1381,7 +1434,7 @@ func (m ThMemberResp) MarshalJSON() ([]byte, error) {
 		MemberId string  `json:"memberId"`
 		Name     *string `json:"name"`
 	}{
-		MemberId: *memberId,
+		MemberId: m.MemberId,
 		Name:     name,
 	}
 	return json.Marshal(aux)
@@ -1441,15 +1494,6 @@ type ThreadChatInitResp struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	Messages  []ThreadChatMessageResp
-}
-
-// response
-type ThreadChatResp struct {
-	ThreadId  string `json:"threadId"`
-	Sequence  int    `json:"sequence"`
-	Status    string `json:"status"`
-	CreatedAt string `json:"createdAt"`
-	UpdatedAt string `json:"updatedAt"`
 }
 
 func (thresp ThreadChatInitResp) MarshalJSON() ([]byte, error) {
@@ -2147,13 +2191,13 @@ func handleInitCustomerThreadChat(ctx context.Context, db *pgxpool.Pool) http.Ha
 		}
 
 		customerr := &ThCustomerResp{
-			CustomerId: sql.NullString{String: customer.CustomerId, Valid: true},
+			CustomerId: customer.CustomerId,
 			Name:       customer.Name,
 		}
 
 		var memberr *ThMemberResp
 		thcresp := ThreadChatMessageResp{
-			ThreadChatId:        th.ThreadId,
+			ThreadChatId:        th.ThreadChatId,
 			ThreadChatMessageId: thc.ThreadChatMessageId,
 			Body:                thc.Body,
 			Sequence:            thc.Sequence,
@@ -2165,8 +2209,9 @@ func handleInitCustomerThreadChat(ctx context.Context, db *pgxpool.Pool) http.Ha
 
 		messages := make([]ThreadChatMessageResp, 0, 1)
 		messages = append(messages, thcresp)
+
 		resp := ThreadChatInitResp{
-			ThreadId:  th.ThreadId,
+			ThreadId:  th.ThreadChatId,
 			Sequence:  th.Sequence,
 			Status:    th.Status,
 			CreatedAt: th.CreatedAt,
@@ -2198,20 +2243,49 @@ func handleGetCustomerThreadChats(ctx context.Context, db *pgxpool.Pool) http.Ha
 			return
 		}
 
-		ths, err := ThreadChat{}.GetListByWorkspaceId(ctx, db, workspace.WorkspaceId)
+		ths, err := ThreadChat{}.GetListByWorkspaceCustomerId(ctx, db, workspace.WorkspaceId, customer.CustomerId)
 		if err != nil {
+			fmt.Printf("error in Get List By WorksapceId %s", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
-		threads := make([]ThreadChatResp, 0, len(ths))
+		threads := make([]ThreadChatInitResp, 0, 100)
 		for _, th := range ths {
-			threads = append(threads, ThreadChatResp{
-				ThreadId:  th.ThreadId,
-				Sequence:  th.Sequence,
-				Status:    th.Status,
-				CreatedAt: th.CreatedAt.Format(time.RFC3339),
-				UpdatedAt: th.UpdatedAt.Format(time.RFC3339),
+			messages := make([]ThreadChatMessageResp, 0, 1)
+			var customerr *ThCustomerResp
+			var memberr *ThMemberResp
+
+			if th.Message.CustomerId.Valid {
+				customerr = &ThCustomerResp{
+					CustomerId: th.Message.CustomerId.String,
+					Name:       th.Message.CustomerName,
+				}
+			} else if th.Message.MemberId.Valid {
+				memberr = &ThMemberResp{
+					MemberId: th.Message.MemberId.String,
+					Name:     th.Message.MemberName,
+				}
+			}
+
+			message := ThreadChatMessageResp{
+				ThreadChatId:        th.ThreadChat.ThreadChatId,
+				ThreadChatMessageId: th.Message.ThreadChatMessageId,
+				Body:                th.Message.Body,
+				Sequence:            th.Message.Sequence,
+				Customer:            customerr,
+				Member:              memberr,
+				CreatedAt:           th.Message.CreatedAt,
+				UpdatedAt:           th.Message.UpdatedAt,
+			}
+			messages = append(messages, message)
+			threads = append(threads, ThreadChatInitResp{
+				ThreadId:  th.ThreadChat.ThreadChatId,
+				Sequence:  th.ThreadChat.Sequence,
+				Status:    th.ThreadChat.Status,
+				CreatedAt: th.ThreadChat.CreatedAt,
+				UpdatedAt: th.ThreadChat.UpdatedAt,
+				Messages:  messages,
 			})
 		}
 
@@ -2266,14 +2340,14 @@ func handleCreateCustomerThreadChatMessage(ctx context.Context, db *pgxpool.Pool
 		}
 
 		customerr := &ThCustomerResp{
-			CustomerId: sql.NullString{String: customer.CustomerId, Valid: true},
+			CustomerId: customer.CustomerId,
 			Name:       customer.Name,
 		}
 
 		var memberr *ThMemberResp
 
 		thcresp := ThreadChatMessageResp{
-			ThreadChatId:        th.ThreadId,
+			ThreadChatId:        th.ThreadChatId,
 			ThreadChatMessageId: thc.ThreadChatMessageId,
 			Body:                thc.Body,
 			Sequence:            thc.Sequence,
@@ -2286,7 +2360,7 @@ func handleCreateCustomerThreadChatMessage(ctx context.Context, db *pgxpool.Pool
 		messages := make([]ThreadChatMessageResp, 0, 1)
 		messages = append(messages, thcresp)
 		resp := ThreadChatInitResp{
-			ThreadId:  th.ThreadId,
+			ThreadId:  th.ThreadChatId,
 			Sequence:  th.Sequence,
 			Status:    th.Status,
 			CreatedAt: th.CreatedAt,
@@ -2349,11 +2423,11 @@ func handleCreateMemberThreadChatMessage(ctx context.Context, db *pgxpool.Pool) 
 		var customerr *ThCustomerResp
 
 		memberr := &ThMemberResp{
-			MemberId: sql.NullString{String: member.MemberId, Valid: true},
+			MemberId: member.MemberId,
 		}
 
 		thcresp := ThreadChatMessageResp{
-			ThreadChatId:        th.ThreadId,
+			ThreadChatId:        th.ThreadChatId,
 			ThreadChatMessageId: thc.ThreadChatMessageId,
 			Body:                thc.Body,
 			Sequence:            thc.Sequence,
@@ -2366,7 +2440,7 @@ func handleCreateMemberThreadChatMessage(ctx context.Context, db *pgxpool.Pool) 
 		messages := make([]ThreadChatMessageResp, 0, 1)
 		messages = append(messages, thcresp)
 		resp := ThreadChatInitResp{
-			ThreadId:  th.ThreadId,
+			ThreadId:  th.ThreadChatId,
 			Sequence:  th.Sequence,
 			Status:    th.Status,
 			CreatedAt: th.CreatedAt,
@@ -2400,7 +2474,7 @@ func handleGetCustomerThreadChatMessages(ctx context.Context, db *pgxpool.Pool) 
 			return
 		}
 
-		results, err := ThreadChatMessage{}.GetListByThreadId(ctx, db, th.ThreadId)
+		results, err := ThreadChatMessage{}.GetListByThreadId(ctx, db, th.ThreadChatId)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
@@ -2414,20 +2488,20 @@ func handleGetCustomerThreadChatMessages(ctx context.Context, db *pgxpool.Pool) 
 
 			if thc.CustomerId.Valid {
 				customerr = &ThCustomerResp{
-					CustomerId: thc.CustomerId,
+					CustomerId: thc.CustomerId.String,
 					Name:       thc.CustomerName,
 				}
 			}
 
 			if thc.MemberId.Valid {
 				memberr = &ThMemberResp{
-					MemberId: thc.MemberId,
+					MemberId: thc.MemberId.String,
 					Name:     thc.MemberName,
 				}
 			}
 
 			message := ThreadChatMessageResp{
-				ThreadChatId:        th.ThreadId,
+				ThreadChatId:        th.ThreadChatId,
 				ThreadChatMessageId: thc.ThreadChatMessageId,
 				Body:                thc.Body,
 				Sequence:            thc.Sequence,
@@ -2440,7 +2514,7 @@ func handleGetCustomerThreadChatMessages(ctx context.Context, db *pgxpool.Pool) 
 		}
 
 		resp := ThreadChatInitResp{
-			ThreadId:  th.ThreadId,
+			ThreadId:  th.ThreadChatId,
 			Sequence:  th.Sequence,
 			Status:    th.Status,
 			CreatedAt: th.CreatedAt,
