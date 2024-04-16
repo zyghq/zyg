@@ -89,6 +89,7 @@ export default function ThreadList({ threads }) {
     enabled: authUser?.authToken?.value ? true : false,
     initialData: threads,
     refetchInterval: 10000,
+    refetchOnMount: "always",
   });
 
   if (result.isPending || isAuthLoading || !authUser) {
@@ -118,7 +119,7 @@ export default function ThreadList({ threads }) {
   const { data } = result;
 
   return (
-    <ScrollArea className="h-[calc(100dvh-18rem)]">
+    <ScrollArea className="h-[calc(100dvh-18rem)] pr-1">
       <div className="space-y-2">
         {data.map((thread) => (
           <ThreadChatItem

@@ -60,14 +60,12 @@ CREATE TABLE account_pat (
 CREATE TABLE workspace (
     workspace_id VARCHAR(255) NOT NULL,
     account_id VARCHAR(255) NOT NULL,
-    slug VARCHAR(255) NOT NULL, -- deprecate this field from backend logic and APIs
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     CONSTRAINT workspace_workspace_id_pkey PRIMARY KEY (workspace_id),
-    CONSTRAINT workspace_account_id_fkey FOREIGN KEY (account_id) REFERENCES account (account_id),
-    CONSTRAINT workspace_slug_key UNIQUE (slug)
+    CONSTRAINT workspace_account_id_fkey FOREIGN KEY (account_id) REFERENCES account (account_id)
 );
 
 -- Represents the workspace Thread QA table
@@ -284,7 +282,6 @@ CREATE TABLE customer_chat_session (
     CONSTRAINT chat_session_key_key UNIQUE (key),
     CONSTRAINT chat_session_customer_id_socket_id_key UNIQUE (customer_id, socket_id)
 );
-
 
 -- ************************************ --
 -- Will work on Slack integration later --

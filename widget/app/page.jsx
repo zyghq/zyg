@@ -61,7 +61,7 @@ export default async function WelcomePage() {
     <React.Fragment>
       <div className="flex flex-col">
         <Header label="Hey! How can we help?" />
-        <div className="px-4">
+        <div className="px-2">
           <Button variant="outline" className="w-full" asChild>
             <Link href="/search/" className="flex">
               <MagnifyingGlassIcon className="h-4 w-4 mr-1" />
@@ -69,7 +69,7 @@ export default async function WelcomePage() {
             </Link>
           </Button>
         </div>
-        <div className="p-4">
+        <div className="p-2">
           <Tabs defaultValue="home">
             <TabsList>
               <TabsTrigger value="home">Home</TabsTrigger>
