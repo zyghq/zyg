@@ -58,12 +58,9 @@ async function sendThreadChatMessageAPI(accessToken, threadId, body = {}) {
   }
 }
 
-export async function createThreadChat(values) {
+export async function createThreadChat(authToken, values) {
   try {
-    // customerId: c_co61abktidu1t3i3dn60
-    const jwt = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3b3Jrc3BhY2VJZCI6Indya2NvNjBlcGt0aWR1N3NvZDk2bDkwIiwiZXh0ZXJuYWxJZCI6Inh4eHgtMTExLXp6enoiLCJlbWFpbCI6InNhbmNoaXRycmtAZ21haWwuY29tIiwicGhvbmUiOiIrOTE3NzYwNjg2MDY4IiwiaXNzIjoiYXV0aC56eWcuYWkiLCJzdWIiOiJjX2NvNjFhYmt0aWR1MXQzaTNkbjYwIiwiYXVkIjpbImN1c3RvbWVyIl0sImV4cCI6MTc0Mzc1Nzg3MSwibmJmIjoxNzEyMjIxODcxLCJpYXQiOjE3MTIyMjE4NzEsImp0aSI6Indya2NvNjBlcGt0aWR1N3NvZDk2bDkwOmNfY282MWFia3RpZHUxdDNpM2RuNjAifQ.epCQ4aXvYPXIhVrX6TtfYrq0XxYXT18kIWsOae8HvUQ`;
-    const { ...rest } = values;
-    const [err, data] = await createThreadChatAPI(jwt, rest);
+    const [err, data] = await createThreadChatAPI(authToken, { ...values });
     if (err) {
       console.error(err);
       return {
@@ -89,12 +86,14 @@ export async function createThreadChat(values) {
   }
 }
 
-export async function sendThreadChatMessage(threadId, values) {
+export async function sendThreadChatMessage(authToken, threadId, values) {
+  console.log(
+    `invoking sendThreadChatMessage with authToken: ${authToken} and threadId: ${threadId}`
+  );
   try {
-    // customerId: c_co61abktidu1t3i3dn60
-    const jwt = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3b3Jrc3BhY2VJZCI6Indya2NvNjBlcGt0aWR1N3NvZDk2bDkwIiwiZXh0ZXJuYWxJZCI6Inh4eHgtMTExLXp6enoiLCJlbWFpbCI6InNhbmNoaXRycmtAZ21haWwuY29tIiwicGhvbmUiOiIrOTE3NzYwNjg2MDY4IiwiaXNzIjoiYXV0aC56eWcuYWkiLCJzdWIiOiJjX2NvNjFhYmt0aWR1MXQzaTNkbjYwIiwiYXVkIjpbImN1c3RvbWVyIl0sImV4cCI6MTc0Mzc1Nzg3MSwibmJmIjoxNzEyMjIxODcxLCJpYXQiOjE3MTIyMjE4NzEsImp0aSI6Indya2NvNjBlcGt0aWR1N3NvZDk2bDkwOmNfY282MWFia3RpZHUxdDNpM2RuNjAifQ.epCQ4aXvYPXIhVrX6TtfYrq0XxYXT18kIWsOae8HvUQ`;
-    const { ...rest } = values;
-    const [err, data] = await sendThreadChatMessageAPI(jwt, threadId, rest);
+    const [err, data] = await sendThreadChatMessageAPI(authToken, threadId, {
+      ...values,
+    });
     if (err) {
       console.error(err);
       return {

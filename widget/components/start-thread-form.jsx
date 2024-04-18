@@ -3,6 +3,7 @@
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { SendHorizonalIcon } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 import { createThreadChat } from "@/app/threads/_actions";
 
 import {
@@ -38,6 +39,8 @@ function SubmitButton({ isDisabled }) {
 
 export default function StartThreadForm() {
   const router = useRouter();
+  const auth = useAuth();
+  const { authUser, isAuthLoading } = auth;
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -56,7 +59,8 @@ export default function StartThreadForm() {
   };
 
   async function onSubmit(values) {
-    const response = await createThreadChat(values);
+    const token = authUser?.authToken?.value;
+    const response = await createThreadChat(token, values);
     const { error, data } = response;
     if (error) {
       console.log("got error from server....", error);
@@ -81,6 +85,7 @@ export default function StartThreadForm() {
         <FormField
           control={form.control}
           name="message"
+          disabled={isAuthLoading || !authUser}
           render={({ field }) => (
             <FormItem className="space-y-2 w-full">
               <FormControl>

@@ -26,6 +26,20 @@ const DefaultAuthProvider string = "supabase"
 
 var addr = flag.String("addr", "127.0.0.1:8080", "listen address")
 
+type ThreadStatus struct{}
+
+func (s ThreadStatus) Todo() string {
+	return "todo"
+}
+
+func (s ThreadStatus) Done() string {
+	return "done"
+}
+
+func (s ThreadStatus) InProgress() string {
+	return "inprogress"
+}
+
 func GetEnv(key string) (string, error) {
 	value, status := os.LookupEnv(key)
 	if !status {
@@ -84,14 +98,8 @@ func (a Account) GenId() string {
 	return "a_" + xid.New().String()
 }
 
-func (a Account) GetOrCreateByAuthUserId(
-	ctx context.Context, db *pgxpool.Pool,
-	authUserId string, email string, provider string, name string,
-) (Account, bool, error) {
-
-	var account Account
+func (a Account) GetOrCreateByAuthUserId(ctx context.Context, db *pgxpool.Pool) (Account, bool, error) {
 	var isCreated bool
-
 	aId := a.GenId()
 
 	st := `WITH ins AS (
@@ -110,56 +118,54 @@ func (a Account) GetOrCreateByAuthUserId(
 	created_at, updated_at, FALSE AS is_created FROM account
 	WHERE auth_user_id = $2 AND NOT EXISTS (SELECT 1 FROM ins)`
 
-	row, err := db.Query(ctx, st, aId, authUserId, email, provider, name)
+	row, err := db.Query(ctx, st, aId, a.AuthUserId, a.Email, a.Provider, a.Name)
 	if err != nil {
-		return account, isCreated, err
+		return a, isCreated, err
 	}
 	defer row.Close()
 
 	if !row.Next() {
-		return account, isCreated, sql.ErrNoRows
+		return a, isCreated, sql.ErrNoRows
 	}
 
 	err = row.Scan(
-		&account.AccountId, &account.AuthUserId,
-		&account.Email, &account.Provider, &account.Name,
-		&account.CreatedAt, &account.UpdatedAt,
+		&a.AccountId, &a.AuthUserId,
+		&a.Email, &a.Provider, &a.Name,
+		&a.CreatedAt, &a.UpdatedAt,
 		&isCreated,
 	)
 	if err != nil {
-		return account, isCreated, err
+		return a, isCreated, err
 	}
 
-	return account, isCreated, nil
+	return a, isCreated, nil
 }
 
-func (a Account) GetByAuthUserId(ctx context.Context, db *pgxpool.Pool, authUserId string) (Account, error) {
-	var account Account
-
+func (a Account) GetByAuthUserId(ctx context.Context, db *pgxpool.Pool) (Account, error) {
 	row, err := db.Query(ctx, `SELECT 
 		account_id, auth_user_id, email,
 		provider, name, created_at, updated_at
 		FROM account WHERE auth_user_id = $1`, a.AuthUserId)
 	if err != nil {
-		return account, err
+		return a, err
 	}
 	defer row.Close()
 
 	if !row.Next() {
-		return account, sql.ErrNoRows
+		return a, sql.ErrNoRows
 	}
 
 	err = row.Scan(
-		&account.AccountId, &account.AuthUserId,
-		&account.Email, &account.Provider,
-		&account.Name, &account.CreatedAt,
-		&account.UpdatedAt,
+		&a.AccountId, &a.AuthUserId,
+		&a.Email, &a.Provider,
+		&a.Name, &a.CreatedAt,
+		&a.UpdatedAt,
 	)
 	if err != nil {
-		return account, err
+		return a, err
 	}
 
-	return account, nil
+	return a, nil
 }
 
 // model
@@ -250,6 +256,8 @@ func (ap AccountPAT) Create(ctx context.Context, db *pgxpool.Pool) (AccountPAT, 
 }
 
 func (ap AccountPAT) GetListByAccountId(ctx context.Context, db *pgxpool.Pool) ([]AccountPAT, error) {
+	aps := make([]AccountPAT, 0, 100)
+
 	stmt := `SELECT account_id, pat_id, token, name, description,
 		created_at, updated_at
 		FROM account_pat WHERE account_id = $1
@@ -257,11 +265,10 @@ func (ap AccountPAT) GetListByAccountId(ctx context.Context, db *pgxpool.Pool) (
 
 	rows, err := db.Query(ctx, stmt, ap.AccountId)
 	if err != nil {
-		return nil, err
+		return aps, err
 	}
 	defer rows.Close()
 
-	aps := make([]AccountPAT, 0)
 	for rows.Next() {
 		var ap AccountPAT
 		err = rows.Scan(
@@ -269,15 +276,14 @@ func (ap AccountPAT) GetListByAccountId(ctx context.Context, db *pgxpool.Pool) (
 			&ap.Name, &ap.Description, &ap.CreatedAt, &ap.UpdatedAt,
 		)
 		if err != nil {
-			return nil, err
+			return aps, err
 		}
 		aps = append(aps, ap)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return aps, err
 	}
-
 	return aps, nil
 }
 
@@ -312,13 +318,12 @@ func (w Workspace) GenId() string {
 }
 
 func (w Workspace) Create(ctx context.Context, db *pgxpool.Pool) (Workspace, error) {
-	var workspace Workspace
 	var member Member
 
 	tx, err := db.Begin(ctx)
 	if err != nil {
 		fmt.Printf("failed to start db transaction with error: %v\n", err)
-		return workspace, err
+		return w, err
 	}
 	defer tx.Rollback(ctx)
 
@@ -327,12 +332,12 @@ func (w Workspace) Create(ctx context.Context, db *pgxpool.Pool) (Workspace, err
 		VALUES ($1, $2, $3)
 		RETURNING
 		workspace_id, account_id, name, created_at, updated_at`, wId, w.AccountId, w.Name).Scan(
-		&workspace.WorkspaceId, &workspace.AccountId,
-		&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt,
+		&w.WorkspaceId, &w.AccountId,
+		&w.Name, &w.CreatedAt, &w.UpdatedAt,
 	)
 	if err != nil {
 		fmt.Printf("failed to insert workspace with error: %v\n", err)
-		return workspace, err
+		return w, err
 	}
 
 	mId := member.GenId()
@@ -340,74 +345,68 @@ func (w Workspace) Create(ctx context.Context, db *pgxpool.Pool) (Workspace, err
 		VALUES ($1, $2, $3, $4)
 		RETURNING
 		workspace_id, account_id, member_id, name, role, created_at, updated_at`,
-		wId, workspace.AccountId, mId, "primary").Scan(
+		wId, w.AccountId, mId, "primary").Scan(
 		&member.WorkspaceId, &member.AccountId,
 		&member.MemberId, &member.Name, &member.Role,
 		&member.CreatedAt, &member.UpdatedAt,
 	)
 	if err != nil {
 		fmt.Printf("failed to insert member with error: %v\n", err)
-		return workspace, err
+		return w, err
 	}
 
 	err = tx.Commit(ctx)
 	if err != nil {
 		fmt.Printf("failed to commit db transaction with error: %v\n", err)
-		return workspace, err
+		return w, err
 	}
-	return workspace, nil
+	return w, nil
 }
 
 func (w Workspace) GetAccountWorkspace(ctx context.Context, db *pgxpool.Pool) (Workspace, error) {
-	var workspace Workspace
-
 	row, err := db.Query(ctx, `SELECT 
 		workspace_id, account_id, name, created_at, updated_at
 		FROM workspace WHERE account_id = $1 AND workspace_id = $2`, w.AccountId, w.WorkspaceId)
 	if err != nil {
-		return workspace, err
+		return w, err
 	}
 	defer row.Close()
 
 	if !row.Next() {
-		return workspace, sql.ErrNoRows
+		return w, sql.ErrNoRows
 	}
 
 	err = row.Scan(
-		&workspace.WorkspaceId, &workspace.AccountId,
-		&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt,
+		&w.WorkspaceId, &w.AccountId,
+		&w.Name, &w.CreatedAt, &w.UpdatedAt,
 	)
 	if err != nil {
-		return workspace, err
+		return w, err
 	}
-
-	return workspace, nil
+	return w, nil
 }
 
 func (w Workspace) GetById(ctx context.Context, db *pgxpool.Pool) (Workspace, error) {
-	var workspace Workspace
-
 	row, err := db.Query(ctx, `SELECT 
 		workspace_id, account_id, name, created_at, updated_at
 		FROM workspace WHERE workspace_id = $1`, w.WorkspaceId)
 	if err != nil {
-		return workspace, err
+		return w, err
 	}
 	defer row.Close()
 
 	if !row.Next() {
-		return workspace, sql.ErrNoRows
+		return w, sql.ErrNoRows
 	}
 
 	err = row.Scan(
-		&workspace.WorkspaceId, &workspace.AccountId,
-		&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt,
+		&w.WorkspaceId, &w.AccountId,
+		&w.Name, &w.CreatedAt, &w.UpdatedAt,
 	)
 	if err != nil {
-		return workspace, err
+		return w, err
 	}
-
-	return workspace, nil
+	return w, nil
 }
 
 // model
@@ -450,13 +449,10 @@ func (m Member) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
-func (m Member) GetWorkspaceMemberByAccountId(
-	ctx context.Context, db *pgxpool.Pool, workspaceId string, accountId string,
-) (Member, error) {
-
+func (m Member) GetWorkspaceMemberByAccountId(ctx context.Context, db *pgxpool.Pool) (Member, error) {
 	row, err := db.Query(ctx, `SELECT
 		workspace_id, account_id, member_id, name, role, created_at, updated_at
-		FROM member WHERE workspace_id = $1 AND account_id = $2`, workspaceId, accountId)
+		FROM member WHERE workspace_id = $1 AND account_id = $2`, m.WorkspaceId, m.AccountId)
 	if err != nil {
 		return m, err
 	}
@@ -533,128 +529,116 @@ func (c Customer) GenId() string {
 	return "c_" + xid.New().String()
 }
 
-func (c Customer) GetById(ctx context.Context, db *pgxpool.Pool) (Customer, error) {
-	var customer Customer
-
+func (c Customer) GetWrkCustomerById(ctx context.Context, db *pgxpool.Pool) (Customer, error) {
 	row, err := db.Query(ctx, `SELECT 
 		workspace_id, customer_id,
 		external_id, email,
 		phone, name, created_at, updated_at
 		FROM customer WHERE workspace_id = $1 AND customer_id = $2`, c.WorkspaceId, c.CustomerId)
 	if err != nil {
-		return customer, err
+		return c, err
 	}
 	defer row.Close()
 
 	if !row.Next() {
-		return customer, sql.ErrNoRows
+		return c, sql.ErrNoRows
 	}
 
 	err = row.Scan(
-		&customer.WorkspaceId, &customer.CustomerId,
-		&customer.ExternalId, &customer.Email,
-		&customer.Phone, &customer.Name,
-		&customer.CreatedAt, &customer.UpdatedAt,
+		&c.WorkspaceId, &c.CustomerId,
+		&c.ExternalId, &c.Email,
+		&c.Phone, &c.Name,
+		&c.CreatedAt, &c.UpdatedAt,
 	)
 	if err != nil {
-		return customer, err
+		return c, err
 	}
-
-	return customer, nil
+	return c, nil
 }
 
-func (c Customer) GetByExtId(ctx context.Context, db *pgxpool.Pool, workspaceId string, extId string) (Customer, error) {
-	var customer Customer
-
+func (c Customer) GetWrkCustomerByExtId(ctx context.Context, db *pgxpool.Pool) (Customer, error) {
 	row, err := db.Query(ctx, `SELECT 
 		workspace_id, customer_id,
 		external_id, email,
 		phone, name, created_at, updated_at
-		FROM customer WHERE workspace_id = $1 AND external_id = $2`, workspaceId, extId)
+		FROM customer WHERE workspace_id = $1 AND external_id = $2`, c.WorkspaceId, c.ExternalId)
 	if err != nil {
-		return customer, err
+		return c, err
 	}
 	defer row.Close()
 
 	if !row.Next() {
-		return customer, sql.ErrNoRows
+		return c, sql.ErrNoRows
 	}
 
 	err = row.Scan(
-		&customer.WorkspaceId, &customer.CustomerId,
-		&customer.ExternalId, &customer.Email,
-		&customer.Phone, &customer.Name,
-		&customer.CreatedAt, &customer.UpdatedAt,
+		&c.WorkspaceId, &c.CustomerId,
+		&c.ExternalId, &c.Email,
+		&c.Phone, &c.Name,
+		&c.CreatedAt, &c.UpdatedAt,
 	)
 	if err != nil {
-		return customer, err
+		return c, err
 	}
 
-	return customer, nil
+	return c, nil
 }
 
-func (c Customer) GetByEmail(ctx context.Context, db *pgxpool.Pool, workspaceId string, email string) (Customer, error) {
-	var customer Customer
-
+func (c Customer) GetWrkCustomerByEmail(ctx context.Context, db *pgxpool.Pool) (Customer, error) {
 	row, err := db.Query(ctx, `SELECT 
 		workspace_id, customer_id,
 		external_id, email,
 		phone, name, created_at, updated_at
-		FROM customer WHERE workspace_id = $1 AND email = $2`, workspaceId, email)
+		FROM customer WHERE workspace_id = $1 AND email = $2`, c.WorkspaceId, c.Email)
 	if err != nil {
-		return customer, err
+		return c, err
 	}
 	defer row.Close()
 
 	if !row.Next() {
-		return customer, sql.ErrNoRows
+		return c, sql.ErrNoRows
 	}
 
 	err = row.Scan(
-		&customer.WorkspaceId, &customer.CustomerId,
-		&customer.ExternalId, &customer.Email,
-		&customer.Phone, &customer.Name,
-		&customer.CreatedAt, &customer.UpdatedAt,
+		&c.WorkspaceId, &c.CustomerId,
+		&c.ExternalId, &c.Email,
+		&c.Phone, &c.Name,
+		&c.CreatedAt, &c.UpdatedAt,
 	)
 	if err != nil {
-		return customer, err
+		return c, err
 	}
-
-	return customer, nil
+	return c, nil
 }
 
-func (c Customer) GetByPhone(ctx context.Context, db *pgxpool.Pool, workspaceId string, phone string) (Customer, error) {
-	var customer Customer
-
+func (c Customer) GetWrkCustomerByPhone(ctx context.Context, db *pgxpool.Pool) (Customer, error) {
 	row, err := db.Query(ctx, `SELECT 
 		workspace_id, customer_id,
 		external_id, email,
 		phone, name, created_at, updated_at
-		FROM customer WHERE workspace_id = $1 AND phone = $2`, workspaceId, phone)
+		FROM customer WHERE workspace_id = $1 AND phone = $2`, c.WorkspaceId, c.Phone)
 	if err != nil {
-		return customer, err
+		return c, err
 	}
 	defer row.Close()
 
 	if !row.Next() {
-		return customer, sql.ErrNoRows
+		return c, sql.ErrNoRows
 	}
 
 	err = row.Scan(
-		&customer.WorkspaceId, &customer.CustomerId,
-		&customer.ExternalId, &customer.Email,
-		&customer.Phone, &customer.Name,
-		&customer.CreatedAt, &customer.UpdatedAt,
+		&c.WorkspaceId, &c.CustomerId,
+		&c.ExternalId, &c.Email,
+		&c.Phone, &c.Name,
+		&c.CreatedAt, &c.UpdatedAt,
 	)
 	if err != nil {
-		return customer, err
+		return c, err
 	}
-
-	return customer, nil
+	return c, nil
 }
 
-func (c Customer) GetOrCreateByExtId(ctx context.Context, db *pgxpool.Pool) (Customer, bool, error) {
-
+func (c Customer) GetOrCreateWrkCustomerByExtId(ctx context.Context, db *pgxpool.Pool) (Customer, bool, error) {
 	cId := c.GenId()
 	st := `WITH ins AS (
 		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone)
@@ -672,32 +656,30 @@ func (c Customer) GetOrCreateByExtId(ctx context.Context, db *pgxpool.Pool) (Cus
 	created_at, updated_at, FALSE AS is_created FROM customer
 	WHERE (workspace_id, external_id) = ($2, $3) AND NOT EXISTS (SELECT 1 FROM ins)`
 
-	var customer Customer
 	var isCreated bool
 	row, err := db.Query(ctx, st, cId, c.WorkspaceId, c.ExternalId, c.Email, c.Phone)
 	if err != nil {
-		return customer, isCreated, err
+		return c, isCreated, err
 	}
 	defer row.Close()
 
 	if !row.Next() {
-		return customer, isCreated, sql.ErrNoRows
+		return c, isCreated, sql.ErrNoRows
 	}
 
 	err = row.Scan(
-		&customer.CustomerId, &customer.WorkspaceId,
-		&customer.ExternalId, &customer.Email,
-		&customer.Phone, &customer.CreatedAt,
-		&customer.UpdatedAt, &isCreated,
+		&c.CustomerId, &c.WorkspaceId,
+		&c.ExternalId, &c.Email,
+		&c.Phone, &c.CreatedAt,
+		&c.UpdatedAt, &isCreated,
 	)
 	if err != nil {
-		return customer, isCreated, err
+		return c, isCreated, err
 	}
-
-	return customer, isCreated, nil
+	return c, isCreated, nil
 }
 
-func (c Customer) GetOrCreateByEmail(ctx context.Context, db *pgxpool.Pool) (Customer, bool, error) {
+func (c Customer) GetOrCreateWrkCustomerByEmail(ctx context.Context, db *pgxpool.Pool) (Customer, bool, error) {
 
 	cId := c.GenId()
 	st := `WITH ins AS (
@@ -716,32 +698,30 @@ func (c Customer) GetOrCreateByEmail(ctx context.Context, db *pgxpool.Pool) (Cus
 	created_at, updated_at, FALSE AS is_created FROM customer
 	WHERE (workspace_id, email) = ($2, $4) AND NOT EXISTS (SELECT 1 FROM ins)`
 
-	var customer Customer
 	var isCreated bool
 	row, err := db.Query(ctx, st, cId, c.WorkspaceId, c.ExternalId, c.Email, c.Phone)
 	if err != nil {
-		return customer, isCreated, err
+		return c, isCreated, err
 	}
 	defer row.Close()
 
 	if !row.Next() {
-		return customer, isCreated, sql.ErrNoRows
+		return c, isCreated, sql.ErrNoRows
 	}
 
 	err = row.Scan(
-		&customer.CustomerId, &customer.WorkspaceId,
-		&customer.ExternalId, &customer.Email,
-		&customer.Phone, &customer.CreatedAt,
-		&customer.UpdatedAt, &isCreated,
+		&c.CustomerId, &c.WorkspaceId,
+		&c.ExternalId, &c.Email,
+		&c.Phone, &c.CreatedAt,
+		&c.UpdatedAt, &isCreated,
 	)
 	if err != nil {
-		return customer, isCreated, err
+		return c, isCreated, err
 	}
-
-	return customer, isCreated, nil
+	return c, isCreated, nil
 }
 
-func (c Customer) GetOrCreateByPhone(ctx context.Context, db *pgxpool.Pool) (Customer, bool, error) {
+func (c Customer) GetOrCreateWrkCustomerByPhone(ctx context.Context, db *pgxpool.Pool) (Customer, bool, error) {
 
 	cId := c.GenId()
 	st := `WITH ins AS (
@@ -760,29 +740,28 @@ func (c Customer) GetOrCreateByPhone(ctx context.Context, db *pgxpool.Pool) (Cus
 	created_at, updated_at, FALSE AS is_created FROM customer
 	WHERE (workspace_id, phone) = ($2, $5) AND NOT EXISTS (SELECT 1 FROM ins)`
 
-	var customer Customer
 	var isCreated bool
 	row, err := db.Query(ctx, st, cId, c.WorkspaceId, c.ExternalId, c.Email, c.Phone)
 	if err != nil {
-		return customer, isCreated, err
+		return c, isCreated, err
 	}
 	defer row.Close()
 
 	if !row.Next() {
-		return customer, isCreated, sql.ErrNoRows
+		return c, isCreated, sql.ErrNoRows
 	}
 
 	err = row.Scan(
-		&customer.CustomerId, &customer.WorkspaceId,
-		&customer.ExternalId, &customer.Email,
-		&customer.Phone, &customer.CreatedAt,
-		&customer.UpdatedAt, &isCreated,
+		&c.CustomerId, &c.WorkspaceId,
+		&c.ExternalId, &c.Email,
+		&c.Phone, &c.CreatedAt,
+		&c.UpdatedAt, &isCreated,
 	)
 	if err != nil {
-		return customer, isCreated, err
+		return c, isCreated, err
 	}
 
-	return customer, isCreated, nil
+	return c, isCreated, nil
 }
 
 func (c Customer) MakeJWT() (string, error) {
@@ -840,6 +819,7 @@ func (c Customer) MakeJWT() (string, error) {
 	return jwt, nil
 }
 
+// TODO: ThreadQA - requires refactoring, ignoring for now.
 // model
 type ThreadQA struct {
 	WorkspaceId    string
@@ -1031,7 +1011,7 @@ func (th ThreadChat) CreateCustomerThChat(
 	defer tx.Rollback(ctx)
 
 	thId := th.GenId()
-	th.Status = "todo" // default status
+	th.Status = ThreadStatus{}.Todo()
 	err = tx.QueryRow(ctx, `INSERT INTO thread_chat(workspace_id, customer_id, thread_chat_id, title, summary, status)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING
@@ -1047,7 +1027,6 @@ func (th ThreadChat) CreateCustomerThChat(
 		return th, thm, err
 	}
 
-	// thm.ThreadChatMessageId = thm.GenId()
 	thmId := thm.GenId()
 	err = tx.QueryRow(ctx, `INSERT INTO thread_chat_message(thread_chat_id, thread_chat_message_id, body, customer_id)
 		VALUES ($1, $2, $3, $4)
@@ -1071,11 +1050,10 @@ func (th ThreadChat) CreateCustomerThChat(
 	// set customer attributes we already have
 	th.CustomerName = c.Name
 	thm.CustomerName = c.Name
-
 	return th, thm, nil
 }
 
-func (th ThreadChat) GetById(ctx context.Context, db *pgxpool.Pool, threadId string) (ThreadChat, error) {
+func (th ThreadChat) GetById(ctx context.Context, db *pgxpool.Pool) (ThreadChat, error) {
 	stmt := `SELECT th.workspace_id AS workspace_id,
 		c.customer_id AS customer_id,
 		c.name AS customer_name,
@@ -1093,7 +1071,7 @@ func (th ThreadChat) GetById(ctx context.Context, db *pgxpool.Pool, threadId str
 		LEFT OUTER JOIN member a ON th.assignee_id = a.member_id
 		WHERE th.thread_chat_id = $1`
 
-	err := db.QueryRow(ctx, stmt, threadId).Scan(
+	err := db.QueryRow(ctx, stmt, th.ThreadChatId).Scan(
 		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
 		&th.AssigneeId, &th.AssigneeName,
 		&th.ThreadChatId, &th.Title, &th.Summary,
@@ -1106,9 +1084,7 @@ func (th ThreadChat) GetById(ctx context.Context, db *pgxpool.Pool, threadId str
 	return th, nil
 }
 
-func (th ThreadChat) GetListByWorkspaceCustomerId(
-	ctx context.Context, db *pgxpool.Pool, workspaceId string, customerId string,
-) ([]ThreadChatWithMessage, error) {
+func (th ThreadChat) GetListByWorkspaceCustomerId(ctx context.Context, db *pgxpool.Pool) ([]ThreadChatWithMessage, error) {
 
 	ths := make([]ThreadChatWithMessage, 0, 100)
 
@@ -1151,7 +1127,7 @@ func (th ThreadChat) GetListByWorkspaceCustomerId(
 		WHERE th.workspace_id = $1 AND th.customer_id = $2
 		ORDER BY sequence DESC LIMIT 100`
 
-	rows, err := db.Query(ctx, stmt, workspaceId, customerId)
+	rows, err := db.Query(ctx, stmt, th.WorkspaceId, th.CustomerId)
 	if err != nil {
 		return ths, err
 	}
@@ -1188,9 +1164,7 @@ func (th ThreadChat) GetListByWorkspaceCustomerId(
 	return ths, nil
 }
 
-func (th ThreadChat) AssignMember(
-	ctx context.Context, db *pgxpool.Pool, memberId string, threadChatId string,
-) (ThreadChat, error) {
+func (th ThreadChat) AssignMember(ctx context.Context, db *pgxpool.Pool) (ThreadChat, error) {
 	stmt := `WITH ups AS (
 		UPDATE thread_chat SET assignee_id = $1
 		WHERE thread_chat_id = $2
@@ -1198,23 +1172,23 @@ func (th ThreadChat) AssignMember(
 		workspace_id, thread_chat_id, customer_id, assignee_id,
 		title, summary, sequence, status, created_at, updated_at
 	) SELECT
-	ups.workspace_id AS workspace_id,
-	c.customer_id AS customer_id,
-	c.name AS customer_name,
-	m.member_id AS assignee_id,
-	m.name AS assignee_name,
-	ups.thread_chat_id AS thread_chat_id,
-	ups.title AS title,
-	ups.summary AS summary,
-	ups.sequence AS sequence,
-	ups.status AS status,
-	ups.created_at AS created_at,
-	ups.updated_at AS updated_at
+		ups.workspace_id AS workspace_id,
+		c.customer_id AS customer_id,
+		c.name AS customer_name,
+		m.member_id AS assignee_id,
+		m.name AS assignee_name,
+		ups.thread_chat_id AS thread_chat_id,
+		ups.title AS title,
+		ups.summary AS summary,
+		ups.sequence AS sequence,
+		ups.status AS status,
+		ups.created_at AS created_at,
+		ups.updated_at AS updated_at
 	FROM ups
 	INNER JOIN customer c ON ups.customer_id = c.customer_id
 	LEFT OUTER JOIN member m ON ups.assignee_id = m.member_id`
 
-	row, err := db.Query(ctx, stmt, memberId, threadChatId)
+	row, err := db.Query(ctx, stmt, th.AssigneeId, th.ThreadChatId)
 	if err != nil {
 		return th, err
 	}
@@ -1258,36 +1232,8 @@ func (thm ThreadChatMessage) GenId() string {
 }
 
 func (thm ThreadChatMessage) CreateCustomerThChatMessage(
-	ctx context.Context, db *pgxpool.Pool, th ThreadChat, c Customer, msg string,
+	ctx context.Context, db *pgxpool.Pool, c Customer, msg string,
 ) (ThreadChatMessage, error) {
-	// var customerId sql.NullString
-
-	// if c.CustomerId != "" {
-	// 	customerId = sql.NullString{String: c.CustomerId, Valid: true}
-	// } else {
-	// 	return thm, fmt.Errorf("cannot create customer thread chat message without customer id got: %v", c.CustomerId)
-	// }
-
-	// thm.ThreadChatMessageId = thm.GenId()
-	// err := db.QueryRow(ctx, `INSERT INTO thread_chat_message(thread_chat_id, thread_chat_message_id, body, customer_id)
-	// 	VALUES ($1, $2, $3, $4)
-	// 	RETURNING
-	// 	thread_chat_id, thread_chat_message_id, body, sequence, customer_id, member_id, created_at, updated_at`,
-	// 	th.ThreadChatId, thm.ThreadChatMessageId, msg, customerId).Scan(
-	// 	&thm.ThreadChatId, &thm.ThreadChatMessageId, &thm.Body,
-	// 	&thm.Sequence, &thm.CustomerId, &thm.MemberId,
-	// 	&thm.CreatedAt, &thm.UpdatedAt,
-	// )
-	// if err != nil {
-	// 	fmt.Printf("failed to insert thread_chat_message with error: %v\n", err)
-	// 	return thm, err
-	// }
-	// // attach customer name before returning
-	// // doing this will not require any fancy db query as customer name
-	// // is already available and its of the same type.
-	// thm.CustomerName = c.Name
-	// return thm, nil
-
 	thmId := thm.GenId()
 	stmt := `WITH ins AS (
 		INSERT INTO thread_chat_message (thread_chat_id, thread_chat_message_id, body, customer_id)
@@ -1296,33 +1242,35 @@ func (thm ThreadChatMessage) CreateCustomerThChatMessage(
 			thread_chat_id, thread_chat_message_id, body, sequence,
 			customer_id, member_id, created_at, updated_at
 		) SELECT ins.thread_chat_id AS thread_chat_id,
-		ins.thread_chat_message_id AS thread_chat_message_id,
-		ins.body AS body,
-		ins.sequence AS sequence,
-		c.customer_id AS customer_id,
-		c.name AS customer_name,
-		m.member_id AS member_id,
-		m.name AS member_name,
-		ins.created_at AS created_at,
-		ins.updated_at AS updated_at
+			ins.thread_chat_message_id AS thread_chat_message_id,
+			ins.body AS body,
+			ins.sequence AS sequence,
+			c.customer_id AS customer_id,
+			c.name AS customer_name,
+			m.member_id AS member_id,
+			m.name AS member_name,
+			ins.created_at AS created_at,
+			ins.updated_at AS updated_at
 		FROM ins
 		LEFT OUTER JOIN customer c ON ins.customer_id = c.customer_id
 		LEFT OUTER JOIN member m ON ins.member_id = m.member_id`
-	err := db.QueryRow(ctx, stmt, th.ThreadChatId, thmId, msg, c.CustomerId).Scan(
+
+	err := db.QueryRow(ctx, stmt, thm.ThreadChatId, thmId, msg, c.CustomerId).Scan(
 		&thm.ThreadChatId, &thm.ThreadChatMessageId, &thm.Body,
 		&thm.Sequence, &thm.CustomerId, &thm.CustomerName,
 		&thm.MemberId, &thm.MemberName,
 		&thm.CreatedAt, &thm.UpdatedAt,
 	)
+
 	if err != nil {
-		fmt.Printf("failed insert for thread chat message for thread id %s with error: %v\n", th.ThreadChatId, err)
+		fmt.Printf("failed insert for thread chat message for thread id %s with error: %v\n", thm.ThreadChatId, err)
 		return thm, err
 	}
 	return thm, nil
 }
 
 func (thm ThreadChatMessage) CreateMemberThChatMessage(
-	ctx context.Context, db *pgxpool.Pool, th ThreadChat, m Member, msg string,
+	ctx context.Context, db *pgxpool.Pool, m Member, msg string,
 ) (ThreadChatMessage, error) {
 
 	thmId := thm.GenId()
@@ -1333,53 +1281,52 @@ func (thm ThreadChatMessage) CreateMemberThChatMessage(
 			thread_chat_id, thread_chat_message_id, body, sequence,
 			customer_id, member_id, created_at, updated_at
 		) SELECT ins.thread_chat_id AS thread_chat_id,
-		ins.thread_chat_message_id AS thread_chat_message_id,
-		ins.body AS body,
-		ins.sequence AS sequence,
-		c.customer_id AS customer_id,
-		c.name AS customer_name,
-		m.member_id AS member_id,
-		m.name AS member_name,
-		ins.created_at AS created_at,
-		ins.updated_at AS updated_at
+			ins.thread_chat_message_id AS thread_chat_message_id,
+			ins.body AS body,
+			ins.sequence AS sequence,
+			c.customer_id AS customer_id,
+			c.name AS customer_name,
+			m.member_id AS member_id,
+			m.name AS member_name,
+			ins.created_at AS created_at,
+			ins.updated_at AS updated_at
 		FROM ins
 		LEFT OUTER JOIN customer c ON ins.customer_id = c.customer_id
 		LEFT OUTER JOIN member m ON ins.member_id = m.member_id`
-	err := db.QueryRow(ctx, stmt, th.ThreadChatId, thmId, msg, m.MemberId).Scan(
+	err := db.QueryRow(ctx, stmt, thm.ThreadChatId, thmId, msg, m.MemberId).Scan(
 		&thm.ThreadChatId, &thm.ThreadChatMessageId, &thm.Body,
 		&thm.Sequence, &thm.CustomerId, &thm.CustomerName,
 		&thm.MemberId, &thm.MemberName,
 		&thm.CreatedAt, &thm.UpdatedAt,
 	)
 	if err != nil {
-		fmt.Printf("failed insert for thread chat message for thread id %s with error: %v\n", th.ThreadChatId, err)
+		fmt.Printf("failed insert for thread chat message for thread id %s with error: %v\n", thm.ThreadChatId, err)
 		return thm, err
 	}
 	return thm, nil
 }
 
-func (thm ThreadChatMessage) GetListByThreadId(
-	ctx context.Context, db *pgxpool.Pool, threadId string,
-) ([]ThreadChatMessage, error) {
+// TODO: rename this to ...ByThreadChatId
+func (thm ThreadChatMessage) GetListByThreadId(ctx context.Context, db *pgxpool.Pool) ([]ThreadChatMessage, error) {
 
 	stmt := `SELECT
-		thm.thread_chat_id AS thread_chat_id,
-		thm.thread_chat_message_id AS thread_chat_message_id,
-		thm.body AS body,
-		thm.sequence AS sequence,
-		thm.created_at AS created_at,
-		thm.updated_at AS updated_at,
-		c.customer_id AS customer_id,
-		c.name AS customer_name,
-		m.member_id AS member_id,
-		m.name AS member_name
+			thm.thread_chat_id AS thread_chat_id,
+			thm.thread_chat_message_id AS thread_chat_message_id,
+			thm.body AS body,
+			thm.sequence AS sequence,
+			thm.created_at AS created_at,
+			thm.updated_at AS updated_at,
+			c.customer_id AS customer_id,
+			c.name AS customer_name,
+			m.member_id AS member_id,
+			m.name AS member_name
 		FROM thread_chat_message AS thm
 		LEFT OUTER JOIN customer AS c ON thm.customer_id = c.customer_id
 		LEFT OUTER JOIN member AS m ON thm.member_id = m.member_id
 		WHERE thm.thread_chat_id = $1
 		ORDER BY sequence DESC LIMIT 100`
 
-	rows, err := db.Query(ctx, stmt, threadId)
+	rows, err := db.Query(ctx, stmt, thm.ThreadChatId)
 	if err != nil {
 		return nil, err
 	}
@@ -1784,7 +1731,7 @@ func AuthenticateAccount(ctx context.Context, db *pgxpool.Pool, w http.ResponseW
 	scheme := strings.ToLower(cred[0])
 
 	if scheme == "token" {
-		fmt.Println("authenticate via PAT")
+		fmt.Println("authenticate with PAT")
 		account, err := AuthenticatePAT(ctx, db, cred[1])
 		if err != nil {
 			return account, fmt.Errorf("failed to authenticate with error: %v", err)
@@ -1792,7 +1739,7 @@ func AuthenticateAccount(ctx context.Context, db *pgxpool.Pool, w http.ResponseW
 		fmt.Printf("authenticated account with accountId: %s\n", account.AccountId)
 		return account, nil
 	} else if scheme == "bearer" {
-		fmt.Println("authenticate via JWTs")
+		fmt.Println("authenticate with JWTs")
 		hmacSecret, err := GetEnv("SUPABASE_JWT_SECRET")
 		if err != nil {
 			return account, fmt.Errorf("failed to get env SUPABASE_JWT_SECRET with error: %v", err)
@@ -1805,12 +1752,15 @@ func AuthenticateAccount(ctx context.Context, db *pgxpool.Pool, w http.ResponseW
 		if err != nil {
 			return account, fmt.Errorf("cannot get subject from parsed token: %v", err)
 		}
-		fmt.Printf("authenticated account with id: %s\n", sub)
+		fmt.Printf("authenticated account with auth user id: %s\n", sub)
 
-		account, err := Account{}.GetByAuthUserId(ctx, db, sub)
+		// fetch the authenticated account
+		account = Account{AuthUserId: sub}
+		account, err = account.GetByAuthUserId(ctx, db)
 		if err != nil {
-			return account, fmt.Errorf("failed to get account by authUserId: %s with error: %v", ta.AuthUserId, err)
+			return account, fmt.Errorf("failed to get account by auth user id: %s with error: %v", sub, err)
 		}
+		// return the authenticated account
 		return account, nil
 	} else {
 		return account, fmt.Errorf("unsupported scheme: `%s` cannot authenticate", scheme)
@@ -1838,7 +1788,7 @@ func AuthenticateCustomer(ctx context.Context, db *pgxpool.Pool, w http.Response
 	scheme := strings.ToLower(cred[0])
 
 	if scheme == "bearer" {
-		fmt.Println("authenticate via JWTs")
+		fmt.Println("authenticate with JWTs")
 		hmacSecret, err := GetEnv("SUPABASE_JWT_SECRET")
 		if err != nil {
 			return customer, fmt.Errorf("failed to get env SUPABASE_JWT_SECRET with error: %v", err)
@@ -1852,11 +1802,14 @@ func AuthenticateCustomer(ctx context.Context, db *pgxpool.Pool, w http.Response
 			return customer, fmt.Errorf("cannot get subject from parsed token: %v", err)
 		}
 		fmt.Printf("authenticated customer with id: %s\n", sub)
-		tc := Customer{WorkspaceId: cc.WorkspaceId, CustomerId: sub}
-		customer, err := tc.GetById(ctx, db)
+
+		// fetch the authenticated customer
+		customer = Customer{WorkspaceId: cc.WorkspaceId, CustomerId: sub}
+		customer, err = customer.GetWrkCustomerById(ctx, db)
 		if err != nil {
-			return customer, fmt.Errorf("failed to get customer by customerId: %s with error: %v", tc.CustomerId, err)
+			return customer, fmt.Errorf("failed to get customer by customer id: %s with error: %v", customer.CustomerId, err)
 		}
+		// return the authenticated customer
 		return customer, nil
 	} else {
 		return customer, fmt.Errorf("unsupported scheme: `%s` cannot authenticate", scheme)
@@ -1935,13 +1888,12 @@ func handleAuthAccountMaker(ctx context.Context, db *pgxpool.Pool) http.Handler 
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
 			}
-			name := ""
-			account, isCreated, err := Account{}.GetOrCreateByAuthUserId(ctx, db, sub, ac.Email, DefaultAuthProvider, name)
+			account := Account{AuthUserId: sub, Email: ac.Email, Provider: DefaultAuthProvider}
+			account, isCreated, err := account.GetOrCreateByAuthUserId(ctx, db)
 			if err != nil {
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
 			}
-
 			if isCreated {
 				fmt.Printf("account created with accountId: %s\n", account.AccountId)
 				w.Header().Set("Content-Type", "application/json")
@@ -2406,7 +2358,8 @@ func handleGetCustomerThreadChats(ctx context.Context, db *pgxpool.Pool) http.Ha
 			return
 		}
 
-		ths, err := ThreadChat{}.GetListByWorkspaceCustomerId(ctx, db, workspace.WorkspaceId, customer.CustomerId)
+		th := ThreadChat{WorkspaceId: workspace.WorkspaceId, CustomerId: customer.CustomerId}
+		ths, err := th.GetListByWorkspaceCustomerId(ctx, db)
 		if err != nil {
 			fmt.Printf("error in Get List By WorksapceId %s", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -2510,13 +2463,15 @@ func handleCreateCustomerThreadChatMessage(ctx context.Context, db *pgxpool.Pool
 			return
 		}
 
-		th, err := ThreadChat{}.GetById(ctx, db, threadId)
+		th := ThreadChat{ThreadChatId: threadId}
+		th, err = th.GetById(ctx, db)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
 		}
 
-		thm, err := ThreadChatMessage{}.CreateCustomerThChatMessage(ctx, db, th, customer, message.Message)
+		thm := ThreadChatMessage{ThreadChatId: th.ThreadChatId}
+		thm, err = thm.CreateCustomerThChatMessage(ctx, db, customer, message.Message)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
@@ -2612,19 +2567,23 @@ func handleCreateMemberThreadChatMessage(ctx context.Context, db *pgxpool.Pool) 
 			return
 		}
 
-		member, err := Member{}.GetWorkspaceMemberByAccountId(ctx, db, workspaceId, account.AccountId)
+		member := Member{WorkspaceId: workspaceId, AccountId: account.AccountId}
+		member, err = member.GetWorkspaceMemberByAccountId(ctx, db)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
 		}
 
-		th, err := ThreadChat{}.GetById(ctx, db, threadId)
+		th := ThreadChat{ThreadChatId: threadId}
+
+		th, err = th.GetById(ctx, db)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
 		}
 
-		thm, err := ThreadChatMessage{}.CreateMemberThChatMessage(ctx, db, th, member, message.Message)
+		thm := ThreadChatMessage{ThreadChatId: th.ThreadChatId}
+		thm, err = thm.CreateMemberThChatMessage(ctx, db, member, message.Message)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
@@ -2632,11 +2591,13 @@ func handleCreateMemberThreadChatMessage(ctx context.Context, db *pgxpool.Pool) 
 
 		if !th.AssigneeId.Valid {
 			fmt.Println("Thread Chat not yet assigned will try to assign Member...")
-			thAssigned, err := ThreadChat{}.AssignMember(ctx, db, member.MemberId, th.ThreadChatId)
+			thAssigned := th // make a temp copy
+			thAssigned.AssigneeId = NullString(&member.MemberId)
+			thAssigned, err := thAssigned.AssignMember(ctx, db)
 			if err != nil {
 				fmt.Printf("(silent) failed to assign member to Thread Chat with error: %v\n", err)
 			} else {
-				th = thAssigned
+				th = thAssigned // update the original with assigned
 			}
 		}
 
@@ -2715,14 +2676,16 @@ func handleGetCustomerThreadChatMessages(ctx context.Context, db *pgxpool.Pool) 
 		}
 
 		threadId := r.PathValue("threadId")
+		th := ThreadChat{ThreadChatId: threadId}
 
-		th, err := ThreadChat{}.GetById(ctx, db, threadId)
+		th, err = th.GetById(ctx, db)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
 		}
 
-		results, err := ThreadChatMessage{}.GetListByThreadId(ctx, db, th.ThreadChatId)
+		thc := ThreadChatMessage{ThreadChatId: th.ThreadChatId}
+		results, err := thc.GetListByThreadId(ctx, db)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
@@ -2817,6 +2780,7 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
+
 		workspaceId := r.PathValue("workspaceId")
 		fmt.Printf("issue token for customer in workspaceId: %v\n", workspaceId)
 
@@ -2828,14 +2792,13 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 			return
 		}
 
-		tc := Customer{
+		customer := Customer{
 			WorkspaceId: workspace.WorkspaceId,
 		}
-		tc.ExternalId = NullString(rb.Customer.ExternalId)
-		tc.Email = NullString(rb.Customer.Email)
-		tc.Phone = NullString(rb.Customer.Phone)
-
-		if !tc.ExternalId.Valid && !tc.Email.Valid && !tc.Phone.Valid {
+		customer.ExternalId = NullString(rb.Customer.ExternalId)
+		customer.Email = NullString(rb.Customer.Email)
+		customer.Phone = NullString(rb.Customer.Phone)
+		if !customer.ExternalId.Valid && !customer.Email.Valid && !customer.Phone.Valid {
 			fmt.Println("at least one of `externalId`, `email` or `phone` is required")
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
@@ -2851,20 +2814,20 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 			fmt.Printf("create the customer if does not exists by %s\n", createBy)
 			switch createBy {
 			case "email":
-				if !tc.Email.Valid {
+				if !customer.Email.Valid {
 					fmt.Println("`email` is required for `createBy` email")
 					http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 					return
 				}
-				email := tc.Email.String
+				email := customer.Email.String
 				fmt.Printf("create the customer by email %s\n", email)
-				customer, isCreated, err := tc.GetOrCreateByEmail(ctx, db)
+				customer, isCreated, err := customer.GetOrCreateWrkCustomerByEmail(ctx, db)
 				if err != nil {
 					fmt.Printf("failed to get or create customer by email %s with error: %v\n", email, err)
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
-				fmt.Printf("customerId: %s is created: %v\n", customer.CustomerId, isCreated)
+				fmt.Printf("customer id: %s is created: %v\n", customer.CustomerId, isCreated)
 				jwt, err := customer.MakeJWT()
 				if err != nil {
 					fmt.Printf("failed to make jwt token with error: %v\n", err)
@@ -2884,14 +2847,14 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 				}
 				return
 			case "phone":
-				if !tc.Phone.Valid {
+				if !customer.Phone.Valid {
 					fmt.Println("`phone` is required for `createBy` phone")
 					http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 					return
 				}
-				phone := tc.Phone.String
+				phone := customer.Phone.String
 				fmt.Printf("create the customer by phone %s\n", phone)
-				customer, isCreated, err := tc.GetOrCreateByPhone(ctx, db)
+				customer, isCreated, err := customer.GetOrCreateWrkCustomerByPhone(ctx, db)
 				if err != nil {
 					fmt.Printf("failed to get or create customer by phone %s with error: %v\n", phone, err)
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -2916,14 +2879,14 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 					return
 				}
 			case "externalId":
-				if !tc.ExternalId.Valid {
+				if !customer.ExternalId.Valid {
 					fmt.Println("`externalId` is required for `createBy` externalId")
 					http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 					return
 				}
-				extId := tc.ExternalId.String
+				extId := customer.ExternalId.String
 				fmt.Printf("create the customer by externalId %s\n", extId)
-				customer, isCreated, err := tc.GetOrCreateByExtId(ctx, db)
+				customer, isCreated, err := customer.GetOrCreateWrkCustomerByExtId(ctx, db)
 				if err != nil {
 					fmt.Printf("failed to get or create customer by externalId %s with error: %v\n", extId, err)
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -2953,14 +2916,13 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 				return
 			}
 		} else {
-			var customer Customer
 			fmt.Printf("based on identifiers check for customer in workspaceId: %v\n", workspaceId)
-			if tc.ExternalId.Valid {
-				extId := tc.ExternalId.String
-				fmt.Printf("get customer by externalId %s\n", extId)
-				customer, err = customer.GetByExtId(ctx, db, workspaceId, extId)
+			if customer.ExternalId.Valid {
+				fmt.Printf("get workspace customer by externalId %s\n", customer.ExternalId.String)
+				customer, err = customer.GetWrkCustomerByExtId(ctx, db)
 				if err != nil {
-					fmt.Printf("failed to get customer by externalId %s with error: %v\n", extId, err)
+					// TOOD: improve logging and error handling
+					fmt.Printf("failed to get customer by externalId %s with error: %v\n", customer.ExternalId.String, err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 					return
 				}
@@ -2982,12 +2944,11 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
-			} else if tc.Email.Valid {
-				email := tc.Email.String
-				fmt.Printf("get customer by email %s\n", email)
-				customer, err = customer.GetByEmail(ctx, db, workspaceId, email)
+			} else if customer.Email.Valid {
+				fmt.Printf("get customer by email %s\n", customer.Email.String)
+				customer, err = customer.GetWrkCustomerByEmail(ctx, db)
 				if err != nil {
-					fmt.Printf("failed to get customer by email %s with error: %v\n", email, err)
+					fmt.Printf("failed to get customer by email %s with error: %v\n", customer.Email.String, err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 					return
 				}
@@ -3009,12 +2970,11 @@ func handleCustomerTokenIssue(ctx context.Context, db *pgxpool.Pool) http.Handle
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
-			} else if tc.Phone.Valid {
-				phone := tc.Phone.String
-				fmt.Printf("get customer by phone %s\n", phone)
-				customer, err = customer.GetByPhone(ctx, db, workspaceId, phone)
+			} else if customer.Phone.Valid {
+				fmt.Printf("get customer by phone %s\n", customer.Phone.String)
+				customer, err = customer.GetWrkCustomerByPhone(ctx, db)
 				if err != nil {
-					fmt.Printf("failed to get customer by phone %s with error: %v\n", phone, err)
+					fmt.Printf("failed to get customer by phone %s with error: %v\n", customer.Phone.String, err)
 					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 					return
 				}

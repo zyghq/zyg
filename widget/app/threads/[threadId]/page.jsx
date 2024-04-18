@@ -1,5 +1,4 @@
 "use client";
-// TODO: add authentication for this page...
 import * as React from "react";
 import { ThreadHeader } from "@/components/headers";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -8,7 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 // import Room from "@/components/room";
 import MessageThreadForm from "@/components/message-thread-form";
 import { useQuery } from "@tanstack/react-query";
-import Cookies from "js-cookie";
+// import Cookies from "js-cookie";
+import { useAuth } from "@/lib/auth";
 import { Icons } from "@/components/icons";
 
 function Message({ message }) {
@@ -51,11 +51,13 @@ function Message({ message }) {
 
 export default function ThreadChatMessageListPage({ params }) {
   const { threadId } = params;
+  const auth = useAuth();
+  const { authUser, isAuthLoading } = auth;
   const bottomRef = React.useRef();
   const result = useQuery({
-    queryKey: ["thchats", threadId],
+    queryKey: ["thmchats", threadId, authUser?.authToken?.value],
     queryFn: async () => {
-      const token = Cookies.get("__zygtoken") || "";
+      const token = authUser?.authToken?.value;
       const response = await fetch(
         `http://localhost:8080/-/threads/chat/${threadId}/messages/`,
         {
@@ -72,6 +74,10 @@ export default function ThreadChatMessageListPage({ params }) {
       }
       return response.json();
     },
+    refetchOnWindowFocus: true,
+    enabled: authUser?.authToken?.value ? true : false,
+    refetchInterval: 10000,
+    refetchOnMount: "always",
   });
 
   React.useEffect(() => {
@@ -81,7 +87,7 @@ export default function ThreadChatMessageListPage({ params }) {
   }, [result.data]); // TODO: experiment with this more values
 
   const renderContent = () => {
-    if (result.isPending) {
+    if (result.isPending || isAuthLoading || !authUser) {
       return (
         <div className="space-y-4">
           <div className="max-w-xs ml-auto">
@@ -124,6 +130,7 @@ export default function ThreadChatMessageListPage({ params }) {
     }
 
     if (result.isError) {
+      console.error(result.error);
       return (
         <div className="flex flex-col items-center mt-24">
           <Icons.oops className="h-8 w-8" />
@@ -154,7 +161,11 @@ export default function ThreadChatMessageListPage({ params }) {
         {renderContent()}
       </ScrollArea>
       <div className="pt-2 px-2 mt-auto border-t">
-        <MessageThreadForm threadId={threadId} refetch={result.refetch} />
+        <MessageThreadForm
+          authUser={authUser}
+          threadId={threadId}
+          refetch={result.refetch}
+        />
         <footer className="flex flex-col justify-center items-center border-t w-full h-8 mt-2">
           <a
             href="https://www.zyg.ai/"

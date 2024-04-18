@@ -35,7 +35,8 @@ function SubmitButton({ isDisabled }) {
   );
 }
 
-export default function MessageThreadForm({ threadId, refetch }) {
+export default function MessageThreadForm({ authUser, threadId, refetch }) {
+  const authToken = authUser?.authToken?.value || "";
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -44,7 +45,7 @@ export default function MessageThreadForm({ threadId, refetch }) {
   });
 
   const { formState } = form;
-  const { isSubmitting, errors, isSubmitSuccessful } = formState;
+  const { isSubmitting, errors } = formState;
 
   const onEnterPress = (e) => {
     if (e.keyCode === 13 && e.shiftKey === false) {
@@ -54,7 +55,7 @@ export default function MessageThreadForm({ threadId, refetch }) {
   };
 
   async function onSubmit(values) {
-    const response = await sendThreadChatMessage(threadId, values);
+    const response = await sendThreadChatMessage(authToken, threadId, values);
     const { error, data } = response;
     if (error) {
       console.log("got error from server....", error);
@@ -100,7 +101,7 @@ export default function MessageThreadForm({ threadId, refetch }) {
             </FormItem>
           )}
         />
-        <SubmitButton isDisabled={isSubmitting || isSubmitSuccessful} />
+        <SubmitButton isDisabled={isSubmitting} />
       </form>
     </Form>
   );

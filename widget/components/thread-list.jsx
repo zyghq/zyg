@@ -85,7 +85,7 @@ export default function ThreadList({ threads }) {
       }
       return response.json();
     },
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
     enabled: authUser?.authToken?.value ? true : false,
     initialData: threads,
     refetchInterval: 10000,
