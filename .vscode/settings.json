@@ -6,7 +6,7 @@
     "**/CVS": true,
     "**/.DS_Store": true,
     "**/Thumbs.db": true,
-    "converse": true,
+    "ai": true,
     "webapp": true,
     "widget": true,
     "backend": true
