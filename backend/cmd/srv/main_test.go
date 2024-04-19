@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/zyghq/zyg/internal/model"
 )
 
 func TestHandleGetIndexRR(t *testing.T) {
@@ -92,7 +94,7 @@ func TestHandleGetWorkspacesRR(t *testing.T) {
 
 	defer resp.Body.Close()
 
-	var workspaces []Workspace
+	var workspaces []model.Workspace
 
 	err = json.NewDecoder(resp.Body).Decode(&workspaces)
 
