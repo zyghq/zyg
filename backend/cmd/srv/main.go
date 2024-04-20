@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/cors"
 	"github.com/rs/xid"
@@ -33,163 +32,6 @@ func NullString(s *string) sql.NullString {
 		return sql.NullString{String: "", Valid: false}
 	}
 	return sql.NullString{String: *s, Valid: true}
-}
-
-// TODO: ThreadQA - requires refactoring, ignoring for now.
-type ThreadQA struct {
-	WorkspaceId    string
-	CustomerId     string
-	ThreadId       string
-	ParentThreadId sql.NullString
-	Query          string
-	Title          string
-	Summary        string
-	Sequence       int
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-}
-
-func (tq ThreadQA) MarshalJSON() ([]byte, error) {
-	var pth *string
-	if tq.ParentThreadId.Valid {
-		pth = &tq.ParentThreadId.String
-	}
-	aux := &struct {
-		WorkspaceId    string  `json:"workspaceId"`
-		CustomerId     string  `json:"customerId"`
-		ThreadId       string  `json:"threadId"`
-		ParentThreadId *string `json:"parentThreadId"`
-		Query          string  `json:"query"`
-		Title          string  `json:"title"`
-		Summary        string  `json:"summary"`
-		Sequence       int     `json:"sequence"`
-		CreatedAt      string  `json:"createdAt"`
-		UpdatedAt      string  `json:"updatedAt"`
-	}{
-		WorkspaceId:    tq.WorkspaceId,
-		CustomerId:     tq.CustomerId,
-		ThreadId:       tq.ThreadId,
-		ParentThreadId: pth,
-		Query:          tq.Query,
-		Title:          tq.Title,
-		Summary:        tq.Summary,
-		Sequence:       tq.Sequence,
-		CreatedAt:      tq.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:      tq.UpdatedAt.Format(time.RFC3339),
-	}
-	return json.Marshal(aux)
-}
-
-func (tq ThreadQA) GenId() string {
-	return "tq_" + xid.New().String()
-}
-
-func (tq ThreadQA) Create(ctx context.Context, db *pgxpool.Pool) (ThreadQA, error) {
-	var thread ThreadQA
-
-	tqId := tq.GenId()
-	stmt := `INSERT INTO 
-		thread_qa(workspace_id, customer_id, thread_id, parent_thread_id, query, title, summary)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING 
-		workspace_id, customer_id, thread_id, parent_thread_id,
-		query, title, summary, sequence,
-		created_at, updated_at`
-
-	row, err := db.Query(ctx, stmt, tq.WorkspaceId, tq.CustomerId, tqId, tq.ParentThreadId, tq.Query, tq.Title, tq.Summary)
-	if err != nil {
-		return thread, err
-	}
-	defer row.Close()
-
-	if !row.Next() {
-		return thread, sql.ErrNoRows
-	}
-
-	err = row.Scan(
-		&thread.WorkspaceId, &thread.CustomerId, &thread.ThreadId, &thread.ParentThreadId,
-		&thread.Query, &thread.Title, &thread.Summary, &thread.Sequence,
-		&thread.CreatedAt, &thread.UpdatedAt,
-	)
-	if err != nil {
-		return thread, err
-	}
-
-	return thread, nil
-}
-
-// model
-type ThreadQAA struct {
-	WorkspaceId string
-	ThreadQAId  string
-	AnswerId    string
-	Answer      string
-	Sequence    int
-	Eval        sql.NullInt32
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
-func (tqa ThreadQAA) MarshalJSON() ([]byte, error) {
-	var eval *int32
-	if tqa.Eval.Valid {
-		eval = &tqa.Eval.Int32
-	}
-	aux := &struct {
-		WorkspaceId string `json:"workspaceId"`
-		ThreadQAId  string `json:"threadQAId"`
-		AnswerId    string `json:"answerId"`
-		Answer      string `json:"answer"`
-		Sequence    int    `json:"sequence"`
-		Eval        *int32 `json:"eval"`
-		CreatedAt   string `json:"createdAt"`
-		UpdatedAt   string `json:"updatedAt"`
-	}{
-		WorkspaceId: tqa.WorkspaceId,
-		ThreadQAId:  tqa.ThreadQAId,
-		AnswerId:    tqa.AnswerId,
-		Answer:      tqa.Answer,
-		Sequence:    tqa.Sequence,
-		Eval:        eval,
-		CreatedAt:   tqa.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:   tqa.UpdatedAt.Format(time.RFC3339),
-	}
-	return json.Marshal(aux)
-}
-func (tqa ThreadQAA) GenId() string {
-	return "tqa_" + xid.New().String()
-}
-
-func (tqa ThreadQAA) Create(ctx context.Context, db *pgxpool.Pool) (ThreadQAA, error) {
-	var thread ThreadQAA
-
-	tqaId := tqa.GenId()
-	stmt := `INSERT INTO 
-		thread_qa_answer(workspace_id, thread_qa_id, answer_id, answer)
-		VALUES ($1, $2, $3, $4)
-		RETURNING 
-		workspace_id, thread_qa_id, answer_id, answer, 
-		eval, sequence, created_at, updated_at`
-
-	row, err := db.Query(ctx, stmt, tqa.WorkspaceId, tqa.ThreadQAId, tqaId, tqa.Answer)
-	if err != nil {
-		return thread, err
-	}
-	defer row.Close()
-
-	if !row.Next() {
-		return thread, sql.ErrNoRows
-	}
-
-	err = row.Scan(
-		&thread.WorkspaceId, &thread.ThreadQAId, &thread.AnswerId, &thread.Answer,
-		&thread.Eval, &thread.Sequence, &thread.CreatedAt, &thread.UpdatedAt,
-	)
-	if err != nil {
-		return thread, err
-	}
-
-	return thread, nil
 }
 
 // request
@@ -573,7 +415,7 @@ func AuthenticateAccount(ctx context.Context, db *pgxpool.Pool, w http.ResponseW
 		if err != nil {
 			return account, fmt.Errorf("failed to get env SUPABASE_JWT_SECRET with error: %v", err)
 		}
-		ac, err := parseJWTToken(cred[1], []byte(hmacSecret))
+		ac, err := auth.ParseJWTToken(cred[1], []byte(hmacSecret))
 		if err != nil {
 			return account, fmt.Errorf("failed to parse JWT token with error: %v", err)
 		}
@@ -613,7 +455,7 @@ func AuthenticateCustomer(ctx context.Context, db *pgxpool.Pool, w http.Response
 		if err != nil {
 			return customer, fmt.Errorf("failed to get env SUPABASE_JWT_SECRET with error: %v", err)
 		}
-		cc, err := parseCustomerJWTToken(cred[1], []byte(hmacSecret))
+		cc, err := auth.ParseCustomerJWTToken(cred[1], []byte(hmacSecret))
 		if err != nil {
 			return customer, fmt.Errorf("failed to parse JWT token with error: %v", err)
 		}
@@ -634,39 +476,6 @@ func AuthenticateCustomer(ctx context.Context, db *pgxpool.Pool, w http.Response
 	} else {
 		return customer, fmt.Errorf("unsupported scheme: `%s` cannot authenticate", scheme)
 	}
-}
-
-func parseJWTToken(token string, hmacSecret []byte) (ac auth.AuthJWTClaims, err error) {
-	t, err := jwt.ParseWithClaims(token, &auth.AuthJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return hmacSecret, nil
-	})
-
-	if err != nil {
-		return ac, fmt.Errorf("error validating jwt token with error: %v", err)
-	} else if claims, ok := t.Claims.(*auth.AuthJWTClaims); ok {
-		return *claims, nil
-	}
-
-	return ac, fmt.Errorf("error parsing token: %v", token)
-}
-
-func parseCustomerJWTToken(token string, hmacSecret []byte) (cc auth.CustomerJWTClaims, err error) {
-	t, err := jwt.ParseWithClaims(token, &auth.CustomerJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return hmacSecret, nil
-	})
-
-	if err != nil {
-		return cc, fmt.Errorf("error validating jwt token with error: %v", err)
-	} else if claims, ok := t.Claims.(*auth.CustomerJWTClaims); ok {
-		return *claims, nil
-	}
-	return cc, fmt.Errorf("error parsing token: %v", token)
 }
 
 func handleAuthAccountMaker(ctx context.Context, db *pgxpool.Pool) http.Handler {
@@ -694,7 +503,7 @@ func handleAuthAccountMaker(ctx context.Context, db *pgxpool.Pool) http.Handler 
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
-			ac, err := parseJWTToken(cred[1], []byte(hmacSecret))
+			ac, err := auth.ParseJWTToken(cred[1], []byte(hmacSecret))
 			if err != nil {
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
@@ -969,7 +778,7 @@ func handleGetCustomer(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	})
 }
 
-// TODO: work on this later - lot changes as we have update Thread Chat data model
+// TODO: later
 func handleInitCustomerThreadQA(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func(r io.ReadCloser) {
@@ -997,7 +806,7 @@ func handleInitCustomerThreadQA(ctx context.Context, db *pgxpool.Pool) http.Hand
 			return
 		}
 
-		tq := ThreadQA{
+		tq := model.ThreadQA{
 			WorkspaceId: workspace.WorkspaceId,
 			CustomerId:  customer.CustomerId,
 			Query:       query.Query,
@@ -1020,7 +829,7 @@ func handleInitCustomerThreadQA(ctx context.Context, db *pgxpool.Pool) http.Hand
 		}
 
 		answerId := xid.New()
-		tqa := ThreadQAA{
+		tqa := model.ThreadQAA{
 			WorkspaceId: workspace.WorkspaceId,
 			ThreadQAId:  tq.ThreadId,
 			AnswerId:    answerId.String(),

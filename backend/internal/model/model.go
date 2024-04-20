@@ -1166,3 +1166,159 @@ type ThreadChatWithMessage struct {
 	ThreadChat ThreadChat
 	Message    ThreadChatMessage
 }
+
+type ThreadQAA struct {
+	WorkspaceId string
+	ThreadQAId  string
+	AnswerId    string
+	Answer      string
+	Sequence    int
+	Eval        sql.NullInt32
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+func (tqa ThreadQAA) MarshalJSON() ([]byte, error) {
+	var eval *int32
+	if tqa.Eval.Valid {
+		eval = &tqa.Eval.Int32
+	}
+	aux := &struct {
+		WorkspaceId string `json:"workspaceId"`
+		ThreadQAId  string `json:"threadQAId"`
+		AnswerId    string `json:"answerId"`
+		Answer      string `json:"answer"`
+		Sequence    int    `json:"sequence"`
+		Eval        *int32 `json:"eval"`
+		CreatedAt   string `json:"createdAt"`
+		UpdatedAt   string `json:"updatedAt"`
+	}{
+		WorkspaceId: tqa.WorkspaceId,
+		ThreadQAId:  tqa.ThreadQAId,
+		AnswerId:    tqa.AnswerId,
+		Answer:      tqa.Answer,
+		Sequence:    tqa.Sequence,
+		Eval:        eval,
+		CreatedAt:   tqa.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   tqa.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
+}
+
+func (tqa ThreadQAA) GenId() string {
+	return "tqa_" + xid.New().String()
+}
+
+func (tqa ThreadQAA) Create(ctx context.Context, db *pgxpool.Pool) (ThreadQAA, error) {
+	var thread ThreadQAA
+
+	tqaId := tqa.GenId()
+	stmt := `INSERT INTO 
+		thread_qa_answer(workspace_id, thread_qa_id, answer_id, answer)
+		VALUES ($1, $2, $3, $4)
+		RETURNING 
+		workspace_id, thread_qa_id, answer_id, answer, 
+		eval, sequence, created_at, updated_at`
+
+	row, err := db.Query(ctx, stmt, tqa.WorkspaceId, tqa.ThreadQAId, tqaId, tqa.Answer)
+	if err != nil {
+		return thread, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return thread, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&thread.WorkspaceId, &thread.ThreadQAId, &thread.AnswerId, &thread.Answer,
+		&thread.Eval, &thread.Sequence, &thread.CreatedAt, &thread.UpdatedAt,
+	)
+	if err != nil {
+		return thread, err
+	}
+
+	return thread, nil
+}
+
+type ThreadQA struct {
+	WorkspaceId    string
+	CustomerId     string
+	ThreadId       string
+	ParentThreadId sql.NullString
+	Query          string
+	Title          string
+	Summary        string
+	Sequence       int
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
+func (tq ThreadQA) MarshalJSON() ([]byte, error) {
+	var pth *string
+	if tq.ParentThreadId.Valid {
+		pth = &tq.ParentThreadId.String
+	}
+	aux := &struct {
+		WorkspaceId    string  `json:"workspaceId"`
+		CustomerId     string  `json:"customerId"`
+		ThreadId       string  `json:"threadId"`
+		ParentThreadId *string `json:"parentThreadId"`
+		Query          string  `json:"query"`
+		Title          string  `json:"title"`
+		Summary        string  `json:"summary"`
+		Sequence       int     `json:"sequence"`
+		CreatedAt      string  `json:"createdAt"`
+		UpdatedAt      string  `json:"updatedAt"`
+	}{
+		WorkspaceId:    tq.WorkspaceId,
+		CustomerId:     tq.CustomerId,
+		ThreadId:       tq.ThreadId,
+		ParentThreadId: pth,
+		Query:          tq.Query,
+		Title:          tq.Title,
+		Summary:        tq.Summary,
+		Sequence:       tq.Sequence,
+		CreatedAt:      tq.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:      tq.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
+}
+
+func (tq ThreadQA) GenId() string {
+	return "tq_" + xid.New().String()
+}
+
+func (tq ThreadQA) Create(ctx context.Context, db *pgxpool.Pool) (ThreadQA, error) {
+	var thread ThreadQA
+
+	tqId := tq.GenId()
+	stmt := `INSERT INTO 
+		thread_qa(workspace_id, customer_id, thread_id, parent_thread_id, query, title, summary)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING 
+		workspace_id, customer_id, thread_id, parent_thread_id,
+		query, title, summary, sequence,
+		created_at, updated_at`
+
+	row, err := db.Query(ctx, stmt, tq.WorkspaceId, tq.CustomerId, tqId, tq.ParentThreadId, tq.Query, tq.Title, tq.Summary)
+	if err != nil {
+		return thread, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		return thread, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&thread.WorkspaceId, &thread.CustomerId, &thread.ThreadId, &thread.ParentThreadId,
+		&thread.Query, &thread.Title, &thread.Summary, &thread.Sequence,
+		&thread.CreatedAt, &thread.UpdatedAt,
+	)
+	if err != nil {
+		return thread, err
+	}
+
+	return thread, nil
+}
