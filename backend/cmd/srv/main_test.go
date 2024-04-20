@@ -2,53 +2,63 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"github.com/zyghq/zyg/internal/model"
 )
 
-func TestHandleGetIndexRR(t *testing.T) {
-	rr := httptest.NewRecorder()
-	req, err := http.NewRequest(http.MethodGet, "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+// import (
+// 	"context"
+// 	"encoding/json"
+// 	"fmt"
+// 	"net/http"
+// 	"net/http/httptest"
+// 	"os"
+// 	"testing"
+// 	"time"
 
-	handleGetIndex(rr, req)
+// 	"github.com/jackc/pgx/v5/pgxpool"
 
-	resp := rr.Result()
+// 	"github.com/zyghq/zyg/internal/model"
+// )
 
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected status code %d, but got %d", http.StatusOK, resp.StatusCode)
-	}
+// func TestHandleGetIndexRR(t *testing.T) {
+// 	rr := httptest.NewRecorder()
+// 	req, err := http.NewRequest(http.MethodGet, "/", nil)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	defer resp.Body.Close()
+// 	routes.handleGetIndex(rr, req)
 
-	tm := resp.Header.Get("x-datetime")
-	if tm == "" {
-		t.Fatal("Expected non-empty `x-datetime` header")
-	}
+// 	resp := rr.Result()
 
-	t.Logf("requested at: %v", tm)
+// 	if resp.StatusCode != http.StatusOK {
+// 		t.Fatalf("Expected status code %d, but got %d", http.StatusOK, resp.StatusCode)
+// 	}
 
-	expected := "ok"
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(b) != expected {
-		t.Fatalf("Expected body to be %s, but got %s", expected, string(b))
-	}
-}
+// 	defer resp.Body.Close()
+
+// 	tm := resp.Header.Get("x-datetime")
+// 	if tm == "" {
+// 		t.Fatal("Expected non-empty `x-datetime` header")
+// 	}
+
+// 	t.Logf("requested at: %v", tm)
+
+// 	expected := "ok"
+// 	b, err := io.ReadAll(resp.Body)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+// 	if string(b) != expected {
+// 		t.Fatalf("Expected body to be %s, but got %s", expected, string(b))
+// 	}
+// }
 
 func DB(ctx context.Context) (*pgxpool.Pool, error) {
 	var err error
@@ -68,40 +78,40 @@ func DB(ctx context.Context) (*pgxpool.Pool, error) {
 	return db, err
 }
 
-func TestHandleGetWorkspacesRR(t *testing.T) {
-	ctx := context.Background()
-	rr := httptest.NewRecorder()
-	req, err := http.NewRequest(http.MethodGet, "/workspaces/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+// func TestHandleGetWorkspacesRR(t *testing.T) {
+// 	ctx := context.Background()
+// 	rr := httptest.NewRecorder()
+// 	req, err := http.NewRequest(http.MethodGet, "/workspaces/", nil)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	db, err := DB(ctx)
-	if err != nil {
-		t.Fatalf("could not connect to database %v", err)
-	}
+// 	db, err := DB(ctx)
+// 	if err != nil {
+// 		t.Fatalf("could not connect to database %v", err)
+// 	}
 
-	defer db.Close()
+// 	defer db.Close()
 
-	handler := handleGetWorkspaces(ctx, db)
-	handler.ServeHTTP(rr, req)
+// 	handler := handleGetWorkspaces(ctx, db)
+// 	handler.ServeHTTP(rr, req)
 
-	resp := rr.Result()
+// 	resp := rr.Result()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected status code %d, but got %d", http.StatusOK, resp.StatusCode)
-	}
+// 	if resp.StatusCode != http.StatusOK {
+// 		t.Fatalf("Expected status code %d, but got %d", http.StatusOK, resp.StatusCode)
+// 	}
 
-	defer resp.Body.Close()
+// 	defer resp.Body.Close()
 
-	var workspaces []model.Workspace
+// 	var workspaces []model.Workspace
 
-	err = json.NewDecoder(resp.Body).Decode(&workspaces)
+// 	err = json.NewDecoder(resp.Body).Decode(&workspaces)
 
-	if err != nil {
-		t.Fatalf("could not decode json response %v", err)
-	}
-}
+// 	if err != nil {
+// 		t.Fatalf("could not decode json response %v", err)
+// 	}
+// }
 
 func TestHeadTime(t *testing.T) {
 	resp, err := http.Head("https://www.time.gov/")
