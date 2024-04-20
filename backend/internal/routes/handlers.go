@@ -341,42 +341,6 @@ func (llm LLM) Generate() (LLMResponse, error) {
 	}, err
 }
 
-// TODO: move to model with renaming
-func AuthenticatePAT(ctx context.Context, db *pgxpool.Pool, token string) (model.Account, error) {
-	var account model.Account
-
-	stmt := `SELECT 
-		a.account_id, a.email,
-		a.provider, a.auth_user_id, a.name,
-		a.created_at, a.updated_at
-		FROM account a
-		INNER JOIN account_pat ap ON a.account_id = ap.account_id
-		WHERE ap.token = $1`
-
-	row, err := db.Query(ctx, stmt, token)
-	if err != nil {
-		return account, err
-	}
-	defer row.Close()
-
-	if !row.Next() {
-		fmt.Printf("no linked account found for token: %s\n", token)
-		return account, sql.ErrNoRows
-	}
-
-	err = row.Scan(
-		&account.AccountId, &account.Email,
-		&account.Provider, &account.AuthUserId, &account.Name,
-		&account.CreatedAt, &account.UpdatedAt,
-	)
-	if err != nil {
-		fmt.Printf("failed to scan linked account for token: %s with error: %v\n", token, err)
-		return account, err
-	}
-
-	return account, nil
-}
-
 func AuthenticateAccount(ctx context.Context, db *pgxpool.Pool, w http.ResponseWriter, r *http.Request) (model.Account, error) {
 	var account model.Account
 
@@ -390,7 +354,8 @@ func AuthenticateAccount(ctx context.Context, db *pgxpool.Pool, w http.ResponseW
 
 	if scheme == "token" {
 		fmt.Println("authenticate with PAT")
-		account, err := AuthenticatePAT(ctx, db, cred[1])
+		token := model.AccountPAT{Token: cred[1]}
+		account, err := token.GetByToken(ctx, db)
 		if err != nil {
 			return account, fmt.Errorf("failed to authenticate with error: %v", err)
 		}

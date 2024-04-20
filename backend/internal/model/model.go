@@ -261,6 +261,41 @@ func (ap AccountPAT) GetListByAccountId(ctx context.Context, db *pgxpool.Pool) (
 	return aps, nil
 }
 
+func (ap AccountPAT) GetByToken(ctx context.Context, db *pgxpool.Pool) (Account, error) {
+	var account Account
+
+	stmt := `SELECT
+		a.account_id, a.email,
+		a.provider, a.auth_user_id, a.name,
+		a.created_at, a.updated_at
+		FROM account a
+		INNER JOIN account_pat ap ON a.account_id = ap.account_id
+		WHERE ap.token = $1`
+
+	row, err := db.Query(ctx, stmt, ap.Token)
+	if err != nil {
+		return account, err
+	}
+	defer row.Close()
+
+	if !row.Next() {
+		fmt.Printf("no linked account found for token: %s\n", ap.Token)
+		return account, sql.ErrNoRows
+	}
+
+	err = row.Scan(
+		&account.AccountId, &account.Email,
+		&account.Provider, &account.AuthUserId, &account.Name,
+		&account.CreatedAt, &account.UpdatedAt,
+	)
+	if err != nil {
+		fmt.Printf("failed to scan linked account for token: %s with error: %v\n", ap.Token, err)
+		return account, err
+	}
+
+	return account, nil
+}
+
 type Workspace struct {
 	WorkspaceId string
 	AccountId   string
