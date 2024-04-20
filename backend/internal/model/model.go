@@ -17,6 +17,19 @@ import (
 	"github.com/zyghq/zyg/internal/auth"
 )
 
+type mErr string
+
+func (err mErr) Error() string {
+	return string(err)
+}
+
+const (
+	ErrNothing   = mErr("nothing found")
+	ErrMapping   = mErr("failed to map")
+	ErrQuery     = mErr("failed to query")
+	ErrSomething = mErr("something went wrong")
+)
+
 func GenToken(length int, prefix string) (string, error) {
 	buffer := make([]byte, length)
 	_, err := rand.Read(buffer)
@@ -95,12 +108,14 @@ func (a Account) GetOrCreateByAuthUserId(ctx context.Context, db *pgxpool.Pool) 
 
 	row, err := db.Query(ctx, st, aId, a.AuthUserId, a.Email, a.Provider, a.Name)
 	if err != nil {
-		return a, isCreated, err
+		fmt.Printf("failed to query got error: %v\n", err)
+		return a, isCreated, ErrQuery
 	}
 	defer row.Close()
 
 	if !row.Next() {
-		return a, isCreated, sql.ErrNoRows
+		fmt.Printf("no rows got error: %v\n", sql.ErrNoRows)
+		return a, isCreated, ErrNothing
 	}
 
 	err = row.Scan(
@@ -110,7 +125,8 @@ func (a Account) GetOrCreateByAuthUserId(ctx context.Context, db *pgxpool.Pool) 
 		&isCreated,
 	)
 	if err != nil {
-		return a, isCreated, err
+		fmt.Printf("failed to scan got error: %v", err)
+		return a, isCreated, ErrMapping
 	}
 
 	return a, isCreated, nil
@@ -122,12 +138,15 @@ func (a Account) GetByAuthUserId(ctx context.Context, db *pgxpool.Pool) (Account
 		provider, name, created_at, updated_at
 		FROM account WHERE auth_user_id = $1`, a.AuthUserId)
 	if err != nil {
-		return a, err
+		fmt.Printf("failed to query got error: %v\n", err)
+		return a, ErrQuery
 	}
+
 	defer row.Close()
 
 	if !row.Next() {
-		return a, sql.ErrNoRows
+		fmt.Printf("no rows got error: %v\n", sql.ErrNoRows)
+		return a, ErrNothing
 	}
 
 	err = row.Scan(
@@ -137,7 +156,8 @@ func (a Account) GetByAuthUserId(ctx context.Context, db *pgxpool.Pool) (Account
 		&a.UpdatedAt,
 	)
 	if err != nil {
-		return a, err
+		fmt.Printf("failed to scan got error: %v", err)
+		return a, ErrMapping
 	}
 
 	return a, nil
@@ -203,7 +223,8 @@ func (ap AccountPAT) Create(ctx context.Context, db *pgxpool.Pool) (AccountPAT, 
 	apId := ap.GenId()
 	token, err := GenToken(32, "pt_")
 	if err != nil {
-		return ap, err
+		fmt.Printf("failed to generate token got error: %v\n", err)
+		return ap, ErrSomething
 	}
 	stmt := `INSERT INTO account_pat(account_id, pat_id, token, name, description)
 		VALUES ($1, $2, $3, $4, $5)
@@ -211,12 +232,15 @@ func (ap AccountPAT) Create(ctx context.Context, db *pgxpool.Pool) (AccountPAT, 
 
 	row, err := db.Query(ctx, stmt, ap.AccountId, apId, token, ap.Name, ap.Description)
 	if err != nil {
-		return ap, err
+		fmt.Printf("failed to query got error: %v\n", err)
+		return ap, ErrQuery
 	}
+
 	defer row.Close()
 
 	if !row.Next() {
-		return ap, sql.ErrNoRows
+		fmt.Printf("no rows got error: %v\n", sql.ErrNoRows)
+		return ap, ErrNothing
 	}
 
 	err = row.Scan(
@@ -224,7 +248,8 @@ func (ap AccountPAT) Create(ctx context.Context, db *pgxpool.Pool) (AccountPAT, 
 		&ap.Name, &ap.Description, &ap.CreatedAt, &ap.UpdatedAt,
 	)
 	if err != nil {
-		return ap, err
+		fmt.Printf("failed to scan got error: %v", err)
+		return ap, ErrMapping
 	}
 	return ap, nil
 }
@@ -239,9 +264,16 @@ func (ap AccountPAT) GetListByAccountId(ctx context.Context, db *pgxpool.Pool) (
 
 	rows, err := db.Query(ctx, stmt, ap.AccountId)
 	if err != nil {
-		return aps, err
+		fmt.Printf("failed to query got error: %v\n", err)
+		return aps, ErrQuery
 	}
+
 	defer rows.Close()
+
+	if !rows.Next() {
+		fmt.Printf("no rows got error: %v\n", sql.ErrNoRows)
+		return aps, ErrNothing
+	}
 
 	for rows.Next() {
 		var ap AccountPAT
@@ -250,14 +282,12 @@ func (ap AccountPAT) GetListByAccountId(ctx context.Context, db *pgxpool.Pool) (
 			&ap.Name, &ap.Description, &ap.CreatedAt, &ap.UpdatedAt,
 		)
 		if err != nil {
-			return aps, err
+			fmt.Printf("failed to scan got error: %v", err)
+			return aps, ErrMapping
 		}
 		aps = append(aps, ap)
 	}
 
-	if err := rows.Err(); err != nil {
-		return aps, err
-	}
 	return aps, nil
 }
 
@@ -274,13 +304,15 @@ func (ap AccountPAT) GetByToken(ctx context.Context, db *pgxpool.Pool) (Account,
 
 	row, err := db.Query(ctx, stmt, ap.Token)
 	if err != nil {
-		return account, err
+		fmt.Printf("failed to query got error: %v\n", err)
+		return account, ErrQuery
 	}
+
 	defer row.Close()
 
 	if !row.Next() {
-		fmt.Printf("no linked account found for token: %s\n", ap.Token)
-		return account, sql.ErrNoRows
+		fmt.Printf("no rows got error: %v\n", sql.ErrNoRows)
+		return account, ErrNothing
 	}
 
 	err = row.Scan(
@@ -289,8 +321,8 @@ func (ap AccountPAT) GetByToken(ctx context.Context, db *pgxpool.Pool) (Account,
 		&account.CreatedAt, &account.UpdatedAt,
 	)
 	if err != nil {
-		fmt.Printf("failed to scan linked account for token: %s with error: %v\n", ap.Token, err)
-		return account, err
+		fmt.Printf("failed to scan got error: %v", err)
+		return account, ErrMapping
 	}
 
 	return account, nil
@@ -330,8 +362,8 @@ func (w Workspace) Create(ctx context.Context, db *pgxpool.Pool) (Workspace, err
 
 	tx, err := db.Begin(ctx)
 	if err != nil {
-		fmt.Printf("failed to start db transaction with error: %v\n", err)
-		return w, err
+		fmt.Printf("failed to start db transaction got error: %v\n", err)
+		return w, ErrQuery
 	}
 	defer tx.Rollback(ctx)
 
@@ -344,8 +376,8 @@ func (w Workspace) Create(ctx context.Context, db *pgxpool.Pool) (Workspace, err
 		&w.Name, &w.CreatedAt, &w.UpdatedAt,
 	)
 	if err != nil {
-		fmt.Printf("failed to insert workspace with error: %v\n", err)
-		return w, err
+		fmt.Printf("failed to insert got error: %v\n", err)
+		return w, ErrQuery
 	}
 
 	mId := member.GenId()
@@ -359,14 +391,14 @@ func (w Workspace) Create(ctx context.Context, db *pgxpool.Pool) (Workspace, err
 		&member.CreatedAt, &member.UpdatedAt,
 	)
 	if err != nil {
-		fmt.Printf("failed to insert member with error: %v\n", err)
-		return w, err
+		fmt.Printf("failed to insert got error: %v\n", err)
+		return w, ErrQuery
 	}
 
 	err = tx.Commit(ctx)
 	if err != nil {
-		fmt.Printf("failed to commit db transaction with error: %v\n", err)
-		return w, err
+		fmt.Printf("failed to commit db transaction got error: %v\n", err)
+		return w, ErrQuery
 	}
 	return w, nil
 }
@@ -376,12 +408,15 @@ func (w Workspace) GetAccountWorkspace(ctx context.Context, db *pgxpool.Pool) (W
 		workspace_id, account_id, name, created_at, updated_at
 		FROM workspace WHERE account_id = $1 AND workspace_id = $2`, w.AccountId, w.WorkspaceId)
 	if err != nil {
-		return w, err
+		fmt.Printf("failed to query got error: %v\n", err)
+		return w, ErrQuery
 	}
+
 	defer row.Close()
 
 	if !row.Next() {
-		return w, sql.ErrNoRows
+		fmt.Printf("no rows got error: %v\n", sql.ErrNoRows)
+		return w, ErrNothing
 	}
 
 	err = row.Scan(
@@ -389,7 +424,8 @@ func (w Workspace) GetAccountWorkspace(ctx context.Context, db *pgxpool.Pool) (W
 		&w.Name, &w.CreatedAt, &w.UpdatedAt,
 	)
 	if err != nil {
-		return w, err
+		fmt.Printf("failed to scan got error: %v", err)
+		return w, ErrMapping
 	}
 	return w, nil
 }
@@ -399,12 +435,14 @@ func (w Workspace) GetById(ctx context.Context, db *pgxpool.Pool) (Workspace, er
 		workspace_id, account_id, name, created_at, updated_at
 		FROM workspace WHERE workspace_id = $1`, w.WorkspaceId)
 	if err != nil {
-		return w, err
+		fmt.Printf("failed to query got error: %v\n", err)
+		return w, ErrQuery
 	}
 	defer row.Close()
 
 	if !row.Next() {
-		return w, sql.ErrNoRows
+		fmt.Printf("no rows got error: %v\n", sql.ErrNoRows)
+		return w, ErrNothing
 	}
 
 	err = row.Scan(
@@ -412,7 +450,8 @@ func (w Workspace) GetById(ctx context.Context, db *pgxpool.Pool) (Workspace, er
 		&w.Name, &w.CreatedAt, &w.UpdatedAt,
 	)
 	if err != nil {
-		return w, err
+		fmt.Printf("failed to scan got error: %v", err)
+		return w, ErrMapping
 	}
 	return w, nil
 }
@@ -425,10 +464,6 @@ type Member struct {
 	Role        string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
-}
-
-func (m Member) GenId() string {
-	return "m_" + xid.New().String()
 }
 
 func (m Member) MarshalJSON() ([]byte, error) {
@@ -456,18 +491,24 @@ func (m Member) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
+func (m Member) GenId() string {
+	return "m_" + xid.New().String()
+}
+
 func (m Member) GetWorkspaceMemberByAccountId(ctx context.Context, db *pgxpool.Pool) (Member, error) {
 	row, err := db.Query(ctx, `SELECT
 		workspace_id, account_id, member_id, name, role, created_at, updated_at
 		FROM member WHERE workspace_id = $1 AND account_id = $2`, m.WorkspaceId, m.AccountId)
 	if err != nil {
-		return m, err
+		fmt.Printf("failed to query got error: %v\n", err)
+		return m, ErrQuery
 	}
 
 	defer row.Close()
 
 	if !row.Next() {
-		return m, sql.ErrNoRows
+		fmt.Printf("no rows got error: %v\n", sql.ErrNoRows)
+		return m, ErrNothing
 	}
 
 	err = row.Scan(
@@ -477,7 +518,8 @@ func (m Member) GetWorkspaceMemberByAccountId(ctx context.Context, db *pgxpool.P
 	)
 
 	if err != nil {
-		return m, err
+		fmt.Printf("failed to scan got error: %v", err)
+		return m, ErrMapping
 	}
 
 	return m, nil
@@ -542,12 +584,14 @@ func (c Customer) GetWrkCustomerById(ctx context.Context, db *pgxpool.Pool) (Cus
 		phone, name, created_at, updated_at
 		FROM customer WHERE workspace_id = $1 AND customer_id = $2`, c.WorkspaceId, c.CustomerId)
 	if err != nil {
-		return c, err
+		fmt.Printf("failed to query got error: %v\n", err)
+		return c, ErrQuery
 	}
 	defer row.Close()
 
 	if !row.Next() {
-		return c, sql.ErrNoRows
+		fmt.Printf("no rows got error: %v\n", sql.ErrNoRows)
+		return c, ErrNothing
 	}
 
 	err = row.Scan(
@@ -557,7 +601,8 @@ func (c Customer) GetWrkCustomerById(ctx context.Context, db *pgxpool.Pool) (Cus
 		&c.CreatedAt, &c.UpdatedAt,
 	)
 	if err != nil {
-		return c, err
+		fmt.Printf("failed to scan got error: %v", err)
+		return c, ErrMapping
 	}
 	return c, nil
 }
@@ -569,12 +614,14 @@ func (c Customer) GetWrkCustomerByExtId(ctx context.Context, db *pgxpool.Pool) (
 		phone, name, created_at, updated_at
 		FROM customer WHERE workspace_id = $1 AND external_id = $2`, c.WorkspaceId, c.ExternalId)
 	if err != nil {
-		return c, err
+		fmt.Printf("failed to query got error: %v\n", err)
+		return c, ErrQuery
 	}
 	defer row.Close()
 
 	if !row.Next() {
-		return c, sql.ErrNoRows
+		fmt.Printf("no rows got error: %v\n", sql.ErrNoRows)
+		return c, ErrNothing
 	}
 
 	err = row.Scan(
@@ -584,9 +631,9 @@ func (c Customer) GetWrkCustomerByExtId(ctx context.Context, db *pgxpool.Pool) (
 		&c.CreatedAt, &c.UpdatedAt,
 	)
 	if err != nil {
-		return c, err
+		fmt.Printf("failed to scan got error: %v", err)
+		return c, ErrMapping
 	}
-
 	return c, nil
 }
 
@@ -597,12 +644,15 @@ func (c Customer) GetWrkCustomerByEmail(ctx context.Context, db *pgxpool.Pool) (
 		phone, name, created_at, updated_at
 		FROM customer WHERE workspace_id = $1 AND email = $2`, c.WorkspaceId, c.Email)
 	if err != nil {
-		return c, err
+		fmt.Printf("failed to query got error: %v\n", err)
+		return c, ErrQuery
 	}
+
 	defer row.Close()
 
 	if !row.Next() {
-		return c, sql.ErrNoRows
+		fmt.Printf("no rows got error: %v\n", sql.ErrNoRows)
+		return c, ErrNothing
 	}
 
 	err = row.Scan(
@@ -612,8 +662,10 @@ func (c Customer) GetWrkCustomerByEmail(ctx context.Context, db *pgxpool.Pool) (
 		&c.CreatedAt, &c.UpdatedAt,
 	)
 	if err != nil {
-		return c, err
+		fmt.Printf("failed to scan got error: %v", err)
+		return c, ErrMapping
 	}
+
 	return c, nil
 }
 
@@ -624,12 +676,15 @@ func (c Customer) GetWrkCustomerByPhone(ctx context.Context, db *pgxpool.Pool) (
 		phone, name, created_at, updated_at
 		FROM customer WHERE workspace_id = $1 AND phone = $2`, c.WorkspaceId, c.Phone)
 	if err != nil {
-		return c, err
+		fmt.Printf("failed to query got error: %v\n", err)
+		return c, ErrQuery
 	}
+
 	defer row.Close()
 
 	if !row.Next() {
-		return c, sql.ErrNoRows
+		fmt.Printf("no rows got error: %v\n", sql.ErrNoRows)
+		return c, ErrNothing
 	}
 
 	err = row.Scan(
@@ -639,7 +694,8 @@ func (c Customer) GetWrkCustomerByPhone(ctx context.Context, db *pgxpool.Pool) (
 		&c.CreatedAt, &c.UpdatedAt,
 	)
 	if err != nil {
-		return c, err
+		fmt.Printf("failed to scan got error: %v", err)
+		return c, ErrMapping
 	}
 	return c, nil
 }
@@ -665,12 +721,15 @@ func (c Customer) GetOrCreateWrkCustomerByExtId(ctx context.Context, db *pgxpool
 	var isCreated bool
 	row, err := db.Query(ctx, st, cId, c.WorkspaceId, c.ExternalId, c.Email, c.Phone)
 	if err != nil {
-		return c, isCreated, err
+		fmt.Printf("failed to query got error: %v\n", err)
+		return c, isCreated, ErrQuery
 	}
+
 	defer row.Close()
 
 	if !row.Next() {
-		return c, isCreated, sql.ErrNoRows
+		fmt.Printf("no rows got error: %v\n", sql.ErrNoRows)
+		return c, isCreated, ErrNothing
 	}
 
 	err = row.Scan(
@@ -680,13 +739,13 @@ func (c Customer) GetOrCreateWrkCustomerByExtId(ctx context.Context, db *pgxpool
 		&c.UpdatedAt, &isCreated,
 	)
 	if err != nil {
-		return c, isCreated, err
+		fmt.Printf("failed to scan got error: %v", err)
+		return c, isCreated, ErrMapping
 	}
 	return c, isCreated, nil
 }
 
 func (c Customer) GetOrCreateWrkCustomerByEmail(ctx context.Context, db *pgxpool.Pool) (Customer, bool, error) {
-
 	cId := c.GenId()
 	st := `WITH ins AS (
 		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone)
@@ -707,12 +766,15 @@ func (c Customer) GetOrCreateWrkCustomerByEmail(ctx context.Context, db *pgxpool
 	var isCreated bool
 	row, err := db.Query(ctx, st, cId, c.WorkspaceId, c.ExternalId, c.Email, c.Phone)
 	if err != nil {
-		return c, isCreated, err
+		fmt.Printf("failed to query got error: %v\n", err)
+		return c, isCreated, ErrQuery
 	}
+
 	defer row.Close()
 
 	if !row.Next() {
-		return c, isCreated, sql.ErrNoRows
+		fmt.Printf("no rows got error: %v\n", sql.ErrNoRows)
+		return c, isCreated, ErrNothing
 	}
 
 	err = row.Scan(
@@ -722,13 +784,13 @@ func (c Customer) GetOrCreateWrkCustomerByEmail(ctx context.Context, db *pgxpool
 		&c.UpdatedAt, &isCreated,
 	)
 	if err != nil {
-		return c, isCreated, err
+		fmt.Printf("failed to scan got error: %v", err)
+		return c, isCreated, ErrMapping
 	}
 	return c, isCreated, nil
 }
 
 func (c Customer) GetOrCreateWrkCustomerByPhone(ctx context.Context, db *pgxpool.Pool) (Customer, bool, error) {
-
 	cId := c.GenId()
 	st := `WITH ins AS (
 		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone)
@@ -749,12 +811,15 @@ func (c Customer) GetOrCreateWrkCustomerByPhone(ctx context.Context, db *pgxpool
 	var isCreated bool
 	row, err := db.Query(ctx, st, cId, c.WorkspaceId, c.ExternalId, c.Email, c.Phone)
 	if err != nil {
-		return c, isCreated, err
+		fmt.Printf("failed to query got error: %v\n", err)
+		return c, isCreated, ErrQuery
 	}
+
 	defer row.Close()
 
 	if !row.Next() {
-		return c, isCreated, sql.ErrNoRows
+		fmt.Printf("no rows got error: %v\n", sql.ErrNoRows)
+		return c, isCreated, ErrNothing
 	}
 
 	err = row.Scan(
@@ -764,9 +829,9 @@ func (c Customer) GetOrCreateWrkCustomerByPhone(ctx context.Context, db *pgxpool
 		&c.UpdatedAt, &isCreated,
 	)
 	if err != nil {
-		return c, isCreated, err
+		fmt.Printf("failed to scan got error: %v", err)
+		return c, isCreated, ErrMapping
 	}
-
 	return c, isCreated, nil
 }
 
@@ -780,7 +845,7 @@ func (c Customer) MakeJWT() (string, error) {
 
 	sk, err := zyg.GetEnv("SUPABASE_JWT_SECRET")
 	if err != nil {
-		return "", fmt.Errorf("failed to get env SUPABASE_JWT_SECRET with error: %v", err)
+		return "", fmt.Errorf("failed to get env SUPABASE_JWT_SECRET got error: %v", err)
 	}
 
 	if !c.ExternalId.Valid {
@@ -820,7 +885,7 @@ func (c Customer) MakeJWT() (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	jwt, err := token.SignedString([]byte(sk))
 	if err != nil {
-		return "", fmt.Errorf("failed to sign JWT token with error: %v", err)
+		return "", fmt.Errorf("failed to sign JWT token got error: %v", err)
 	}
 	return jwt, nil
 }
@@ -851,8 +916,8 @@ func (th ThreadChat) CreateCustomerThChat(
 
 	tx, err := db.Begin(ctx)
 	if err != nil {
-		fmt.Printf("failed to start db transaction with error: %v\n", err)
-		return th, thm, err
+		fmt.Printf("failed to start db transaction got error: %v\n", err)
+		return th, thm, ErrQuery
 	}
 
 	defer tx.Rollback(ctx)
@@ -870,8 +935,8 @@ func (th ThreadChat) CreateCustomerThChat(
 		&th.Sequence, &th.Status, &th.CreatedAt, &th.UpdatedAt,
 	)
 	if err != nil {
-		fmt.Printf("failed to insert in thread chat with error: %v\n", err)
-		return th, thm, err
+		fmt.Printf("failed to insert in thread chat got error: %v\n", err)
+		return th, thm, ErrQuery
 	}
 
 	thmId := thm.GenId()
@@ -885,13 +950,13 @@ func (th ThreadChat) CreateCustomerThChat(
 		&thm.CreatedAt, &thm.UpdatedAt,
 	)
 	if err != nil {
-		fmt.Printf("failed to insert thread chat message with error: %v\n", err)
-		return th, thm, err
+		fmt.Printf("failed to insert thread chat message got error: %v\n", err)
+		return th, thm, ErrQuery
 	}
 	err = tx.Commit(ctx)
 	if err != nil {
-		fmt.Printf("failed to commit db transaction with error: %v\n", err)
-		return th, thm, err
+		fmt.Printf("failed to commit db transaction got error: %v\n", err)
+		return th, thm, ErrQuery
 	}
 
 	// set customer attributes we already have
@@ -925,14 +990,14 @@ func (th ThreadChat) GetById(ctx context.Context, db *pgxpool.Pool) (ThreadChat,
 		&th.Sequence, &th.Status, &th.CreatedAt, &th.UpdatedAt,
 	)
 	if err != nil {
-		return th, err
+		fmt.Printf("failed to scan got error: %v", err)
+		return th, ErrQuery
 	}
 
 	return th, nil
 }
 
 func (th ThreadChat) GetListByWorkspaceCustomerId(ctx context.Context, db *pgxpool.Pool) ([]ThreadChatWithMessage, error) {
-
 	ths := make([]ThreadChatWithMessage, 0, 100)
 
 	stmt := `SELECT
@@ -976,10 +1041,16 @@ func (th ThreadChat) GetListByWorkspaceCustomerId(ctx context.Context, db *pgxpo
 
 	rows, err := db.Query(ctx, stmt, th.WorkspaceId, th.CustomerId)
 	if err != nil {
-		return ths, err
+		fmt.Printf("failed to query got error: %v\n", err)
+		return ths, ErrQuery
 	}
 
 	defer rows.Close()
+
+	if !rows.Next() {
+		fmt.Printf("no rows got error: %v\n", sql.ErrNoRows)
+		return ths, ErrNothing
+	}
 
 	for rows.Next() {
 		var th ThreadChat
@@ -994,7 +1065,8 @@ func (th ThreadChat) GetListByWorkspaceCustomerId(ctx context.Context, db *pgxpo
 			&tc.CustomerId, &tc.CustomerName, &tc.MemberId, &tc.MemberName,
 		)
 		if err != nil {
-			return ths, err
+			fmt.Printf("failed to scan got error: %v", err)
+			return ths, ErrMapping
 		}
 
 		thm := ThreadChatWithMessage{
@@ -1002,10 +1074,6 @@ func (th ThreadChat) GetListByWorkspaceCustomerId(ctx context.Context, db *pgxpo
 			Message:    tc,
 		}
 		ths = append(ths, thm)
-	}
-
-	if err := rows.Err(); err != nil {
-		return ths, err
 	}
 
 	return ths, nil
@@ -1037,13 +1105,15 @@ func (th ThreadChat) AssignMember(ctx context.Context, db *pgxpool.Pool) (Thread
 
 	row, err := db.Query(ctx, stmt, th.AssigneeId, th.ThreadChatId)
 	if err != nil {
-		return th, err
+		fmt.Printf("failed to query got error: %v\n", err)
+		return th, ErrQuery
 	}
 
 	defer row.Close()
 
 	if !row.Next() {
-		return th, sql.ErrNoRows
+		fmt.Printf("no rows got error: %v\n", sql.ErrNoRows)
+		return th, ErrNothing
 	}
 
 	err = row.Scan(
@@ -1054,7 +1124,8 @@ func (th ThreadChat) AssignMember(ctx context.Context, db *pgxpool.Pool) (Thread
 	)
 
 	if err != nil {
-		return th, err
+		fmt.Printf("failed to scan got error: %v", err)
+		return th, ErrMapping
 	}
 
 	return th, nil
@@ -1109,8 +1180,8 @@ func (thm ThreadChatMessage) CreateCustomerThChatMessage(
 	)
 
 	if err != nil {
-		fmt.Printf("failed insert for thread chat message for thread id %s with error: %v\n", thm.ThreadChatId, err)
-		return thm, err
+		fmt.Printf("failed to insert got error: %v\n", err)
+		return thm, ErrQuery
 	}
 	return thm, nil
 }
@@ -1153,7 +1224,7 @@ func (thm ThreadChatMessage) CreateMemberThChatMessage(
 }
 
 func (thm ThreadChatMessage) GetListByThreadChatId(ctx context.Context, db *pgxpool.Pool) ([]ThreadChatMessage, error) {
-
+	messages := make([]ThreadChatMessage, 0, 100)
 	stmt := `SELECT
 			thm.thread_chat_id AS thread_chat_id,
 			thm.thread_chat_message_id AS thread_chat_message_id,
@@ -1173,11 +1244,17 @@ func (thm ThreadChatMessage) GetListByThreadChatId(ctx context.Context, db *pgxp
 
 	rows, err := db.Query(ctx, stmt, thm.ThreadChatId)
 	if err != nil {
-		return nil, err
+		fmt.Printf("failed to query got error: %v\n", err)
+		return messages, ErrQuery
 	}
+
 	defer rows.Close()
 
-	messages := make([]ThreadChatMessage, 0, 100)
+	if !rows.Next() {
+		fmt.Printf("no rows got error: %v\n", sql.ErrNoRows)
+		return messages, ErrNothing
+	}
+
 	for rows.Next() {
 		var m ThreadChatMessage
 		err = rows.Scan(
@@ -1186,14 +1263,12 @@ func (thm ThreadChatMessage) GetListByThreadChatId(ctx context.Context, db *pgxp
 			&m.MemberId, &m.MemberName,
 		)
 		if err != nil {
-			return nil, err
+			fmt.Printf("failed to scan got error: %v", err)
+			return messages, ErrMapping
 		}
 		messages = append(messages, m)
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
 	return messages, nil
 }
 
@@ -1257,12 +1332,15 @@ func (tqa ThreadQAA) Create(ctx context.Context, db *pgxpool.Pool) (ThreadQAA, e
 
 	row, err := db.Query(ctx, stmt, tqa.WorkspaceId, tqa.ThreadQAId, tqaId, tqa.Answer)
 	if err != nil {
-		return thread, err
+		fmt.Printf("failed to query got error: %v\n", err)
+		return thread, ErrQuery
 	}
+
 	defer row.Close()
 
 	if !row.Next() {
-		return thread, sql.ErrNoRows
+		fmt.Printf("no rows got error: %v\n", sql.ErrNoRows)
+		return thread, ErrNothing
 	}
 
 	err = row.Scan(
@@ -1270,7 +1348,8 @@ func (tqa ThreadQAA) Create(ctx context.Context, db *pgxpool.Pool) (ThreadQAA, e
 		&thread.Eval, &thread.Sequence, &thread.CreatedAt, &thread.UpdatedAt,
 	)
 	if err != nil {
-		return thread, err
+		fmt.Printf("failed to scan got error: %v", err)
+		return thread, ErrMapping
 	}
 
 	return thread, nil
@@ -1338,12 +1417,15 @@ func (tq ThreadQA) Create(ctx context.Context, db *pgxpool.Pool) (ThreadQA, erro
 
 	row, err := db.Query(ctx, stmt, tq.WorkspaceId, tq.CustomerId, tqId, tq.ParentThreadId, tq.Query, tq.Title, tq.Summary)
 	if err != nil {
-		return thread, err
+		fmt.Printf("failed to query got error: %v\n", err)
+		return thread, ErrQuery
 	}
+
 	defer row.Close()
 
 	if !row.Next() {
-		return thread, sql.ErrNoRows
+		fmt.Printf("no rows got error: %v\n", sql.ErrNoRows)
+		return thread, ErrNothing
 	}
 
 	err = row.Scan(
@@ -1352,7 +1434,8 @@ func (tq ThreadQA) Create(ctx context.Context, db *pgxpool.Pool) (ThreadQA, erro
 		&thread.CreatedAt, &thread.UpdatedAt,
 	)
 	if err != nil {
-		return thread, err
+		fmt.Printf("failed to scan got error: %v", err)
+		return thread, ErrMapping
 	}
 
 	return thread, nil

@@ -27,10 +27,11 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 }
 
 func run(ctx context.Context) error {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 
 	var err error
+	ctx, cancel := context.WithCancel(ctx)
+
+	defer cancel()
 
 	pgConnStr, err := zyg.GetEnv("POSTGRES_URI")
 	if err != nil {

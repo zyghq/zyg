@@ -34,7 +34,7 @@ func ParseJWTToken(token string, hmacSecret []byte) (ac AuthJWTClaims, err error
 		return *claims, nil
 	}
 
-	return ac, fmt.Errorf("error parsing token: %v", token)
+	return ac, fmt.Errorf("error parsing jwt token: %v", token)
 }
 
 func ParseCustomerJWTToken(token string, hmacSecret []byte) (cc CustomerJWTClaims, err error) {
@@ -50,5 +50,5 @@ func ParseCustomerJWTToken(token string, hmacSecret []byte) (cc CustomerJWTClaim
 	} else if claims, ok := t.Claims.(*CustomerJWTClaims); ok {
 		return *claims, nil
 	}
-	return cc, fmt.Errorf("error parsing token: %v", token)
+	return cc, fmt.Errorf("error parsing jwt token: %v", token)
 }

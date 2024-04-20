@@ -61,19 +61,16 @@ import (
 // }
 
 func DB(ctx context.Context) (*pgxpool.Pool, error) {
-	var err error
 	var db *pgxpool.Pool
 
 	pgConnStr, pgConnStatus := os.LookupEnv("POSTGRES_URI")
 	if !pgConnStatus {
-		err = fmt.Errorf("env `POSTGRES_URI` is not set")
-		return db, err
+		return db, fmt.Errorf("env `POSTGRES_URI` is not set")
 	}
 
-	db, err = pgxpool.New(ctx, pgConnStr)
+	db, err := pgxpool.New(ctx, pgConnStr)
 	if err != nil {
-		err = fmt.Errorf("failed to connect database: %v", err)
-		return db, err
+		return db, fmt.Errorf("failed to connect database: %v", err)
 	}
 	return db, err
 }
