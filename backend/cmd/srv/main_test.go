@@ -88,7 +88,7 @@ func DB(ctx context.Context) (*pgxpool.Pool, error) {
 // 		t.Fatalf("could not connect to database %v", err)
 // 	}
 
-// 	defer db.Close()
+//
 
 // 	handler := handleGetWorkspaces(ctx, db)
 // 	handler.ServeHTTP(rr, req)

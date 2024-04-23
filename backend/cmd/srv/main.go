@@ -4,30 +4,20 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/rs/cors"
 
 	"github.com/zyghq/zyg"
-	"github.com/zyghq/zyg/internal/routes"
+	"github.com/zyghq/zyg/internal/api"
 )
 
 var addr = flag.String("addr", "127.0.0.1:8080", "listen address")
 
-func LoggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		next.ServeHTTP(w, r)
-		log.Println(r.Method, r.URL.Path, time.Since(start))
-	})
-}
-
 func run(ctx context.Context) error {
-
 	var err error
 	ctx, cancel := context.WithCancel(ctx)
 
@@ -35,7 +25,7 @@ func run(ctx context.Context) error {
 
 	pgConnStr, err := zyg.GetEnv("POSTGRES_URI")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get POSTGRES_URI env got error: %v", err)
 	}
 
 	db, err := pgxpool.New(ctx, pgConnStr)
@@ -46,36 +36,27 @@ func run(ctx context.Context) error {
 	defer db.Close()
 
 	var tm time.Time
-
 	err = db.QueryRow(ctx, "SELECT NOW()").Scan(&tm)
 
 	if err != nil {
-		return fmt.Errorf("failed to query database: %v", err)
+		return fmt.Errorf("db query failed got error: %v", err)
 	}
 
-	log.Printf("database ready with db time: %s\n", tm.Format(time.RFC1123))
+	slog.Info("database ready", slog.Any("dbtime", tm.Format(time.RFC1123)))
 
-	mux := routes.NewRouter(ctx, db)
-
-	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"},
-		AllowedHeaders: []string{"*"},
-	})
-
+	hanldler := api.NewHandler(ctx, db)
 	srv := &http.Server{
 		Addr:              *addr,
-		Handler:           LoggingMiddleware(c.Handler(mux)),
+		Handler:           hanldler,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      90 * time.Second,
 		IdleTimeout:       time.Minute,
 		ReadHeaderTimeout: 30 * time.Second,
 	}
 
-	log.Printf("server up and running on %s", *addr)
+	slog.Info("server up and running", slog.String("addr", *addr))
 
 	err = srv.ListenAndServe()
-
 	return err
 }
 
