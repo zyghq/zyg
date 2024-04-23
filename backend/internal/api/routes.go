@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/cors"
 	"github.com/zyghq/zyg"
-	"github.com/zyghq/zyg/auth"
+	"github.com/zyghq/zyg/internal/auth"
 	"github.com/zyghq/zyg/internal/model"
 )
 
@@ -70,7 +70,7 @@ func AuthenticateAccount(ctx context.Context, db *pgxpool.Pool, r *http.Request)
 		if err != nil {
 			return account, fmt.Errorf("cannot get subject from parsed token: %v", err)
 		}
-		slog.Info("authenticated account with auth user id", slog.String("authUserId", sub))
+		slog.Info("authenticated account", slog.String("authUserId", sub))
 
 		// fetch the authenticated account
 		account = model.Account{AuthUserId: sub}
@@ -183,6 +183,8 @@ func NewHandler(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	mux.Handle("GET /workspaces/{workspaceId}/{$}",
 		handleGetWorkspace(ctx, db))
 
+	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{$}",
+		handleGetThreadChats(ctx, db))
 	mux.Handle("POST /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
 		handleCreateMemberThChatMessage(ctx, db))
 	mux.Handle("POST /workspaces/{workspaceId}/tokens/{$}",
@@ -213,5 +215,4 @@ func NewHandler(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	handler := LoggingMiddleware(c.Handler(mux))
 
 	return handler
-
 }

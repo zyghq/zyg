@@ -2,13 +2,13 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DoubleArrowUpIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
 import { EclipseIcon, CircleIcon, CheckCircle } from "lucide-react";
-import Threads from "@/components/threads";
+import ThreadList from "@/components/thread-list";
 // import { ScrollArea } from "@/components/ui/scroll-area";
 
 // mock data for now
 import { threads } from "@/data/threads";
 
-export default function ThreadsTab() {
+export default async function ThreadListTab({ threads }) {
   return (
     <Tabs defaultValue="todo">
       <div className="mb-4 sm:flex sm:justify-between">
@@ -44,13 +44,13 @@ export default function ThreadsTab() {
         </div>
       </div>
       <TabsContent value="todo" className="m-0">
-        <Threads items={threads} className="h-[calc(100dvh-14rem)]" />
+        <ThreadList items={threads} className="h-[calc(100dvh-14rem)]" />
       </TabsContent>
       <TabsContent value="inprogress" className="m-0">
-        <Threads
+        {/* <ThreadList
           items={threads.filter((item) => !item.read)}
           className="h-[calc(100dvh-14rem)]"
-        />
+        /> */}
       </TabsContent>
       <TabsContent value="done" className="m-0">
         {/* <Threads items={threads} /> */}

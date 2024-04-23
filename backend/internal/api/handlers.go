@@ -16,7 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/xid"
 	"github.com/zyghq/zyg"
-	"github.com/zyghq/zyg/auth"
+	"github.com/zyghq/zyg/internal/auth"
 	"github.com/zyghq/zyg/internal/model"
 )
 
@@ -1790,4 +1790,160 @@ func handleInitCustomerThreadQA(ctx context.Context, db *pgxpool.Pool) http.Hand
 			return
 		}
 	})
+}
+
+func handleGetThreadChats(ctx context.Context, db *pgxpool.Pool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		account, err := AuthenticateAccount(ctx, db, r)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		workspaceId := r.PathValue("workspaceId")
+		workspace := model.Workspace{AccountId: account.AccountId, WorkspaceId: workspaceId}
+		workspace, err = workspace.GetAccountWorkspace(ctx, db)
+
+		if errors.Is(err, model.ErrEmpty) {
+			slog.Warn(
+				"workspace not found or does not exist for account",
+				"accountId", account.AccountId, "workspaceId", workspaceId,
+			)
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		if errors.Is(err, model.ErrQuery) {
+			slog.Error(
+				"failed to get workspace by id "+
+					"perhaps a failed query or mapping",
+				"accountId", account.AccountId, "workspaceId", workspaceId,
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		if err != nil {
+			slog.Error(
+				"failed to get workspace by id "+
+					"something went wrong",
+				"accountId", account.AccountId, "workspaceId", workspaceId,
+			)
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		th := model.ThreadChat{WorkspaceId: workspace.WorkspaceId}
+		ths, err := th.GetListByWorkspace(ctx, db)
+
+		if errors.Is(err, model.ErrEmpty) {
+			slog.Warn(
+				"no thread chats found for workspace",
+				"workspaceId", workspace.WorkspaceId,
+			)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			if err := json.NewEncoder(w).Encode(ths); err != nil {
+				slog.Error(
+					"failed to encode thread chats to json "+
+						"might need to check the json encoding defn",
+					"workspaceId", workspace.WorkspaceId,
+				)
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+			return
+		}
+
+		if errors.Is(err, model.ErrQuery) {
+			slog.Error(
+				"failed to get thread chats for workspace "+
+					"perhaps a failed query or mapping",
+				"workspaceId", workspace.WorkspaceId,
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		if err != nil {
+			slog.Error(
+				"failed to get list of thread chats for workspace "+
+					"something went wrong",
+				"workspaceId", workspace.WorkspaceId,
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		threads := make([]ThChatRespPayload, 0, 100)
+		for _, th := range ths {
+			messages := make([]ThChatMessageRespPayload, 0, 1)
+
+			var threadAssigneeRepr *ThMemberRespPayload
+			var msgCustomerRepr *ThCustomerRespPayload
+			var msgMemberRepr *ThMemberRespPayload
+
+			// for thread
+			threadCustomerRepr := ThCustomerRespPayload{
+				CustomerId: th.ThreadChat.CustomerId,
+				Name:       th.ThreadChat.CustomerName,
+			}
+
+			// for thread
+			if th.ThreadChat.AssigneeId.Valid {
+				threadAssigneeRepr = &ThMemberRespPayload{
+					MemberId: th.ThreadChat.AssigneeId.String,
+					Name:     th.ThreadChat.AssigneeName,
+				}
+			}
+
+			// for thread message - either of them
+			if th.Message.CustomerId.Valid {
+				msgCustomerRepr = &ThCustomerRespPayload{
+					CustomerId: th.Message.CustomerId.String,
+					Name:       th.Message.CustomerName,
+				}
+			} else if th.Message.MemberId.Valid {
+				msgMemberRepr = &ThMemberRespPayload{
+					MemberId: th.Message.MemberId.String,
+					Name:     th.Message.MemberName,
+				}
+			}
+
+			message := ThChatMessageRespPayload{
+				ThreadChatId:        th.ThreadChat.ThreadChatId,
+				ThreadChatMessageId: th.Message.ThreadChatMessageId,
+				Body:                th.Message.Body,
+				Sequence:            th.Message.Sequence,
+				Customer:            msgCustomerRepr,
+				Member:              msgMemberRepr,
+				CreatedAt:           th.Message.CreatedAt,
+				UpdatedAt:           th.Message.UpdatedAt,
+			}
+			messages = append(messages, message)
+			threads = append(threads, ThChatRespPayload{
+				ThreadId:  th.ThreadChat.ThreadChatId,
+				Sequence:  th.ThreadChat.Sequence,
+				Status:    th.ThreadChat.Status,
+				Customer:  threadCustomerRepr,
+				Assignee:  threadAssigneeRepr,
+				CreatedAt: th.ThreadChat.CreatedAt,
+				UpdatedAt: th.ThreadChat.UpdatedAt,
+				Messages:  messages,
+			})
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(threads); err != nil {
+			slog.Error(
+				"failed to encode thread chats to json "+
+					"might need to check the json encoding defn",
+				"workspaceId", workspace.WorkspaceId,
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+	})
+
 }

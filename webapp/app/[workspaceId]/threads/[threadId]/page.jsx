@@ -20,14 +20,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CircleIcon } from "lucide-react";
-import Threads from "@/components/threads";
+import ThreadList from "@/components/thread-list";
 import { threads } from "@/data/threads";
 
 export default function ThreadItemPage() {
   return (
     <div className="flex flex-1">
-      <div className="flex flex-col items-center px-2 border">
-        <div className="flex flex-col mt-4 gap-4">
+      <div className="flex flex-col items-center border px-2">
+        <div className="mt-4 flex flex-col gap-4">
           <Button variant="outline" size="icon">
             <ChevronLeftIcon className="h-4 w-4" />
           </Button>
@@ -39,26 +39,27 @@ export default function ThreadItemPage() {
           </Button>
         </div>
       </div>
-      <div className="flex flex-col flex-1">
+      <div className="flex flex-1 flex-col">
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel defaultSize={25} minSize={20} maxSize={30}>
-            <div className="flex flex-col h-full">
-              <div className="flex flex-col px-4 h-14 border-b justify-center">
+            <div className="flex h-full flex-col">
+              <div className="flex h-14 flex-col justify-center border-b px-4">
                 <div className="text-md font-semibold">Threads</div>
               </div>
-              <Threads
+              {/* <ThreadList
                 items={threads}
                 className="h-[calc(100dvh-8rem)] pr-0"
                 variant="compress"
-              />
+              /> */}
+              ...
             </div>
           </ResizablePanel>
           <ResizableHandle withHandle={false} />
           <ResizablePanel defaultSize={50} className="flex flex-col">
             <ResizablePanelGroup direction="vertical">
               <ResizablePanel defaultSize={75}>
-                <div className="flex flex-col h-full">
-                  <div className="flex flex-col px-4 h-14 min-h-14 border-b justify-center">
+                <div className="flex h-full flex-col">
+                  <div className="flex h-14 min-h-14 flex-col justify-center border-b px-4">
                     <div className="flex">
                       <div className="text-sm font-semibold">
                         Emily Davis via Chat
@@ -66,23 +67,23 @@ export default function ThreadItemPage() {
                     </div>
                     <div className="flex items-center">
                       <CircleIcon className="mr-1 h-3 w-3 text-indigo-500" />
-                      <span className="text-xs items-center">Todo</span>
+                      <span className="items-center text-xs">Todo</span>
                       <Separator orientation="vertical" className="mx-2" />
                       <ChatBubbleIcon className="h-3 w-3" />
                       <Separator orientation="vertical" className="mx-2" />
-                      <span className="text-xs font-mono">12/44</span>
+                      <span className="font-mono text-xs">12/44</span>
                     </div>
                   </div>
-                  <ScrollArea className="flex h-full px-12 pb-4 flex-col flex-auto">
+                  <ScrollArea className="flex h-full flex-auto flex-col px-12 pb-4">
                     <div className="flex flex-col gap-1">
                       <div className="m-4">
-                        <div className="flex font-mono font-medium text-sm items-center">
-                          <span className="flex h-1 w-1 mr-1 rounded-full bg-fuchsia-500" />
+                        <div className="flex items-center font-mono text-sm font-medium">
+                          <span className="mr-1 flex h-1 w-1 rounded-full bg-fuchsia-500" />
                           Monday, 14 February 2024
                         </div>
                       </div>
                       {/* message */}
-                      <div className="flex flex-col bg-background rounded-lg p-4 gap-2 border">
+                      <div className="flex flex-col gap-2 rounded-lg border bg-background p-4">
                         <div className="flex w-full flex-col gap-1">
                           <div className="flex items-center">
                             <div className="flex items-center gap-2">
@@ -104,7 +105,7 @@ export default function ThreadItemPage() {
                             {"Welcome To Plain."}
                           </div>
                         </div>
-                        <div className="text-muted-foreground hover:bg-accent p-4 rounded-lg text-left">
+                        <div className="rounded-lg p-4 text-left text-muted-foreground hover:bg-accent">
                           {`Hi, welcome to Plain! We're so happy you're here! This
                       message is automated but if you need to talk to us you can
                       press the support button in the bottom left at anytime. In
@@ -120,13 +121,13 @@ export default function ThreadItemPage() {
                     </div>
                     <div className="flex flex-col gap-1">
                       <div className="m-4">
-                        <div className="flex font-mono font-medium text-sm items-center">
-                          <span className="flex h-1 w-1 mr-1 rounded-full bg-fuchsia-500" />
+                        <div className="flex items-center font-mono text-sm font-medium">
+                          <span className="mr-1 flex h-1 w-1 rounded-full bg-fuchsia-500" />
                           Monday, 14 February 2024
                         </div>
                       </div>
                       {/* message */}
-                      <div className="flex flex-col bg-background rounded-lg p-4 gap-2 border">
+                      <div className="flex flex-col gap-2 rounded-lg border bg-background p-4">
                         <div className="flex w-full flex-col gap-1">
                           <div className="flex items-center">
                             <div className="flex items-center gap-2">
@@ -144,12 +145,12 @@ export default function ThreadItemPage() {
                               </Button>
                             </div>
                           </div>
-                          <div className="flex text-muted-foreground items-center">
-                            <ResetIcon className="h-3 w-3 mr-1" />
+                          <div className="flex items-center text-muted-foreground">
+                            <ResetIcon className="mr-1 h-3 w-3" />
                             <div className="text-xs">Welcom to Plain...</div>
                           </div>
                         </div>
-                        <div className="text-muted-foreground hover:bg-accent p-4 rounded-lg text-left">
+                        <div className="rounded-lg p-4 text-left text-muted-foreground hover:bg-accent">
                           {`Nice! 👀 You can see how these messages appear in Slack by pressing O. For more details you can check out our docs.✅ When you are done just hit "Mark as done" on the bottom right.
                       ⌨️ If you want to do anything in Plain use ⌘ + K or CTRL + K on Windows.
                       (edited)`}
@@ -158,13 +159,13 @@ export default function ThreadItemPage() {
                     </div>
                     <div className="flex flex-col gap-1">
                       <div className="m-4">
-                        <div className="flex font-mono font-medium text-sm items-center">
-                          <span className="flex h-1 w-1 mr-1 rounded-full bg-fuchsia-500" />
+                        <div className="flex items-center font-mono text-sm font-medium">
+                          <span className="mr-1 flex h-1 w-1 rounded-full bg-fuchsia-500" />
                           Monday, 14 February 2024
                         </div>
                       </div>
                       {/* message */}
-                      <div className="flex flex-col bg-background rounded-lg p-4 gap-2 border">
+                      <div className="flex flex-col gap-2 rounded-lg border bg-background p-4">
                         <div className="flex w-full flex-col gap-1">
                           <div className="flex items-center">
                             <div className="flex items-center gap-2">
@@ -182,12 +183,12 @@ export default function ThreadItemPage() {
                               </Button>
                             </div>
                           </div>
-                          <div className="flex text-muted-foreground items-center">
-                            <ResetIcon className="h-3 w-3 mr-1" />
+                          <div className="flex items-center text-muted-foreground">
+                            <ResetIcon className="mr-1 h-3 w-3" />
                             <div className="text-xs">Welcom to Plain...</div>
                           </div>
                         </div>
-                        <div className="text-muted-foreground hover:bg-accent p-4 rounded-lg text-left">
+                        <div className="rounded-lg p-4 text-left text-muted-foreground hover:bg-accent">
                           {`Nice! 👀 You can see how these messages appear in Slack by pressing O. For more details you can check out our docs.✅ When you are done just hit "Mark as done" on the bottom right.
                       ⌨️ If you want to do anything in Plain use ⌘ + K or CTRL + K on Windows.
                       (edited)`}

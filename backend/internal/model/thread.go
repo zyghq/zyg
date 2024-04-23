@@ -416,3 +416,95 @@ func (th ThreadChat) AssignMember(ctx context.Context, db *pgxpool.Pool) (Thread
 
 	return th, nil
 }
+
+func (th ThreadChat) GetListByWorkspace(ctx context.Context, db *pgxpool.Pool) ([]ThreadChatWithMessage, error) {
+	ths := make([]ThreadChatWithMessage, 0, 100)
+	stmt := `SELECT
+			th.workspace_id AS workspace_id,	
+			thc.customer_id AS thread_customer_id,
+			thc.name AS thread_customer_name,
+			tha.member_id AS thread_assignee_id,
+			tha.name AS thread_assignee_name,
+			th.thread_chat_id AS thread_chat_id,
+			th.title AS title,
+			th.summary AS summary,
+			th.sequence AS sequence,
+			th.status AS status,
+			th.created_at AS created_at,
+			th.updated_at AS updated_at,
+			thm.thread_chat_id AS message_thread_chat_id,
+			thm.thread_chat_message_id AS thread_chat_message_id,
+			thm.body AS message_body,
+			thm.sequence AS message_sequence,
+			thm.created_at AS message_created_at,
+			thm.updated_at AS message_updated_at,
+			thmc.customer_id AS message_customer_id,
+			thmc.name AS message_customer_name,
+			thmm.member_id AS message_member_id,
+			thmm.name AS message_member_name
+		FROM thread_chat th
+		INNER JOIN thread_chat_message thm ON th.thread_chat_id = thm.thread_chat_id
+		INNER JOIN customer thc ON th.customer_id = thc.customer_id
+		LEFT OUTER JOIN member tha ON th.assignee_id = tha.member_id
+		LEFT OUTER JOIN customer thmc ON thm.customer_id = thmc.customer_id
+		LEFT OUTER JOIN member thmm ON thm.member_id = thmm.member_id
+		INNER JOIN (
+			SELECT thread_chat_id, MAX(sequence) AS sequence
+			FROM thread_chat_message
+			GROUP BY
+			thread_chat_id
+		) latest ON thm.thread_chat_id = latest.thread_chat_id
+		AND thm.sequence = latest.sequence
+		WHERE th.workspace_id = $1 
+		ORDER BY sequence DESC LIMIT 100`
+
+	rows, err := db.Query(ctx, stmt, th.WorkspaceId)
+
+	// checks if the query was infact sent to db
+	if err != nil {
+		slog.Error("failed to query", "error", err)
+		return ths, ErrQuery
+	}
+
+	defer rows.Close()
+
+	// checks if there are no rows returned
+	if !rows.Next() {
+		return ths, ErrEmpty
+	}
+
+	// got some rows iterate over them
+	for rows.Next() {
+		var th ThreadChat
+		var tc ThreadChatMessage
+		err = rows.Scan(
+			&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
+			&th.AssigneeId, &th.AssigneeName,
+			&th.ThreadChatId, &th.Title, &th.Summary,
+			&th.Sequence, &th.Status, &th.CreatedAt, &th.UpdatedAt,
+			&tc.ThreadChatId, &tc.ThreadChatMessageId, &tc.Body,
+			&tc.Sequence, &tc.CreatedAt, &tc.UpdatedAt,
+			&tc.CustomerId, &tc.CustomerName, &tc.MemberId, &tc.MemberName,
+		)
+		if err != nil {
+			slog.Error("failed to scan", "error", err)
+			return ths, ErrQuery
+		}
+
+		thm := ThreadChatWithMessage{
+			ThreadChat: th,
+			Message:    tc,
+		}
+		ths = append(ths, thm)
+	}
+
+	// checks if there was an error during scanning
+	// we might have returned rows but might have failed to scan
+	// check if there are any errors during collecting rows
+	if err = rows.Err(); err != nil {
+		slog.Error("failed to collect rows", "error", err)
+		return ths, ErrQuery
+	}
+
+	return ths, nil
+}
