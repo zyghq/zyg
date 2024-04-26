@@ -272,25 +272,6 @@ func handleGetPATs(ctx context.Context, db *pgxpool.Pool) http.Handler {
 
 		ap := model.AccountPAT{AccountId: account.AccountId}
 		aps, err := ap.GetListByAccountId(ctx, db)
-
-		if errors.Is(err, model.ErrEmpty) {
-			slog.Warn(
-				"no account PATs found for account",
-				slog.String("accountId", account.AccountId),
-			)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			if err := json.NewEncoder(w).Encode(aps); err != nil {
-				slog.Error(
-					"failed to encode pats to json "+
-						"might need to check the json encoding defn",
-					slog.String("accountId", account.AccountId),
-				)
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				return
-			}
-			return
-		}
 		if errors.Is(err, model.ErrQuery) {
 			slog.Error(
 				"failed to get account PATs "+
@@ -394,26 +375,6 @@ func handleGetWorkspaces(ctx context.Context, db *pgxpool.Pool) http.Handler {
 
 		// get list of workspaces for account
 		workspaces, err := workspace.GetListByAccountId(ctx, db)
-
-		if errors.Is(err, model.ErrEmpty) {
-			slog.Warn(
-				"no workspaces found for account",
-				slog.String("accountId", account.AccountId),
-			)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			if err := json.NewEncoder(w).Encode(workspaces); err != nil {
-				slog.Error(
-					"failed to encode workspaces to json "+
-						"might need to check the json encoding defn",
-					slog.String("accountId", account.AccountId),
-				)
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				return
-			}
-			return
-		}
-
 		if errors.Is(err, model.ErrQuery) {
 			slog.Error(
 				"failed to get workspaces "+
@@ -898,8 +859,12 @@ func handleInitCustomerThreadChat(ctx context.Context, db *pgxpool.Pool) http.Ha
 			return
 		}
 
-		// TODO: fix to use struct with values.
-		th, thm, err := model.ThreadChat{}.CreateCustomerThChat(ctx, db, workspace, customer, message.Message)
+		th := model.ThreadChat{
+			WorkspaceId:  workspace.WorkspaceId,
+			CustomerId:   customer.CustomerId,
+			CustomerName: customer.Name,
+		}
+		th, thm, err := th.CreateCustomerThChat(ctx, db, message.Message)
 
 		if errors.Is(err, model.ErrEmpty) {
 			slog.Warn(
@@ -978,14 +943,16 @@ func handleInitCustomerThreadChat(ctx context.Context, db *pgxpool.Pool) http.Ha
 		}
 
 		resp := ThChatRespPayload{
-			ThreadId:  th.ThreadChatId,
-			Sequence:  th.Sequence,
-			Status:    th.Status,
-			Customer:  threadCustomerRepr,
-			Assignee:  threadAssigneeRepr,
-			CreatedAt: th.CreatedAt,
-			UpdatedAt: th.UpdatedAt,
-			Messages:  messages,
+			ThreadChatId: th.ThreadChatId,
+			Sequence:     th.Sequence,
+			Status:       th.Status,
+			Read:         th.Read,
+			Replied:      th.Replied,
+			Customer:     threadCustomerRepr,
+			Assignee:     threadAssigneeRepr,
+			CreatedAt:    th.CreatedAt,
+			UpdatedAt:    th.UpdatedAt,
+			Messages:     messages,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -1043,26 +1010,6 @@ func handleGetCustomerThreadChats(ctx context.Context, db *pgxpool.Pool) http.Ha
 
 		th := model.ThreadChat{WorkspaceId: workspace.WorkspaceId, CustomerId: customer.CustomerId}
 		ths, err := th.GetListByWorkspaceCustomerId(ctx, db)
-
-		if errors.Is(err, model.ErrEmpty) {
-			slog.Warn(
-				"no thread chats found for customer",
-				slog.String("customerId", customer.CustomerId),
-			)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			if err := json.NewEncoder(w).Encode(ths); err != nil {
-				slog.Error(
-					"failed to encode thread chats to json "+
-						"might need to check the json encoding defn",
-					slog.String("customerId", customer.CustomerId),
-				)
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				return
-			}
-			return
-		}
-
 		if errors.Is(err, model.ErrQuery) {
 			slog.Error(
 				"failed to get thread chats for customer "+
@@ -1130,14 +1077,16 @@ func handleGetCustomerThreadChats(ctx context.Context, db *pgxpool.Pool) http.Ha
 			}
 			messages = append(messages, message)
 			threads = append(threads, ThChatRespPayload{
-				ThreadId:  th.ThreadChat.ThreadChatId,
-				Sequence:  th.ThreadChat.Sequence,
-				Status:    th.ThreadChat.Status,
-				Customer:  threadCustomerRepr,
-				Assignee:  threadAssigneeRepr,
-				CreatedAt: th.ThreadChat.CreatedAt,
-				UpdatedAt: th.ThreadChat.UpdatedAt,
-				Messages:  messages,
+				ThreadChatId: th.ThreadChat.ThreadChatId,
+				Sequence:     th.ThreadChat.Sequence,
+				Status:       th.ThreadChat.Status,
+				Read:         th.ThreadChat.Read,
+				Replied:      th.ThreadChat.Replied,
+				Customer:     threadCustomerRepr,
+				Assignee:     threadAssigneeRepr,
+				CreatedAt:    th.ThreadChat.CreatedAt,
+				UpdatedAt:    th.ThreadChat.UpdatedAt,
+				Messages:     messages,
 			})
 		}
 
@@ -1319,14 +1268,16 @@ func handleCreateCustomerThChatMessage(ctx context.Context, db *pgxpool.Pool) ht
 		messages := make([]ThChatMessageRespPayload, 0, 1)
 		messages = append(messages, threadMessage)
 		resp := ThChatRespPayload{
-			ThreadId:  th.ThreadChatId,
-			Sequence:  th.Sequence,
-			Status:    th.Status,
-			Customer:  threadCustomerRepr,
-			Assignee:  threadAssigneeRepr,
-			CreatedAt: th.CreatedAt,
-			UpdatedAt: th.UpdatedAt,
-			Messages:  messages,
+			ThreadChatId: th.ThreadChatId,
+			Sequence:     th.Sequence,
+			Status:       th.Status,
+			Read:         th.Read,
+			Replied:      th.Replied,
+			Customer:     threadCustomerRepr,
+			Assignee:     threadAssigneeRepr,
+			CreatedAt:    th.CreatedAt,
+			UpdatedAt:    th.UpdatedAt,
+			Messages:     messages,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -1387,26 +1338,6 @@ func handleGetCustomerThChatMessages(ctx context.Context, db *pgxpool.Pool) http
 
 		thc := model.ThreadChatMessage{ThreadChatId: th.ThreadChatId}
 		results, err := thc.GetListByThreadChatId(ctx, db)
-
-		if errors.Is(err, model.ErrEmpty) {
-			slog.Warn(
-				"no thread chat messages found for customer",
-				slog.String("threadChatId", th.ThreadChatId),
-			)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			if err := json.NewEncoder(w).Encode(results); err != nil {
-				slog.Error(
-					"failed to encode thread chat messages to json "+
-						"might need to check the json encoding defn",
-					slog.String("threadChatId", th.ThreadChatId),
-				)
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				return
-			}
-			return
-		}
-
 		if errors.Is(err, model.ErrQuery) {
 			slog.Error(
 				"failed to get thread chat messages for customer "+
@@ -1476,14 +1407,16 @@ func handleGetCustomerThChatMessages(ctx context.Context, db *pgxpool.Pool) http
 		}
 
 		resp := ThChatRespPayload{
-			ThreadId:  th.ThreadChatId,
-			Sequence:  th.Sequence,
-			Status:    th.Status,
-			Customer:  threadCustomerRepr,
-			Assignee:  threadAssigneeRepr,
-			CreatedAt: th.CreatedAt,
-			UpdatedAt: th.UpdatedAt,
-			Messages:  messages,
+			ThreadChatId: th.ThreadChatId,
+			Sequence:     th.Sequence,
+			Status:       th.Status,
+			Read:         th.Read,
+			Replied:      th.Replied,
+			Customer:     threadCustomerRepr,
+			Assignee:     threadAssigneeRepr,
+			CreatedAt:    th.CreatedAt,
+			UpdatedAt:    th.UpdatedAt,
+			Messages:     messages,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -1557,7 +1490,6 @@ func handleCreateMemberThChatMessage(ctx context.Context, db *pgxpool.Pool) http
 		}
 
 		th := model.ThreadChat{ThreadChatId: threadId}
-
 		th, err = th.GetById(ctx, db)
 
 		if errors.Is(err, model.ErrEmpty) {
@@ -1621,19 +1553,30 @@ func handleCreateMemberThChatMessage(ctx context.Context, db *pgxpool.Pool) http
 		}
 
 		if !th.AssigneeId.Valid {
-			slog.Info("Thread Chat not yet assigned will assign Member...")
-			thAssigned := th // make a temp copy before assigning
-			thAssigned.AssigneeId = NullString(&member.MemberId)
-			thAssigned, err := thAssigned.AssignMember(ctx, db)
+			slog.Info("thread chat not yet assigned", "threadChatId", th.ThreadChatId, "memberId", member.MemberId)
+			t := th // make a temp copy before assigning
+			t.AssigneeId = NullString(&member.MemberId)
+			t, err = t.AssignMember(ctx, db)
 			if err != nil {
-				slog.Error("(silent) failed to assign Member to Thread Chat", slog.Any("error", err))
+				slog.Error("(silent) failed to assign member to Thread Chat", slog.Any("error", err))
 			} else {
-				th = thAssigned // update the original with assigned
+				th = t // update the original with assigned
+			}
+		}
+
+		if !th.Replied {
+			slog.Info("thread chat not yet replied", "threadChatId", th.ThreadChatId, "memberId", member.MemberId)
+			t := th // make a temp copy before replying
+			t.Replied = true
+			t, err = t.MarkReplied(ctx, db)
+			if err != nil {
+				slog.Error("(silent) failed to mark thread chat as replied", slog.Any("error", err))
+			} else {
+				th = t // update the original with replied
 			}
 		}
 
 		var threadAssigneeRepr *ThMemberRespPayload
-
 		var msgCustomerRepr *ThCustomerRespPayload
 		var msgMemberRepr *ThMemberRespPayload
 
@@ -1678,14 +1621,16 @@ func handleCreateMemberThChatMessage(ctx context.Context, db *pgxpool.Pool) http
 		messages := make([]ThChatMessageRespPayload, 0, 1)
 		messages = append(messages, threadMessage)
 		resp := ThChatRespPayload{
-			ThreadId:  th.ThreadChatId,
-			Sequence:  th.Sequence,
-			Status:    th.Status,
-			Customer:  threadCustomerRepr,
-			Assignee:  threadAssigneeRepr,
-			CreatedAt: th.CreatedAt,
-			UpdatedAt: th.UpdatedAt,
-			Messages:  messages,
+			ThreadChatId: th.ThreadChatId,
+			Sequence:     th.Sequence,
+			Status:       th.Status,
+			Read:         th.Read,
+			Replied:      th.Replied,
+			Customer:     threadCustomerRepr,
+			Assignee:     threadAssigneeRepr,
+			CreatedAt:    th.CreatedAt,
+			UpdatedAt:    th.UpdatedAt,
+			Messages:     messages,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -1835,26 +1780,6 @@ func handleGetThreadChats(ctx context.Context, db *pgxpool.Pool) http.Handler {
 
 		th := model.ThreadChat{WorkspaceId: workspace.WorkspaceId}
 		ths, err := th.GetListByWorkspace(ctx, db)
-
-		if errors.Is(err, model.ErrEmpty) {
-			slog.Warn(
-				"no thread chats found for workspace",
-				"workspaceId", workspace.WorkspaceId,
-			)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			if err := json.NewEncoder(w).Encode(ths); err != nil {
-				slog.Error(
-					"failed to encode thread chats to json "+
-						"might need to check the json encoding defn",
-					"workspaceId", workspace.WorkspaceId,
-				)
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				return
-			}
-			return
-		}
-
 		if errors.Is(err, model.ErrQuery) {
 			slog.Error(
 				"failed to get thread chats for workspace "+
@@ -1922,14 +1847,16 @@ func handleGetThreadChats(ctx context.Context, db *pgxpool.Pool) http.Handler {
 			}
 			messages = append(messages, message)
 			threads = append(threads, ThChatRespPayload{
-				ThreadId:  th.ThreadChat.ThreadChatId,
-				Sequence:  th.ThreadChat.Sequence,
-				Status:    th.ThreadChat.Status,
-				Customer:  threadCustomerRepr,
-				Assignee:  threadAssigneeRepr,
-				CreatedAt: th.ThreadChat.CreatedAt,
-				UpdatedAt: th.ThreadChat.UpdatedAt,
-				Messages:  messages,
+				ThreadChatId: th.ThreadChat.ThreadChatId,
+				Sequence:     th.ThreadChat.Sequence,
+				Status:       th.ThreadChat.Status,
+				Read:         th.ThreadChat.Read,
+				Replied:      th.ThreadChat.Replied,
+				Customer:     threadCustomerRepr,
+				Assignee:     threadAssigneeRepr,
+				CreatedAt:    th.ThreadChat.CreatedAt,
+				UpdatedAt:    th.ThreadChat.UpdatedAt,
+				Messages:     messages,
 			})
 		}
 
@@ -1945,5 +1872,402 @@ func handleGetThreadChats(ctx context.Context, db *pgxpool.Pool) http.Handler {
 			return
 		}
 	})
+}
 
+func handleGetOrCreateWorkspaceLabel(ctx context.Context, db *pgxpool.Pool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func(r io.ReadCloser) {
+			_, _ = io.Copy(io.Discard, r)
+			_ = r.Close()
+		}(r.Body)
+
+		workspaceId := r.PathValue("workspaceId")
+		// request payload
+		var reqp CrLabelReqPayload
+
+		err := json.NewDecoder(r.Body).Decode(&reqp)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		account, err := AuthenticateAccount(ctx, db, r)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		workspace := model.Workspace{WorkspaceId: workspaceId, AccountId: account.AccountId}
+		workspace, err = workspace.GetAccountWorkspace(ctx, db)
+
+		if errors.Is(err, model.ErrEmpty) {
+			slog.Warn(
+				"workspace not found or does not exist for account",
+				"accountId", account.AccountId, "workspaceId", workspaceId,
+			)
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		if errors.Is(err, model.ErrQuery) {
+			slog.Error(
+				"failed to get workspace by id "+
+					"perhaps a failed query or mapping",
+				"accountId", account.AccountId, "workspaceId", workspaceId,
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		if err != nil {
+			slog.Error(
+				"failed to get workspace by id "+
+					"something went wrong",
+				"accountId", account.AccountId, "workspaceId", workspaceId,
+			)
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		label := model.Label{
+			WorkspaceId: workspace.WorkspaceId,
+			Name:        reqp.Name,
+			Icon:        reqp.Icon,
+		}
+
+		label, isCreated, err := label.GetOrCreate(ctx, db)
+		if errors.Is(err, model.ErrEmpty) || errors.Is(err, model.ErrQuery) {
+			slog.Error(
+				"failed to get or create label perhaps a failed query or returned nothing",
+				"error", err,
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		if err != nil {
+			slog.Error(
+				"failed to get or create label something went wrong",
+				"error", err,
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		resp := CrLabelRespPayload{
+			LabelId:   label.LabelId,
+			Name:      label.Name,
+			Icon:      label.Icon,
+			CreatedAt: label.CreatedAt,
+			UpdatedAt: label.UpdatedAt,
+		}
+
+		if isCreated {
+			slog.Info("successfully created label", "labelId", label.LabelId)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			if err := json.NewEncoder(w).Encode(resp); err != nil {
+				slog.Error(
+					"failed to encode label to json "+
+						"might need to check the json encoding defn",
+					"labelId", label.LabelId,
+				)
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			slog.Info("a label already exists", "labelId", label.LabelId)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			if err := json.NewEncoder(w).Encode(resp); err != nil {
+				slog.Error(
+					"failed to encode label to json "+
+						"might need to check the json encoding defn",
+					"labelId", label.LabelId,
+				)
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+		}
+	})
+}
+
+func handleSetThreadChatLabel(ctx context.Context, db *pgxpool.Pool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func(r io.ReadCloser) {
+			_, _ = io.Copy(io.Discard, r)
+			_ = r.Close()
+		}(r.Body)
+
+		workspaceId := r.PathValue("workspaceId")
+		threadId := r.PathValue("threadId")
+		// request payload
+		var reqp SetThChatLabelReqPayload
+
+		err := json.NewDecoder(r.Body).Decode(&reqp)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
+		account, err := AuthenticateAccount(ctx, db, r)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		workspace := model.Workspace{WorkspaceId: workspaceId, AccountId: account.AccountId}
+		workspace, err = workspace.GetAccountWorkspace(ctx, db)
+		if errors.Is(err, model.ErrEmpty) {
+			slog.Warn(
+				"workspace not found or does not exist for account",
+				"accountId", account.AccountId, "workspaceId", workspaceId,
+			)
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		if errors.Is(err, model.ErrQuery) {
+			slog.Error(
+				"failed to get workspace by id "+
+					"perhaps a failed query or mapping",
+				"accountId", account.AccountId, "workspaceId", workspaceId,
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		if err != nil {
+			slog.Error(
+				"failed to get workspace by id "+
+					"something went wrong",
+				"accountId", account.AccountId, "workspaceId", workspaceId,
+			)
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		thChat := model.ThreadChat{ThreadChatId: threadId, WorkspaceId: workspace.WorkspaceId}
+		isThExist, err := thChat.IsExistInWorkspaceById(ctx, db)
+		if errors.Is(err, model.ErrEmpty) || errors.Is(err, model.ErrQuery) {
+			slog.Error(
+				"failed to check if thread chat exists in workspace "+
+					"perhaps a failed query or returned nothing",
+				"error", err,
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		if !isThExist {
+			slog.Warn(
+				"thread chat not found or does not exist in workspace",
+				"threadChatId", threadId,
+			)
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		label := model.Label{
+			WorkspaceId: workspace.WorkspaceId,
+			Name:        reqp.Name,
+			Icon:        reqp.Icon,
+		}
+
+		label, isLabelCreated, err := label.GetOrCreate(ctx, db)
+
+		if errors.Is(err, model.ErrEmpty) || errors.Is(err, model.ErrQuery) {
+			slog.Error(
+				"failed to get or create label perhaps a failed query or returned nothing",
+				"error", err,
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		if err != nil {
+			slog.Error(
+				"failed to get or create label something went wrong",
+				"error", err,
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		thChatLabel := model.ThreadChatLabel{
+			ThreadChatId: threadId,
+			LabelId:      label.LabelId,
+			AddedBy:      model.LabelAddedBy{}.User(),
+		}
+
+		thChatLabel, isAdded, err := thChatLabel.Add(ctx, db)
+		if errors.Is(err, model.ErrEmpty) || errors.Is(err, model.ErrQuery) {
+			slog.Error(
+				"failed to add label to thread chat perhaps a failed query or returned nothing",
+				"error", err,
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		if err != nil {
+			slog.Error(
+				"failed to add label to thread chat something went wrong",
+				"error", err,
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		cr := CrLabelRespPayload{
+			LabelId:   label.LabelId,
+			Name:      label.Name,
+			Icon:      label.Icon,
+			CreatedAt: label.CreatedAt,
+			UpdatedAt: label.UpdatedAt,
+		}
+		resp := SetThChatLabelRespPayload{
+			ThreadChatLabelId:  thChatLabel.ThreadChatLabelId,
+			ThreadChatId:       thChatLabel.ThreadChatId,
+			AddedBy:            thChatLabel.AddedBy,
+			CreatedAt:          thChatLabel.CreatedAt,
+			UpdatedAt:          thChatLabel.UpdatedAt,
+			CrLabelRespPayload: cr,
+		}
+
+		// if any of the label or thread chat label is created
+		if isLabelCreated || isAdded {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			if err := json.NewEncoder(w).Encode(resp); err != nil {
+				slog.Error(
+					"failed to encode label to json "+
+						"might need to check the json encoding defn",
+					"labelId", label.LabelId,
+				)
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			if err := json.NewEncoder(w).Encode(resp); err != nil {
+				slog.Error(
+					"failed to encode label to json "+
+						"might need to check the json encoding defn",
+					"labelId", label.LabelId,
+				)
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+		}
+	})
+}
+
+func handleGetThreadChatLabels(ctx context.Context, db *pgxpool.Pool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		account, err := AuthenticateAccount(ctx, db, r)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		workspaceId := r.PathValue("workspaceId")
+		threadId := r.PathValue("threadId")
+
+		workspace := model.Workspace{AccountId: account.AccountId, WorkspaceId: workspaceId}
+		workspace, err = workspace.GetAccountWorkspace(ctx, db)
+		if errors.Is(err, model.ErrEmpty) {
+			slog.Warn(
+				"workspace not found or does not exist for account",
+				"accountId", account.AccountId, "workspaceId", workspaceId,
+			)
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		if errors.Is(err, model.ErrQuery) {
+			slog.Error(
+				"failed to get workspace by id "+
+					"perhaps a failed query or mapping",
+				"accountId", account.AccountId, "workspaceId", workspaceId,
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		thExist, err := model.ThreadChat{ThreadChatId: threadId, WorkspaceId: workspace.WorkspaceId}.IsExistInWorkspaceById(ctx, db)
+		if errors.Is(err, model.ErrEmpty) || errors.Is(err, model.ErrQuery) {
+			slog.Error(
+				"failed to check if thread chat exists in workspace "+
+					"perhaps a failed query or returned nothing",
+				"error", err,
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		if !thExist {
+			slog.Warn(
+				"thread chat not found or does not exist in workspace",
+				"threadChatId", threadId,
+			)
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		resp := make([]SetThChatLabelRespPayload, 0, 100)
+
+		thChatLabel := model.ThreadChatLabel{ThreadChatId: threadId}
+		labels, err := thChatLabel.GetListByThreadChatId(ctx, db)
+		if errors.Is(err, model.ErrQuery) {
+			slog.Error(
+				"failed to get labels for thread chat "+
+					"perhaps a failed query or mapping",
+				"threadChatId", threadId,
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		if err != nil {
+			slog.Error(
+				"failed to get list of labels for thread chat "+
+					"something went wrong",
+				"threadChatId", threadId,
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		for _, label := range labels {
+			cr := CrLabelRespPayload{
+				LabelId:   label.LabelId,
+				Name:      label.Name,
+				Icon:      label.Icon,
+				CreatedAt: label.CreatedAt,
+				UpdatedAt: label.UpdatedAt,
+			}
+			resp = append(resp, SetThChatLabelRespPayload{
+				ThreadChatLabelId:  label.ThreadChatLabelId,
+				ThreadChatId:       label.ThreadChatId,
+				AddedBy:            label.AddedBy,
+				CreatedAt:          label.CreatedAt,
+				UpdatedAt:          label.UpdatedAt,
+				CrLabelRespPayload: cr,
+			})
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			slog.Error(
+				"failed to encode labels to json "+
+					"might need to check the json encoding defn",
+				"threadChatId", threadId,
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+	})
 }

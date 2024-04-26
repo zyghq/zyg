@@ -1,42 +1,27 @@
+"use client";
 import formatDistanceToNow from "date-fns/formatDistanceToNow";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-// import { Badge } from "@/components/ui/badge";
-import { ChatBubbleIcon } from "@radix-ui/react-icons";
+import { Badge } from "@/components/ui/badge";
+import { ChatBubbleIcon, ResetIcon } from "@radix-ui/react-icons";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Avatar from "boring-avatars";
 import { Button } from "@/components/ui/button";
 import { ReloadIcon } from "@radix-ui/react-icons";
 
 function ThreadItem({ workspaceId, item, variant = "default" }) {
   const message = item.messages[0];
   const name = item?.customer?.name || "Customer";
-  const body = () => {
-    return (
-      message.body.substring(0, 300) + (message.body.length > 300 ? "..." : "")
-    );
-  };
-
-  // TODO: remove
-  const mail = {
-    selected: false,
-  };
+  const { assignee } = item;
 
   return (
     <Link
-      key={item.threadId}
-      href={`/${workspaceId}/threads/${item.threadId}/`}
+      key={item.threadChatId}
+      href={`/${workspaceId}/threads/${item.threadChatId}/`}
       className={cn(
         "flex flex-col items-start gap-2 rounded-lg border px-3 py-3 text-left text-sm transition-all hover:bg-accent",
-        mail.selected === item.threadId && "bg-muted",
         variant === "compress" && "gap-0 rounded-none py-5",
       )}
-      // onClick={() =>
-      //   setMail({
-      //     ...mail,
-      //     selected: item.id,
-      //   })
-      // }
     >
       <div className="flex w-full flex-col gap-1">
         <div className="flex items-center">
@@ -59,27 +44,43 @@ function ThreadItem({ workspaceId, item, variant = "default" }) {
           <div
             className={cn(
               "ml-auto mr-2 text-xs",
-              mail.selected === item.id
-                ? "text-foreground"
-                : "text-muted-foreground",
+              !item.replied ? "text-foreground" : "text-muted-foreground",
             )}
           >
             {formatDistanceToNow(new Date(message.updatedAt), {
               addSuffix: true,
             })}
           </div>
-          <Avatar
-            className={cn("h-6 w-6", variant === "compress" && "h-5 w-5")}
-          >
-            <AvatarImage src="https://github.com/shadcn.png" />
-            <AvatarFallback>CN</AvatarFallback>
-          </Avatar>
+          {assignee && (
+            <Avatar
+              size={28}
+              name={assignee.name}
+              variant="beam"
+              colors={["#92A1C6", "#146A7C", "#F0AB3D", "#C271B4", "#C20D90"]}
+            />
+          )}
         </div>
+        {item.replied ? (
+          <div className="flex">
+            <Badge variant="outline" className="font-normal">
+              <div className="flex items-center gap-1">
+                <ResetIcon className="h-3 w-3" /> replied to
+              </div>
+            </Badge>
+          </div>
+        ) : (
+          <div className="flex">
+            <Badge variant="outline" className="bg-indigo-100 font-normal">
+              <div className="flex items-center gap-1">
+                <ResetIcon className="h-3 w-3" />
+                awaiting reply
+              </div>
+            </Badge>
+          </div>
+        )}
         {item?.title ? <div className="font-medium">{item?.title}</div> : null}
       </div>
-      <div className="line-clamp-2 text-muted-foreground">
-        {body(item.messages[0])}
-      </div>
+      <div className="line-clamp-2 text-muted-foreground">{message.body}</div>
       {/* {item.labels.length && variant === "default" ? (
               <div className="flex items-center gap-2">
                 {item.labels.map((label) => (
@@ -108,7 +109,7 @@ export default function ThreadList({
       >
         {items.map((item) => (
           <ThreadItem
-            key={item.threadId}
+            key={item.threadChatId}
             workspaceId={workspaceId}
             item={item}
           />

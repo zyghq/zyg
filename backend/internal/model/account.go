@@ -172,6 +172,7 @@ func (ap AccountPAT) Create(ctx context.Context, db *pgxpool.Pool) (AccountPAT, 
 }
 
 func (ap AccountPAT) GetListByAccountId(ctx context.Context, db *pgxpool.Pool) ([]AccountPAT, error) {
+	var pat AccountPAT
 	aps := make([]AccountPAT, 0, 100)
 
 	stmt := `SELECT account_id, pat_id, token, name, description,
@@ -179,44 +180,23 @@ func (ap AccountPAT) GetListByAccountId(ctx context.Context, db *pgxpool.Pool) (
 		FROM account_pat WHERE account_id = $1
 		ORDER BY created_at DESC LIMIT 100`
 
-	// send the query to db
-	// shall return multiple rows
-	rows, err := db.Query(ctx, stmt, ap.AccountId)
+	// ignore the error - handled by the caller
+	rows, _ := db.Query(ctx, stmt, ap.AccountId)
 
-	// checks if the query was infact sent to db
+	_, err := pgx.ForEachRow(rows, []any{
+		&pat.AccountId, &pat.PatId, &pat.Token,
+		&pat.Name, &pat.Description, &pat.CreatedAt, &pat.UpdatedAt,
+	}, func() error {
+		aps = append(aps, pat)
+		return nil
+	})
+
 	if err != nil {
-		slog.Error("failed to query", "error", err)
-		return aps, ErrQuery
+		slog.Error("failed to query got error", "error", err)
+		return []AccountPAT{}, ErrQuery
 	}
 
 	defer rows.Close()
-
-	// checks if there are no rows returned
-	if !rows.Next() {
-		return aps, ErrEmpty
-	}
-
-	// got some rows iterate over them
-	for rows.Next() {
-		var ap AccountPAT
-		err = rows.Scan(
-			&ap.AccountId, &ap.PatId, &ap.Token,
-			&ap.Name, &ap.Description, &ap.CreatedAt, &ap.UpdatedAt,
-		)
-		if err != nil {
-			slog.Error("failed to scan", "error", err)
-			return aps, ErrQuery
-		}
-		aps = append(aps, ap)
-	}
-
-	// checks if there was an error during scanning
-	// we might have returned rows but might have failed to scan
-	// check if there are any errors during collecting rows
-	if err = rows.Err(); err != nil {
-		slog.Error("failed to collect rows", "error", err)
-		return aps, ErrQuery
-	}
 
 	return aps, nil
 }

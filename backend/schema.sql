@@ -116,6 +116,8 @@ CREATE TABLE thread_chat (
     summary TEXT NOT NULL,
     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
     status VARCHAR(127) NOT NULL,
+    read BOOLEAN NOT NULL DEFAULT FALSE,  -- read by the member
+    replied BOOLEAN NOT NULL DEFAULT FALSE,  -- replied by the member
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -157,6 +159,7 @@ CREATE TABLE member (
     role VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
     CONSTRAINT member_member_id_pkey PRIMARY KEY (member_id),
     CONSTRAINT member_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
     CONSTRAINT member_account_id_fkey FOREIGN KEY (account_id) REFERENCES account (account_id),
@@ -177,11 +180,41 @@ CREATE TABLE customer (
     name VARCHAR(255)  NULL, -- name of the customer
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
     CONSTRAINT customer_customer_id_pkey PRIMARY KEY (customer_id),
     CONSTRAINT customer_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
     CONSTRAINT customer_workspace_id_external_id_key UNIQUE (workspace_id, external_id),
     CONSTRAINT customer_workspace_id_email_key UNIQUE (workspace_id, email),
     CONSTRAINT customer_workspace_id_phone_key UNIQUE (workspace_id, phone)
+);
+
+
+CREATE TABLE label (
+    workspace_id VARCHAR(255) NOT NULL,
+    label_id VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    icon VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT label_label_id_pkey PRIMARY KEY (label_id),
+    CONSTRAINT label_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
+    CONSTRAINT label_workspace_id_name_key UNIQUE (workspace_id, name)
+);
+
+-- Represents the Thread Chat Label table
+CREATE TABLE thread_chat_label (
+    thread_chat_id VARCHAR(255) NOT NULL,
+    label_id VARCHAR(255) NOT NULL,
+    thread_chat_label_id VARCHAR(255) NOT NULL,
+    addedby VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT th_chat_label_th_chat_label_id_pkey PRIMARY KEY (thread_chat_label_id),
+    CONSTRAINT th_chat_label_th_chat_id_fkey FOREIGN KEY (thread_chat_id) REFERENCES thread_chat (thread_chat_id),
+    CONSTRAINT th_chat_label_label_id_fkey FOREIGN KEY (label_id) REFERENCES label (label_id),
+    CONSTRAINT th_chat_label_id_th_chat_id_label_id_key UNIQUE (thread_chat_id, label_id)
 );
 
 -- Represents the Member Key table

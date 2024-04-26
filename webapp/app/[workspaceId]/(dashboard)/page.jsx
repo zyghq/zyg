@@ -54,16 +54,12 @@ export default async function DashboardPage({ params }) {
     console.log("render error component");
   }
 
-  // console.log("pass these thread chats ....");
-  // console.log(threadChats);
-
   return (
     <div className="grid lg:grid-cols-5">
       <Sidebar className="hidden border-r lg:block" />
       <main className="col-span-3 lg:col-span-4">
         <div className="container">
           <div className="mb-4 mt-5 text-xl font-semibold">Threads</div>
-          {/* <ThreadListTab /> */}
           <Tabs defaultValue="todo">
             <div className="mb-4 sm:flex sm:justify-between">
               <TabsList className="grid grid-cols-3">

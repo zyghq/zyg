@@ -121,14 +121,16 @@ func (thcresp ThChatMessageRespPayload) MarshalJSON() ([]byte, error) {
 }
 
 type ThChatRespPayload struct {
-	ThreadId  string
-	Sequence  int
-	Status    string
-	Customer  ThCustomerRespPayload
-	Assignee  *ThMemberRespPayload
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Messages  []ThChatMessageRespPayload
+	ThreadChatId string
+	Sequence     int
+	Status       string
+	Read         bool
+	Replied      bool
+	Customer     ThCustomerRespPayload
+	Assignee     *ThMemberRespPayload
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	Messages     []ThChatMessageRespPayload
 }
 
 func (thresp ThChatRespPayload) MarshalJSON() ([]byte, error) {
@@ -139,23 +141,27 @@ func (thresp ThChatRespPayload) MarshalJSON() ([]byte, error) {
 	}
 
 	aux := &struct {
-		ThreadId  string                     `json:"threadId"`
-		Sequence  int                        `json:"sequence"`
-		Status    string                     `json:"status"`
-		Customer  ThCustomerRespPayload      `json:"customer"`
-		Assignee  *ThMemberRespPayload       `json:"assignee"`
-		CreatedAt string                     `json:"createdAt"`
-		UpdatedAt string                     `json:"updatedAt"`
-		Messages  []ThChatMessageRespPayload `json:"messages"`
+		ThreadChatId string                     `json:"threadChatId"`
+		Sequence     int                        `json:"sequence"`
+		Status       string                     `json:"status"`
+		Read         bool                       `json:"read"`
+		Replied      bool                       `json:"replied"`
+		Customer     ThCustomerRespPayload      `json:"customer"`
+		Assignee     *ThMemberRespPayload       `json:"assignee"`
+		CreatedAt    string                     `json:"createdAt"`
+		UpdatedAt    string                     `json:"updatedAt"`
+		Messages     []ThChatMessageRespPayload `json:"messages"`
 	}{
-		ThreadId:  thresp.ThreadId,
-		Sequence:  thresp.Sequence,
-		Status:    thresp.Status,
-		Customer:  thresp.Customer,
-		Assignee:  assignee,
-		CreatedAt: thresp.CreatedAt.Format(time.RFC3339),
-		UpdatedAt: thresp.UpdatedAt.Format(time.RFC3339),
-		Messages:  thresp.Messages,
+		ThreadChatId: thresp.ThreadChatId,
+		Sequence:     thresp.Sequence,
+		Status:       thresp.Status,
+		Read:         thresp.Read,
+		Replied:      thresp.Replied,
+		Customer:     thresp.Customer,
+		Assignee:     assignee,
+		CreatedAt:    thresp.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:    thresp.UpdatedAt.Format(time.RFC3339),
+		Messages:     thresp.Messages,
 	}
 	return json.Marshal(aux)
 }
@@ -201,7 +207,7 @@ type ThreadQARespPayload struct {
 
 func (thr ThreadQARespPayload) MarshalJSON() ([]byte, error) {
 	aux := &struct {
-		ThreadId  string                 `json:"threadId"`
+		ThreadId  string                 `json:"threadChatId"`
 		Query     string                 `json:"query"`
 		Sequence  int                    `json:"sequence"`
 		CreatedAt string                 `json:"createdAt"`
@@ -214,6 +220,74 @@ func (thr ThreadQARespPayload) MarshalJSON() ([]byte, error) {
 		CreatedAt: thr.CreatedAt.Format(time.RFC3339),
 		UpdatedAt: thr.UpdatedAt.Format(time.RFC3339),
 		Answers:   thr.Answers,
+	}
+	return json.Marshal(aux)
+}
+
+type CrLabelReqPayload struct {
+	Name string `json:"name"`
+	Icon string `json:"icon"`
+}
+
+type CrLabelRespPayload struct {
+	LabelId   string `json:"labelId"`
+	Name      string `json:"name"`
+	Icon      string `json:"icon"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func (lr CrLabelRespPayload) MarshalJSON() ([]byte, error) {
+	aux := &struct {
+		LabelId   string `json:"labelId"`
+		Name      string `json:"name"`
+		Icon      string `json:"icon"`
+		CreatedAt string `json:"createdAt"`
+		UpdatedAt string `json:"updatedAt"`
+	}{
+		LabelId:   lr.LabelId,
+		Name:      lr.Name,
+		Icon:      lr.Icon,
+		CreatedAt: lr.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: lr.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
+}
+
+// refactor req and response payload
+type SetThChatLabelReqPayload struct {
+	Name string `json:"name"`
+	Icon string `json:"icon"`
+}
+
+type SetThChatLabelRespPayload struct {
+	ThreadChatLabelId string    `json:"threadChatLabelId"`
+	ThreadChatId      string    `json:"threadChatId"`
+	AddedBy           string    `json:"addedBy"`
+	CreatedAt         time.Time `json:"createdAt"`
+	UpdatedAt         time.Time `json:"updatedAt"`
+	CrLabelRespPayload
+}
+
+func (tlr SetThChatLabelRespPayload) MarshalJSON() ([]byte, error) {
+	aux := &struct {
+		ThreadChatLabelId string `json:"threadChatLabelId"`
+		ThreadChatId      string `json:"threadChatId"`
+		AddedBy           string `json:"addedBy"`
+		LabelId           string `json:"labelId"`
+		Name              string `json:"name"`
+		Icon              string `json:"icon"`
+		CreatedAt         string `json:"createdAt"`
+		UpdatedAt         string `json:"updatedAt"`
+	}{
+		ThreadChatLabelId: tlr.ThreadChatLabelId,
+		ThreadChatId:      tlr.ThreadChatId,
+		AddedBy:           tlr.AddedBy,
+		LabelId:           tlr.LabelId,
+		Name:              tlr.Name,
+		Icon:              tlr.Icon,
+		CreatedAt:         tlr.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:         tlr.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
 }

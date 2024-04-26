@@ -147,42 +147,22 @@ func (w Workspace) GetListByAccountId(ctx context.Context, db *pgxpool.Pool) ([]
 		FROM workspace WHERE account_id = $1
 		ORDER BY created_at DESC LIMIT 100`
 
-	rows, err := db.Query(ctx, stmt, w.AccountId)
+	rows, _ := db.Query(ctx, stmt, w.AccountId)
 
-	// checks if the query was infact sent to db
+	_, err := pgx.ForEachRow(rows, []any{
+		&w.WorkspaceId, &w.AccountId,
+		&w.Name, &w.CreatedAt, &w.UpdatedAt,
+	}, func() error {
+		ws = append(ws, w)
+		return nil
+	})
+
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return ws, ErrQuery
+		return []Workspace{}, ErrQuery
 	}
 
 	defer rows.Close()
-
-	// check if there are no rows returned
-	if !rows.Next() {
-		return ws, ErrEmpty
-	}
-
-	// got some rows iterate over them
-	for rows.Next() {
-		var w Workspace
-		err = rows.Scan(
-			&w.WorkspaceId, &w.AccountId,
-			&w.Name, &w.CreatedAt, &w.UpdatedAt,
-		)
-		if err != nil {
-			slog.Error("failed to scan", "error", err)
-			return ws, ErrQuery
-		}
-		ws = append(ws, w)
-	}
-
-	// checks if there was an error during scanning
-	// we might have returned rows but might have failed to scan
-	// check if there are any errors during collecting rows
-	if err = rows.Err(); err != nil {
-		slog.Error("failed to collect rows", "error", err)
-		return ws, ErrQuery
-	}
 
 	return ws, nil
 }

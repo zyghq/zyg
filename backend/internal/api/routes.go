@@ -48,7 +48,7 @@ func AuthenticateAccount(ctx context.Context, db *pgxpool.Pool, r *http.Request)
 	}
 
 	if scheme == "token" {
-		slog.Info("authenticate account with PAT")
+		slog.Info("authenticate account with PAT...")
 		token := model.AccountPAT{Token: cred}
 		account, err := token.GetAccountByToken(ctx, db)
 		if err != nil {
@@ -57,7 +57,7 @@ func AuthenticateAccount(ctx context.Context, db *pgxpool.Pool, r *http.Request)
 		slog.Info("authenticated account with PAT", slog.String("accountId", account.AccountId))
 		return account, nil
 	} else if scheme == "bearer" {
-		slog.Info("authenticate account with JWT")
+		slog.Info("authenticate account with JWT...")
 		hmacSecret, err := zyg.GetEnv("SUPABASE_JWT_SECRET")
 		if err != nil {
 			return account, fmt.Errorf("failed to get env SUPABASE_JWT_SECRET got error: %v", err)
@@ -168,42 +168,70 @@ func NewHandler(ctx context.Context, db *pgxpool.Pool) http.Handler {
 
 	mux.HandleFunc("GET /{$}", handleGetIndex)
 
-	mux.Handle("POST /accounts/auth/{$}",
-		handleGetOrCreateAuthAccount(ctx, db))
-	mux.Handle("POST /pats/{$}",
-		handleCreatePAT(ctx, db))
-	mux.Handle("GET /pats/{$}",
-		handleGetPATs(ctx, db))
+	// authenticate the account with the provided credentials.
+	// fetches the account or makes a new one if does not exist.
+	mux.Handle("POST /accounts/auth/{$}", handleGetOrCreateAuthAccount(ctx, db))
 
-	mux.Handle("POST /workspaces/{$}",
-		handleCreateWorkspace(ctx, db))
+	// create a new PAT for the authenticated account.
+	// PATs are personal access tokens usable for authentication.
+	mux.Handle("POST /pats/{$}", handleCreatePAT(ctx, db))
+	// fetch list of PATs for the authenticated account.
+	mux.Handle("GET /pats/{$}", handleGetPATs(ctx, db))
 
-	mux.Handle("GET /workspaces/{$}",
-		handleGetWorkspaces(ctx, db))
-	mux.Handle("GET /workspaces/{workspaceId}/{$}",
-		handleGetWorkspace(ctx, db))
+	// create a new workspace for the authenticated account.
+	mux.Handle("POST /workspaces/{$}", handleCreateWorkspace(ctx, db))
 
+	// fetch list of workspaces for the authenticated account.
+	mux.Handle("GET /workspaces/{$}", handleGetWorkspaces(ctx, db))
+
+	// feth the workspace.
+	mux.Handle("GET /workspaces/{workspaceId}/{$}", handleGetWorkspace(ctx, db))
+
+	// fetches or creates a new label for the workspace.
+	mux.Handle("POST /workspaces/{workspaceId}/labels/{$}",
+		handleGetOrCreateWorkspaceLabel(ctx, db))
+
+	// fetch list of thread chats for the workspace.
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{$}",
 		handleGetThreadChats(ctx, db))
+
+	// post message to the thread chat in the workspace.
 	mux.Handle("POST /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
 		handleCreateMemberThChatMessage(ctx, db))
-	mux.Handle("POST /workspaces/{workspaceId}/tokens/{$}",
+
+	// set label to the thread chat in the workspace.
+	mux.Handle("PUT /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
+		handleSetThreadChatLabel(ctx, db))
+
+	// fetch list of attached labels for thread chat in the workspace.
+	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
+		handleGetThreadChatLabels(ctx, db))
+
+	// issue a new token for the workspace customer.
+	mux.Handle("POST /workspaces/{workspaceId}/x/tokens/{$}",
 		handleCustomerTokenIssue(ctx, db))
 
-	mux.Handle("GET /-/me/{$}",
-		handleGetCustomer(ctx, db))
+	// fetch list of thread chat labels
+	// mux.Handle("GET /workspaces/{workspaceId}/ThreadChat.Label.List/{$}")
 
-	mux.Handle("POST /-/threads/chat/{$}",
-		handleInitCustomerThreadChat(ctx, db))
-	mux.Handle("GET /-/threads/chat/{$}",
-		handleGetCustomerThreadChats(ctx, db))
+	// fetch the authenticated customer identity.
+	mux.Handle("GET /x/identity/{$}", handleGetCustomer(ctx, db))
 
-	mux.Handle("POST /-/threads/chat/{threadId}/messages/{$}",
+	// customer create initiated thread chat.
+	mux.Handle("POST /x/threads/chat/{$}", handleInitCustomerThreadChat(ctx, db))
+
+	// customer fetch list of thread chats.
+	mux.Handle("GET /x/threads/chat/{$}", handleGetCustomerThreadChats(ctx, db))
+
+	// customer post message for thread chat.
+	mux.Handle("POST /x/threads/chat/{threadId}/messages/{$}",
 		handleCreateCustomerThChatMessage(ctx, db))
-	mux.Handle("GET /-/threads/chat/{threadId}/messages/{$}",
+
+	// customer fetch list of messages in thread chat.
+	mux.Handle("GET /x/threads/chat/{threadId}/messages/{$}",
 		handleGetCustomerThChatMessages(ctx, db))
 
-	// ignored
+	// deprecated
 	mux.Handle("POST /-/threads/qa/{$}", handleInitCustomerThreadQA(ctx, db))
 
 	c := cors.New(cors.Options{

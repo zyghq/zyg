@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { isAuthenticated, getAuthToken } from "@/utils/supabase/helpers";
 
-async function getWorkspaces(authToken) {
+async function getAccountWorkspaces(authToken) {
   console.log(authToken);
   try {
     const response = await fetch(`${process.env.ZYG_API_URL}/workspaces/`, {
@@ -39,7 +39,7 @@ export default async function SelectWorkspacePage() {
   }
 
   const authToken = await getAuthToken(supabase);
-  const [err, workspaces] = await getWorkspaces(authToken);
+  const [err, workspaces] = await getAccountWorkspaces(authToken);
 
   if (err) {
     return (

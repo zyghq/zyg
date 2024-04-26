@@ -58,6 +58,24 @@ func (s ThreadStatus) InProgress() string {
 	return "inprogress"
 }
 
+type LabelAddedBy struct{}
+
+func (a LabelAddedBy) User() string {
+	return "user"
+}
+
+func (a LabelAddedBy) System() string {
+	return "system"
+}
+
+func (a LabelAddedBy) Ai() string {
+	return "ai"
+}
+
+func (a LabelAddedBy) AiAssist() string {
+	return "aiassist"
+}
+
 type Account struct {
 	AccountId  string
 	Email      string
@@ -119,6 +137,8 @@ type ThreadChat struct {
 	Summary      string
 	Sequence     int
 	Status       string
+	Read         bool
+	Replied      bool
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
@@ -163,4 +183,33 @@ type ThreadQA struct {
 	Sequence       int
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
+}
+
+type Label struct {
+	WorkspaceId string
+	LabelId     string
+	Name        string
+	Icon        string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+type ThreadChatLabel struct {
+	ThreadChatId      string
+	LabelId           string
+	ThreadChatLabelId string
+	AddedBy           string
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+}
+
+type ThreadChatLabelled struct {
+	ThreadChatLabelId string
+	ThreadChatId      string
+	LabelId           string
+	Name              string
+	Icon              string
+	AddedBy           string
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
 }
