@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
@@ -10,13 +9,16 @@ import { isAuthenticated, getAuthToken } from "@/utils/supabase/helpers";
 async function getAccountWorkspaces(authToken) {
   console.log(authToken);
   try {
-    const response = await fetch(`${process.env.ZYG_API_URL}/workspaces/`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${authToken}`,
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_ZYG_URL}/workspaces/`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
       },
-    });
+    );
     // handle 4xx-5xx errors
     if (!response.ok) {
       const { status, statusText } = response;
@@ -31,8 +33,7 @@ async function getAccountWorkspaces(authToken) {
 }
 
 export default async function SelectWorkspacePage() {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
 
   if (!(await isAuthenticated(supabase))) {
     return redirect("/login/");

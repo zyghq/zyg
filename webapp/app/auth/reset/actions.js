@@ -9,12 +9,10 @@
  * authenticated before accessing this route. We are using callback route to authenticate first.
  */
 
-import { cookies } from "next/headers";
-import { createClient } from "@/utils/supabase/actions";
+import { createClient } from "@/utils/supabase/server";
 
 export async function reset(values) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
   const { password } = values;
   try {
     const { data, error } = await supabase.auth.updateUser({

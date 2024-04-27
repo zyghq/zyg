@@ -1,11 +1,9 @@
 "use server";
 
-import { cookies } from "next/headers";
-import { createClient } from "@/utils/supabase/actions";
+import { createClient } from "@/utils/supabase/server";
 
 export async function recover(values) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
   const { email } = values;
   try {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {

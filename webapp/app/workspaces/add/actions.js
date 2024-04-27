@@ -1,20 +1,22 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
-import { createClient } from "@/utils/supabase/actions";
+import { createClient } from "@/utils/supabase/server";
 import { getAuthToken } from "@/utils/supabase/helpers";
 
 async function createWorkspaceAPI(accessToken, body = {}) {
   try {
-    const response = await fetch(`${process.env.ZYG_API_URL}/workspaces/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_ZYG_URL}/workspaces/`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ ...body }),
       },
-      body: JSON.stringify({ ...body }),
-    });
+    );
     if (!response.ok) {
       const { status, statusText } = response;
       return [
@@ -41,8 +43,7 @@ async function createWorkspaceAPI(accessToken, body = {}) {
  * @returns {Promise<Object>} - A promise that resolves to an object containing the error and data.
  */
 export async function createWorkspace(values) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
   try {
     const accessToken = await getAuthToken(supabase);
     const [err, workspace] = await createWorkspaceAPI(accessToken, values);

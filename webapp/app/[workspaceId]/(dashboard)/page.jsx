@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { isAuthenticated, getAuthToken } from "@/utils/supabase/helpers";
@@ -9,10 +8,10 @@ import { DoubleArrowUpIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
 import { EclipseIcon, CircleIcon, CheckCircle } from "lucide-react";
 import ThreadList from "@/components/thread-list";
 
-async function getWorkspaceThreadChats(workspaceId, authToken) {
+async function getThreadChatListAPI(workspaceId, authToken = "") {
   try {
     const response = await fetch(
-      `${process.env.ZYG_API_URL}/workspaces/${workspaceId}/threads/chat/`,
+      `${process.env.NEXT_PUBLIC_ZYG_URL}/workspaces/${workspaceId}/threads/chat/`,
       {
         method: "GET",
         headers: {
@@ -24,34 +23,40 @@ async function getWorkspaceThreadChats(workspaceId, authToken) {
 
     if (!response.ok) {
       const { status, statusText } = response;
-      throw new Error(`Error fetching thread chats: ${status} ${statusText}`);
+      return {
+        error: new Error(
+          `Error fetching thread chats: ${status} ${statusText}`,
+        ),
+      };
     }
 
     const data = await response.json();
-    return [null, data];
+    return { data, error: null };
   } catch (err) {
-    console.error(err);
-    return [err, null];
+    console.error("error fetching workspace thread chats", err);
+    return { data: null, error: err };
   }
 }
 
 export default async function DashboardPage({ params }) {
   const { workspaceId } = params;
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+
+  const supabase = createClient();
 
   if (!(await isAuthenticated(supabase))) {
     return redirect("/login/");
   }
 
   const authToken = await getAuthToken(supabase);
-  const [err, threadChats] = await getWorkspaceThreadChats(
-    workspaceId,
-    authToken,
-  );
 
-  if (err) {
-    console.log("render error component");
+  const threads = [];
+  const { error, data } = await getThreadChatListAPI(workspaceId, authToken);
+
+  // TODO: render a error component.
+  if (error) {
+    console.error("error fetching thread chats", error);
+  } else {
+    threads.push(...data);
   }
 
   return (
@@ -96,7 +101,7 @@ export default async function DashboardPage({ params }) {
             <TabsContent value="todo" className="m-0">
               <ThreadList
                 workspaceId={workspaceId}
-                items={threadChats}
+                threads={threads}
                 className="h-[calc(100dvh-14rem)]"
               />
             </TabsContent>

@@ -9,7 +9,7 @@ export default function DashboardLayout({ children }) {
     <div vaul-drawer-wrapper="">
       <div className="flex flex-col">
         <Header />
-        <div className="flex flex-1 flex-col">{children}</div>
+        <div className="flex flex-col">{children}</div>
       </div>
     </div>
   );

@@ -1,25 +1,27 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
-import { createClient } from "@/utils/supabase/actions";
+import { createClient } from "@/utils/supabase/server";
 
 async function getOrCreateZygAccount(token) {
   console.log("getOrCreateZygAccount token ->", token);
   try {
-    const response = await fetch(`${process.env.ZYG_API_URL}/accounts/auth/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_ZYG_URL}/accounts/auth/`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
       },
-      body: JSON.stringify({}),
-    });
+    );
     if (!response.ok) {
       const { status, statusText } = response;
       return [
         new Error(
-          `error creating Zyg auth account with withs status: ${status} and statusText: ${statusText}`
+          `error creating Zyg auth account with withs status: ${status} and statusText: ${statusText}`,
         ),
         null,
       ];
@@ -32,8 +34,7 @@ async function getOrCreateZygAccount(token) {
 }
 
 export async function login(values) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
       ...values,
