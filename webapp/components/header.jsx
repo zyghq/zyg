@@ -7,6 +7,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { ArrowLeftRightIcon } from "lucide-react";
 import { Icons } from "@/components/icons";
 
+// TODO: rename to DashboardHeader or MainHeader
 export function Header() {
   return (
     <header className="sticky top-0 z-50 flex h-14 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

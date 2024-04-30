@@ -7,8 +7,8 @@ export const metadata = {
 export default function ThreadItemLayout({ children }) {
   return (
     <div vaul-drawer-wrapper="">
-      <div className="flex flex-col min-h-screen">
-        <div className="flex flex-col flex-1">{children}</div>
+      <div className="flex min-h-screen flex-col">
+        <div className="flex flex-1 flex-col">{children}</div>
       </div>
     </div>
   );

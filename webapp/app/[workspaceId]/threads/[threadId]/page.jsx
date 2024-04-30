@@ -1,10 +1,5 @@
-// import { ThreadSidebar } from "@/components/threadsidebar";
-// import Title from "@/components/title";
-// import ThreadTabs from "@/components/thread-tabs";
-// import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
-  ChevronLeftIcon,
   ArrowUpIcon,
   ArrowDownIcon,
   ChatBubbleIcon,
@@ -20,17 +15,20 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CircleIcon } from "lucide-react";
-import ThreadList from "@/components/thread-list";
-import { threads } from "@/data/threads";
+
+import { SidePanelThreadList } from "@/components/sidepanel-thread-list";
+import { GoBack } from "@/components/nav-btn";
+
+// import ThreadList from "@/components/thread-list";
+// import { threads } from "@/data/threads";
 
 export default function ThreadItemPage() {
   return (
     <div className="flex flex-1">
-      <div className="flex flex-col items-center border px-2">
+      <div className="flex flex-col items-center px-2">
         <div className="mt-4 flex flex-col gap-4">
-          <Button variant="outline" size="icon">
-            <ChevronLeftIcon className="h-4 w-4" />
-          </Button>
+          <GoBack />
+          <SidePanelThreadList />
           <Button variant="outline" size="icon">
             <ArrowUpIcon className="h-4 w-4" />
           </Button>
@@ -39,19 +37,24 @@ export default function ThreadItemPage() {
           </Button>
         </div>
       </div>
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-col">
         <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={30}>
+          <ResizablePanel
+            defaultSize={25}
+            minSize={20}
+            maxSize={30}
+            className="hidden bg-red-50 sm:block"
+          >
             <div className="flex h-full flex-col">
               <div className="flex h-14 flex-col justify-center border-b px-4">
-                <div className="text-md font-semibold">Threads</div>
+                <div className="text-`md font-semibold">Threads</div>
               </div>
               {/* <ThreadList
                 items={threads}
                 className="h-[calc(100dvh-8rem)] pr-0"
                 variant="compress"
               /> */}
-              ...
+              ... load some threads
             </div>
           </ResizablePanel>
           <ResizableHandle withHandle={false} />
@@ -74,7 +77,7 @@ export default function ThreadItemPage() {
                       <span className="font-mono text-xs">12/44</span>
                     </div>
                   </div>
-                  <ScrollArea className="flex h-full flex-auto flex-col px-12 pb-4">
+                  <ScrollArea className="flex h-full flex-auto flex-col px-2 pb-4">
                     <div className="flex flex-col gap-1">
                       <div className="m-4">
                         <div className="flex items-center font-mono text-sm font-medium">
@@ -206,8 +209,13 @@ export default function ThreadItemPage() {
               </ResizablePanel>
             </ResizablePanelGroup>
           </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={30}>
+          <ResizableHandle withHandle={false} />
+          <ResizablePanel
+            defaultSize={25}
+            minSize={20}
+            maxSize={30}
+            className="hidden sm:block"
+          >
             <div className="flex h-full items-center justify-center p-6">
               <span className="font-semibold">Sidebar</span>
             </div>
