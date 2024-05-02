@@ -37,10 +37,10 @@ export function Sidebar({ className }) {
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="flex justify-between">
             <div className="flex justify-start">
-              <Building2Icon className="h-5 w-5 mr-2" />
+              <Building2Icon className="mr-2 h-5 w-5" />
               <div className="my-auto">ZygHQ</div>
             </div>
-            <CaretSortIcon className="h-4 w-4 my-auto" />
+            <CaretSortIcon className="my-auto h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="mx-1">
@@ -49,25 +49,25 @@ export function Sidebar({ className }) {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem>
-            <GearIcon className="h-4 w-4 mr-2 my-auto" />
+            <GearIcon className="my-auto mr-2 h-4 w-4" />
             <div className="my-auto">Settings</div>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link className="flex" target="_blank" href="https://zyg.ai/docs/">
-              <ReaderIcon className="h-4 w-4 mr-2 my-auto" />
+              <ReaderIcon className="my-auto mr-2 h-4 w-4" />
               <div className="my-auto">Documentation</div>
-              <OpenInNewWindowIcon className="h-4 w-4 ml-2 my-auto" />
+              <OpenInNewWindowIcon className="my-auto ml-2 h-4 w-4" />
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
             <Link href="/workspaces/">
-              <WidthIcon className="h-4 w-4 mr-2 my-auto" />
+              <WidthIcon className="my-auto mr-2 h-4 w-4" />
               <div className="my-auto">Switch Workspace</div>
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <ExitIcon className="h-4 w-4 mr-2 my-auto" />
+            <ExitIcon className="my-auto mr-2 h-4 w-4" />
             <div className="my-auto">Logout</div>
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -82,43 +82,43 @@ export function Sidebar({ className }) {
             //     ? "bg-indigo-100 hover:bg-indigo-200"
             //     : ""
             // }`}
-            className="w-full flex justify-between bg-indigo-100 hover:bg-indigo-200"
+            className="flex w-full justify-between bg-indigo-100 hover:bg-indigo-200"
           >
             <Link href={`/`}>
               <div className="flex">
-                <ChatBubbleIcon className="h-4 w-4 mr-2 my-auto" />
+                <ChatBubbleIcon className="my-auto mr-2 h-4 w-4" />
                 <div className="my-auto">Threads</div>
               </div>
-              <Badge className="font-mono my-auto bg-indigo-500">18</Badge>
+              <Badge className="my-auto bg-indigo-500 font-mono">18</Badge>
             </Link>
           </Button>
           <Button
             variant="ghost"
             asChild
-            className="w-full flex justify-between"
+            className="flex w-full justify-between"
           >
             <Link href={`/`}>
               <div className="flex">
-                <WebhookIcon className="h-4 w-4 mr-2 my-auto" />
+                <WebhookIcon className="my-auto mr-2 h-4 w-4" />
                 <div className="my-auto">Events</div>
               </div>
-              <Badge className="font-mono my-auto bg-zinc-400">37</Badge>
+              <Badge className="my-auto bg-zinc-400 font-mono">37</Badge>
             </Link>
           </Button>
         </div>
-        <div className="text-xs text-zinc-500 mt-4 mb-3">Browse</div>
+        <div className="mb-3 mt-4 text-xs text-zinc-500">Browse</div>
         <div className="flex flex-col space-y-2">
           <Button
             variant="ghost"
             asChild
-            className="w-full flex justify-between bg-indigo-100 hover:bg-indigo-200"
+            className="flex w-full justify-between bg-indigo-100 hover:bg-indigo-200"
           >
             <Link href={`/`}>
               <div className="flex">
-                <TagsIcon className="h-4 w-4 mr-2 my-auto" />
+                <TagsIcon className="my-auto mr-2 h-4 w-4" />
                 <div className="my-auto">Labels</div>
               </div>
-              <ChevronRightIcon className="h-4 w-4 my-auto" />
+              <ChevronRightIcon className="my-auto h-4 w-4" />
             </Link>
           </Button>
         </div>
@@ -127,7 +127,7 @@ export function Sidebar({ className }) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button className="flex" variant="outline">
-              <LifeBuoyIcon className="h-4 w-4 mr-2 my-auto" />
+              <LifeBuoyIcon className="my-auto mr-2 h-4 w-4" />
               <div className="my-auto">Support</div>
             </Button>
           </DropdownMenuTrigger>
@@ -137,7 +137,7 @@ export function Sidebar({ className }) {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
-              <ChatBubbleIcon className="h-4 w-4 mr-2 my-auto" />
+              <ChatBubbleIcon className="my-auto mr-2 h-4 w-4" />
               <div className="my-auto">Get in touch</div>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
@@ -146,18 +146,18 @@ export function Sidebar({ className }) {
                 target="_blank"
                 href="https://zyg.ai/docs/"
               >
-                <ReaderIcon className="h-4 w-4 mr-2 my-auto" />
+                <ReaderIcon className="my-auto mr-2 h-4 w-4" />
                 <div className="my-auto">Documentation</div>
-                <OpenInNewWindowIcon className="h-4 w-4 ml-2 my-auto" />
+                <OpenInNewWindowIcon className="my-auto ml-2 h-4 w-4" />
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem>
-              <UsersIcon className="h-4 w-4 mr-2 my-auto" />
+              <UsersIcon className="my-auto mr-2 h-4 w-4" />
               Join Slack
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
-              <BugIcon className="h-4 w-4 mr-2 my-auto" />
+              <BugIcon className="my-auto mr-2 h-4 w-4" />
               Bug Report
             </DropdownMenuItem>
           </DropdownMenuContent>

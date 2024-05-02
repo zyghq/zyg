@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { CommandMenu } from "@/components/commander";
-import { MobileNav } from "@/components/mobile-nav";
+import { SidebarMobile } from "@/components/dashboard/sidebar-mobile";
 import { ModeToggle } from "@/components/theme";
 import { buttonVariants } from "@/components/ui/button";
 import { ArrowLeftRightIcon } from "lucide-react";
 import { Icons } from "@/components/icons";
 
-// TODO: rename to DashboardHeader or MainHeader
 export function Header() {
   return (
     <header className="sticky top-0 z-50 flex h-14 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -18,7 +17,7 @@ export function Header() {
             <span className="hidden font-semibold sm:inline-block">Zyg.</span>
           </Link>
         </div>
-        <MobileNav />
+        <SidebarMobile />
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <div className="w-full flex-1 md:w-auto md:flex-none">
             <CommandMenu />

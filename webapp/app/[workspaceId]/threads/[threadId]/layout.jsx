@@ -1,7 +1,5 @@
-// import { Header } from "@/components/header";
-
 export const metadata = {
-  title: "All Threads - Zyg AI",
+  title: "Thread - Zyg AI",
 };
 
 export default function ThreadItemLayout({ children }) {

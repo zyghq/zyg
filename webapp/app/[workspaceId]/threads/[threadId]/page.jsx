@@ -1,3 +1,5 @@
+import { createClient } from "@/utils/supabase/server";
+import { getSession, isAuthenticated } from "@/utils/supabase/helpers";
 import { Button } from "@/components/ui/button";
 import {
   ArrowUpIcon,
@@ -16,19 +18,83 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CircleIcon } from "lucide-react";
 
-import { SidePanelThreadList } from "@/components/sidepanel-thread-list";
-import { GoBack } from "@/components/nav-btn";
+import { SidePanelThreadList } from "@/components/thread/sidepanel-thread-list";
+import ThreadList from "@/components/thread/thread-list";
+import { GoBack } from "@/components/commons/buttons";
+import { OopsDefault } from "@/components/errors";
 
-// import ThreadList from "@/components/thread-list";
-// import { threads } from "@/data/threads";
+/**
+ * Fetches the list of thread chats for a given workspace.
+ *
+ * @param {string} workspaceId - The ID of the workspace.
+ * @param {string} [authToken=""] - The authentication token (optional).
+ * @returns {Promise<{ data: any, error: Error | null }>} - The response object containing the data and error (if any).
+ */
+async function getThreadChatListAPI(workspaceId, authToken = "") {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_ZYG_URL}/workspaces/${workspaceId}/threads/chat/`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+      },
+    );
 
-export default function ThreadItemPage() {
+    if (!response.ok) {
+      const { status, statusText } = response;
+      return {
+        error: new Error(
+          `Error fetching thread chats: ${status} ${statusText}`,
+        ),
+      };
+    }
+
+    const data = await response.json();
+    return { data, error: null };
+  } catch (err) {
+    console.error("error fetching workspace thread chats", err);
+    return { data: null, error: err };
+  }
+}
+
+export default async function ThreadItemPage({ params }) {
+  const { workspaceId, threadId } = params;
+  const supabase = createClient();
+
+  if (!(await isAuthenticated(supabase))) {
+    return redirect("/login/");
+  }
+
+  const { token, error: sessionErr } = await getSession(supabase);
+  if (sessionErr) {
+    return (
+      <div className="container mt-12">
+        <h1 className="mb-1 text-3xl font-bold">Error</h1>
+        <p className="mb-4 text-red-500">
+          There was an error fetching your thread. Please try again later.
+        </p>
+      </div>
+    );
+  }
+
+  const threads = [];
+
+  const { error, data } = await getThreadChatListAPI(workspaceId, token);
+  if (error) {
+    return <OopsDefault />;
+  } else {
+    threads.push(...data);
+  }
+
   return (
     <div className="flex flex-1">
-      <div className="flex flex-col items-center px-2">
+      <div className="flex flex-col items-center px-2 lg:border-r">
         <div className="mt-4 flex flex-col gap-4">
           <GoBack />
-          <SidePanelThreadList />
+          <SidePanelThreadList workspaceId={workspaceId} threads={threads} />
           <Button variant="outline" size="icon">
             <ArrowUpIcon className="h-4 w-4" />
           </Button>
@@ -43,18 +109,18 @@ export default function ThreadItemPage() {
             defaultSize={25}
             minSize={20}
             maxSize={30}
-            className="hidden bg-red-50 sm:block"
+            className="hidden sm:block"
           >
             <div className="flex h-full flex-col">
               <div className="flex h-14 flex-col justify-center border-b px-4">
                 <div className="text-`md font-semibold">Threads</div>
               </div>
-              {/* <ThreadList
+              <ThreadList
+                workspaceId={workspaceId}
                 items={threads}
-                className="h-[calc(100dvh-8rem)] pr-0"
+                className="h-[calc(100dvh-8rem)] p-1"
                 variant="compress"
-              /> */}
-              ... load some threads
+              />
             </div>
           </ResizablePanel>
           <ResizableHandle withHandle={false} />

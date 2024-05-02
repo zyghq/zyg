@@ -1,14 +1,13 @@
 "use client";
 import * as React from "react";
-// import Link from "next/link";
-// import { Icons } from "@/components/icons";
-// import { cn } from "@/lib/utils";
+
 import { Button } from "@/components/ui/button";
-// import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { PanelLeftIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import ThreadList from "@/components/thread/thread-list";
 
-export function SidePanelThreadList() {
+export function SidePanelThreadList({ workspaceId, threads }) {
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -21,15 +20,14 @@ export function SidePanelThreadList() {
       </SheetTrigger>
       <SheetContent side="left" className="w-full px-4">
         <div className="flex h-full flex-col">
-          <div className="flex h-8 flex-col border-b">
+          <div className="flex h-8 flex-col">
             <div className="text-sm font-semibold">Threads</div>
           </div>
-          {/* <ThreadList
-                items={threads}
-                className="h-[calc(100dvh-8rem)] pr-0"
-                variant="compress"
-              /> */}
-          ... load some threads
+          <ThreadList
+            workspaceId={workspaceId}
+            items={threads}
+            className="h-[calc(100dvh-8rem)] py-1"
+          />
         </div>
       </SheetContent>
     </Sheet>

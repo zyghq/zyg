@@ -211,9 +211,6 @@ func NewHandler(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	mux.Handle("POST /workspaces/{workspaceId}/x/tokens/{$}",
 		handleCustomerTokenIssue(ctx, db))
 
-	// fetch list of thread chat labels
-	// mux.Handle("GET /workspaces/{workspaceId}/ThreadChat.Label.List/{$}")
-
 	// fetch the authenticated customer identity.
 	mux.Handle("GET /x/identity/{$}", handleGetCustomer(ctx, db))
 

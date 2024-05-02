@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
-import { WorkspaceEditForm } from "@/components/settings-forms";
+import { WorkspaceEditForm } from "@/components/settings/forms";
 
 export default function SettingsGeneralPage({ params }) {
   const { workspaceId } = params;

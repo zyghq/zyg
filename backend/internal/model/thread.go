@@ -273,6 +273,9 @@ func (th ThreadChat) GetById(ctx context.Context, db *pgxpool.Pool) (ThreadChat,
 func (th ThreadChat) GetListByWorkspaceCustomerId(ctx context.Context, db *pgxpool.Pool) ([]ThreadChatWithMessage, error) {
 	var message ThreadChatMessage
 	ths := make([]ThreadChatWithMessage, 0, 100)
+	// shall we try this:
+	// https://dba.stackexchange.com/questions/173831/convert-right-side-of-join-of-many-to-many-into-array
+	// for rendering list of labels.
 	stmt := `SELECT
 			th.workspace_id AS workspace_id,	
 			thc.customer_id AS thread_customer_id,

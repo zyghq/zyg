@@ -3,10 +3,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DoubleArrowUpIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
 import { EclipseIcon, CircleIcon, CheckCircle } from "lucide-react";
 import ThreadList from "@/components/thread-list";
-// import { ScrollArea } from "@/components/ui/scroll-area";
-
-// mock data for now
-import { threads } from "@/data/threads";
 
 export default async function ThreadListTab({ threads }) {
   return (

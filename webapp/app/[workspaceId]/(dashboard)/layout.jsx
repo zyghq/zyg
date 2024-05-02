@@ -1,4 +1,4 @@
-import { Header } from "@/components/header";
+import { Header } from "@/components/dashboard/header";
 
 export const metadata = {
   title: "All Threads - Zyg AI",

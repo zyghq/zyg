@@ -1,7 +1,7 @@
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { WorkspaceLabelAddOrEditForm } from "@/components/settings-forms";
-import { SettingsLabelItem } from "@/components/settings-label-item";
+import { WorkspaceLabelAddOrEditForm } from "@/components/settings/forms";
+import { LabelItem } from "@/components/settings/label";
 
 export default function SettingsLabelsPage() {
   return (
@@ -35,8 +35,8 @@ export default function SettingsLabelsPage() {
               <div className="mt-8 flex flex-col gap-4">
                 <WorkspaceLabelAddOrEditForm />
                 <div className="flex flex-col gap-1">
-                  <SettingsLabelItem label={"urgent"} />
-                  <SettingsLabelItem label={"bug"} />
+                  <LabelItem label={"urgent"} />
+                  <LabelItem label={"bug"} />
                 </div>
               </div>
             </TabsContent>

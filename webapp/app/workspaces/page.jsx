@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { isAuthenticated, getAuthToken } from "@/utils/supabase/helpers";
 
-async function getAccountWorkspaces(authToken) {
+async function getAccountWorkspacesAPI(authToken) {
   console.log(authToken);
   try {
     const response = await fetch(
@@ -40,7 +40,7 @@ export default async function SelectWorkspacePage() {
   }
 
   const authToken = await getAuthToken(supabase);
-  const [err, workspaces] = await getAccountWorkspaces(authToken);
+  const [err, workspaces] = await getAccountWorkspacesAPI(authToken);
 
   if (err) {
     return (

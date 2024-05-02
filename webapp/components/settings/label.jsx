@@ -7,11 +7,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Pencil1Icon, DotsHorizontalIcon } from "@radix-ui/react-icons";
-import { ShieldAlertIcon, BugIcon } from "lucide-react";
+import { ShieldAlertIcon } from "lucide-react";
 
 // this component will not only render readme label, based on actions
 // like edit, archive it will also render the form to edit the label
-export function SettingsLabelItem({ label }) {
+export function LabelItem({ label }) {
   return (
     <div className="flex flex-col items-start gap-2 rounded-lg border p-3 text-left">
       <div className="flex w-full flex-col">

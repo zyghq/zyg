@@ -1,13 +1,20 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
-import { isAuthenticated, getAuthToken } from "@/utils/supabase/helpers";
-import { Sidebar } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CircleIcon, CheckCircle, EclipseIcon } from "lucide-react";
 import { DoubleArrowUpIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
-import { EclipseIcon, CircleIcon, CheckCircle } from "lucide-react";
-import ThreadList from "@/components/thread-list";
+import { createClient } from "@/utils/supabase/server";
+import { getAuthToken, isAuthenticated } from "@/utils/supabase/helpers";
+import { redirect } from "next/navigation";
+import { Sidebar } from "@/components/dashboard/sidebar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ThreadList from "@/components/dashboard/thread-list";
 
+/**
+ * Fetches the list of thread chats for a given workspace.
+ *
+ * @param {string} workspaceId - The ID of the workspace.
+ * @param {string} [authToken=""] - The authentication token (optional).
+ * @returns {Promise<{ data: any, error: Error | null }>} - The response object containing the data and error (if any).
+ */
 async function getThreadChatListAPI(workspaceId, authToken = "") {
   try {
     const response = await fetch(
@@ -38,6 +45,15 @@ async function getThreadChatListAPI(workspaceId, authToken = "") {
   }
 }
 
+/**
+ *
+ * TODO:
+ * fetch last 10 threads based on status: todo, snoozed, closed
+ * load them in parallel into the tabs as initial threads
+ * based on query key status set the default view.
+ *
+ *
+ */
 export default async function DashboardPage({ params }) {
   const { workspaceId } = params;
 
@@ -52,16 +68,22 @@ export default async function DashboardPage({ params }) {
   const threads = [];
   const { error, data } = await getThreadChatListAPI(workspaceId, authToken);
 
-  // TODO: render a error component.
   if (error) {
-    console.error("error fetching thread chats", error);
+    return (
+      <div className="container mt-12">
+        <h1 className="mb-1 text-3xl font-bold">Error</h1>
+        <p className="mb-4 text-red-500">
+          There was an error fetching your threads. Please try again later.
+        </p>
+      </div>
+    );
   } else {
     threads.push(...data);
   }
 
   return (
     <div className="grid lg:grid-cols-5">
-      <Sidebar className="hidden border-r lg:block" />
+      <Sidebar className="hidden lg:block lg:border-r" />
       <main className="col-span-3 lg:col-span-4">
         <div className="container">
           <div className="mb-4 mt-5 text-xl font-semibold">Threads</div>
