@@ -1,12 +1,17 @@
-import { Button } from "@/components/ui/button";
-import { CircleIcon, CheckCircle, EclipseIcon } from "lucide-react";
-import { DoubleArrowUpIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
-import { createClient } from "@/utils/supabase/server";
 import { getAuthToken, isAuthenticated } from "@/utils/supabase/helpers";
+import { createClient } from "@/utils/supabase/server";
+
 import { redirect } from "next/navigation";
-import { Sidebar } from "@/components/dashboard/sidebar";
+
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import { Sidebar } from "@/components/dashboard/sidebar";
 import ThreadList from "@/components/dashboard/thread-list";
+
+import { DoubleArrowUpIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
+
+import { CheckCircle, CircleIcon, EclipseIcon } from "lucide-react";
 
 /**
  * Fetches the list of thread chats for a given workspace.
@@ -25,14 +30,14 @@ async function getThreadChatListAPI(workspaceId, authToken = "") {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
         },
-      },
+      }
     );
 
     if (!response.ok) {
       const { status, statusText } = response;
       return {
         error: new Error(
-          `Error fetching thread chats: ${status} ${statusText}`,
+          `Error fetching thread chats: ${status} ${statusText}`
         ),
       };
     }

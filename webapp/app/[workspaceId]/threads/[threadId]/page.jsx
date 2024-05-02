@@ -1,13 +1,8 @@
-import { createClient } from "@/utils/supabase/server";
 import { getSession, isAuthenticated } from "@/utils/supabase/helpers";
+import { createClient } from "@/utils/supabase/server";
+import Avatar from "boring-avatars";
+
 import { Button } from "@/components/ui/button";
-import {
-  ArrowUpIcon,
-  ArrowDownIcon,
-  ChatBubbleIcon,
-  DotsHorizontalIcon,
-  ResetIcon,
-} from "@radix-ui/react-icons";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -15,13 +10,21 @@ import {
 } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CircleIcon } from "lucide-react";
 
-import { SidePanelThreadList } from "@/components/thread/sidepanel-thread-list";
-import ThreadList from "@/components/thread/thread-list";
 import { GoBack } from "@/components/commons/buttons";
 import { OopsDefault } from "@/components/errors";
+import { SidePanelThreadList } from "@/components/thread/sidepanel-thread-list";
+import ThreadList from "@/components/thread/thread-list";
+
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ChatBubbleIcon,
+  DotsHorizontalIcon,
+  ResetIcon,
+} from "@radix-ui/react-icons";
+
+import { CircleIcon } from "lucide-react";
 
 /**
  * Fetches the list of thread chats for a given workspace.
@@ -40,14 +43,14 @@ async function getThreadChatListAPI(workspaceId, authToken = "") {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
         },
-      },
+      }
     );
 
     if (!response.ok) {
       const { status, statusText } = response;
       return {
         error: new Error(
-          `Error fetching thread chats: ${status} ${statusText}`,
+          `Error fetching thread chats: ${status} ${statusText}`
         ),
       };
     }
@@ -94,7 +97,11 @@ export default async function ThreadItemPage({ params }) {
       <div className="flex flex-col items-center px-2 lg:border-r">
         <div className="mt-4 flex flex-col gap-4">
           <GoBack />
-          <SidePanelThreadList workspaceId={workspaceId} threads={threads} />
+          <SidePanelThreadList
+            workspaceId={workspaceId}
+            threads={threads}
+            activeThreadId={threadId}
+          />
           <Button variant="outline" size="icon">
             <ArrowUpIcon className="h-4 w-4" />
           </Button>
@@ -119,6 +126,7 @@ export default async function ThreadItemPage({ params }) {
                 workspaceId={workspaceId}
                 items={threads}
                 className="h-[calc(100dvh-8rem)] p-1"
+                activeThreadId={threadId}
                 variant="compress"
               />
             </div>
@@ -156,10 +164,11 @@ export default async function ThreadItemPage({ params }) {
                         <div className="flex w-full flex-col gap-1">
                           <div className="flex items-center">
                             <div className="flex items-center gap-2">
-                              <Avatar className="h-8 w-8">
+                              <Avatar size={28} name="name" variant="beam" />
+                              {/* <Avatar className="h-8 w-8">
                                 <AvatarImage src="https://github.com/shadcn.png" />
                                 <AvatarFallback>CN</AvatarFallback>
-                              </Avatar>
+                              </Avatar> */}
                               <div className="font-medium">Emily Davis</div>
                               <span className="flex h-1 w-1 rounded-full bg-blue-600" />
                               <span className="text-xs">3d ago.</span>
@@ -200,10 +209,7 @@ export default async function ThreadItemPage({ params }) {
                         <div className="flex w-full flex-col gap-1">
                           <div className="flex items-center">
                             <div className="flex items-center gap-2">
-                              <Avatar className="h-8 w-8">
-                                <AvatarImage src="https://github.com/shadcn.png" />
-                                <AvatarFallback>CN</AvatarFallback>
-                              </Avatar>
+                              <Avatar size={28} name="name" variant="beam" />
                               <div className="font-medium">Emily Davis</div>
                               <span className="flex h-1 w-1 rounded-full bg-blue-600" />
                               <span className="text-xs">3d ago.</span>
@@ -238,10 +244,7 @@ export default async function ThreadItemPage({ params }) {
                         <div className="flex w-full flex-col gap-1">
                           <div className="flex items-center">
                             <div className="flex items-center gap-2">
-                              <Avatar className="h-8 w-8">
-                                <AvatarImage src="https://github.com/shadcn.png" />
-                                <AvatarFallback>CN</AvatarFallback>
-                              </Avatar>
+                              <Avatar size={28} name="name" variant="beam" />
                               <div className="font-medium">Emily Davis</div>
                               <span className="flex h-1 w-1 rounded-full bg-blue-600" />
                               <span className="text-xs">3d ago.</span>

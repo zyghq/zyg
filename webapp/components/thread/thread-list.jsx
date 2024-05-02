@@ -1,22 +1,29 @@
 "use client";
-import formatDistanceToNow from "date-fns/formatDistanceToNow";
+
 import { cn } from "@/lib/utils";
-import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { ChatBubbleIcon, ResetIcon } from "@radix-ui/react-icons";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import Avatar from "boring-avatars";
-import { Button } from "@/components/ui/button";
-import { ReloadIcon } from "@radix-ui/react-icons";
-import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 import { getSession } from "@/utils/supabase/helpers";
+import { useQuery } from "@tanstack/react-query";
+import Avatar from "boring-avatars";
+import formatDistanceToNow from "date-fns/formatDistanceToNow";
+
+import Link from "next/link";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { OopsDefault } from "@/components/errors";
+import ThreadLoading from "@/components/thread/thread-loading";
+
+import { ChatBubbleIcon, ResetIcon } from "@radix-ui/react-icons";
+import { ReloadIcon } from "@radix-ui/react-icons";
 
 export default function ThreadList({
   workspaceId,
   threads,
   className,
+  activeThreadId = "",
   variant = "default",
 }) {
   const supabase = createClient();
@@ -50,19 +57,17 @@ export default function ThreadList({
     refetchOnMount: true,
   });
 
-  const { data } = result;
-
-  console.log("data", data);
-
   if (result.isError) {
     return <OopsDefault />;
   }
 
   if (result.isPending) {
-    return <div>Loading...</div>;
+    return <ThreadLoading />;
   }
 
-  return (
+  const { data } = result;
+
+  return result.isSuccess ? (
     <ScrollArea className={cn("pr-1", className)}>
       <div
         className={cn("flex flex-col gap-2", variant === "compress" && "gap-0")}
@@ -72,13 +77,14 @@ export default function ThreadList({
             key={item.threadChatId}
             workspaceId={workspaceId}
             item={item}
+            isActive={activeThreadId === item.threadChatId}
             variant="compress"
           />
         ))}
         <div
           className={cn(
             "flex justify-start",
-            variant === "compress" && "m-1 justify-center",
+            variant === "compress" && "m-1 justify-center"
           )}
         >
           <Button variant="outline" size="sm">
@@ -88,10 +94,15 @@ export default function ThreadList({
         </div>
       </div>
     </ScrollArea>
-  );
+  ) : null;
 }
 
-function ThreadItem({ workspaceId, item, variant = "default" }) {
+function ThreadItem({
+  workspaceId,
+  item,
+  isActive = false,
+  variant = "default",
+}) {
   const message = item.messages[0];
   const name = item?.customer?.name || "Customer";
   const { assignee } = item;
@@ -101,8 +112,9 @@ function ThreadItem({ workspaceId, item, variant = "default" }) {
       key={item.threadChatId}
       href={`/${workspaceId}/threads/${item.threadChatId}/`}
       className={cn(
-        "flex flex-col items-start gap-2 rounded-lg border px-3 py-3 text-left text-sm transition-all hover:bg-accent",
+        "flex flex-col items-start gap-2 rounded-lg px-3 py-3 text-left text-sm transition-all hover:bg-accent",
         variant === "compress" && "gap-1 rounded-none py-5",
+        isActive ? "border-l-4 border-l-indigo-500 bg-indigo-50" : "border"
       )}
     >
       <div className="flex w-full flex-col gap-1">
@@ -117,7 +129,7 @@ function ThreadItem({ workspaceId, item, variant = "default" }) {
           <div
             className={cn(
               "ml-auto mr-2 text-xs",
-              !item.replied ? "text-foreground" : "text-muted-foreground",
+              !item.replied ? "text-foreground" : "text-muted-foreground"
             )}
           >
             {formatDistanceToNow(new Date(message.updatedAt), {

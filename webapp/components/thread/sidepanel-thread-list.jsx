@@ -1,13 +1,19 @@
 "use client";
+
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
-
-import { PanelLeftIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+
 import ThreadList from "@/components/thread/thread-list";
 
-export function SidePanelThreadList({ workspaceId, threads }) {
+import { PanelLeftIcon } from "lucide-react";
+
+export function SidePanelThreadList({
+  workspaceId,
+  threads,
+  activeThreadId = "",
+}) {
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -27,6 +33,7 @@ export function SidePanelThreadList({ workspaceId, threads }) {
             workspaceId={workspaceId}
             items={threads}
             className="h-[calc(100dvh-8rem)] py-1"
+            activeThreadId={activeThreadId}
           />
         </div>
       </SheetContent>

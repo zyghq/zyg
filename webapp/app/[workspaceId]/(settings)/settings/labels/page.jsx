@@ -1,7 +1,7 @@
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WorkspaceLabelAddOrEditForm } from "@/components/settings/forms";
 import { LabelItem } from "@/components/settings/label";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function SettingsLabelsPage() {
   return (
