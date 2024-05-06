@@ -1,6 +1,9 @@
+import { titleCase } from "@/lib/utils";
 import { getSession, isAuthenticated } from "@/utils/supabase/helpers";
 import { createClient } from "@/utils/supabase/server";
 import Avatar from "boring-avatars";
+
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +24,7 @@ import {
   ArrowUpIcon,
   ChatBubbleIcon,
   DotsHorizontalIcon,
+  HomeIcon,
   ResetIcon,
 } from "@radix-ui/react-icons";
 
@@ -63,6 +67,18 @@ async function getThreadChatListAPI(workspaceId, authToken = "") {
   }
 }
 
+function getPrevNextFromCurrent(threads, threadId) {
+  const currentIndex = threads.findIndex(
+    (thread) => thread.threadChatId === threadId
+  );
+  const currentItem = threads[currentIndex] || null;
+
+  const prevItem = threads[currentIndex - 1] || null;
+  const nextItem = threads[currentIndex + 1] || null;
+
+  return { currentItem, prevItem, nextItem };
+}
+
 export default async function ThreadItemPage({ params }) {
   const { workspaceId, threadId } = params;
   const supabase = createClient();
@@ -92,22 +108,49 @@ export default async function ThreadItemPage({ params }) {
     threads.push(...data);
   }
 
+  const { currentItem, prevItem, nextItem } = getPrevNextFromCurrent(
+    threads,
+    threadId
+  );
+
+  console.log("currentItem", currentItem);
+
+  const customerName =
+    currentItem?.customer?.name ||
+    "Customer " + currentItem?.customer?.customerId?.slice(-4) ||
+    "N/A";
+
+  const status = currentItem?.status ? titleCase(currentItem.status) : "N/A";
+
   return (
     <div className="flex flex-1">
       <div className="flex flex-col items-center px-2 lg:border-r">
         <div className="mt-4 flex flex-col gap-4">
           <GoBack />
+          <Button variant="outline" size="icon" asChild>
+            <Link href={`/${workspaceId}/`}>
+              <HomeIcon className="h-4 w-4" />
+            </Link>
+          </Button>
           <SidePanelThreadList
             workspaceId={workspaceId}
             threads={threads}
             activeThreadId={threadId}
           />
-          <Button variant="outline" size="icon">
-            <ArrowUpIcon className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon">
-            <ArrowDownIcon className="h-4 w-4" />
-          </Button>
+          {prevItem ? (
+            <Button variant="outline" size="icon" asChild>
+              <Link href={`/${workspaceId}/threads/${prevItem?.threadChatId}/`}>
+                <ArrowUpIcon className="h-4 w-4" />
+              </Link>
+            </Button>
+          ) : null}
+          {nextItem ? (
+            <Button variant="outline" size="icon" asChild>
+              <Link href={`/${workspaceId}/threads/${nextItem?.threadChatId}/`}>
+                <ArrowDownIcon className="h-4 w-4" />
+              </Link>
+            </Button>
+          ) : null}
         </div>
       </div>
       <div className="flex flex-col">
@@ -139,16 +182,17 @@ export default async function ThreadItemPage({ params }) {
                   <div className="flex h-14 min-h-14 flex-col justify-center border-b px-4">
                     <div className="flex">
                       <div className="text-sm font-semibold">
-                        Emily Davis via Chat
+                        {customerName}
                       </div>
                     </div>
                     <div className="flex items-center">
                       <CircleIcon className="mr-1 h-3 w-3 text-indigo-500" />
-                      <span className="items-center text-xs">Todo</span>
+                      <span className="items-center text-xs">{status}</span>
                       <Separator orientation="vertical" className="mx-2" />
                       <ChatBubbleIcon className="h-3 w-3" />
-                      <Separator orientation="vertical" className="mx-2" />
-                      <span className="font-mono text-xs">12/44</span>
+                      {/* disabled for now, enable for something else perhaps? */}
+                      {/* <Separator orientation="vertical" className="mx-2" />
+                      <span className="font-mono text-xs">12/44</span> */}
                     </div>
                   </div>
                   <ScrollArea className="flex h-full flex-auto flex-col px-2 pb-4">

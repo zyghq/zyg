@@ -97,19 +97,19 @@ export default async function DashboardPage({ params }) {
               <TabsList className="grid grid-cols-3">
                 <TabsTrigger value="todo">
                   <div className="flex items-center">
-                    <CircleIcon className="mr-1 h-3 w-3 text-indigo-500" />
+                    <CircleIcon className="mr-1 h-4 w-4 text-indigo-500" />
                     Todo
                   </div>
                 </TabsTrigger>
-                <TabsTrigger value="inprogress">
+                <TabsTrigger value="snoozed">
                   <div className="flex items-center">
-                    <EclipseIcon className="mr-1 h-3 w-3 text-fuchsia-500" />
-                    In Progress
+                    <EclipseIcon className="mr-1 h-4 w-4 text-fuchsia-500" />
+                    Snoozed
                   </div>
                 </TabsTrigger>
                 <TabsTrigger value="done">
                   <div className="flex items-center">
-                    <CheckCircle className="mr-1 h-3 w-3 text-green-500" />
+                    <CheckCircle className="mr-1 h-4 w-4 text-green-500" />
                     Done
                   </div>
                 </TabsTrigger>
@@ -132,7 +132,7 @@ export default async function DashboardPage({ params }) {
                 className="h-[calc(100dvh-14rem)]"
               />
             </TabsContent>
-            <TabsContent value="inprogress" className="m-0">
+            <TabsContent value="snoozed" className="m-0">
               {/* <ThreadList
           items={threads.filter((item) => !item.read)}
           className="h-[calc(100dvh-14rem)]"
