@@ -33,6 +33,7 @@ func (w Workspace) GenId() string {
 	return "wrk" + xid.New().String()
 }
 
+// done
 func (w Workspace) Create(ctx context.Context, db *pgxpool.Pool) (Workspace, error) {
 	var member Member
 	tx, err := db.Begin(ctx)
@@ -97,6 +98,7 @@ func (w Workspace) Create(ctx context.Context, db *pgxpool.Pool) (Workspace, err
 	return w, nil
 }
 
+// done
 func (w Workspace) GetAccountWorkspace(ctx context.Context, db *pgxpool.Pool) (Workspace, error) {
 	err := db.QueryRow(ctx, `SELECT 
 		workspace_id, account_id, name, created_at, updated_at
@@ -119,6 +121,7 @@ func (w Workspace) GetAccountWorkspace(ctx context.Context, db *pgxpool.Pool) (W
 	return w, nil
 }
 
+// ignore for now.
 func (w Workspace) GetById(ctx context.Context, db *pgxpool.Pool) (Workspace, error) {
 	err := db.QueryRow(ctx, `SELECT 
 		workspace_id, account_id, name, created_at, updated_at
@@ -141,6 +144,7 @@ func (w Workspace) GetById(ctx context.Context, db *pgxpool.Pool) (Workspace, er
 	return w, nil
 }
 
+// done
 func (w Workspace) GetListByAccountId(ctx context.Context, db *pgxpool.Pool) ([]Workspace, error) {
 	ws := make([]Workspace, 0, 100)
 	stmt := `SELECT workspace_id, account_id, name, created_at, updated_at

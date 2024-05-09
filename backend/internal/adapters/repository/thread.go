@@ -1,163 +1,21 @@
-package model
+package repository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log/slog"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/rs/xid"
+	"github.com/zyghq/zyg/internal/domain"
 )
 
-func (thm ThreadChatMessage) GenId() string {
-	return "thm_" + xid.New().String()
-}
+// creates and returns a new thread chat for customer
+// a customer must exist to create a thread chat
+func (tc *ThreadChatDB) CreateThreadChat(ctx context.Context, th domain.ThreadChat, msg string,
+) (domain.ThreadChat, domain.ThreadChatMessage, error) {
+	var message domain.ThreadChatMessage
 
-// done
-func (thm ThreadChatMessage) CreateCustomerThChatMessage(
-	ctx context.Context, db *pgxpool.Pool, c Customer, msg string,
-) (ThreadChatMessage, error) {
-	thmId := thm.GenId()
-	stmt := `WITH ins AS (
-		INSERT INTO thread_chat_message (thread_chat_id, thread_chat_message_id, body, customer_id)
-			VALUES ($1, $2, $3, $4)
-		RETURNING
-			thread_chat_id, thread_chat_message_id, body, sequence,
-			customer_id, member_id, created_at, updated_at
-		) SELECT ins.thread_chat_id AS thread_chat_id,
-			ins.thread_chat_message_id AS thread_chat_message_id,
-			ins.body AS body,
-			ins.sequence AS sequence,
-			c.customer_id AS customer_id,
-			c.name AS customer_name,
-			m.member_id AS member_id,
-			m.name AS member_name,
-			ins.created_at AS created_at,
-			ins.updated_at AS updated_at
-		FROM ins
-		LEFT OUTER JOIN customer c ON ins.customer_id = c.customer_id
-		LEFT OUTER JOIN member m ON ins.member_id = m.member_id`
-
-	err := db.QueryRow(ctx, stmt, thm.ThreadChatId, thmId, msg, c.CustomerId).Scan(
-		&thm.ThreadChatId, &thm.ThreadChatMessageId, &thm.Body,
-		&thm.Sequence, &thm.CustomerId, &thm.CustomerName,
-		&thm.MemberId, &thm.MemberName,
-		&thm.CreatedAt, &thm.UpdatedAt,
-	)
-
-	// check if query returned a row
-	if errors.Is(err, sql.ErrNoRows) {
-		return thm, ErrEmpty
-	}
-
-	// check if query returned an error
-	if err != nil {
-		slog.Error("failed to insert query", "error", err)
-		return thm, ErrQuery
-	}
-
-	return thm, nil
-}
-
-// done
-func (thm ThreadChatMessage) CreateMemberThChatMessage(
-	ctx context.Context, db *pgxpool.Pool, m Member, msg string,
-) (ThreadChatMessage, error) {
-	thmId := thm.GenId()
-	stmt := `WITH ins AS (
-		INSERT INTO thread_chat_message (thread_chat_id, thread_chat_message_id, body, member_id)
-			VALUES ($1, $2, $3, $4)
-		RETURNING
-			thread_chat_id, thread_chat_message_id, body, sequence,
-			customer_id, member_id, created_at, updated_at
-		) SELECT ins.thread_chat_id AS thread_chat_id,
-			ins.thread_chat_message_id AS thread_chat_message_id,
-			ins.body AS body,
-			ins.sequence AS sequence,
-			c.customer_id AS customer_id,
-			c.name AS customer_name,
-			m.member_id AS member_id,
-			m.name AS member_name,
-			ins.created_at AS created_at,
-			ins.updated_at AS updated_at
-		FROM ins
-		LEFT OUTER JOIN customer c ON ins.customer_id = c.customer_id
-		LEFT OUTER JOIN member m ON ins.member_id = m.member_id`
-
-	err := db.QueryRow(ctx, stmt, thm.ThreadChatId, thmId, msg, m.MemberId).Scan(
-		&thm.ThreadChatId, &thm.ThreadChatMessageId, &thm.Body,
-		&thm.Sequence, &thm.CustomerId, &thm.CustomerName,
-		&thm.MemberId, &thm.MemberName,
-		&thm.CreatedAt, &thm.UpdatedAt,
-	)
-
-	// check if query returned a row
-	if errors.Is(err, pgx.ErrNoRows) {
-		return thm, ErrEmpty
-	}
-
-	// check if query returned an error
-	if err != nil {
-		slog.Error("failed to insert got error", "error", err)
-		return thm, err
-	}
-
-	return thm, nil
-}
-
-func (thm ThreadChatMessage) GetListByThreadChatId(ctx context.Context, db *pgxpool.Pool) ([]ThreadChatMessage, error) {
-	var message ThreadChatMessage
-	messages := make([]ThreadChatMessage, 0, 100)
-	stmt := `SELECT
-			thm.thread_chat_id AS thread_chat_id,
-			thm.thread_chat_message_id AS thread_chat_message_id,
-			thm.body AS body,
-			thm.sequence AS sequence,
-			thm.created_at AS created_at,
-			thm.updated_at AS updated_at,
-			c.customer_id AS customer_id,
-			c.name AS customer_name,
-			m.member_id AS member_id,
-			m.name AS member_name
-		FROM thread_chat_message AS thm
-		LEFT OUTER JOIN customer AS c ON thm.customer_id = c.customer_id
-		LEFT OUTER JOIN member AS m ON thm.member_id = m.member_id
-		WHERE thm.thread_chat_id = $1
-		ORDER BY sequence DESC LIMIT 100`
-
-	rows, _ := db.Query(ctx, stmt, thm.ThreadChatId)
-
-	_, err := pgx.ForEachRow(rows, []any{
-		&message.ThreadChatId, &message.ThreadChatMessageId, &message.Body,
-		&message.Sequence, &message.CreatedAt, &message.UpdatedAt,
-		&message.CustomerId, &message.CustomerName, &message.MemberId, &message.MemberName,
-	}, func() error {
-		messages = append(messages, message)
-		return nil
-	})
-
-	if err != nil {
-		slog.Error("failed to query", "error", err)
-		return []ThreadChatMessage{}, ErrQuery
-	}
-
-	return messages, nil
-}
-
-func (th ThreadChat) GenId() string {
-	return "th_" + xid.New().String()
-}
-
-// creates a customer thread chat
-// done
-func (th ThreadChat) CreateCustomerThChat(
-	ctx context.Context, db *pgxpool.Pool, msg string,
-) (ThreadChat, ThreadChatMessage, error) {
-	var message ThreadChatMessage
-
-	tx, err := db.Begin(ctx)
+	tx, err := tc.db.Begin(ctx)
 	if err != nil {
 		slog.Error("failed to start db tx", "error", err)
 		return th, message, ErrQuery
@@ -166,10 +24,9 @@ func (th ThreadChat) CreateCustomerThChat(
 	defer tx.Rollback(ctx)
 
 	thId := th.GenId()
-	th.Status = ThreadStatus{}.Todo() // set status
+	th.Status = domain.ThreadStatus{}.Todo() // set status
 	err = tx.QueryRow(ctx, `INSERT INTO
-		thread_chat(
-			workspace_id, customer_id, thread_chat_id,
+		thread_chat(workspace_id, customer_id, thread_chat_id,
 			title, summary, status, read, replied
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -187,13 +44,13 @@ func (th ThreadChat) CreateCustomerThChat(
 
 	// check if query returned a row
 	if errors.Is(err, pgx.ErrNoRows) {
-		return th, message, ErrEmpty
+		return domain.ThreadChat{}, domain.ThreadChatMessage{}, ErrEmpty
 	}
 
 	// check if query returned an error
 	if err != nil {
 		slog.Error("failed to insert query", "error", err)
-		return th, message, ErrQuery
+		return domain.ThreadChat{}, domain.ThreadChatMessage{}, ErrQuery
 	}
 
 	thmId := message.GenId()
@@ -211,28 +68,35 @@ func (th ThreadChat) CreateCustomerThChat(
 
 	// check if query returned a row
 	if errors.Is(err, pgx.ErrNoRows) {
-		return th, message, ErrEmpty
+		return domain.ThreadChat{}, domain.ThreadChatMessage{}, ErrEmpty
 	}
 
 	// check if query returned an error
 	if err != nil {
 		slog.Error("failed to insert query", "error", err)
-		return th, message, ErrQuery
+		return domain.ThreadChat{}, domain.ThreadChatMessage{}, ErrQuery
+
 	}
 
 	err = tx.Commit(ctx)
 	if err != nil {
 		slog.Error("failed to commit query", "error", err)
-		return th, message, ErrQuery
+		return domain.ThreadChat{}, domain.ThreadChatMessage{}, ErrQuery
+
 	}
 
 	// set customer attributes we already have
-	message.CustomerName = th.CustomerName
+	// message.CustomerName = th.CustomerName
+	// TODO: check if the name exists.
 	return th, message, nil
 }
 
-// done
-func (th ThreadChat) GetById(ctx context.Context, db *pgxpool.Pool) (ThreadChat, error) {
+// returns a thread chat for the workspace and thread chat id
+// a thread chat must exist in the workspace
+func (tc *ThreadChatDB) GetByWorkspaceThreadChatId(ctx context.Context, workspaceId string, threadChatId string,
+) (domain.ThreadChat, error) {
+	var th domain.ThreadChat
+
 	stmt := `SELECT th.workspace_id AS workspace_id,
 		c.customer_id AS customer_id,
 		c.name AS customer_name,
@@ -250,9 +114,9 @@ func (th ThreadChat) GetById(ctx context.Context, db *pgxpool.Pool) (ThreadChat,
 		FROM thread_chat th
 		INNER JOIN customer c ON th.customer_id = c.customer_id
 		LEFT OUTER JOIN member a ON th.assignee_id = a.member_id
-		WHERE th.thread_chat_id = $1`
+		WHERE th.workspace_id = $1 AND th.thread_chat_id = $2`
 
-	err := db.QueryRow(ctx, stmt, th.ThreadChatId).Scan(
+	err := tc.db.QueryRow(ctx, stmt, workspaceId, threadChatId).Scan(
 		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
 		&th.AssigneeId, &th.AssigneeName,
 		&th.ThreadChatId, &th.Title, &th.Summary,
@@ -262,25 +126,32 @@ func (th ThreadChat) GetById(ctx context.Context, db *pgxpool.Pool) (ThreadChat,
 
 	// check if query returned a row
 	if errors.Is(err, pgx.ErrNoRows) {
-		return th, ErrEmpty
+		return domain.ThreadChat{}, ErrEmpty
 	}
 
 	// check if query returned an error
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return th, ErrQuery
+		return domain.ThreadChat{}, ErrQuery
 	}
 
 	return th, nil
 }
 
-// done
-func (th ThreadChat) GetListByWorkspaceCustomerId(ctx context.Context, db *pgxpool.Pool) ([]ThreadChatWithMessage, error) {
-	var message ThreadChatMessage
-	ths := make([]ThreadChatWithMessage, 0, 100)
-	// shall we try this:
+// returns a list of thread chats with latest message for customer in workspace
+// a thread chat message cannot exist without thread chat
+func (tc *ThreadChatDB) GetListByWorkspaceCustomerId(ctx context.Context, workspaceId string, customerId string,
+) ([]domain.ThreadChatWithMessage, error) {
+	var th domain.ThreadChat
+	var message domain.ThreadChatMessage
+
+	ths := make([]domain.ThreadChatWithMessage, 0, 100)
+	// (@sanchitrk)
+	//
+	// shall we try this, for rendering list of labels.
 	// https://dba.stackexchange.com/questions/173831/convert-right-side-of-join-of-many-to-many-into-array
-	// for rendering list of labels.
+	//
+	// shall we do query profiling?
 	stmt := `SELECT
 			th.workspace_id AS workspace_id,	
 			thc.customer_id AS thread_customer_id,
@@ -322,7 +193,7 @@ func (th ThreadChat) GetListByWorkspaceCustomerId(ctx context.Context, db *pgxpo
 		WHERE th.workspace_id = $1 AND th.customer_id = $2
 		ORDER BY sequence DESC LIMIT 100`
 
-	rows, _ := db.Query(ctx, stmt, th.WorkspaceId, th.CustomerId)
+	rows, _ := tc.db.Query(ctx, stmt, workspaceId, customerId)
 
 	_, err := pgx.ForEachRow(rows, []any{
 		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
@@ -334,7 +205,7 @@ func (th ThreadChat) GetListByWorkspaceCustomerId(ctx context.Context, db *pgxpo
 		&message.Sequence, &message.CreatedAt, &message.UpdatedAt,
 		&message.CustomerId, &message.CustomerName, &message.MemberId, &message.MemberName,
 	}, func() error {
-		thm := ThreadChatWithMessage{
+		thm := domain.ThreadChatWithMessage{
 			ThreadChat: th,
 			Message:    message,
 		}
@@ -344,7 +215,7 @@ func (th ThreadChat) GetListByWorkspaceCustomerId(ctx context.Context, db *pgxpo
 
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return []ThreadChatWithMessage{}, ErrQuery
+		return []domain.ThreadChatWithMessage{}, ErrQuery
 	}
 
 	defer rows.Close()
@@ -352,8 +223,11 @@ func (th ThreadChat) GetListByWorkspaceCustomerId(ctx context.Context, db *pgxpo
 	return ths, nil
 }
 
-// done
-func (th ThreadChat) AssignMember(ctx context.Context, db *pgxpool.Pool) (ThreadChat, error) {
+// assigns a member to a thread chat
+// a member exist in the workspace
+func (tc *ThreadChatDB) SetAssignee(ctx context.Context, threadChatId string, assigneeId string,
+) (domain.ThreadChat, error) {
+	var th domain.ThreadChat
 	stmt := `WITH ups AS (
 		UPDATE thread_chat
 		SET assignee_id = $1, updated_at = NOW()
@@ -381,7 +255,7 @@ func (th ThreadChat) AssignMember(ctx context.Context, db *pgxpool.Pool) (Thread
 	INNER JOIN customer c ON ups.customer_id = c.customer_id
 	LEFT OUTER JOIN member m ON ups.assignee_id = m.member_id`
 
-	err := db.QueryRow(ctx, stmt, th.AssigneeId, th.ThreadChatId).Scan(
+	err := tc.db.QueryRow(ctx, stmt, assigneeId, threadChatId).Scan(
 		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
 		&th.AssigneeId, &th.AssigneeName,
 		&th.ThreadChatId, &th.Title, &th.Summary,
@@ -403,8 +277,10 @@ func (th ThreadChat) AssignMember(ctx context.Context, db *pgxpool.Pool) (Thread
 	return th, nil
 }
 
-// done
-func (th ThreadChat) MarkReplied(ctx context.Context, db *pgxpool.Pool) (ThreadChat, error) {
+// marks a thread chat as replied or not replied
+func (tc *ThreadChatDB) SetReplied(ctx context.Context, threadChatId string, replied bool,
+) (domain.ThreadChat, error) {
+	var th domain.ThreadChat
 	stmt := `WITH ups AS (
 		UPDATE thread_chat
 		SET replied = $1, updated_at = NOW()
@@ -432,7 +308,7 @@ func (th ThreadChat) MarkReplied(ctx context.Context, db *pgxpool.Pool) (ThreadC
 	INNER JOIN customer c ON ups.customer_id = c.customer_id
 	LEFT OUTER JOIN member m ON ups.assignee_id = m.member_id`
 
-	err := db.QueryRow(ctx, stmt, th.Replied, th.ThreadChatId).Scan(
+	err := tc.db.QueryRow(ctx, stmt, replied, threadChatId).Scan(
 		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
 		&th.AssigneeId, &th.AssigneeName,
 		&th.ThreadChatId, &th.Title, &th.Summary,
@@ -454,10 +330,15 @@ func (th ThreadChat) MarkReplied(ctx context.Context, db *pgxpool.Pool) (ThreadC
 	return th, nil
 }
 
-// done
-func (th ThreadChat) GetListByWorkspace(ctx context.Context, db *pgxpool.Pool) ([]ThreadChatWithMessage, error) {
-	var message ThreadChatMessage
-	ths := make([]ThreadChatWithMessage, 0, 100)
+// returns a list of thread chats with latest message for workspace
+// irrespective of customer
+// this is different from `GetListByWorkspaceCustomerId`
+func (tc *ThreadChatDB) GetListByWorkspaceId(ctx context.Context, workspaceId string,
+) ([]domain.ThreadChatWithMessage, error) {
+	var th domain.ThreadChat
+	var message domain.ThreadChatMessage
+
+	ths := make([]domain.ThreadChatWithMessage, 0, 100)
 	stmt := `SELECT
 			th.workspace_id AS workspace_id,	
 			thc.customer_id AS thread_customer_id,
@@ -499,7 +380,7 @@ func (th ThreadChat) GetListByWorkspace(ctx context.Context, db *pgxpool.Pool) (
 		WHERE th.workspace_id = $1 
 		ORDER BY sequence DESC LIMIT 100`
 
-	rows, _ := db.Query(ctx, stmt, th.WorkspaceId)
+	rows, _ := tc.db.Query(ctx, stmt, workspaceId)
 
 	_, err := pgx.ForEachRow(rows, []any{
 		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
@@ -511,7 +392,7 @@ func (th ThreadChat) GetListByWorkspace(ctx context.Context, db *pgxpool.Pool) (
 		&message.Sequence, &message.CreatedAt, &message.UpdatedAt,
 		&message.CustomerId, &message.CustomerName, &message.MemberId, &message.MemberName,
 	}, func() error {
-		thm := ThreadChatWithMessage{
+		thm := domain.ThreadChatWithMessage{
 			ThreadChat: th,
 			Message:    message,
 		}
@@ -521,7 +402,7 @@ func (th ThreadChat) GetListByWorkspace(ctx context.Context, db *pgxpool.Pool) (
 
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return []ThreadChatWithMessage{}, ErrQuery
+		return []domain.ThreadChatWithMessage{}, ErrQuery
 	}
 
 	defer rows.Close()
@@ -529,16 +410,16 @@ func (th ThreadChat) GetListByWorkspace(ctx context.Context, db *pgxpool.Pool) (
 	return ths, nil
 }
 
-// done
-func (th ThreadChat) IsExistInWorkspaceById(ctx context.Context, db *pgxpool.Pool) (bool, error) {
+// checks if a thread chat exists in the workspace
+func (tc *ThreadChatDB) IsExistByWorkspaceThreadChatId(ctx context.Context, workspaceId string, threadChatId string,
+) (bool, error) {
 	var isExist bool
 	stmt := `SELECT EXISTS(
 		SELECT 1 FROM thread_chat
-		WHERE thread_chat_id = $1 AND workspace_id = $2
+		WHERE workspace_id = $1 AND thread_chat_id = $2
 	)`
 
-	err := db.QueryRow(ctx, stmt, th.ThreadChatId, th.WorkspaceId).Scan(&isExist)
-
+	err := tc.db.QueryRow(ctx, stmt, workspaceId, threadChatId).Scan(&isExist)
 	if err != nil {
 		slog.Error("failed to query", "error", err)
 		return false, ErrQuery
@@ -547,55 +428,10 @@ func (th ThreadChat) IsExistInWorkspaceById(ctx context.Context, db *pgxpool.Poo
 	return isExist, nil
 }
 
-func (l Label) GenId() string {
-	return "l_" + xid.New().String()
-}
-
-// done
-func (l Label) GetOrCreate(ctx context.Context, db *pgxpool.Pool) (Label, bool, error) {
-	var isCreated bool
-	lId := l.GenId()
-	stmt := `WITH ins AS (
-		INSERT INTO label (label_id, workspace_id, name, icon)
-		VALUES ($1, $2, $3, $4)
-		ON CONFLICT (workspace_id, name) DO NOTHING
-		RETURNING label_id, workspace_id, name, icon, created_at, updated_at,
-		TRUE AS is_created
-	)
-	SELECT * FROM ins
-	UNION ALL
-	SELECT label_id, workspace_id, name, icon,
-	created_at, updated_at, FALSE AS is_created FROM label
-	WHERE workspace_id = $2 AND name = $3 AND NOT EXISTS (SELECT 1 FROM ins)`
-
-	err := db.QueryRow(ctx, stmt, lId, l.WorkspaceId, l.Name, l.Icon).Scan(
-		&l.LabelId, &l.WorkspaceId, &l.Name, &l.Icon,
-		&l.CreatedAt, &l.UpdatedAt, &isCreated,
-	)
-
-	// no rows returned
-	if errors.Is(err, pgx.ErrNoRows) {
-		return l, isCreated, ErrEmpty
-	}
-
-	// query error
-	if err != nil {
-		slog.Error("failed to insert query", "error", err)
-		return l, isCreated, ErrQuery
-	}
-
-	return l, isCreated, nil
-}
-
-func (thl ThreadChatLabel) GenId() string {
-	// no prefix required
-	return xid.New().String()
-}
-
-// done
-func (thl ThreadChatLabel) Add(ctx context.Context, db *pgxpool.Pool) (ThreadChatLabel, bool, error) {
+// adds a label to a thread chat
+func (tc *ThreadChatDB) AddLabel(ctx context.Context, thl domain.ThreadChatLabel) (domain.ThreadChatLabel, bool, error) {
 	var IsCreated bool
-	thId := thl.GenId()
+	id := thl.GenId()
 
 	stmt := `WITH ins AS (
 		INSERT INTO thread_chat_label (thread_chat_label_id, thread_chat_id, label_id, addedby)
@@ -610,43 +446,42 @@ func (thl ThreadChatLabel) Add(ctx context.Context, db *pgxpool.Pool) (ThreadCha
 	created_at, updated_at, FALSE AS is_created FROM thread_chat_label
 	WHERE thread_chat_id = $2 AND label_id = $3 AND NOT EXISTS (SELECT 1 FROM ins)`
 
-	err := db.QueryRow(ctx, stmt, thId, thl.ThreadChatId, thl.LabelId, thl.AddedBy).Scan(
+	err := tc.db.QueryRow(ctx, stmt, id, thl.ThreadChatId, thl.LabelId, thl.AddedBy).Scan(
 		&thl.ThreadChatLabelId, &thl.ThreadChatId, &thl.LabelId, &thl.AddedBy,
 		&thl.CreatedAt, &thl.UpdatedAt, &IsCreated,
 	)
 
 	// no rows returned
 	if errors.Is(err, pgx.ErrNoRows) {
-		return thl, IsCreated, ErrEmpty
+		return domain.ThreadChatLabel{}, IsCreated, ErrEmpty
 	}
 
 	if err != nil {
 		slog.Error("failed to insert query", "error", err)
-		return thl, IsCreated, ErrQuery
+		return domain.ThreadChatLabel{}, IsCreated, ErrQuery
 	}
-
 	return thl, IsCreated, nil
 }
 
-// done
-func (thl ThreadChatLabel) GetListByThreadChatId(ctx context.Context, db *pgxpool.Pool) ([]ThreadChatLabelled, error) {
-	var l ThreadChatLabelled
-	labels := make([]ThreadChatLabelled, 0, 100)
-	stmt := `SELECT
-			tcl.thread_chat_label_id AS thread_chat_label_id,
-			tcl.thread_chat_id AS thread_chat_id,
-			tcl.label_id AS label_id,
-			l.name AS name,
-			l.icon AS icon,
-			tcl.addedby AS addedby,
-			tcl.created_at AS created_at,
-			tcl.updated_at AS updated_at
+// returns a list of labels added for a thread chat
+// TODO: rename this to GetLabelListByThreadChatId
+func (tc *ThreadChatDB) GetLabelListByThreadChatId(ctx context.Context, threadChatId string,
+) ([]domain.ThreadChatLabelled, error) {
+	var l domain.ThreadChatLabelled
+	labels := make([]domain.ThreadChatLabelled, 0, 100)
+	stmt := `SELECT tcl.thread_chat_label_id AS thread_chat_label_id,
+		tcl.thread_chat_id AS thread_chat_id,
+		tcl.label_id AS label_id,
+		l.name AS name, l.icon AS icon,
+		tcl.addedby AS addedby,
+		tcl.created_at AS created_at,
+		tcl.updated_at AS updated_at
 		FROM thread_chat_label AS tcl
 		INNER JOIN label AS l ON tcl.label_id = l.label_id
 		WHERE tcl.thread_chat_id = $1
 		ORDER BY tcl.created_at DESC LIMIT 100`
 
-	rows, _ := db.Query(ctx, stmt, thl.ThreadChatId)
+	rows, _ := tc.db.Query(ctx, stmt, threadChatId)
 
 	_, err := pgx.ForEachRow(rows, []any{
 		&l.ThreadChatLabelId,
@@ -662,10 +497,149 @@ func (thl ThreadChatLabel) GetListByThreadChatId(ctx context.Context, db *pgxpoo
 
 	if err != nil {
 		slog.Error("failed to scan", "error", err)
-		return []ThreadChatLabelled{}, ErrQuery
+		return []domain.ThreadChatLabelled{}, ErrQuery
 	}
 
 	defer rows.Close()
 
 	return labels, nil
+}
+
+// creates a thread chat message for a customer
+// a thread chat message must belong to either a customer or a member not both
+func (tc *ThreadChatDB) CreateCustomerThChatMessage(
+	ctx context.Context, threadChatId string, customerId string,
+	msg string,
+) (domain.ThreadChatMessage, error) {
+	var thm domain.ThreadChatMessage
+	id := thm.GenId()
+	stmt := `WITH ins AS (
+		INSERT INTO thread_chat_message (thread_chat_id, thread_chat_message_id, body, customer_id)
+			VALUES ($1, $2, $3, $4)
+		RETURNING
+			thread_chat_id, thread_chat_message_id, body, sequence,
+			customer_id, member_id, created_at, updated_at
+		) SELECT ins.thread_chat_id AS thread_chat_id,
+			ins.thread_chat_message_id AS thread_chat_message_id,
+			ins.body AS body,
+			ins.sequence AS sequence,
+			c.customer_id AS customer_id,
+			c.name AS customer_name,
+			m.member_id AS member_id,
+			m.name AS member_name,
+			ins.created_at AS created_at,
+			ins.updated_at AS updated_at
+		FROM ins
+		LEFT OUTER JOIN customer c ON ins.customer_id = c.customer_id
+		LEFT OUTER JOIN member m ON ins.member_id = m.member_id`
+
+	err := tc.db.QueryRow(ctx, stmt, threadChatId, id, msg, customerId).Scan(
+		&thm.ThreadChatId, &thm.ThreadChatMessageId, &thm.Body,
+		&thm.Sequence, &thm.CustomerId, &thm.CustomerName,
+		&thm.MemberId, &thm.MemberName,
+		&thm.CreatedAt, &thm.UpdatedAt,
+	)
+
+	// check if query returned a row
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.ThreadChatMessage{}, ErrEmpty
+	}
+
+	// check if query returned an error
+	if err != nil {
+		slog.Error("failed to insert query", "error", err)
+		return domain.ThreadChatMessage{}, ErrQuery
+	}
+
+	return thm, nil
+}
+
+// creates a thread chat message for a member
+// a thread chat message must belong to either a customer or a member not both
+func (tc *ThreadChatDB) CreateMemberThChatMessage(
+	ctx context.Context, threadChatId string, memberId string,
+	msg string,
+) (domain.ThreadChatMessage, error) {
+	var thm domain.ThreadChatMessage
+	id := thm.GenId()
+	stmt := `WITH ins AS (
+		INSERT INTO thread_chat_message (thread_chat_id, thread_chat_message_id, body, member_id)
+			VALUES ($1, $2, $3, $4)
+		RETURNING
+			thread_chat_id, thread_chat_message_id, body, sequence,
+			customer_id, member_id, created_at, updated_at
+		) SELECT ins.thread_chat_id AS thread_chat_id,
+			ins.thread_chat_message_id AS thread_chat_message_id,
+			ins.body AS body,
+			ins.sequence AS sequence,
+			c.customer_id AS customer_id,
+			c.name AS customer_name,
+			m.member_id AS member_id,
+			m.name AS member_name,
+			ins.created_at AS created_at,
+			ins.updated_at AS updated_at
+		FROM ins
+		LEFT OUTER JOIN customer c ON ins.customer_id = c.customer_id
+		LEFT OUTER JOIN member m ON ins.member_id = m.member_id`
+
+	err := tc.db.QueryRow(ctx, stmt, threadChatId, id, msg, memberId).Scan(
+		&thm.ThreadChatId, &thm.ThreadChatMessageId, &thm.Body,
+		&thm.Sequence, &thm.CustomerId, &thm.CustomerName,
+		&thm.MemberId, &thm.MemberName,
+		&thm.CreatedAt, &thm.UpdatedAt,
+	)
+
+	// check if query returned a row
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.ThreadChatMessage{}, ErrEmpty
+	}
+
+	// check if query returned an error
+	if err != nil {
+		slog.Error("failed to insert query", "error", err)
+		return domain.ThreadChatMessage{}, ErrQuery
+	}
+
+	return thm, nil
+}
+
+// returns a list of thread chat messages for a thread chat
+func (tc *ThreadChatDB) GetMessageListByThreadChatId(ctx context.Context, threadChatId string,
+) ([]domain.ThreadChatMessage, error) {
+	var message domain.ThreadChatMessage
+	messages := make([]domain.ThreadChatMessage, 0, 100)
+	stmt := `SELECT
+			thm.thread_chat_id AS thread_chat_id,
+			thm.thread_chat_message_id AS thread_chat_message_id,
+			thm.body AS body,
+			thm.sequence AS sequence,
+			thm.created_at AS created_at,
+			thm.updated_at AS updated_at,
+			c.customer_id AS customer_id,
+			c.name AS customer_name,
+			m.member_id AS member_id,
+			m.name AS member_name
+		FROM thread_chat_message AS thm
+		LEFT OUTER JOIN customer AS c ON thm.customer_id = c.customer_id
+		LEFT OUTER JOIN member AS m ON thm.member_id = m.member_id
+		WHERE thm.thread_chat_id = $1
+		ORDER BY sequence DESC LIMIT 100`
+
+	rows, _ := tc.db.Query(ctx, stmt, threadChatId)
+
+	_, err := pgx.ForEachRow(rows, []any{
+		&message.ThreadChatId, &message.ThreadChatMessageId, &message.Body,
+		&message.Sequence, &message.CreatedAt, &message.UpdatedAt,
+		&message.CustomerId, &message.CustomerName, &message.MemberId, &message.MemberName,
+	}, func() error {
+		messages = append(messages, message)
+		return nil
+	})
+
+	if err != nil {
+		slog.Error("failed to query", "error", err)
+		return []domain.ThreadChatMessage{}, ErrQuery
+	}
+
+	return messages, nil
 }

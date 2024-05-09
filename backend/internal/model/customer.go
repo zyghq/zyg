@@ -56,6 +56,7 @@ func (c Customer) GenId() string {
 	return "c_" + xid.New().String()
 }
 
+// done
 func (c Customer) GetWrkCustomerById(ctx context.Context, db *pgxpool.Pool) (Customer, error) {
 	err := db.QueryRow(ctx, `SELECT 
 		workspace_id, customer_id,
@@ -82,6 +83,7 @@ func (c Customer) GetWrkCustomerById(ctx context.Context, db *pgxpool.Pool) (Cus
 	return c, nil
 }
 
+// done
 func (c Customer) GetWrkCustomerByExtId(ctx context.Context, db *pgxpool.Pool) (Customer, error) {
 	err := db.QueryRow(ctx, `SELECT 
 		workspace_id, customer_id,
@@ -108,6 +110,7 @@ func (c Customer) GetWrkCustomerByExtId(ctx context.Context, db *pgxpool.Pool) (
 	return c, nil
 }
 
+// done
 func (c Customer) GetWrkCustomerByEmail(ctx context.Context, db *pgxpool.Pool) (Customer, error) {
 	err := db.QueryRow(ctx, `SELECT 
 		workspace_id, customer_id,
@@ -135,6 +138,7 @@ func (c Customer) GetWrkCustomerByEmail(ctx context.Context, db *pgxpool.Pool) (
 	return c, nil
 }
 
+// done
 func (c Customer) GetWrkCustomerByPhone(ctx context.Context, db *pgxpool.Pool) (Customer, error) {
 	err := db.QueryRow(ctx, `SELECT 
 		workspace_id, customer_id,
@@ -161,6 +165,7 @@ func (c Customer) GetWrkCustomerByPhone(ctx context.Context, db *pgxpool.Pool) (
 	return c, nil
 }
 
+// done
 func (c Customer) GetOrCreateWrkCustomerByExtId(ctx context.Context, db *pgxpool.Pool) (Customer, bool, error) {
 	cId := c.GenId()
 	st := `WITH ins AS (
@@ -201,6 +206,7 @@ func (c Customer) GetOrCreateWrkCustomerByExtId(ctx context.Context, db *pgxpool
 	return c, isCreated, nil
 }
 
+// done
 func (c Customer) GetOrCreateWrkCustomerByEmail(ctx context.Context, db *pgxpool.Pool) (Customer, bool, error) {
 	cId := c.GenId()
 	st := `WITH ins AS (
@@ -241,6 +247,7 @@ func (c Customer) GetOrCreateWrkCustomerByEmail(ctx context.Context, db *pgxpool
 	return c, isCreated, nil
 }
 
+// done
 func (c Customer) GetOrCreateWrkCustomerByPhone(ctx context.Context, db *pgxpool.Pool) (Customer, bool, error) {
 	cId := c.GenId()
 	st := `WITH ins AS (
@@ -281,8 +288,8 @@ func (c Customer) GetOrCreateWrkCustomerByPhone(ctx context.Context, db *pgxpool
 	return c, isCreated, nil
 }
 
+// done
 func (c Customer) MakeJWT() (string, error) {
-
 	var externalId string
 	var email string
 	var phone string

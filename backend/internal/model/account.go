@@ -35,6 +35,7 @@ func (a Account) GenId() string {
 	return "a_" + xid.New().String()
 }
 
+// done
 func (a Account) GetOrCreateByAuthUserId(ctx context.Context, db *pgxpool.Pool) (Account, bool, error) {
 	var isCreated bool
 	aId := a.GenId()
@@ -74,6 +75,7 @@ func (a Account) GetOrCreateByAuthUserId(ctx context.Context, db *pgxpool.Pool) 
 	return a, isCreated, nil
 }
 
+// done
 func (a Account) GetByAuthUserId(ctx context.Context, db *pgxpool.Pool) (Account, error) {
 	err := db.QueryRow(ctx, `SELECT 
 		account_id, auth_user_id, email,
@@ -140,6 +142,7 @@ func (ap AccountPAT) GenId() string {
 	return "ap_" + xid.New().String()
 }
 
+// done
 func (ap AccountPAT) Create(ctx context.Context, db *pgxpool.Pool) (AccountPAT, error) {
 	apId := ap.GenId()
 
@@ -171,6 +174,7 @@ func (ap AccountPAT) Create(ctx context.Context, db *pgxpool.Pool) (AccountPAT, 
 	return ap, nil
 }
 
+// done
 func (ap AccountPAT) GetListByAccountId(ctx context.Context, db *pgxpool.Pool) ([]AccountPAT, error) {
 	var pat AccountPAT
 	aps := make([]AccountPAT, 0, 100)
@@ -201,6 +205,7 @@ func (ap AccountPAT) GetListByAccountId(ctx context.Context, db *pgxpool.Pool) (
 	return aps, nil
 }
 
+// done
 func (ap AccountPAT) GetAccountByToken(ctx context.Context, db *pgxpool.Pool) (Account, error) {
 	var account Account
 

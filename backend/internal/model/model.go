@@ -17,7 +17,6 @@ func (err mErr) Error() string {
 
 const (
 	ErrEmpty = mErr("nothing found")
-	// ErrMapping = mErr("failed to map")
 	ErrQuery = mErr("failed to query")
 )
 

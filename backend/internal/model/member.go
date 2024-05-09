@@ -41,6 +41,7 @@ func (m Member) GenId() string {
 	return "m_" + xid.New().String()
 }
 
+// done
 func (m Member) GetWorkspaceMemberByAccountId(ctx context.Context, db *pgxpool.Pool) (Member, error) {
 	err := db.QueryRow(ctx, `SELECT
 		workspace_id, account_id, member_id, name, role, created_at, updated_at
