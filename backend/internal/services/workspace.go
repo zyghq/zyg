@@ -12,6 +12,7 @@ import (
 type WorkspaceService struct {
 	workspaceRepo ports.WorkspaceRepositorer
 	memberRepo    ports.MemberRepositorer
+	customerRepo  ports.CustomerRepositorer
 }
 
 func NewWorkspaceService(workspaceRepo ports.WorkspaceRepositorer, memberRepo ports.MemberRepositorer) *WorkspaceService {
@@ -32,6 +33,23 @@ func (s *WorkspaceService) CreateWorkspace(ctx context.Context, w domain.Workspa
 		return workspace, err
 	}
 	// TODO: probably send a mail to notify that a new workspace was created
+	return workspace, nil
+}
+
+func (s *WorkspaceService) GetWorkspace(ctx context.Context, workspaceId string) (domain.Workspace, error) {
+	workspace, err := s.workspaceRepo.GetWorkspaceById(ctx, workspaceId)
+
+	if errors.Is(err, repository.ErrQuery) {
+		return workspace, ErrWorkspace
+	}
+
+	if errors.Is(err, repository.ErrEmpty) {
+		return workspace, ErrWorkspaceNotFound
+	}
+
+	if err != nil {
+		return workspace, err
+	}
 	return workspace, nil
 }
 
@@ -68,8 +86,13 @@ func (s *WorkspaceService) GetUserWorkspaceList(ctx context.Context, accountId s
 
 func (s *WorkspaceService) GetWorkspaceMember(ctx context.Context, accountId string, workspaceId string) (domain.Member, error) {
 	member, err := s.memberRepo.GetByAccountWorkspaceId(ctx, accountId, workspaceId)
+
+	if errors.Is(err, repository.ErrEmpty) {
+		return member, ErrMemberNotFound
+	}
+
 	if err != nil {
-		return member, err
+		return member, ErrMember
 	}
 	return member, nil
 }
@@ -85,4 +108,28 @@ func (s *WorkspaceService) InitWorkspaceLabel(ctx context.Context, label domain.
 	}
 
 	return label, created, err
+}
+
+func (s *WorkspaceService) InitWorkspaceCustomerWithExternalId(ctx context.Context, c domain.Customer) (domain.Customer, bool, error) {
+	customer, created, err := s.customerRepo.GetOrCreateCustomerByExtId(ctx, c)
+	if err != nil {
+		return customer, created, err
+	}
+	return customer, created, nil
+}
+
+func (s *WorkspaceService) InitWorkspaceCustomerWithEmail(ctx context.Context, c domain.Customer) (domain.Customer, bool, error) {
+	customer, created, err := s.customerRepo.GetOrCreateCustomerByEmail(ctx, c)
+	if err != nil {
+		return customer, created, err
+	}
+	return customer, created, nil
+}
+
+func (s *WorkspaceService) InitWorkspaceCustomerWithPhone(ctx context.Context, c domain.Customer) (domain.Customer, bool, error) {
+	customer, created, err := s.customerRepo.GetOrCreateCustomerByPhone(ctx, c)
+	if err != nil {
+		return customer, created, err
+	}
+	return customer, created, nil
 }

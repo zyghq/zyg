@@ -81,8 +81,7 @@ func (tc *ThreadChatDB) CreateThreadChat(ctx context.Context, th domain.ThreadCh
 	err = tx.Commit(ctx)
 	if err != nil {
 		slog.Error("failed to commit query", "error", err)
-		return domain.ThreadChat{}, domain.ThreadChatMessage{}, ErrQuery
-
+		return domain.ThreadChat{}, domain.ThreadChatMessage{}, ErrTxQuery
 	}
 
 	// set customer attributes we already have

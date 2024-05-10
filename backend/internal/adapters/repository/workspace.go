@@ -73,6 +73,29 @@ func (w *WorkspaceDB) CreateWorkspace(ctx context.Context, workspace domain.Work
 	return workspace, nil
 }
 
+func (w *WorkspaceDB) GetWorkspaceById(ctx context.Context, workspaceId string) (domain.Workspace, error) {
+	var workspace domain.Workspace
+	err := w.db.QueryRow(ctx, `SELECT 
+		workspace_id, account_id, name, created_at, updated_at
+		FROM workspace WHERE workspace_id = $1`, workspaceId).Scan(
+		&workspace.WorkspaceId, &workspace.AccountId,
+		&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt,
+	)
+
+	// check if the query returned no rows
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Workspace{}, ErrEmpty
+	}
+
+	// check if the query returned an error
+	if err != nil {
+		slog.Error("failed to query", "error", err)
+		return domain.Workspace{}, ErrQuery
+	}
+
+	return workspace, nil
+}
+
 func (w *WorkspaceDB) GetByAccountWorkspaceId(ctx context.Context, accountId string, workspaceId string) (domain.Workspace, error) {
 	var workspace domain.Workspace
 	err := w.db.QueryRow(ctx, `SELECT

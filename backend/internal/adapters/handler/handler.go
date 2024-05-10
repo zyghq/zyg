@@ -108,22 +108,37 @@ func NewServer(
 	mux := http.NewServeMux()
 
 	ah := NewAccountHandler(accountService)
+	wh := NewWorkspaceHandler(workspaceService, customerService)
+	th := NewThreadChatHandler(workspaceService, threadChatService)
 
 	mux.HandleFunc("GET /{$}", handleGetIndex)
+	mux.HandleFunc("POST /accounts/auth/{$}", ah.handleGetOrCreateAccount)
 
-	// mux.Handle("POST /accounts/auth/{$}", ah.handleGetOrCreateAuthAccount(ctx))
-	// mux.Handle("POST /pats/{$}", ah.handleCreatePAT(ctx))
-
-	// mux.Handle("GET /pats/{$}", ah.handleGetPATs(ctx))
-
+	mux.Handle("POST /pats/{$}", NewEnsureAuth(ah.handleCreatePat, authService))
 	mux.Handle("GET /pats/{$}", NewEnsureAuth(ah.handleGetPatList, authService))
 
-	// wh := NewWorkspaceHandler(accountService, workspaceService)
+	mux.Handle("POST /workspaces/{$}", NewEnsureAuth(wh.handleCreateWorkspace, authService))
+	mux.Handle("GET /workspaces/{$}", NewEnsureAuth(wh.handleGetWorkspaces, authService))
 
-	// mux.Handle("POST /workspaces/{$}", wh.handleCreateWorkspace(ctx))
-	// mux.Handle("GET /workspaces/{$}", wh.handleGetWorkspaces(ctx))
-	// mux.Handle("GET /workspaces/{workspaceId}/{$}", wh.handleGetWorkspace(ctx))
-	// mux.Handle("POST /workspaces/{workspaceId}/labels/{$}", wh.handleGetOrCreateWorkspaceLabel(ctx))
+	mux.Handle("POST /workspaces/{workspaceId}/labels/{$}",
+		NewEnsureAuth(wh.handleGetOrCreateWorkspaceLabel, authService))
+	mux.Handle("GET /workspaces/{workspaceId}/{$}",
+		NewEnsureAuth(wh.handleGetWorkspace, authService))
+
+	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{$}",
+		NewEnsureAuth(th.handleGetThreadChats, authService))
+
+	mux.Handle("POST /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
+		NewEnsureAuth(th.handleCreateThChatMessage, authService))
+
+	mux.Handle("PUT /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
+		NewEnsureAuth(th.handleSetThChatLabel, authService))
+
+	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
+		NewEnsureAuth(th.handleGetThreadChatLabels, authService))
+
+	mux.Handle("POST /workspaces/{workspaceId}/customers/tokens/{$}",
+		NewEnsureAuth(wh.handleIssueCustomerToken, authService))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},

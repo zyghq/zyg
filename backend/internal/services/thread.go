@@ -22,24 +22,49 @@ func NewThreadChatService(repo ports.ThreadChatRepositorer) *ThreadChatService {
 func (s *ThreadChatService) CreateCustomerThread(ctx context.Context, th domain.ThreadChat, msg string,
 ) (domain.ThreadChat, domain.ThreadChatMessage, error) {
 	thread, message, err := s.repo.CreateThreadChat(ctx, th, msg)
+
+	if errors.Is(err, repository.ErrTxQuery) {
+		return thread, message, ErrThreadChat
+	}
+
+	if errors.Is(err, repository.ErrQuery) {
+		return thread, message, ErrThreadChat
+	}
+
+	if errors.Is(err, repository.ErrEmpty) {
+		return thread, message, ErrThreadChat
+	}
+
 	if err != nil {
 		return thread, message, err
 	}
+
 	return thread, message, nil
 }
 
 func (s *ThreadChatService) GetWorkspaceThread(ctx context.Context, workspaceId string, threadChatId string,
 ) (domain.ThreadChat, error) {
 	thread, err := s.repo.GetByWorkspaceThreadChatId(ctx, workspaceId, threadChatId)
-	if err != nil {
-		return thread, err
+
+	if errors.Is(err, repository.ErrEmpty) {
+		return thread, ErrThreadChatNotFound
 	}
+
+	if err != nil {
+		return thread, ErrThreadChat
+	}
+
 	return thread, nil
 }
 
 func (s *ThreadChatService) GetWorkspaceCustomerList(ctx context.Context, workspaceId string, customerId string,
 ) ([]domain.ThreadChatWithMessage, error) {
 	threads, err := s.repo.GetListByWorkspaceCustomerId(ctx, workspaceId, customerId)
+
+	if errors.Is(err, repository.ErrQuery) {
+		return threads, ErrThreadChat
+	}
+
 	if err != nil {
 		return threads, err
 	}
@@ -85,9 +110,19 @@ func (s *ThreadChatService) ExistInWorkspace(ctx context.Context, workspaceId st
 func (s *ThreadChatService) AddLabel(ctx context.Context, thl domain.ThreadChatLabel,
 ) (domain.ThreadChatLabel, bool, error) {
 	label, created, err := s.repo.AddLabel(ctx, thl)
+
+	if errors.Is(err, repository.ErrQuery) {
+		return label, false, ErrThChatLabel
+	}
+
+	if errors.Is(err, repository.ErrEmpty) {
+		return label, false, ErrThChatLabelNotFound
+	}
+
 	if err != nil {
 		return label, created, err
 	}
+
 	return label, created, nil
 }
 

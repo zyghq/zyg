@@ -7,6 +7,7 @@ func (err dbErr) Error() string {
 }
 
 const (
-	ErrEmpty = dbErr("got nothing")
-	ErrQuery = dbErr("db query failed")
+	ErrEmpty   = dbErr("got nothing")
+	ErrQuery   = dbErr("db query failed")
+	ErrTxQuery = dbErr("db tx query failed")
 )

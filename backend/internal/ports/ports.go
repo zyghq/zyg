@@ -6,7 +6,6 @@ import (
 	"github.com/zyghq/zyg/internal/domain"
 )
 
-// done
 type AccountServicer interface {
 	InitiateAccount(ctx context.Context, a domain.Account) (domain.Account, bool, error)
 	GetAuthUser(ctx context.Context, authUserId string) (domain.Account, error)
@@ -20,29 +19,28 @@ type AuthServicer interface {
 	GetPatAccount(ctx context.Context, token string) (domain.Account, error)
 }
 
-// done
+type CustomerAuthServicer interface {
+	GetWorkspaceCustomer(ctx context.Context, workspaceId string, customerId string) (domain.Customer, error)
+}
+
 type WorkspaceServicer interface {
 	CreateWorkspace(ctx context.Context, w domain.Workspace) (domain.Workspace, error)
+	GetWorkspace(ctx context.Context, workspaceId string) (domain.Workspace, error)
 	GetUserWorkspace(ctx context.Context, accountId string, workspaceId string) (domain.Workspace, error)
 	GetUserWorkspaceList(ctx context.Context, accountId string) ([]domain.Workspace, error)
 	InitWorkspaceLabel(ctx context.Context, label domain.Label) (domain.Label, bool, error)
-}
-
-// done
-type MemberServicer interface {
 	GetWorkspaceMember(ctx context.Context, accountId string, workspaceId string) (domain.Member, error)
+	InitWorkspaceCustomerWithExternalId(ctx context.Context, c domain.Customer) (domain.Customer, bool, error)
+	InitWorkspaceCustomerWithEmail(ctx context.Context, c domain.Customer) (domain.Customer, bool, error)
+	InitWorkspaceCustomerWithPhone(ctx context.Context, c domain.Customer) (domain.Customer, bool, error)
 }
 
-// done
 type CustomerServicer interface {
 	GetWorkspaceCustomer(ctx context.Context, workspaceId string, customerId string) (domain.Customer, error)
 	GetWorkspaceCustomerWithExternalId(ctx context.Context, workspaceId string, externalId string) (domain.Customer, error)
 	GetWorkspaceCustomerWithEmail(ctx context.Context, workspaceId string, email string) (domain.Customer, error)
 	GetWorkspaceCustomerWithPhone(ctx context.Context, workspaceId string, phone string) (domain.Customer, error)
-	InitWorkspaceCustomerWithExternalId(ctx context.Context, c domain.Customer) (domain.Customer, bool, error)
-	InitWorkspaceCustomerWithEmail(ctx context.Context, c domain.Customer) (domain.Customer, bool, error)
-	InitWorkspaceCustomerWithPhone(ctx context.Context, c domain.Customer) (domain.Customer, bool, error)
-	IssueJwt(ctx context.Context, c domain.Customer) (string, error)
+	IssueJwt(c domain.Customer) (string, error)
 }
 
 type ThreadChatServicer interface {
@@ -60,7 +58,6 @@ type ThreadChatServicer interface {
 	GetMessageList(ctx context.Context, threadChatId string) ([]domain.ThreadChatMessage, error)
 }
 
-// done
 type AccountRepositorer interface {
 	GetOrCreateByAuthUserId(ctx context.Context, account domain.Account) (domain.Account, bool, error)
 	GetByAuthUserId(ctx context.Context, authUserId string) (domain.Account, error)
@@ -69,20 +66,18 @@ type AccountRepositorer interface {
 	GetAccountByToken(ctx context.Context, token string) (domain.Account, error)
 }
 
-// done
 type WorkspaceRepositorer interface {
 	CreateWorkspace(ctx context.Context, w domain.Workspace) (domain.Workspace, error)
+	GetWorkspaceById(ctx context.Context, workspaceId string) (domain.Workspace, error)
 	GetByAccountWorkspaceId(ctx context.Context, accountId string, workspaceId string) (domain.Workspace, error)
 	GetListByAccountId(ctx context.Context, accountId string) ([]domain.Workspace, error)
 	GetOrCreateLabel(ctx context.Context, l domain.Label) (domain.Label, bool, error)
 }
 
-// done
 type MemberRepositorer interface {
 	GetByAccountWorkspaceId(ctx context.Context, accountId string, workspaceId string) (domain.Member, error)
 }
 
-// done
 type CustomerRepositorer interface {
 	GetByWorkspaceCustomerId(ctx context.Context, workspaceId string, customerId string) (domain.Customer, error)
 	GetWorkspaceCustomerByExtId(ctx context.Context, workspaceId string, externalId string) (domain.Customer, error)

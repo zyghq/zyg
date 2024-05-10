@@ -1,4 +1,4 @@
-package handler
+package xhandler
 
 import (
 	"database/sql"
@@ -6,31 +6,28 @@ import (
 	"time"
 )
 
-type PATReqPayload struct {
-	Name        string  `json:"name"`
-	Description *string `json:"description"`
-}
-
-type WorkspaceReqPayload struct {
-	Name string `json:"name"`
-}
-
-type CrLabelReqPayload struct {
-	Name string `json:"name"`
-	Icon string `json:"icon"`
-}
-
-type CrLabelRespPayload struct {
-	LabelId   string `json:"labelId"`
-	Name      string `json:"name"`
-	Icon      string `json:"icon"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+type ThChatReqPayload struct {
+	Message string `json:"message"`
 }
 
 type ThCustomerRespPayload struct {
 	CustomerId string
 	Name       sql.NullString
+}
+
+func (c ThCustomerRespPayload) MarshalJSON() ([]byte, error) {
+	var name *string
+	if c.Name.Valid {
+		name = &c.Name.String
+	}
+	aux := &struct {
+		CustomerId string  `json:"customerId"`
+		Name       *string `json:"name"`
+	}{
+		CustomerId: c.CustomerId,
+		Name:       name,
+	}
+	return json.Marshal(aux)
 }
 
 type ThMemberRespPayload struct {
@@ -49,21 +46,6 @@ func (m ThMemberRespPayload) MarshalJSON() ([]byte, error) {
 	}{
 		MemberId: m.MemberId,
 		Name:     name,
-	}
-	return json.Marshal(aux)
-}
-
-func (c ThCustomerRespPayload) MarshalJSON() ([]byte, error) {
-	var name *string
-	if c.Name.Valid {
-		name = &c.Name.String
-	}
-	aux := &struct {
-		CustomerId string  `json:"customerId"`
-		Name       *string `json:"name"`
-	}{
-		CustomerId: c.CustomerId,
-		Name:       name,
 	}
 	return json.Marshal(aux)
 }
@@ -157,38 +139,4 @@ func (thresp ThChatRespPayload) MarshalJSON() ([]byte, error) {
 		Messages:     thresp.Messages,
 	}
 	return json.Marshal(aux)
-}
-
-type ThChatReqPayload struct {
-	Message string `json:"message"`
-}
-
-type SetThChatLabelReqPayload struct {
-	Name string `json:"name"`
-	Icon string `json:"icon"`
-}
-
-type SetThChatLabelRespPayload struct {
-	ThreadChatLabelId string    `json:"threadChatLabelId"`
-	ThreadChatId      string    `json:"threadChatId"`
-	AddedBy           string    `json:"addedBy"`
-	CreatedAt         time.Time `json:"createdAt"`
-	UpdatedAt         time.Time `json:"updatedAt"`
-	CrLabelRespPayload
-}
-
-type CustomerTIReqPayload struct {
-	Create   bool    `json:"create"`
-	CreateBy *string `json:"createBy"` // optional
-	Customer struct {
-		ExternalId *string `json:"externalId"` // optional
-		Email      *string `json:"email"`      // optional
-		Phone      *string `json:"phone"`      // optional
-	} `json:"customer"`
-}
-
-type CustomerTIRespPayload struct {
-	Create     bool   `json:"create"`
-	CustomerId string `json:"customerId"`
-	Jwt        string `json:"jwt"`
 }

@@ -2,11 +2,13 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/zyghq/zyg"
+	"github.com/zyghq/zyg/internal/adapters/repository"
 	"github.com/zyghq/zyg/internal/domain"
 	"github.com/zyghq/zyg/internal/ports"
 )
@@ -33,8 +35,13 @@ func (s *CustomerService) GetWorkspaceCustomer(ctx context.Context, workspaceId 
 func (s *CustomerService) GetWorkspaceCustomerWithExternalId(ctx context.Context, workspaceId string, externalId string,
 ) (domain.Customer, error) {
 	customer, err := s.repo.GetWorkspaceCustomerByExtId(ctx, workspaceId, externalId)
+
+	if errors.Is(err, repository.ErrEmpty) {
+		return customer, ErrCustomerNotFound
+	}
+
 	if err != nil {
-		return customer, err
+		return customer, ErrCustomer
 	}
 	return customer, nil
 }
@@ -57,31 +64,7 @@ func (s *CustomerService) GetWorkspaceCustomerWithPhone(ctx context.Context, wor
 	return customer, nil
 }
 
-func (s *CustomerService) InitWorkspaceCustomerWithExternalId(ctx context.Context, c domain.Customer) (domain.Customer, bool, error) {
-	customer, created, err := s.repo.GetOrCreateCustomerByExtId(ctx, c)
-	if err != nil {
-		return customer, created, err
-	}
-	return customer, created, nil
-}
-
-func (s *CustomerService) InitWorkspaceCustomerWithEmail(ctx context.Context, c domain.Customer) (domain.Customer, bool, error) {
-	customer, created, err := s.repo.GetOrCreateCustomerByEmail(ctx, c)
-	if err != nil {
-		return customer, created, err
-	}
-	return customer, created, nil
-}
-
-func (s *CustomerService) InitWorkspaceCustomerWithPhone(ctx context.Context, c domain.Customer) (domain.Customer, bool, error) {
-	customer, created, err := s.repo.GetOrCreateCustomerByPhone(ctx, c)
-	if err != nil {
-		return customer, created, err
-	}
-	return customer, created, nil
-}
-
-func (s *CustomerService) IssueJwt(ctx context.Context, c domain.Customer) (string, error) {
+func (s *CustomerService) IssueJwt(c domain.Customer) (string, error) {
 	var externalId string
 	var email string
 	var phone string

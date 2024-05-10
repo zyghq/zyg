@@ -166,65 +166,83 @@ func AuthenticateCustomer(ctx context.Context, db *pgxpool.Pool, r *http.Request
 func NewHandler(ctx context.Context, db *pgxpool.Pool) http.Handler {
 	mux := http.NewServeMux()
 
+	// done
 	mux.HandleFunc("GET /{$}", handleGetIndex)
 
+	// done
 	// authenticate the account with the provided credentials.
 	// fetches the account or makes a new one if does not exist.
 	mux.Handle("POST /accounts/auth/{$}", handleGetOrCreateAuthAccount(ctx, db))
 
+	// done
 	// create a new PAT for the authenticated account.
 	// PATs are personal access tokens usable for authentication.
 	mux.Handle("POST /pats/{$}", handleCreatePAT(ctx, db))
+	// done
 	// fetch list of PATs for the authenticated account.
 	mux.Handle("GET /pats/{$}", handleGetPATs(ctx, db))
 
 	// create a new workspace for the authenticated account.
+	// done
 	mux.Handle("POST /workspaces/{$}", handleCreateWorkspace(ctx, db))
 
 	// fetch list of workspaces for the authenticated account.
+	// done
 	mux.Handle("GET /workspaces/{$}", handleGetWorkspaces(ctx, db))
 
 	// feth the workspace.
+	// done
 	mux.Handle("GET /workspaces/{workspaceId}/{$}", handleGetWorkspace(ctx, db))
 
 	// fetches or creates a new label for the workspace.
+	// done
 	mux.Handle("POST /workspaces/{workspaceId}/labels/{$}",
 		handleGetOrCreateWorkspaceLabel(ctx, db))
 
 	// fetch list of thread chats for the workspace.
+	// done
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{$}",
 		handleGetThreadChats(ctx, db))
 
 	// post message to the thread chat in the workspace.
+	// done
 	mux.Handle("POST /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
 		handleCreateMemberThChatMessage(ctx, db))
 
 	// set label to the thread chat in the workspace.
+	// done
 	mux.Handle("PUT /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
 		handleSetThreadChatLabel(ctx, db))
 
 	// fetch list of attached labels for thread chat in the workspace.
+	// done
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
 		handleGetThreadChatLabels(ctx, db))
 
 	// issue a new token for the workspace customer.
+	// done
 	mux.Handle("POST /workspaces/{workspaceId}/x/tokens/{$}",
 		handleCustomerTokenIssue(ctx, db))
 
 	// fetch the authenticated customer identity.
+	// done
 	mux.Handle("GET /x/identity/{$}", handleGetCustomer(ctx, db))
 
 	// customer create initiated thread chat.
+	// done
 	mux.Handle("POST /x/threads/chat/{$}", handleInitCustomerThreadChat(ctx, db))
 
 	// customer fetch list of thread chats.
+	// done
 	mux.Handle("GET /x/threads/chat/{$}", handleGetCustomerThreadChats(ctx, db))
 
 	// customer post message for thread chat.
+	// later
 	mux.Handle("POST /x/threads/chat/{threadId}/messages/{$}",
 		handleCreateCustomerThChatMessage(ctx, db))
 
 	// customer fetch list of messages in thread chat.
+	// later
 	mux.Handle("GET /x/threads/chat/{threadId}/messages/{$}",
 		handleGetCustomerThChatMessages(ctx, db))
 
