@@ -53,8 +53,8 @@ type ThreadChatServicer interface {
 	ExistInWorkspace(ctx context.Context, workspaceId string, threadChatId string) (bool, error)
 	AddLabel(ctx context.Context, thl domain.ThreadChatLabel) (domain.ThreadChatLabel, bool, error)
 	GetLabelList(ctx context.Context, threadChatId string) ([]domain.ThreadChatLabelled, error)
-	CreateCustomerMessage(ctx context.Context, th domain.ThreadChat, c domain.Customer, msg string) (domain.ThreadChatMessage, error)
-	CreateMemberMessage(ctx context.Context, th domain.ThreadChat, m domain.Member, msg string) (domain.ThreadChatMessage, error)
+	CreateCustomerMessage(ctx context.Context, th domain.ThreadChat, c *domain.Customer, msg string) (domain.ThreadChatMessage, error)
+	CreateMemberMessage(ctx context.Context, th domain.ThreadChat, m *domain.Member, msg string) (domain.ThreadChatMessage, error)
 	GetMessageList(ctx context.Context, threadChatId string) ([]domain.ThreadChatMessage, error)
 }
 

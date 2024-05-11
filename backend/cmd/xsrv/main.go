@@ -83,8 +83,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/zyghq/zyg"
-	"github.com/zyghq/zyg/internal/adapters/handler"
 	"github.com/zyghq/zyg/internal/adapters/repository"
+	"github.com/zyghq/zyg/internal/adapters/xhandler"
 	"github.com/zyghq/zyg/internal/services"
 )
 
@@ -119,24 +119,19 @@ func run(ctx context.Context) error {
 	slog.Info("database", slog.Any("dbtime", tm.Format(time.RFC1123)))
 
 	// init respective stores
-	accountStore := repository.NewAccountDB(db)
 	workspaceStore := repository.NewWorkspaceDB(db)
 	memberStore := repository.NewMemberDB(db)
 	customerStore := repository.NewCustomerDB(db)
 	threadChatStore := repository.NewThreadChatDB(db)
 
 	// init respective services
-	authService := services.NewAuthService(accountStore)
-	accountService := services.NewAccountService(accountStore)
-	workspaceService := services.NewWorkspaceService(workspaceStore, memberStore)
+	workspaceService := services.NewWorkspaceService(workspaceStore, memberStore, customerStore)
 	customerService := services.NewCustomerService(customerStore)
 	threadChatService := services.NewThreadChatService(threadChatStore)
 
 	// init server
-	srv := handler.NewServer(
+	srv := xhandler.NewServer(
 		ctx,
-		authService,
-		accountService,
 		workspaceService,
 		customerService,
 		threadChatService,

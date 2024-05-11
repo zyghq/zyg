@@ -200,7 +200,7 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 	}
 
 	// create thread chat message
-	thm, err := h.ths.CreateMemberMessage(ctx, thread, member, message.Message)
+	thm, err := h.ths.CreateMemberMessage(ctx, thread, &member, message.Message)
 
 	if err != nil {
 		slog.Error(

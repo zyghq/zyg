@@ -134,7 +134,7 @@ func (s *ThreadChatService) GetLabelList(ctx context.Context, threadChatId strin
 	return labels, nil
 }
 
-func (s *ThreadChatService) CreateCustomerMessage(ctx context.Context, th domain.ThreadChat, c domain.Customer, msg string,
+func (s *ThreadChatService) CreateCustomerMessage(ctx context.Context, th domain.ThreadChat, c *domain.Customer, msg string,
 ) (domain.ThreadChatMessage, error) {
 	message, err := s.repo.CreateCustomerThChatMessage(ctx, th.ThreadChatId, c.CustomerId, msg)
 
@@ -149,7 +149,7 @@ func (s *ThreadChatService) CreateCustomerMessage(ctx context.Context, th domain
 	return message, nil
 }
 
-func (s *ThreadChatService) CreateMemberMessage(ctx context.Context, th domain.ThreadChat, m domain.Member, msg string,
+func (s *ThreadChatService) CreateMemberMessage(ctx context.Context, th domain.ThreadChat, m *domain.Member, msg string,
 ) (domain.ThreadChatMessage, error) {
 	message, err := s.repo.CreateMemberThChatMessage(ctx, th.ThreadChatId, m.MemberId, msg)
 

@@ -15,7 +15,11 @@ type WorkspaceService struct {
 	customerRepo  ports.CustomerRepositorer
 }
 
-func NewWorkspaceService(workspaceRepo ports.WorkspaceRepositorer, memberRepo ports.MemberRepositorer) *WorkspaceService {
+func NewWorkspaceService(
+	workspaceRepo ports.WorkspaceRepositorer,
+	memberRepo ports.MemberRepositorer,
+	customerRepo ports.CustomerRepositorer,
+) *WorkspaceService {
 	return &WorkspaceService{
 		workspaceRepo: workspaceRepo,
 		memberRepo:    memberRepo,
