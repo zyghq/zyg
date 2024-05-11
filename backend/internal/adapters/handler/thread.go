@@ -18,13 +18,14 @@ type ThreadChatHandler struct {
 }
 
 func NewThreadChatHandler(ws ports.WorkspaceServicer, ths ports.ThreadChatServicer) *ThreadChatHandler {
-	return &ThreadChatHandler{ths: ths}
+	return &ThreadChatHandler{ws: ws, ths: ths}
 }
 
 func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.Request, account *domain.Account) {
 	workspaceId := r.PathValue("workspaceId")
 
 	ctx := r.Context()
+
 	workspace, err := h.ws.GetUserWorkspace(ctx, account.AccountId, workspaceId)
 
 	// not found workspace

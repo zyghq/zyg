@@ -32,7 +32,7 @@ func AuthenticateAccount(
 ) (domain.Account, error) {
 	var account domain.Account
 	if scheme == "token" {
-		slog.Info("authenticate account with PAT...")
+		slog.Info("authenticate with PAT")
 		account, err := authz.GetPatAccount(ctx, cred)
 		if err != nil {
 			return domain.Account{}, fmt.Errorf("failed to authenticate got error: %v", err)
@@ -40,7 +40,7 @@ func AuthenticateAccount(
 		slog.Info("authenticated account with PAT", slog.String("accountId", account.AccountId))
 		return account, nil
 	} else if scheme == "bearer" {
-		slog.Info("authenticate account with JWT...")
+		slog.Info("authenticate with JWT")
 		hmacSecret, err := zyg.GetEnv("SUPABASE_JWT_SECRET")
 		if err != nil {
 			return domain.Account{}, fmt.Errorf("failed to get env SUPABASE_JWT_SECRET got error: %v", err)

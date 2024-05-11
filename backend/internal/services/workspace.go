@@ -57,7 +57,9 @@ func (s *WorkspaceService) GetWorkspace(ctx context.Context, workspaceId string)
 	return workspace, nil
 }
 
-func (s *WorkspaceService) GetUserWorkspace(ctx context.Context, accountId string, workspaceId string) (domain.Workspace, error) {
+func (s *WorkspaceService) GetUserWorkspace(
+	ctx context.Context, accountId string, workspaceId string,
+) (domain.Workspace, error) {
 	workspace, err := s.workspaceRepo.GetByAccountWorkspaceId(ctx, accountId, workspaceId)
 
 	if errors.Is(err, repository.ErrQuery) {
