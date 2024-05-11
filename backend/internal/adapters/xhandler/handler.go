@@ -13,7 +13,6 @@ import (
 
 	"github.com/rs/cors"
 	"github.com/zyghq/zyg"
-	"github.com/zyghq/zyg/internal/auth"
 	"github.com/zyghq/zyg/internal/domain"
 	"github.com/zyghq/zyg/internal/ports"
 	"github.com/zyghq/zyg/internal/services"
@@ -42,7 +41,7 @@ func AuthenticateCustomer(
 			return customer, fmt.Errorf("failed to get env SUPABASE_JWT_SECRET with error: %v", err)
 		}
 
-		cc, err := auth.ParseCustomerJWTToken(cred, []byte(hmacSecret))
+		cc, err := services.ParseCustomerJWTToken(cred, []byte(hmacSecret))
 		if err != nil {
 			return customer, fmt.Errorf("failed to parse JWT token with error: %v", err)
 		}

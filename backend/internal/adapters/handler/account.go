@@ -7,9 +7,9 @@ import (
 	"net/http"
 
 	"github.com/zyghq/zyg"
-	"github.com/zyghq/zyg/internal/auth"
 	"github.com/zyghq/zyg/internal/domain"
 	"github.com/zyghq/zyg/internal/ports"
+	"github.com/zyghq/zyg/internal/services"
 )
 
 type AccountHandler struct {
@@ -48,7 +48,7 @@ func (h *AccountHandler) handleGetOrCreateAccount(w http.ResponseWriter, r *http
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
-		ac, err := auth.ParseJWTToken(cred, []byte(hmacSecret))
+		ac, err := services.ParseJWTToken(cred, []byte(hmacSecret))
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
@@ -60,7 +60,7 @@ func (h *AccountHandler) handleGetOrCreateAccount(w http.ResponseWriter, r *http
 			return
 		}
 		// initialize auth user account by subject.
-		account := domain.Account{AuthUserId: sub, Email: ac.Email, Provider: auth.DefaultAuthProvider}
+		account := domain.Account{AuthUserId: sub, Email: ac.Email, Provider: services.DefaultAuthProvider}
 		account, isCreated, err := h.as.InitiateAccount(ctx, account)
 		if err != nil {
 			slog.Error(

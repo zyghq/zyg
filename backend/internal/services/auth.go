@@ -1,10 +1,14 @@
-package auth
+package services
 
 import (
+	"context"
+	"errors"
 	"fmt"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/zyghq/zyg/internal/adapters/repository"
 	"github.com/zyghq/zyg/internal/domain"
+	"github.com/zyghq/zyg/internal/ports"
 )
 
 const DefaultAuthProvider string = "supabase"
@@ -40,4 +44,49 @@ func ParseCustomerJWTToken(token string, hmacSecret []byte) (cc domain.CustomerJ
 		return *claims, nil
 	}
 	return cc, fmt.Errorf("error parsing jwt token: %v", token)
+}
+
+type AuthService struct {
+	repo ports.AccountRepositorer
+}
+
+func NewAuthService(repo ports.AccountRepositorer) *AuthService {
+	return &AuthService{
+		repo: repo,
+	}
+}
+
+func (s *AuthService) GetAuthUser(ctx context.Context, authUserId string) (domain.Account, error) {
+	account, err := s.repo.GetByAuthUserId(ctx, authUserId)
+
+	if errors.Is(err, repository.ErrQuery) {
+		return account, ErrAccount
+	}
+
+	if errors.Is(err, repository.ErrEmpty) {
+		return account, ErrAccountNotFound
+	}
+
+	if err != nil {
+		return account, err
+	}
+
+	return account, nil
+}
+
+func (s *AuthService) GetPatAccount(ctx context.Context, token string) (domain.Account, error) {
+	account, err := s.repo.GetAccountByToken(ctx, token)
+
+	if errors.Is(err, repository.ErrQuery) {
+		return account, ErrAccount
+	}
+
+	if errors.Is(err, repository.ErrEmpty) {
+		return account, ErrAccountNotFound
+	}
+
+	if err != nil {
+		return account, err
+	}
+	return account, nil
 }
