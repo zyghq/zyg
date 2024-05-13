@@ -13,7 +13,7 @@ func (m *MemberDB) GetByAccountWorkspaceId(ctx context.Context, accountId string
 	var member domain.Member
 	err := m.db.QueryRow(ctx, `SELECT
 		workspace_id, account_id, member_id, name, role, created_at, updated_at
-		FROM member WHERE AND account_id = $1 AND workspace_id = $2`, accountId, workspaceId).Scan(
+		FROM member WHERE account_id = $1 AND workspace_id = $2`, accountId, workspaceId).Scan(
 		&member.WorkspaceId, &member.AccountId,
 		&member.MemberId, &member.Name, &member.Role,
 		&member.CreatedAt, &member.UpdatedAt,

@@ -66,7 +66,7 @@ func (h *WorkspaceHandler) handleCreateWorkspace(w http.ResponseWriter, r *http.
 func (h *WorkspaceHandler) handleGetWorkspaces(w http.ResponseWriter, r *http.Request, account *domain.Account) {
 	ctx := r.Context()
 
-	workspaces, err := h.ws.GetUserWorkspaceList(ctx, account.AccountId)
+	workspaces, err := h.ws.UserWorkspaceList(ctx, account.AccountId)
 
 	if err != nil {
 		slog.Error(
@@ -96,7 +96,7 @@ func (h *WorkspaceHandler) handleGetWorkspace(w http.ResponseWriter, r *http.Req
 	ctx := r.Context()
 	workspaceId := r.PathValue("workspaceId")
 
-	workspace, err := h.ws.GetUserWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.UserWorkspace(ctx, account.AccountId, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		slog.Warn(
 			"workspace not found or does not exist",
@@ -146,7 +146,7 @@ func (h *WorkspaceHandler) handleGetOrCreateWorkspaceLabel(w http.ResponseWriter
 
 	ctx := r.Context()
 
-	workspace, err := h.ws.GetUserWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.UserWorkspace(ctx, account.AccountId, workspaceId)
 
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		slog.Warn(
@@ -248,7 +248,7 @@ func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *ht
 
 	workspaceId := r.PathValue("workspaceId")
 
-	workspace, err := h.ws.GetUserWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.UserWorkspace(ctx, account.AccountId, workspaceId)
 
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		slog.Warn(

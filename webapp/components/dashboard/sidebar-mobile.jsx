@@ -1,33 +1,13 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import * as React from "react";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeftIcon,
-  ChatBubbleIcon,
-  ChevronRightIcon,
-} from "@radix-ui/react-icons";
-import { cn } from "@/lib/utils";
+
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import {
-  CaretSortIcon,
-  GearIcon,
-  ReaderIcon,
-  OpenInNewWindowIcon,
-  ExitIcon,
-  WidthIcon,
-} from "@radix-ui/react-icons";
-import {
-  LifeBuoyIcon,
-  BugIcon,
-  UsersIcon,
-  WebhookIcon,
-  TagsIcon,
-} from "lucide-react";
-import { Icons } from "@/components/icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,10 +16,37 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
-export function SidebarMobile() {
+import { Icons } from "@/components/icons";
+
+import {
+  ArrowLeftIcon,
+  ChatBubbleIcon,
+  ChevronRightIcon,
+} from "@radix-ui/react-icons";
+import {
+  CaretSortIcon,
+  ExitIcon,
+  GearIcon,
+  OpenInNewWindowIcon,
+  ReaderIcon,
+  WidthIcon,
+} from "@radix-ui/react-icons";
+
+import {
+  BugIcon,
+  LifeBuoyIcon,
+  TagsIcon,
+  UsersIcon,
+  WebhookIcon,
+} from "lucide-react";
+
+export function SidebarMobile({ workspaceId, workspaceName, metrics }) {
   const [open, setOpen] = React.useState(false);
+
+  const { count } = metrics;
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -86,7 +93,7 @@ export function SidebarMobile() {
             <Button variant="outline" className="flex justify-between">
               <div className="flex justify-start">
                 <Icons.logo className="mr-2 h-5 w-5" />
-                <div className="my-auto">ZygHQ</div>
+                <div className="my-auto">{workspaceName}</div>
               </div>
               <CaretSortIcon className="my-auto h-4 w-4" />
             </Button>
@@ -129,24 +136,19 @@ export function SidebarMobile() {
             <Button
               variant="ghost"
               asChild
-              // className={`w-full flex justify-between ${
-              //   isActive(`/${slug}/`, pathname)
-              //     ? "bg-indigo-100 hover:bg-indigo-200"
-              //     : ""
-              // }`}
-              className="flex w-full justify-between bg-indigo-100 hover:bg-indigo-200"
+              className="flex w-full justify-between bg-indigo-100 hover:bg-indigo-200 dark:bg-accent dark:text-accent-foreground"
             >
-              <Link href={`/`}>
+              <MobileLink href={`/${workspaceId}/`} onOpenChange={setOpen}>
                 <div className="flex">
                   <ChatBubbleIcon className="my-auto mr-2 h-4 w-4" />
                   <div className="my-auto">Threads</div>
                 </div>
-                <Badge className="my-auto bg-indigo-500 font-mono hover:bg-indigo-700">
-                  18
+                <Badge className="my-auto bg-indigo-500 font-mono text-white hover:bg-indigo-700">
+                  {count.active}
                 </Badge>
-              </Link>
+              </MobileLink>
             </Button>
-            <Button
+            {/* <Button
               variant="ghost"
               asChild
               className="flex w-full justify-between"
@@ -158,7 +160,7 @@ export function SidebarMobile() {
                 </div>
                 <Badge className="my-auto bg-zinc-400 font-mono">37</Badge>
               </MobileLink>
-            </Button>
+            </Button> */}
           </div>
           <div className="mb-3 mt-4 text-xs text-zinc-500">Browse</div>
           <div className="flex flex-col space-y-3">

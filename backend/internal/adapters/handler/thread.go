@@ -26,7 +26,7 @@ func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.
 
 	ctx := r.Context()
 
-	workspace, err := h.ws.GetUserWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.UserWorkspace(ctx, account.AccountId, workspaceId)
 
 	// not found workspace
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
@@ -49,8 +49,244 @@ func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// TODO: rename this to GetWorkspaceThreadList
-	threads, err := h.ths.GetWorkspaceList(ctx, workspace.WorkspaceId)
+	threads, err := h.ths.GetWorkspaceThreadList(ctx, workspace.WorkspaceId)
+	if err != nil {
+		slog.Error(
+			"failed to get list of thread chats for workspace "+
+				"something went wrong",
+			"workspaceId", workspace.WorkspaceId,
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	response := make([]ThChatRespPayload, 0, 100)
+	for _, th := range threads {
+		messages := make([]ThChatMessageRespPayload, 0, 1)
+
+		var threadAssigneeRepr *ThMemberRespPayload
+		var msgCustomerRepr *ThCustomerRespPayload
+		var msgMemberRepr *ThMemberRespPayload
+
+		// for thread
+		threadCustomerRepr := ThCustomerRespPayload{
+			CustomerId: th.ThreadChat.CustomerId,
+			Name:       th.ThreadChat.CustomerName,
+		}
+
+		// for thread
+		if th.ThreadChat.AssigneeId.Valid {
+			threadAssigneeRepr = &ThMemberRespPayload{
+				MemberId: th.ThreadChat.AssigneeId.String,
+				Name:     th.ThreadChat.AssigneeName,
+			}
+		}
+
+		// for thread message - either of them
+		if th.Message.CustomerId.Valid {
+			msgCustomerRepr = &ThCustomerRespPayload{
+				CustomerId: th.Message.CustomerId.String,
+				Name:       th.Message.CustomerName,
+			}
+		} else if th.Message.MemberId.Valid {
+			msgMemberRepr = &ThMemberRespPayload{
+				MemberId: th.Message.MemberId.String,
+				Name:     th.Message.MemberName,
+			}
+		}
+
+		message := ThChatMessageRespPayload{
+			ThreadChatId:        th.ThreadChat.ThreadChatId,
+			ThreadChatMessageId: th.Message.ThreadChatMessageId,
+			Body:                th.Message.Body,
+			Sequence:            th.Message.Sequence,
+			Customer:            msgCustomerRepr,
+			Member:              msgMemberRepr,
+			CreatedAt:           th.Message.CreatedAt,
+			UpdatedAt:           th.Message.UpdatedAt,
+		}
+		messages = append(messages, message)
+		response = append(response, ThChatRespPayload{
+			ThreadChatId: th.ThreadChat.ThreadChatId,
+			Sequence:     th.ThreadChat.Sequence,
+			Status:       th.ThreadChat.Status,
+			Read:         th.ThreadChat.Read,
+			Replied:      th.ThreadChat.Replied,
+			Customer:     threadCustomerRepr,
+			Assignee:     threadAssigneeRepr,
+			CreatedAt:    th.ThreadChat.CreatedAt,
+			UpdatedAt:    th.ThreadChat.UpdatedAt,
+			Messages:     messages,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		slog.Error(
+			"failed to encode thread chats to json "+
+				"might need to check the json encoding defn",
+			"workspaceId", workspace.WorkspaceId,
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *ThreadChatHandler) handleGetMyThreadChats(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+	workspaceId := r.PathValue("workspaceId")
+
+	ctx := r.Context()
+
+	workspace, err := h.ws.UserWorkspace(ctx, account.AccountId, workspaceId)
+
+	// not found workspace
+	if errors.Is(err, services.ErrWorkspaceNotFound) {
+		slog.Warn(
+			"workspace not found or does not exist for account",
+			"accountId", account.AccountId, "workspaceId", workspaceId,
+		)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	// error workspace
+	if err != nil {
+		slog.Error(
+			"failed to get workspace by id "+
+				"something went wrong",
+			"accountId", account.AccountId, "workspaceId", workspaceId,
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	member, err := h.ws.WorkspaceMember(ctx, account.AccountId, workspace.WorkspaceId)
+	// error workspace member
+	if err != nil {
+		slog.Error(
+			"failed to get member "+
+				"something went wrong",
+			"accountId", account.AccountId, "workspaceId", workspace.WorkspaceId,
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+
+	}
+
+	threads, err := h.ths.WorkspaceMemberAssignedThreadList(ctx, workspace.WorkspaceId, member.MemberId)
+	if err != nil {
+		slog.Error(
+			"failed to get list of thread chats for workspace "+
+				"something went wrong",
+			"workspaceId", workspace.WorkspaceId,
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	response := make([]ThChatRespPayload, 0, 100)
+	for _, th := range threads {
+		messages := make([]ThChatMessageRespPayload, 0, 1)
+
+		var threadAssigneeRepr *ThMemberRespPayload
+		var msgCustomerRepr *ThCustomerRespPayload
+		var msgMemberRepr *ThMemberRespPayload
+
+		// for thread
+		threadCustomerRepr := ThCustomerRespPayload{
+			CustomerId: th.ThreadChat.CustomerId,
+			Name:       th.ThreadChat.CustomerName,
+		}
+
+		// for thread
+		if th.ThreadChat.AssigneeId.Valid {
+			threadAssigneeRepr = &ThMemberRespPayload{
+				MemberId: th.ThreadChat.AssigneeId.String,
+				Name:     th.ThreadChat.AssigneeName,
+			}
+		}
+
+		// for thread message - either of them
+		if th.Message.CustomerId.Valid {
+			msgCustomerRepr = &ThCustomerRespPayload{
+				CustomerId: th.Message.CustomerId.String,
+				Name:       th.Message.CustomerName,
+			}
+		} else if th.Message.MemberId.Valid {
+			msgMemberRepr = &ThMemberRespPayload{
+				MemberId: th.Message.MemberId.String,
+				Name:     th.Message.MemberName,
+			}
+		}
+
+		message := ThChatMessageRespPayload{
+			ThreadChatId:        th.ThreadChat.ThreadChatId,
+			ThreadChatMessageId: th.Message.ThreadChatMessageId,
+			Body:                th.Message.Body,
+			Sequence:            th.Message.Sequence,
+			Customer:            msgCustomerRepr,
+			Member:              msgMemberRepr,
+			CreatedAt:           th.Message.CreatedAt,
+			UpdatedAt:           th.Message.UpdatedAt,
+		}
+		messages = append(messages, message)
+		response = append(response, ThChatRespPayload{
+			ThreadChatId: th.ThreadChat.ThreadChatId,
+			Sequence:     th.ThreadChat.Sequence,
+			Status:       th.ThreadChat.Status,
+			Read:         th.ThreadChat.Read,
+			Replied:      th.ThreadChat.Replied,
+			Customer:     threadCustomerRepr,
+			Assignee:     threadAssigneeRepr,
+			CreatedAt:    th.ThreadChat.CreatedAt,
+			UpdatedAt:    th.ThreadChat.UpdatedAt,
+			Messages:     messages,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		slog.Error(
+			"failed to encode thread chats to json "+
+				"might need to check the json encoding defn",
+			"workspaceId", workspace.WorkspaceId,
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *ThreadChatHandler) handleGetUnassignedThreadChats(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+	workspaceId := r.PathValue("workspaceId")
+
+	ctx := r.Context()
+
+	workspace, err := h.ws.UserWorkspace(ctx, account.AccountId, workspaceId)
+
+	// not found workspace
+	if errors.Is(err, services.ErrWorkspaceNotFound) {
+		slog.Warn(
+			"workspace not found or does not exist for account",
+			"accountId", account.AccountId, "workspaceId", workspaceId,
+		)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	// error workspace
+	if err != nil {
+		slog.Error(
+			"failed to get workspace by id "+
+				"something went wrong",
+			"accountId", account.AccountId, "workspaceId", workspaceId,
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	threads, err := h.ths.WorkspaceUnassignedThreadList(ctx, workspace.WorkspaceId)
 	if err != nil {
 		slog.Error(
 			"failed to get list of thread chats for workspace "+
@@ -154,7 +390,7 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 	ctx := r.Context()
 
 	// check member against workspace
-	member, err := h.ws.GetWorkspaceMember(ctx, account.AccountId, workspaceId)
+	member, err := h.ws.WorkspaceMember(ctx, account.AccountId, workspaceId)
 
 	if errors.Is(err, services.ErrMemberNotFound) {
 		slog.Warn(
@@ -491,6 +727,94 @@ func (h *ThreadChatHandler) handleGetThreadChatLabels(w http.ResponseWriter, r *
 			"failed to encode labels to json "+
 				"might need to check the json encoding defn",
 			"threadChatId", threadId,
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *ThreadChatHandler) handleGetThreadChatMetrics(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+	workspaceId := r.PathValue("workspaceId")
+	ctx := r.Context()
+
+	workspace, err := h.ws.UserWorkspace(ctx, account.AccountId, workspaceId)
+
+	if errors.Is(err, services.ErrWorkspaceNotFound) {
+		slog.Warn(
+			"workspace not found or does not exist for account",
+			"accountId", account.AccountId, "workspaceId", workspaceId,
+		)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		slog.Error(
+			"failed to get workspace by id "+
+				"something went wrong",
+			"accountId", account.AccountId, "workspaceId", workspaceId,
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	member, err := h.ws.WorkspaceMember(ctx, account.AccountId, workspace.WorkspaceId)
+	if err != nil {
+		slog.Error(
+			"failed to get member "+
+				"something went wrong",
+			"accountId", account.AccountId, "workspaceId", workspace.WorkspaceId,
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	metrics, err := h.ths.GenerateMemberThreadMetrics(ctx, workspace.WorkspaceId, member.MemberId)
+	if err != nil {
+		slog.Error(
+			"failed to generate thread chat metrics "+
+				"something went wrong",
+			"workspaceId", workspace.WorkspaceId,
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	var label ThreadLabelCountRespPayload
+	labels := make([]ThreadLabelCountRespPayload, 0, 100)
+
+	for _, l := range metrics.ThreadLabelMetrics {
+		label = ThreadLabelCountRespPayload{
+			LabelId: l.LabelId,
+			Name:    l.Name,
+			Icon:    l.Icon,
+			Count:   l.Count,
+		}
+		labels = append(labels, label)
+	}
+
+	count := ThreadCountRespPayload{
+		ActiveCount:   metrics.ActiveCount,
+		DoneCount:     metrics.DoneCount,
+		TodoCount:     metrics.TodoCount,
+		SnoozedCount:  metrics.SnoozedCount,
+		AssignedToMe:  metrics.MeCount,
+		Unassigned:    metrics.UnAssignedCount,
+		OtherAssigned: metrics.OtherAssignedCount,
+		Labels:        labels,
+	}
+
+	resp := ThreadMetricsRespPayload{
+		Count: count,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error(
+			"failed to encode thread metrics to json "+
+				"might need to check the json encoding defn",
+			"workspaceId", workspace.WorkspaceId,
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return

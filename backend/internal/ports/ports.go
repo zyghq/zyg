@@ -8,15 +8,15 @@ import (
 
 type AccountServicer interface {
 	InitiateAccount(ctx context.Context, a domain.Account) (domain.Account, bool, error)
-	GetAuthUser(ctx context.Context, authUserId string) (domain.Account, error)
+	AuthUser(ctx context.Context, authUserId string) (domain.Account, error)
 	IssuePersonalAccessToken(ctx context.Context, ap domain.AccountPAT) (domain.AccountPAT, error)
-	GetUserPatList(ctx context.Context, accountId string) ([]domain.AccountPAT, error)
-	GetPatAccount(ctx context.Context, token string) (domain.Account, error)
+	UserPatList(ctx context.Context, accountId string) ([]domain.AccountPAT, error)
+	PatAccount(ctx context.Context, token string) (domain.Account, error)
 }
 
 type AuthServicer interface {
-	GetAuthUser(ctx context.Context, authUserId string) (domain.Account, error)
-	GetPatAccount(ctx context.Context, token string) (domain.Account, error)
+	CheckAuthUser(ctx context.Context, authUserId string) (domain.Account, error)
+	CheckPatAccount(ctx context.Context, token string) (domain.Account, error)
 }
 
 type CustomerAuthServicer interface {
@@ -26,10 +26,10 @@ type CustomerAuthServicer interface {
 type WorkspaceServicer interface {
 	CreateWorkspace(ctx context.Context, w domain.Workspace) (domain.Workspace, error)
 	GetWorkspace(ctx context.Context, workspaceId string) (domain.Workspace, error)
-	GetUserWorkspace(ctx context.Context, accountId string, workspaceId string) (domain.Workspace, error)
-	GetUserWorkspaceList(ctx context.Context, accountId string) ([]domain.Workspace, error)
+	UserWorkspace(ctx context.Context, accountId string, workspaceId string) (domain.Workspace, error)
+	UserWorkspaceList(ctx context.Context, accountId string) ([]domain.Workspace, error)
 	InitWorkspaceLabel(ctx context.Context, label domain.Label) (domain.Label, bool, error)
-	GetWorkspaceMember(ctx context.Context, accountId string, workspaceId string) (domain.Member, error)
+	WorkspaceMember(ctx context.Context, accountId string, workspaceId string) (domain.Member, error)
 	InitWorkspaceCustomerWithExternalId(ctx context.Context, c domain.Customer) (domain.Customer, bool, error)
 	InitWorkspaceCustomerWithEmail(ctx context.Context, c domain.Customer) (domain.Customer, bool, error)
 	InitWorkspaceCustomerWithPhone(ctx context.Context, c domain.Customer) (domain.Customer, bool, error)
@@ -49,13 +49,16 @@ type ThreadChatServicer interface {
 	GetWorkspaceCustomerList(ctx context.Context, workspaceId string, customerId string) ([]domain.ThreadChatWithMessage, error)
 	AssignMember(ctx context.Context, threadChatId string, assigneeId string) (domain.ThreadChat, error)
 	MarkReplied(ctx context.Context, threadChatId string, replied bool) (domain.ThreadChat, error)
-	GetWorkspaceList(ctx context.Context, workspaceId string) ([]domain.ThreadChatWithMessage, error)
+	GetWorkspaceThreadList(ctx context.Context, workspaceId string) ([]domain.ThreadChatWithMessage, error)
+	WorkspaceMemberAssignedThreadList(ctx context.Context, workspaceId string, memberId string) ([]domain.ThreadChatWithMessage, error)
+	WorkspaceUnassignedThreadList(ctx context.Context, workspaceId string) ([]domain.ThreadChatWithMessage, error)
 	ExistInWorkspace(ctx context.Context, workspaceId string, threadChatId string) (bool, error)
 	AddLabel(ctx context.Context, thl domain.ThreadChatLabel) (domain.ThreadChatLabel, bool, error)
 	GetLabelList(ctx context.Context, threadChatId string) ([]domain.ThreadChatLabelled, error)
 	CreateCustomerMessage(ctx context.Context, th domain.ThreadChat, c *domain.Customer, msg string) (domain.ThreadChatMessage, error)
 	CreateMemberMessage(ctx context.Context, th domain.ThreadChat, m *domain.Member, msg string) (domain.ThreadChatMessage, error)
 	GetMessageList(ctx context.Context, threadChatId string) ([]domain.ThreadChatMessage, error)
+	GenerateMemberThreadMetrics(ctx context.Context, workspaceId string, memberId string) (domain.ThreadMemberMetrics, error)
 }
 
 type AccountRepositorer interface {
@@ -95,10 +98,15 @@ type ThreadChatRepositorer interface {
 	SetAssignee(ctx context.Context, threadChatId string, assigneeId string) (domain.ThreadChat, error)
 	SetReplied(ctx context.Context, threadChatId string, replied bool) (domain.ThreadChat, error)
 	GetListByWorkspaceId(ctx context.Context, workspaceId string) ([]domain.ThreadChatWithMessage, error)
+	GetMemberAssignedListByWorkspaceId(ctx context.Context, workspaceId string, memberId string) ([]domain.ThreadChatWithMessage, error)
+	GetUnassignedListByWorkspaceId(ctx context.Context, workspaceId string) ([]domain.ThreadChatWithMessage, error)
 	IsExistByWorkspaceThreadChatId(ctx context.Context, workspaceId string, threadChatId string) (bool, error)
 	AddLabel(ctx context.Context, thl domain.ThreadChatLabel) (domain.ThreadChatLabel, bool, error)
 	GetLabelListByThreadChatId(ctx context.Context, threadChatId string) ([]domain.ThreadChatLabelled, error)
 	CreateCustomerThChatMessage(ctx context.Context, threadChatId string, customerId string, msg string) (domain.ThreadChatMessage, error)
 	CreateMemberThChatMessage(ctx context.Context, threadChatId string, memberId string, msg string) (domain.ThreadChatMessage, error)
 	GetMessageListByThreadChatId(ctx context.Context, threadChatId string) ([]domain.ThreadChatMessage, error)
+	StatusMetricsByWorkspaceId(ctx context.Context, workspaceId string) (domain.ThreadMetrics, error)
+	MemberAssigneeMetricsByWorkspaceId(ctx context.Context, workspaceId string, memberId string) (domain.ThreadAssigneeMetrics, error)
+	LabelMetricsByWorkspaceId(ctx context.Context, workspaceId string) ([]domain.ThreadLabelMetric, error)
 }

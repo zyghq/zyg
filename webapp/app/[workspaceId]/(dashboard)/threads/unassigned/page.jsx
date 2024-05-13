@@ -14,20 +14,20 @@ import { DoubleArrowUpIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
 import { CheckCircle, CircleIcon, EclipseIcon } from "lucide-react";
 
 export const metadata = {
-  title: "All Threads - Zyg AI",
+  title: "Unassigned Threads - Zyg AI",
 };
 
 /**
- * Fetches the list of thread chats for a given workspace.
+ * Fetches the list of thread chats for a given workspace and assigned member.
  *
  * @param {string} workspaceId - The ID of the workspace.
  * @param {string} [authToken=""] - The authentication token (optional).
  * @returns {Promise<{ data: any, error: Error | null }>} - The response object containing the data and error (if any).
  */
-async function getAllThreadChatListAPI(workspaceId, authToken = "") {
+async function getMyThreadChatListAPI(workspaceId, authToken = "") {
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_ZYG_URL}/workspaces/${workspaceId}/threads/chat/`,
+      `${process.env.NEXT_PUBLIC_ZYG_URL}/workspaces/${workspaceId}/threads/chat/unassigned/`,
       {
         method: "GET",
         headers: {
@@ -54,7 +54,7 @@ async function getAllThreadChatListAPI(workspaceId, authToken = "") {
   }
 }
 
-export default async function AllThreadListPage({ params }) {
+export default async function AssignedToMePage({ params }) {
   const { workspaceId } = params;
 
   const supabase = createClient();
@@ -68,7 +68,7 @@ export default async function AllThreadListPage({ params }) {
   }
 
   const threads = [];
-  const { error, data } = await getAllThreadChatListAPI(workspaceId, token);
+  const { error, data } = await getMyThreadChatListAPI(workspaceId, token);
 
   if (error) {
     return (
@@ -89,7 +89,7 @@ export default async function AllThreadListPage({ params }) {
     <React.Fragment>
       <main className="col-span-3 lg:col-span-4">
         <div className="container">
-          <div className="mb-4 mt-4 text-xl">All Threads</div>
+          <div className="mb-4 mt-4 text-xl">Unassigned Threads</div>
           <Tabs defaultValue="todo">
             <div className="mb-4 sm:flex sm:justify-between">
               <TabsList className="grid grid-cols-3">
@@ -128,7 +128,7 @@ export default async function AllThreadListPage({ params }) {
                 workspaceId={workspaceId}
                 threads={threads}
                 className="h-[calc(100dvh-14rem)]"
-                endpoint="/threads/chat/"
+                endpoint="/threads/chat/unassigned/"
               />
             </TabsContent>
             <TabsContent value="snoozed" className="m-0">

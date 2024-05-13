@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+
 import { NextResponse } from "next/server";
 
 export async function updateSession(request) {
@@ -51,7 +52,7 @@ export async function updateSession(request) {
           });
         },
       },
-    },
+    }
   );
 
   await supabase.auth.getUser();

@@ -1,24 +1,8 @@
-import Link from "next/link";
 import { cn } from "@/lib/utils";
+
+import Link from "next/link";
+
 import { Button } from "@/components/ui/button";
-import {
-  ReaderIcon,
-  OpenInNewWindowIcon,
-  ChatBubbleIcon,
-  CaretSortIcon,
-  GearIcon,
-  WidthIcon,
-  ExitIcon,
-  ChevronRightIcon,
-} from "@radix-ui/react-icons";
-import {
-  LifeBuoy as LifeBuoyIcon,
-  Bug as BugIcon,
-  Users as UsersIcon,
-  Webhook as WebhookIcon,
-  TagsIcon,
-  Building2Icon,
-} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,18 +11,44 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-export function Sidebar({ className }) {
+// import CollapsibleLabelList from "@/components/dashboard/collapsible-label-list";
+import SidebarLinks from "@/components/dashboard/sidebar-links";
+
+import {
+  AvatarIcon,
+  CaretSortIcon,
+  ChatBubbleIcon,
+  ExitIcon,
+  GearIcon,
+  OpenInNewWindowIcon,
+  ReaderIcon,
+  WidthIcon,
+} from "@radix-ui/react-icons";
+
+import {
+  Bug as BugIcon,
+  Building2Icon,
+  LifeBuoy as LifeBuoyIcon,
+  TagsIcon,
+  Users as UsersIcon,
+  Webhook as WebhookIcon,
+} from "lucide-react";
+
+export function Sidebar({ workspaceId, workspaceName, metrics }) {
+  const { count } = metrics;
+
+  console.log(count);
+
   return (
-    <div className={cn("p-4", className)}>
+    <div className={cn("p-4", "hidden lg:block lg:border-r")}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="flex justify-between">
             <div className="flex justify-start">
               <Building2Icon className="mr-2 h-5 w-5" />
-              <div className="my-auto">ZygHQ</div>
+              <div className="my-auto">{workspaceName}</div>
             </div>
             <CaretSortIcon className="my-auto h-4 w-4" />
           </Button>
@@ -73,55 +83,7 @@ export function Sidebar({ className }) {
         </DropdownMenuContent>
       </DropdownMenu>
       <ScrollArea className="my-4 h-[calc(100dvh-14rem)] pb-4">
-        <div className="flex flex-col space-y-2">
-          <Button
-            variant="ghost"
-            asChild
-            // className={`w-full flex justify-between ${
-            //   isActive(`/${slug}/`, pathname)
-            //     ? "bg-indigo-100 hover:bg-indigo-200"
-            //     : ""
-            // }`}
-            className="flex w-full justify-between bg-indigo-100 hover:bg-indigo-200"
-          >
-            <Link href={`/`}>
-              <div className="flex">
-                <ChatBubbleIcon className="my-auto mr-2 h-4 w-4" />
-                <div className="my-auto">Threads</div>
-              </div>
-              <Badge className="my-auto bg-indigo-500 font-mono">18</Badge>
-            </Link>
-          </Button>
-          <Button
-            variant="ghost"
-            asChild
-            className="flex w-full justify-between"
-          >
-            <Link href={`/`}>
-              <div className="flex">
-                <WebhookIcon className="my-auto mr-2 h-4 w-4" />
-                <div className="my-auto">Events</div>
-              </div>
-              <Badge className="my-auto bg-zinc-400 font-mono">37</Badge>
-            </Link>
-          </Button>
-        </div>
-        <div className="mb-3 mt-4 text-xs text-zinc-500">Browse</div>
-        <div className="flex flex-col space-y-2">
-          <Button
-            variant="ghost"
-            asChild
-            className="flex w-full justify-between bg-indigo-100 hover:bg-indigo-200"
-          >
-            <Link href={`/`}>
-              <div className="flex">
-                <TagsIcon className="my-auto mr-2 h-4 w-4" />
-                <div className="my-auto">Labels</div>
-              </div>
-              <ChevronRightIcon className="my-auto h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
+        <SidebarLinks workspaceId={workspaceId} count={count} />
       </ScrollArea>
       <div>
         <DropdownMenu>

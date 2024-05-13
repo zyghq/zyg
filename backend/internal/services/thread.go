@@ -89,9 +89,27 @@ func (s *ThreadChatService) MarkReplied(ctx context.Context, threadChatId string
 	return thread, nil
 }
 
-func (s *ThreadChatService) GetWorkspaceList(ctx context.Context, workspaceId string,
+func (s *ThreadChatService) GetWorkspaceThreadList(ctx context.Context, workspaceId string,
 ) ([]domain.ThreadChatWithMessage, error) {
 	threads, err := s.repo.GetListByWorkspaceId(ctx, workspaceId)
+	if err != nil {
+		return threads, err
+	}
+	return threads, nil
+}
+
+func (s *ThreadChatService) WorkspaceMemberAssignedThreadList(ctx context.Context, workspaceId string, memberId string,
+) ([]domain.ThreadChatWithMessage, error) {
+	threads, err := s.repo.GetMemberAssignedListByWorkspaceId(ctx, workspaceId, memberId)
+	if err != nil {
+		return threads, err
+	}
+	return threads, nil
+}
+
+func (s *ThreadChatService) WorkspaceUnassignedThreadList(ctx context.Context, workspaceId string,
+) ([]domain.ThreadChatWithMessage, error) {
+	threads, err := s.repo.GetUnassignedListByWorkspaceId(ctx, workspaceId)
 	if err != nil {
 		return threads, err
 	}
@@ -177,4 +195,30 @@ func (s *ThreadChatService) GetMessageList(ctx context.Context, threadChatId str
 	}
 
 	return messages, nil
+}
+
+func (s *ThreadChatService) GenerateMemberThreadMetrics(ctx context.Context, workspaceId string, memberId string,
+) (domain.ThreadMemberMetrics, error) {
+	statusMetrics, err := s.repo.StatusMetricsByWorkspaceId(ctx, workspaceId)
+	if errors.Is(err, repository.ErrQuery) || errors.Is(err, repository.ErrEmpty) {
+		return domain.ThreadMemberMetrics{}, ErrThreadChat
+	}
+
+	assignmentMetrics, err := s.repo.MemberAssigneeMetricsByWorkspaceId(ctx, workspaceId, memberId)
+	if errors.Is(err, repository.ErrQuery) || errors.Is(err, repository.ErrEmpty) {
+		return domain.ThreadMemberMetrics{}, ErrThreadChat
+	}
+
+	labelMetrics, err := s.repo.LabelMetricsByWorkspaceId(ctx, workspaceId)
+	if errors.Is(err, repository.ErrQuery) || errors.Is(err, repository.ErrEmpty) {
+		return domain.ThreadMemberMetrics{}, ErrThreadChat
+	}
+
+	metrics := domain.ThreadMemberMetrics{
+		ThreadMetrics:         statusMetrics,
+		ThreadAssigneeMetrics: assignmentMetrics,
+		ThreadLabelMetrics:    labelMetrics,
+	}
+
+	return metrics, nil
 }

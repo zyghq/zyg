@@ -34,7 +34,7 @@ func (s *AccountService) InitiateAccount(ctx context.Context, a domain.Account) 
 	return account, created, nil
 }
 
-func (s *AccountService) GetAuthUser(ctx context.Context, authUserId string) (domain.Account, error) {
+func (s *AccountService) AuthUser(ctx context.Context, authUserId string) (domain.Account, error) {
 	account, err := s.repo.GetByAuthUserId(ctx, authUserId)
 
 	if errors.Is(err, repository.ErrQuery) {
@@ -67,7 +67,7 @@ func (s *AccountService) IssuePersonalAccessToken(ctx context.Context, ap domain
 	return ap, nil
 }
 
-func (s *AccountService) GetUserPatList(ctx context.Context, accountId string) ([]domain.AccountPAT, error) {
+func (s *AccountService) UserPatList(ctx context.Context, accountId string) ([]domain.AccountPAT, error) {
 	apList, err := s.repo.GetPatListByAccountId(ctx, accountId)
 
 	if errors.Is(err, repository.ErrQuery) {
@@ -81,7 +81,7 @@ func (s *AccountService) GetUserPatList(ctx context.Context, accountId string) (
 	return apList, nil
 }
 
-func (s *AccountService) GetPatAccount(ctx context.Context, token string) (domain.Account, error) {
+func (s *AccountService) PatAccount(ctx context.Context, token string) (domain.Account, error) {
 	account, err := s.repo.GetAccountByToken(ctx, token)
 
 	if errors.Is(err, repository.ErrQuery) {

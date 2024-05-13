@@ -1,9 +1,11 @@
 "use client";
 
-import * as React from "react";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+import * as React from "react";
+
+// import { usePathname } from "next/navigation";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export function ThemeProvider({ children, ...props }) {
   return (
@@ -22,9 +24,13 @@ export const ReactQueryClientProvider = ({ children }) => {
             staleTime: 1000 * 60 * 5,
           },
         },
-      }),
+      })
   );
   return (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
 };
+
+// export const CurrentPageProvider = ({ href, children }) => {
+//   const pathname = usePathname();
+// };

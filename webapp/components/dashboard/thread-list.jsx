@@ -23,14 +23,15 @@ export default function ThreadList({
   threads,
   className,
   variant = "default",
+  endpoint = "/threads/chat/",
 }) {
   const supabase = createClient();
   const result = useQuery({
-    queryKey: ["threads", workspaceId, supabase],
+    queryKey: ["threads", workspaceId, endpoint, supabase],
     queryFn: async () => {
       const { token, error: sessErr } = await getSession(supabase);
       if (sessErr) throw new Error("session expired or not found");
-      const url = `${process.env.NEXT_PUBLIC_ZYG_URL}/workspaces/${workspaceId}/threads/chat/`;
+      const url = `${process.env.NEXT_PUBLIC_ZYG_URL}/workspaces/${workspaceId}${endpoint}`;
       const response = await fetch(url, {
         method: "GET",
         headers: {

@@ -192,3 +192,25 @@ type CustomerTIRespPayload struct {
 	CustomerId string `json:"customerId"`
 	Jwt        string `json:"jwt"`
 }
+
+type ThreadLabelCountRespPayload struct {
+	LabelId string `json:"labelId"`
+	Name    string `json:"name"`
+	Icon    string `json:"icon"`
+	Count   int    `json:"count"`
+}
+
+type ThreadCountRespPayload struct {
+	ActiveCount   int                           `json:"active"`
+	DoneCount     int                           `json:"done"`
+	TodoCount     int                           `json:"todo"`
+	SnoozedCount  int                           `json:"snoozed"`
+	AssignedToMe  int                           `json:"assignedToMe"`
+	Unassigned    int                           `json:"unassigned"`
+	OtherAssigned int                           `json:"otherAssigned"`
+	Labels        []ThreadLabelCountRespPayload `json:"labels"`
+}
+
+type ThreadMetricsRespPayload struct {
+	Count ThreadCountRespPayload `json:"count"`
+}

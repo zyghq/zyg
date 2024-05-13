@@ -1,13 +1,17 @@
-import Link from "next/link";
 import { cn } from "@/lib/utils";
+
+import Link from "next/link";
+
+import { buttonVariants } from "@/components/ui/button";
+
 import { CommandMenu } from "@/components/commander";
 import { SidebarMobile } from "@/components/dashboard/sidebar-mobile";
-import { ModeToggle } from "@/components/theme";
-import { buttonVariants } from "@/components/ui/button";
-import { ArrowLeftRightIcon } from "lucide-react";
 import { Icons } from "@/components/icons";
+import { ModeToggle } from "@/components/theme";
 
-export function Header() {
+import { ArrowLeftRightIcon } from "lucide-react";
+
+export function Header({ workspaceId, workspaceName, metrics }) {
   return (
     <header className="sticky top-0 z-50 flex h-14 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-4 flex w-full items-center">
@@ -17,7 +21,11 @@ export function Header() {
             <span className="hidden font-semibold sm:inline-block">Zyg.</span>
           </Link>
         </div>
-        <SidebarMobile />
+        <SidebarMobile
+          workspaceId={workspaceId}
+          workspaceName={workspaceName}
+          metrics={metrics}
+        />
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <div className="w-full flex-1 md:w-auto md:flex-none">
             <CommandMenu />
@@ -29,7 +37,7 @@ export function Header() {
                   buttonVariants({
                     variant: "ghost",
                   }),
-                  "w-9 px-0",
+                  "w-9 px-0"
                 )}
               >
                 <ArrowLeftRightIcon className="h-4 w-4" />

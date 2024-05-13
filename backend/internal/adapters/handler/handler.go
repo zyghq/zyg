@@ -26,21 +26,15 @@ func CheckAuthCredentials(r *http.Request) (string, string, error) {
 	return scheme, cred[1], nil
 }
 
-func AuthenticateAccount(
-	ctx context.Context, authz ports.AuthServicer,
-	scheme string, cred string,
-) (domain.Account, error) {
-	var account domain.Account
+func AuthenticateAccount(ctx context.Context, authz ports.AuthServicer, scheme string, cred string) (domain.Account, error) {
 	if scheme == "token" {
-		slog.Info("authenticate with PAT")
-		account, err := authz.GetPatAccount(ctx, cred)
+		account, err := authz.CheckPatAccount(ctx, cred)
 		if err != nil {
-			return domain.Account{}, fmt.Errorf("failed to authenticate got error: %v", err)
+			return account, fmt.Errorf("failed to authenticate got error: %v", err)
 		}
 		slog.Info("authenticated account with PAT", slog.String("accountId", account.AccountId))
 		return account, nil
 	} else if scheme == "bearer" {
-		slog.Info("authenticate with JWT")
 		hmacSecret, err := zyg.GetEnv("SUPABASE_JWT_SECRET")
 		if err != nil {
 			return domain.Account{}, fmt.Errorf("failed to get env SUPABASE_JWT_SECRET got error: %v", err)
@@ -51,18 +45,18 @@ func AuthenticateAccount(
 		}
 		sub, err := ac.RegisteredClaims.GetSubject()
 		if err != nil {
-			return account, fmt.Errorf("cannot get subject from parsed token: %v", err)
+			return domain.Account{}, fmt.Errorf("cannot get subject from parsed token: %v", err)
 		}
-		slog.Info("authenticated account", slog.String("authUserId", sub))
 
-		account, err = authz.GetAuthUser(ctx, sub)
+		slog.Info("authenticated account with jwt", slog.String("authUserId", sub))
+		account, err := authz.CheckAuthUser(ctx, sub)
 
 		if errors.Is(err, services.ErrAccountNotFound) {
 			slog.Warn(
 				"account not found or does not exist",
 				slog.String("authUserId", sub),
 			)
-			return domain.Account{}, fmt.Errorf("account not found or does not exist")
+			return account, fmt.Errorf("account not found or does not exist")
 		}
 		if errors.Is(err, services.ErrAccount) {
 			slog.Error(
@@ -70,7 +64,7 @@ func AuthenticateAccount(
 					"perhaps a failed query or mapping",
 				slog.String("authUserId", sub),
 			)
-			return domain.Account{}, fmt.Errorf("failed to get account by auth user id: %s got error: %v", sub, err)
+			return account, fmt.Errorf("failed to get account by auth user id: %s got error: %v", sub, err)
 		}
 		if err != nil {
 			slog.Error(
@@ -78,11 +72,11 @@ func AuthenticateAccount(
 					"something went wrong",
 				slog.String("authUserId", sub),
 			)
-			return domain.Account{}, fmt.Errorf("failed to get account by auth user id: %s got error: %v", sub, err)
+			return account, fmt.Errorf("failed to get account by auth user id: %s got error: %v", sub, err)
 		}
 		return account, nil
 	} else {
-		return account, fmt.Errorf("unsupported scheme `%s` cannot authenticate", scheme)
+		return domain.Account{}, fmt.Errorf("unsupported scheme `%s` cannot authenticate", scheme)
 	}
 }
 
@@ -127,6 +121,12 @@ func NewServer(
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{$}",
 		NewEnsureAuth(th.handleGetThreadChats, authService))
 
+	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/me/{$}",
+		NewEnsureAuth(th.handleGetMyThreadChats, authService))
+
+	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/unassigned/{$}",
+		NewEnsureAuth(th.handleGetUnassignedThreadChats, authService))
+
 	mux.Handle("POST /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
 		NewEnsureAuth(th.handleCreateThChatMessage, authService))
 
@@ -138,6 +138,9 @@ func NewServer(
 
 	mux.Handle("POST /workspaces/{workspaceId}/customers/tokens/{$}",
 		NewEnsureAuth(wh.handleIssueCustomerToken, authService))
+
+	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/metrics/{$}",
+		NewEnsureAuth(th.handleGetThreadChatMetrics, authService))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},

@@ -387,3 +387,29 @@ type ThreadChatLabelled struct {
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 }
+
+type ThreadLabelMetric struct {
+	LabelId string
+	Name    string
+	Icon    string
+	Count   int
+}
+
+type ThreadMetrics struct {
+	ActiveCount  int // sum of threads in Todo and Snoozed
+	DoneCount    int
+	TodoCount    int
+	SnoozedCount int
+}
+
+type ThreadAssigneeMetrics struct {
+	MeCount            int
+	UnAssignedCount    int
+	OtherAssignedCount int
+}
+
+type ThreadMemberMetrics struct {
+	ThreadMetrics
+	ThreadAssigneeMetrics
+	ThreadLabelMetrics []ThreadLabelMetric
+}

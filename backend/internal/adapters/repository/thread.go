@@ -409,6 +409,161 @@ func (tc *ThreadChatDB) GetListByWorkspaceId(ctx context.Context, workspaceId st
 	return ths, nil
 }
 
+// returns a list of thread chats with latest message for member in workspace
+// irrespective of customer
+func (tc *ThreadChatDB) GetMemberAssignedListByWorkspaceId(ctx context.Context, workspaceId string, memberId string,
+) ([]domain.ThreadChatWithMessage, error) {
+	var th domain.ThreadChat
+	var message domain.ThreadChatMessage
+
+	ths := make([]domain.ThreadChatWithMessage, 0, 100)
+	stmt := `SELECT
+			th.workspace_id AS workspace_id,	
+			thc.customer_id AS thread_customer_id,
+			thc.name AS thread_customer_name,
+			tha.member_id AS thread_assignee_id,
+			tha.name AS thread_assignee_name,
+			th.thread_chat_id AS thread_chat_id,
+			th.title AS title,
+			th.summary AS summary,
+			th.sequence AS sequence,
+			th.status AS status,
+			th.read AS read,
+			th.replied AS replied,
+			th.created_at AS created_at,
+			th.updated_at AS updated_at,
+			thm.thread_chat_id AS message_thread_chat_id,
+			thm.thread_chat_message_id AS thread_chat_message_id,
+			thm.body AS message_body,
+			thm.sequence AS message_sequence,
+			thm.created_at AS message_created_at,
+			thm.updated_at AS message_updated_at,
+			thmc.customer_id AS message_customer_id,
+			thmc.name AS message_customer_name,
+			thmm.member_id AS message_member_id,
+			thmm.name AS message_member_name
+		FROM thread_chat th
+		INNER JOIN thread_chat_message thm ON th.thread_chat_id = thm.thread_chat_id
+		INNER JOIN customer thc ON th.customer_id = thc.customer_id
+		LEFT OUTER JOIN member tha ON th.assignee_id = tha.member_id
+		LEFT OUTER JOIN customer thmc ON thm.customer_id = thmc.customer_id
+		LEFT OUTER JOIN member thmm ON thm.member_id = thmm.member_id
+		INNER JOIN (
+			SELECT thread_chat_id, MAX(sequence) AS sequence
+			FROM thread_chat_message
+			GROUP BY
+			thread_chat_id
+		) latest ON thm.thread_chat_id = latest.thread_chat_id
+		AND thm.sequence = latest.sequence
+		WHERE th.workspace_id = $1 AND th.assignee_id = $2
+		ORDER BY sequence DESC LIMIT 100`
+
+	rows, _ := tc.db.Query(ctx, stmt, workspaceId, memberId)
+
+	_, err := pgx.ForEachRow(rows, []any{
+		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
+		&th.AssigneeId, &th.AssigneeName,
+		&th.ThreadChatId, &th.Title, &th.Summary,
+		&th.Sequence, &th.Status, &th.Read, &th.Replied,
+		&th.CreatedAt, &th.UpdatedAt,
+		&message.ThreadChatId, &message.ThreadChatMessageId, &message.Body,
+		&message.Sequence, &message.CreatedAt, &message.UpdatedAt,
+		&message.CustomerId, &message.CustomerName, &message.MemberId, &message.MemberName,
+	}, func() error {
+		thm := domain.ThreadChatWithMessage{
+			ThreadChat: th,
+			Message:    message,
+		}
+		ths = append(ths, thm)
+		return nil
+	})
+
+	if err != nil {
+		slog.Error("failed to query", "error", err)
+		return []domain.ThreadChatWithMessage{}, ErrQuery
+	}
+
+	defer rows.Close()
+
+	return ths, nil
+}
+
+func (tc *ThreadChatDB) GetUnassignedListByWorkspaceId(ctx context.Context, workspaceId string) ([]domain.ThreadChatWithMessage, error) {
+	var th domain.ThreadChat
+	var message domain.ThreadChatMessage
+
+	ths := make([]domain.ThreadChatWithMessage, 0, 100)
+	stmt := `SELECT
+			th.workspace_id AS workspace_id,	
+			thc.customer_id AS thread_customer_id,
+			thc.name AS thread_customer_name,
+			tha.member_id AS thread_assignee_id,
+			tha.name AS thread_assignee_name,
+			th.thread_chat_id AS thread_chat_id,
+			th.title AS title,
+			th.summary AS summary,
+			th.sequence AS sequence,
+			th.status AS status,
+			th.read AS read,
+			th.replied AS replied,
+			th.created_at AS created_at,
+			th.updated_at AS updated_at,
+			thm.thread_chat_id AS message_thread_chat_id,
+			thm.thread_chat_message_id AS thread_chat_message_id,
+			thm.body AS message_body,
+			thm.sequence AS message_sequence,
+			thm.created_at AS message_created_at,
+			thm.updated_at AS message_updated_at,
+			thmc.customer_id AS message_customer_id,
+			thmc.name AS message_customer_name,
+			thmm.member_id AS message_member_id,
+			thmm.name AS message_member_name
+		FROM thread_chat th
+		INNER JOIN thread_chat_message thm ON th.thread_chat_id = thm.thread_chat_id
+		INNER JOIN customer thc ON th.customer_id = thc.customer_id
+		LEFT OUTER JOIN member tha ON th.assignee_id = tha.member_id
+		LEFT OUTER JOIN customer thmc ON thm.customer_id = thmc.customer_id
+		LEFT OUTER JOIN member thmm ON thm.member_id = thmm.member_id
+		INNER JOIN (
+			SELECT thread_chat_id, MAX(sequence) AS sequence
+			FROM thread_chat_message
+			GROUP BY
+			thread_chat_id
+		) latest ON thm.thread_chat_id = latest.thread_chat_id
+		AND thm.sequence = latest.sequence
+		WHERE th.workspace_id = $1 AND th.assignee_id IS NULL
+		ORDER BY sequence DESC LIMIT 100`
+
+	rows, _ := tc.db.Query(ctx, stmt, workspaceId)
+
+	_, err := pgx.ForEachRow(rows, []any{
+		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
+		&th.AssigneeId, &th.AssigneeName,
+		&th.ThreadChatId, &th.Title, &th.Summary,
+		&th.Sequence, &th.Status, &th.Read, &th.Replied,
+		&th.CreatedAt, &th.UpdatedAt,
+		&message.ThreadChatId, &message.ThreadChatMessageId, &message.Body,
+		&message.Sequence, &message.CreatedAt, &message.UpdatedAt,
+		&message.CustomerId, &message.CustomerName, &message.MemberId, &message.MemberName,
+	}, func() error {
+		thm := domain.ThreadChatWithMessage{
+			ThreadChat: th,
+			Message:    message,
+		}
+		ths = append(ths, thm)
+		return nil
+	})
+
+	if err != nil {
+		slog.Error("failed to query", "error", err)
+		return []domain.ThreadChatWithMessage{}, ErrQuery
+	}
+
+	defer rows.Close()
+
+	return ths, nil
+}
+
 // checks if a thread chat exists in the workspace
 func (tc *ThreadChatDB) IsExistByWorkspaceThreadChatId(ctx context.Context, workspaceId string, threadChatId string,
 ) (bool, error) {
@@ -641,4 +796,101 @@ func (tc *ThreadChatDB) GetMessageListByThreadChatId(ctx context.Context, thread
 	}
 
 	return messages, nil
+}
+
+func (tc *ThreadChatDB) StatusMetricsByWorkspaceId(ctx context.Context, workspaceId string,
+) (domain.ThreadMetrics, error) {
+	var metrics domain.ThreadMetrics
+
+	stmt := `SELECT
+		COALESCE(SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END), 0) AS done,
+		COALESCE(SUM(CASE WHEN status = 'todo' THEN 1 ELSE 0 END), 0) AS todo,
+		COALESCE(SUM(CASE WHEN status = 'snoozed' THEN 1 ELSE 0 END), 0) AS snoozed,
+		COALESCE(SUM(CASE WHEN status = 'todo' OR status = 'snoozed' THEN 1 ELSE 0 END), 0) AS active
+	FROM 
+		thread_chat
+	WHERE 
+		workspace_id = $1`
+
+	err := tc.db.QueryRow(ctx, stmt, workspaceId).Scan(
+		&metrics.DoneCount, &metrics.TodoCount,
+		&metrics.SnoozedCount, &metrics.ActiveCount,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.ThreadMetrics{}, ErrEmpty
+	}
+	if err != nil {
+		slog.Error("failed to query", "error", err)
+		return domain.ThreadMetrics{}, ErrQuery
+	}
+
+	return metrics, nil
+}
+
+func (tc *ThreadChatDB) MemberAssigneeMetricsByWorkspaceId(ctx context.Context, workspaceId string, memberId string,
+) (domain.ThreadAssigneeMetrics, error) {
+	var metrics domain.ThreadAssigneeMetrics
+
+	stmt := `SELECT
+			COALESCE(SUM(CASE WHEN assignee_id = $2 THEN 1 ELSE 0 END), 0) AS member_assigned_count,
+			COALESCE(SUM(CASE WHEN assignee_id IS NULL THEN 1 ELSE 0 END), 0) AS unassigned_count,
+			COALESCE(SUM(CASE WHEN assignee_id IS NOT NULL AND assignee_id <> $2 THEN 1 ELSE 0 END), 0) AS other_assigned_count
+		FROM
+			thread_chat
+		WHERE
+			workspace_id = $1`
+
+	err := tc.db.QueryRow(ctx, stmt, workspaceId, memberId).Scan(
+		&metrics.MeCount, &metrics.UnAssignedCount, &metrics.OtherAssignedCount,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.ThreadAssigneeMetrics{}, ErrEmpty
+	}
+
+	if err != nil {
+		slog.Error("failed to query", "error", err)
+		return domain.ThreadAssigneeMetrics{}, ErrQuery
+	}
+
+	return metrics, nil
+}
+
+func (tc *ThreadChatDB) LabelMetricsByWorkspaceId(ctx context.Context, workspaceId string,
+) ([]domain.ThreadLabelMetric, error) {
+	var metric domain.ThreadLabelMetric
+	metrics := make([]domain.ThreadLabelMetric, 0, 100)
+
+	stmt := `SELECT
+		l.label_id,
+		l.name AS label_name,
+		l.icon AS label_icon,
+		COUNT(tcl.thread_chat_id) AS count
+	FROM
+		label l
+	LEFT JOIN
+		thread_chat_label tcl ON l.label_id = tcl.label_id
+	WHERE
+		l.workspace_id = $1
+	GROUP BY
+		l.label_id, l.name
+	ORDER BY MAX(tcl.updated_at) DESC
+	LIMIT 100`
+
+	rows, _ := tc.db.Query(ctx, stmt, workspaceId)
+
+	_, err := pgx.ForEachRow(rows, []any{
+		&metric.LabelId, &metric.Name, &metric.Icon, &metric.Count,
+	}, func() error {
+		metrics = append(metrics, metric)
+		return nil
+	})
+
+	if err != nil {
+		slog.Error("failed to query", "error", err)
+		return []domain.ThreadLabelMetric{}, ErrQuery
+	}
+
+	return metrics, nil
 }

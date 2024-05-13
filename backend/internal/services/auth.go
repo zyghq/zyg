@@ -56,7 +56,7 @@ func NewAuthService(repo ports.AccountRepositorer) *AuthService {
 	}
 }
 
-func (s *AuthService) GetAuthUser(ctx context.Context, authUserId string) (domain.Account, error) {
+func (s *AuthService) CheckAuthUser(ctx context.Context, authUserId string) (domain.Account, error) {
 	account, err := s.repo.GetByAuthUserId(ctx, authUserId)
 
 	if errors.Is(err, repository.ErrQuery) {
@@ -74,7 +74,7 @@ func (s *AuthService) GetAuthUser(ctx context.Context, authUserId string) (domai
 	return account, nil
 }
 
-func (s *AuthService) GetPatAccount(ctx context.Context, token string) (domain.Account, error) {
+func (s *AuthService) CheckPatAccount(ctx context.Context, token string) (domain.Account, error) {
 	account, err := s.repo.GetAccountByToken(ctx, token)
 
 	if errors.Is(err, repository.ErrQuery) {
