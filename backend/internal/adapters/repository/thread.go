@@ -84,9 +84,6 @@ func (tc *ThreadChatDB) CreateThreadChat(ctx context.Context, th domain.ThreadCh
 		return domain.ThreadChat{}, domain.ThreadChatMessage{}, ErrTxQuery
 	}
 
-	// set customer attributes we already have
-	// message.CustomerName = th.CustomerName
-	// TODO: check if the name exists.
 	return th, message, nil
 }
 
@@ -115,6 +112,7 @@ func (tc *ThreadChatDB) GetByWorkspaceThreadChatId(ctx context.Context, workspac
 		LEFT OUTER JOIN member a ON th.assignee_id = a.member_id
 		WHERE th.workspace_id = $1 AND th.thread_chat_id = $2`
 
+	// QueryRow automatically closes the connection
 	err := tc.db.QueryRow(ctx, stmt, workspaceId, threadChatId).Scan(
 		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
 		&th.AssigneeId, &th.AssigneeName,
@@ -194,6 +192,8 @@ func (tc *ThreadChatDB) GetListByWorkspaceCustomerId(ctx context.Context, worksp
 
 	rows, _ := tc.db.Query(ctx, stmt, workspaceId, customerId)
 
+	defer rows.Close()
+
 	_, err := pgx.ForEachRow(rows, []any{
 		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
 		&th.AssigneeId, &th.AssigneeName,
@@ -216,8 +216,6 @@ func (tc *ThreadChatDB) GetListByWorkspaceCustomerId(ctx context.Context, worksp
 		slog.Error("failed to query", "error", err)
 		return []domain.ThreadChatWithMessage{}, ErrQuery
 	}
-
-	defer rows.Close()
 
 	return ths, nil
 }
@@ -242,7 +240,7 @@ func (tc *ThreadChatDB) SetAssignee(ctx context.Context, threadChatId string, as
 		m.member_id AS assignee_id,
 		m.name AS assignee_name,
 		ups.thread_chat_id AS thread_chat_id,
-		ups.title AS title,
+		ups.title AS title,9
 		ups.summary AS summary,
 		ups.sequence AS sequence,
 		ups.status AS status,
@@ -381,6 +379,8 @@ func (tc *ThreadChatDB) GetListByWorkspaceId(ctx context.Context, workspaceId st
 
 	rows, _ := tc.db.Query(ctx, stmt, workspaceId)
 
+	defer rows.Close()
+
 	_, err := pgx.ForEachRow(rows, []any{
 		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
 		&th.AssigneeId, &th.AssigneeName,
@@ -404,13 +404,10 @@ func (tc *ThreadChatDB) GetListByWorkspaceId(ctx context.Context, workspaceId st
 		return []domain.ThreadChatWithMessage{}, ErrQuery
 	}
 
-	defer rows.Close()
-
 	return ths, nil
 }
 
-// returns a list of thread chats with latest message for member in workspace
-// irrespective of customer
+// returns a list of member assigned thread chats with latest message in workspace
 func (tc *ThreadChatDB) GetMemberAssignedListByWorkspaceId(ctx context.Context, workspaceId string, memberId string,
 ) ([]domain.ThreadChatWithMessage, error) {
 	var th domain.ThreadChat
@@ -460,6 +457,8 @@ func (tc *ThreadChatDB) GetMemberAssignedListByWorkspaceId(ctx context.Context, 
 
 	rows, _ := tc.db.Query(ctx, stmt, workspaceId, memberId)
 
+	defer rows.Close()
+
 	_, err := pgx.ForEachRow(rows, []any{
 		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
 		&th.AssigneeId, &th.AssigneeName,
@@ -483,12 +482,12 @@ func (tc *ThreadChatDB) GetMemberAssignedListByWorkspaceId(ctx context.Context, 
 		return []domain.ThreadChatWithMessage{}, ErrQuery
 	}
 
-	defer rows.Close()
-
 	return ths, nil
 }
 
-func (tc *ThreadChatDB) GetUnassignedListByWorkspaceId(ctx context.Context, workspaceId string) ([]domain.ThreadChatWithMessage, error) {
+// returns a list of unassigned thread chats with latest message in workspace
+func (tc *ThreadChatDB) GetUnassignedListByWorkspaceId(ctx context.Context, workspaceId string,
+) ([]domain.ThreadChatWithMessage, error) {
 	var th domain.ThreadChat
 	var message domain.ThreadChatMessage
 
@@ -536,6 +535,8 @@ func (tc *ThreadChatDB) GetUnassignedListByWorkspaceId(ctx context.Context, work
 
 	rows, _ := tc.db.Query(ctx, stmt, workspaceId)
 
+	defer rows.Close()
+
 	_, err := pgx.ForEachRow(rows, []any{
 		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
 		&th.AssigneeId, &th.AssigneeName,
@@ -559,7 +560,85 @@ func (tc *ThreadChatDB) GetUnassignedListByWorkspaceId(ctx context.Context, work
 		return []domain.ThreadChatWithMessage{}, ErrQuery
 	}
 
+	return ths, nil
+}
+
+// returns a list of labelled thread chats with latest message in workspace
+func (tc *ThreadChatDB) GetLabelledListByWorkspaceId(ctx context.Context, workspaceId string, labelId string) ([]domain.ThreadChatWithMessage, error) {
+	var th domain.ThreadChat
+	var message domain.ThreadChatMessage
+
+	ths := make([]domain.ThreadChatWithMessage, 0, 100)
+	stmt := `SELECT
+			th.workspace_id AS workspace_id,	
+			thc.customer_id AS thread_customer_id,
+			thc.name AS thread_customer_name,
+			tha.member_id AS thread_assignee_id,
+			tha.name AS thread_assignee_name,
+			th.thread_chat_id AS thread_chat_id,
+			th.title AS title,
+			th.summary AS summary,
+			th.sequence AS sequence,
+			th.status AS status,
+			th.read AS read,
+			th.replied AS replied,
+			th.created_at AS created_at,
+			th.updated_at AS updated_at,
+			thm.thread_chat_id AS message_thread_chat_id,
+			thm.thread_chat_message_id AS thread_chat_message_id,
+			thm.body AS message_body,
+			thm.sequence AS message_sequence,
+			thm.created_at AS message_created_at,
+			thm.updated_at AS message_updated_at,
+			thmc.customer_id AS message_customer_id,
+			thmc.name AS message_customer_name,
+			thmm.member_id AS message_member_id,
+			thmm.name AS message_member_name
+		FROM thread_chat th
+		INNER JOIN thread_chat_message thm ON th.thread_chat_id = thm.thread_chat_id
+		INNER JOIN customer thc ON th.customer_id = thc.customer_id
+		LEFT OUTER JOIN member tha ON th.assignee_id = tha.member_id
+		LEFT OUTER JOIN customer thmc ON thm.customer_id = thmc.customer_id
+		LEFT OUTER JOIN member thmm ON thm.member_id = thmm.member_id
+		INNER JOIN (
+			SELECT thread_chat_id, MAX(sequence) AS sequence
+			FROM thread_chat_message
+			GROUP BY
+			thread_chat_id
+		) latest ON thm.thread_chat_id = latest.thread_chat_id
+		AND thm.sequence = latest.sequence
+		INNER JOIN thread_chat_label tcl ON th.thread_chat_id = tcl.thread_chat_id
+		WHERE th.workspace_id = $1 AND tcl.label_id = $2
+		ORDER BY sequence DESC LIMIT 100`
+
+	rows, _ := tc.db.Query(ctx, stmt, workspaceId, labelId)
+
 	defer rows.Close()
+
+	_, err := pgx.ForEachRow(rows, []any{
+		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
+		&th.AssigneeId,
+		&th.AssigneeName,
+		&th.ThreadChatId, &th.Title, &th.Summary,
+		&th.Sequence, &th.Status, &th.Read, &th.Replied,
+		&th.CreatedAt, &th.UpdatedAt,
+		&message.ThreadChatId, &message.ThreadChatMessageId, &message.Body,
+		&message.Sequence, &message.CreatedAt, &message.UpdatedAt,
+		&message.CustomerId, &message.CustomerName, &message.MemberId, &message.MemberName,
+	}, func() error {
+		thm := domain.ThreadChatWithMessage{
+			ThreadChat: th,
+			Message:    message,
+		}
+		ths = append(ths, thm)
+		return nil
+
+	})
+
+	if err != nil {
+		slog.Error("failed to query", "error", err)
+		return []domain.ThreadChatWithMessage{}, ErrQuery
+	}
 
 	return ths, nil
 }
@@ -617,8 +696,7 @@ func (tc *ThreadChatDB) AddLabel(ctx context.Context, thl domain.ThreadChatLabel
 	return thl, IsCreated, nil
 }
 
-// returns a list of labels added for a thread chat
-// TODO: rename this to GetLabelListByThreadChatId
+// returns a list of labels added for a thread chat item
 func (tc *ThreadChatDB) GetLabelListByThreadChatId(ctx context.Context, threadChatId string,
 ) ([]domain.ThreadChatLabelled, error) {
 	var l domain.ThreadChatLabelled
@@ -637,6 +715,8 @@ func (tc *ThreadChatDB) GetLabelListByThreadChatId(ctx context.Context, threadCh
 
 	rows, _ := tc.db.Query(ctx, stmt, threadChatId)
 
+	defer rows.Close()
+
 	_, err := pgx.ForEachRow(rows, []any{
 		&l.ThreadChatLabelId,
 		&l.ThreadChatId,
@@ -653,8 +733,6 @@ func (tc *ThreadChatDB) GetLabelListByThreadChatId(ctx context.Context, threadCh
 		slog.Error("failed to scan", "error", err)
 		return []domain.ThreadChatLabelled{}, ErrQuery
 	}
-
-	defer rows.Close()
 
 	return labels, nil
 }
@@ -781,6 +859,8 @@ func (tc *ThreadChatDB) GetMessageListByThreadChatId(ctx context.Context, thread
 
 	rows, _ := tc.db.Query(ctx, stmt, threadChatId)
 
+	defer rows.Close()
+
 	_, err := pgx.ForEachRow(rows, []any{
 		&message.ThreadChatId, &message.ThreadChatMessageId, &message.Body,
 		&message.Sequence, &message.CreatedAt, &message.UpdatedAt,
@@ -798,6 +878,7 @@ func (tc *ThreadChatDB) GetMessageListByThreadChatId(ctx context.Context, thread
 	return messages, nil
 }
 
+// returns count of thread chats by status in workspace
 func (tc *ThreadChatDB) StatusMetricsByWorkspaceId(ctx context.Context, workspaceId string,
 ) (domain.ThreadMetrics, error) {
 	var metrics domain.ThreadMetrics
@@ -828,6 +909,7 @@ func (tc *ThreadChatDB) StatusMetricsByWorkspaceId(ctx context.Context, workspac
 	return metrics, nil
 }
 
+// returns count of thread chats assigned to a member in workspace
 func (tc *ThreadChatDB) MemberAssigneeMetricsByWorkspaceId(ctx context.Context, workspaceId string, memberId string,
 ) (domain.ThreadAssigneeMetrics, error) {
 	var metrics domain.ThreadAssigneeMetrics
@@ -857,6 +939,7 @@ func (tc *ThreadChatDB) MemberAssigneeMetricsByWorkspaceId(ctx context.Context, 
 	return metrics, nil
 }
 
+// returns count of thread chat for each label in workspace
 func (tc *ThreadChatDB) LabelMetricsByWorkspaceId(ctx context.Context, workspaceId string,
 ) ([]domain.ThreadLabelMetric, error) {
 	var metric domain.ThreadLabelMetric
@@ -879,6 +962,8 @@ func (tc *ThreadChatDB) LabelMetricsByWorkspaceId(ctx context.Context, workspace
 	LIMIT 100`
 
 	rows, _ := tc.db.Query(ctx, stmt, workspaceId)
+
+	defer rows.Close()
 
 	_, err := pgx.ForEachRow(rows, []any{
 		&metric.LabelId, &metric.Name, &metric.Icon, &metric.Count,

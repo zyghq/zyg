@@ -29,6 +29,7 @@ type WorkspaceServicer interface {
 	UserWorkspace(ctx context.Context, accountId string, workspaceId string) (domain.Workspace, error)
 	UserWorkspaceList(ctx context.Context, accountId string) ([]domain.Workspace, error)
 	InitWorkspaceLabel(ctx context.Context, label domain.Label) (domain.Label, bool, error)
+	WorkspaceLabel(ctx context.Context, workspaceId string, labelId string) (domain.Label, error)
 	WorkspaceMember(ctx context.Context, accountId string, workspaceId string) (domain.Member, error)
 	InitWorkspaceCustomerWithExternalId(ctx context.Context, c domain.Customer) (domain.Customer, bool, error)
 	InitWorkspaceCustomerWithEmail(ctx context.Context, c domain.Customer) (domain.Customer, bool, error)
@@ -52,6 +53,7 @@ type ThreadChatServicer interface {
 	GetWorkspaceThreadList(ctx context.Context, workspaceId string) ([]domain.ThreadChatWithMessage, error)
 	WorkspaceMemberAssignedThreadList(ctx context.Context, workspaceId string, memberId string) ([]domain.ThreadChatWithMessage, error)
 	WorkspaceUnassignedThreadList(ctx context.Context, workspaceId string) ([]domain.ThreadChatWithMessage, error)
+	WorkspaceLabelledThreadList(ctx context.Context, workspaceId string, labelId string) ([]domain.ThreadChatWithMessage, error)
 	ExistInWorkspace(ctx context.Context, workspaceId string, threadChatId string) (bool, error)
 	AddLabel(ctx context.Context, thl domain.ThreadChatLabel) (domain.ThreadChatLabel, bool, error)
 	GetLabelList(ctx context.Context, threadChatId string) ([]domain.ThreadChatLabelled, error)
@@ -75,6 +77,7 @@ type WorkspaceRepositorer interface {
 	GetByAccountWorkspaceId(ctx context.Context, accountId string, workspaceId string) (domain.Workspace, error)
 	GetListByAccountId(ctx context.Context, accountId string) ([]domain.Workspace, error)
 	GetOrCreateLabel(ctx context.Context, l domain.Label) (domain.Label, bool, error)
+	GetWorkspaceLabelById(ctx context.Context, workspaceId string, labelId string) (domain.Label, error)
 }
 
 type MemberRepositorer interface {
@@ -100,6 +103,7 @@ type ThreadChatRepositorer interface {
 	GetListByWorkspaceId(ctx context.Context, workspaceId string) ([]domain.ThreadChatWithMessage, error)
 	GetMemberAssignedListByWorkspaceId(ctx context.Context, workspaceId string, memberId string) ([]domain.ThreadChatWithMessage, error)
 	GetUnassignedListByWorkspaceId(ctx context.Context, workspaceId string) ([]domain.ThreadChatWithMessage, error)
+	GetLabelledListByWorkspaceId(ctx context.Context, worskapceId string, labelId string) ([]domain.ThreadChatWithMessage, error)
 	IsExistByWorkspaceThreadChatId(ctx context.Context, workspaceId string, threadChatId string) (bool, error)
 	AddLabel(ctx context.Context, thl domain.ThreadChatLabel) (domain.ThreadChatLabel, bool, error)
 	GetLabelListByThreadChatId(ctx context.Context, threadChatId string) ([]domain.ThreadChatLabelled, error)

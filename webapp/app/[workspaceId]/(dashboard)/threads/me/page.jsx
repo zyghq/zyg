@@ -27,7 +27,7 @@ export const metadata = {
 async function getMyThreadChatListAPI(workspaceId, authToken = "") {
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_ZYG_URL}/workspaces/${workspaceId}/threads/chat/me/`,
+      `${process.env.NEXT_PUBLIC_ZYG_URL}/workspaces/${workspaceId}/threads/chat/with/me/`,
       {
         method: "GET",
         headers: {
@@ -128,7 +128,7 @@ export default async function AssignedToMePage({ params }) {
                 workspaceId={workspaceId}
                 threads={threads}
                 className="h-[calc(100dvh-14rem)]"
-                endpoint="/threads/chat/me/"
+                endpoint="/threads/chat/with/me/"
               />
             </TabsContent>
             <TabsContent value="snoozed" className="m-0">

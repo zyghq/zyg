@@ -14,20 +14,24 @@ import { DoubleArrowUpIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
 import { CheckCircle, CircleIcon, EclipseIcon } from "lucide-react";
 
 export const metadata = {
-  title: "Unassigned Threads - Zyg AI",
+  title: "All Threads - Zyg AI",
 };
 
 /**
- * Fetches the list of thread chats for a given workspace and assigned member.
+ * Fetches the list of thread chats for a given workspace.
  *
  * @param {string} workspaceId - The ID of the workspace.
  * @param {string} [authToken=""] - The authentication token (optional).
  * @returns {Promise<{ data: any, error: Error | null }>} - The response object containing the data and error (if any).
  */
-async function getMyThreadChatListAPI(workspaceId, authToken = "") {
+async function getLabelledThreadChatListAPI(
+  workspaceId,
+  labelId,
+  authToken = ""
+) {
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_ZYG_URL}/workspaces/${workspaceId}/threads/chat/with/unassigned/`,
+      `${process.env.NEXT_PUBLIC_ZYG_URL}/workspaces/${workspaceId}/threads/chat/with/labels/${labelId}/`,
       {
         method: "GET",
         headers: {
@@ -54,8 +58,8 @@ async function getMyThreadChatListAPI(workspaceId, authToken = "") {
   }
 }
 
-export default async function AssignedToMePage({ params }) {
-  const { workspaceId } = params;
+export default async function LabelledThreadListPage({ params }) {
+  const { workspaceId, labelId } = params;
 
   const supabase = createClient();
   if (!(await isAuthenticated(supabase))) {
@@ -68,7 +72,11 @@ export default async function AssignedToMePage({ params }) {
   }
 
   const threads = [];
-  const { error, data } = await getMyThreadChatListAPI(workspaceId, token);
+  const { error, data } = await getLabelledThreadChatListAPI(
+    workspaceId,
+    labelId,
+    token
+  );
 
   if (error) {
     return (
@@ -89,7 +97,7 @@ export default async function AssignedToMePage({ params }) {
     <React.Fragment>
       <main className="col-span-3 lg:col-span-4">
         <div className="container">
-          <div className="mb-4 mt-4 text-xl">Unassigned Threads</div>
+          <div className="mb-4 mt-4 text-xl">All Threads</div>
           <Tabs defaultValue="todo">
             <div className="mb-4 sm:flex sm:justify-between">
               <TabsList className="grid grid-cols-3">
@@ -128,7 +136,7 @@ export default async function AssignedToMePage({ params }) {
                 workspaceId={workspaceId}
                 threads={threads}
                 className="h-[calc(100dvh-14rem)]"
-                endpoint="/threads/chat/with/unassigned/"
+                endpoint={`/threads/chat/with/labels/${labelId}/`}
               />
             </TabsContent>
             <TabsContent value="snoozed" className="m-0">

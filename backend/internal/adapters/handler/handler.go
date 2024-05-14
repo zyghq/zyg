@@ -118,14 +118,20 @@ func NewServer(
 	mux.Handle("GET /workspaces/{workspaceId}/{$}",
 		NewEnsureAuth(wh.handleGetWorkspace, authService))
 
+	// returns all threads in a workspace
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{$}",
 		NewEnsureAuth(th.handleGetThreadChats, authService))
 
-	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/me/{$}",
+	// returns all threads in a workspace assigned to the authenticated member
+	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/me/{$}",
 		NewEnsureAuth(th.handleGetMyThreadChats, authService))
 
-	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/unassigned/{$}",
+	// returns all threads in a workspace unassigned
+	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/unassigned/{$}",
 		NewEnsureAuth(th.handleGetUnassignedThreadChats, authService))
+
+	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/labels/{labelId}/{$}",
+		NewEnsureAuth(th.handleGetLabelledThreadChats, authService))
 
 	mux.Handle("POST /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
 		NewEnsureAuth(th.handleCreateThChatMessage, authService))

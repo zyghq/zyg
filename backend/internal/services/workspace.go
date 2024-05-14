@@ -86,7 +86,6 @@ func (s *WorkspaceService) UserWorkspaceList(ctx context.Context, accountId stri
 	if err != nil {
 		return workspaces, err
 	}
-	// TODO: add pagination support
 	return workspaces, nil
 }
 
@@ -114,6 +113,19 @@ func (s *WorkspaceService) InitWorkspaceLabel(ctx context.Context, label domain.
 	}
 
 	return label, created, err
+}
+
+func (s *WorkspaceService) WorkspaceLabel(ctx context.Context, workspaceId string, labelId string) (domain.Label, error) {
+	label, err := s.workspaceRepo.GetWorkspaceLabelById(ctx, workspaceId, labelId)
+
+	if errors.Is(err, repository.ErrQuery) {
+		return label, ErrLabel
+	}
+
+	if errors.Is(err, repository.ErrEmpty) {
+		return label, ErrLabelNotFound
+	}
+	return label, err
 }
 
 func (s *WorkspaceService) InitWorkspaceCustomerWithExternalId(ctx context.Context, c domain.Customer) (domain.Customer, bool, error) {

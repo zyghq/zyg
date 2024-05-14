@@ -180,3 +180,26 @@ func (w *WorkspaceDB) GetOrCreateLabel(ctx context.Context, label domain.Label) 
 
 	return label, isCreated, nil
 }
+
+func (w *WorkspaceDB) GetWorkspaceLabelById(ctx context.Context, workspaceId string, labelId string) (domain.Label, error) {
+	var label domain.Label
+	err := w.db.QueryRow(ctx, `SELECT
+		label_id, workspace_id, name, icon, created_at, updated_at
+		FROM label WHERE workspace_id = $1 AND label_id = $2`, workspaceId, labelId).Scan(
+		&label.LabelId, &label.WorkspaceId, &label.Name,
+		&label.Icon, &label.CreatedAt, &label.UpdatedAt,
+	)
+
+	// no rows returned
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Label{}, ErrEmpty
+	}
+
+	// query error
+	if err != nil {
+		slog.Error("failed to query", "error", err)
+		return domain.Label{}, ErrQuery
+	}
+
+	return label, nil
+}
