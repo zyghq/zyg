@@ -1,4 +1,0 @@
-export POSTGRES_URI="postgresql://sanchitrrk:HRmj2nxoNOd4@ep-royal-rain-14009376.ap-southeast-1.aws.neon.tech/zygdevdb"
-export SUPABASE_PROJECT_ID="twjlljvimomgoocrniel"
-export SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3amxsanZpbW9tZ29vY3JuaWVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDYyODEyMDYsImV4cCI6MjAyMTg1NzIwNn0.EykQVnMuOAnUhZa0aCHuBg2l9VFoWR_jxmsUdxOg1Yw"
-export SUPABASE_JWT_SECRET="jWy+ODRP9g5MaEVTcP61GlZ89llVl7ceeDZLrN15fV9LBIsQwgVjQx5xj+DYhgAdbzKQuglRGJ43W99NbswjlA=="
