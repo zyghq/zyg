@@ -12,8 +12,8 @@
  * More: https://supabase.com/docs/guides/auth/auth-helpers/nextjs#install-nextjs-auth-helpers-library
  *
  * */
-
 import { createClient } from "@/utils/supabase/server";
+
 import { NextResponse } from "next/server";
 
 export async function GET(request) {

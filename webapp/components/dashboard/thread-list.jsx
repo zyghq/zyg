@@ -23,15 +23,14 @@ export default function ThreadList({
   threads,
   className,
   variant = "default",
-  endpoint = "/threads/chat/",
+  url = "",
 }) {
   const supabase = createClient();
   const result = useQuery({
-    queryKey: ["threads", workspaceId, endpoint, supabase],
+    queryKey: ["threads", workspaceId, url, supabase],
     queryFn: async () => {
       const { token, error: sessErr } = await getSession(supabase);
       if (sessErr) throw new Error("session expired or not found");
-      const url = `${process.env.NEXT_PUBLIC_ZYG_URL}/workspaces/${workspaceId}${endpoint}`;
       const response = await fetch(url, {
         method: "GET",
         headers: {
@@ -94,34 +93,34 @@ export default function ThreadList({
 
 function ThreadItem({ workspaceId, item, variant = "default" }) {
   const supabase = createClient();
-  const result = useQuery({
-    queryKey: ["thlabels", workspaceId, supabase, item.threadChatId],
-    queryFn: async () => {
-      const { token, error: sessErr } = await getSession(supabase);
-      if (sessErr) throw new Error("session expired or not found");
-      const url = `${process.env.NEXT_PUBLIC_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${item.threadChatId}/labels/`;
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+  // const result = useQuery({
+  //   queryKey: ["thlabels", workspaceId, supabase, item.threadChatId],
+  //   queryFn: async () => {
+  //     const { token, error: sessErr } = await getSession(supabase);
+  //     if (sessErr) throw new Error("session expired or not found");
+  //     const url = `${process.env.NEXT_PUBLIC_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${item.threadChatId}/labels/`;
+  //     const response = await fetch(url, {
+  //       method: "GET",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //     });
 
-      if (!response.ok) {
-        const { status, statusText } = response;
-        return {
-          error: new Error(`error fetching threads: ${status} ${statusText}`),
-        };
-      }
+  //     if (!response.ok) {
+  //       const { status, statusText } = response;
+  //       return {
+  //         error: new Error(`error fetching threads: ${status} ${statusText}`),
+  //       };
+  //     }
 
-      const data = await response.json();
-      return data;
-    },
-    refetchOnWindowFocus: true,
-    refetchInterval: 1000 * 60 * 3,
-    refetchOnMount: true,
-  });
+  //     const data = await response.json();
+  //     return data;
+  //   },
+  //   refetchOnWindowFocus: true,
+  //   refetchInterval: 1000 * 60 * 3,
+  //   refetchOnMount: true,
+  // });
 
   const message = item.messages[0];
   const name = item?.customer?.name || "Customer";
@@ -204,7 +203,6 @@ function ThreadItem({ workspaceId, item, variant = "default" }) {
         {item?.title ? <div className="font-medium">{item?.title}</div> : null}
       </div>
       <div className="line-clamp-2 text-muted-foreground">{message.body}</div>
-      {renderLabels()}
     </Link>
   );
 }

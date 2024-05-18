@@ -52,7 +52,7 @@ export default function SidebarLinks({ workspaceId, count }) {
           <Link href={`/${workspaceId}/`}>
             <div className="flex">
               <ChatBubbleIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" />
-              <div className="my-auto">All Threads</div>
+              <div className="font-normal">All Threads</div>
             </div>
             {applyBadge(`/${workspaceId}/`, count.active)}
           </Link>
@@ -67,7 +67,7 @@ export default function SidebarLinks({ workspaceId, count }) {
               <div className="mr-2">
                 <Avatar size={18} name="name" variant="beam" />
               </div>
-              <div className="my-auto">My Threads</div>
+              <div className="font-normal">My Threads</div>
             </div>
             {applyBadge(`/${workspaceId}/threads/me/`, count.assignedToMe)}
           </Link>
@@ -80,7 +80,7 @@ export default function SidebarLinks({ workspaceId, count }) {
           <Link href={`/${workspaceId}/threads/unassigned/`}>
             <div className="flex">
               <AvatarIcon className="my-auto mr-2 h-5 w-5 text-muted-foreground" />
-              <div className="my-auto">Unassigned Threads</div>
+              <div className="font-normal">Unassigned Threads</div>
             </div>
             {applyBadge(
               `/${workspaceId}/threads/unassigned/`,

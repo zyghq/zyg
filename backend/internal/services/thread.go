@@ -83,9 +83,12 @@ func (s *ThreadChatService) MarkReplied(ctx context.Context, threadChatId string
 }
 
 // returns a list of thread chat in the workspace.
-func (s *ThreadChatService) GetWorkspaceThreadList(ctx context.Context, workspaceId string,
+func (s *ThreadChatService) GetWorkspaceThreadList(
+	ctx context.Context, workspaceId string,
+	statuses *[]string,
+	reasons *[]string,
 ) ([]domain.ThreadChatWithMessage, error) {
-	threads, err := s.repo.GetListByWorkspaceId(ctx, workspaceId)
+	threads, err := s.repo.GetListByWorkspaceId(ctx, workspaceId, statuses, reasons)
 	if err != nil {
 		return threads, ErrThreadChat
 	}

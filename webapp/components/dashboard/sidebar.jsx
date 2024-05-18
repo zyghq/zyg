@@ -39,8 +39,6 @@ import {
 export function Sidebar({ workspaceId, workspaceName, metrics }) {
   const { count } = metrics;
 
-  console.log(count);
-
   return (
     <div className={cn("p-4", "hidden lg:block lg:border-r")}>
       <DropdownMenu>

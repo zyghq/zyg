@@ -14,7 +14,7 @@ import { DoubleArrowUpIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
 import { CheckCircle, CircleIcon, EclipseIcon } from "lucide-react";
 
 export const metadata = {
-  title: "All Threads - Zyg AI",
+  title: "Labelled Threads - Zyg AI",
 };
 
 /**

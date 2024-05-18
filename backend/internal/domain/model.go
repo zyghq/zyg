@@ -57,6 +57,18 @@ func (s ThreadStatus) InProgress() string {
 	return "inprogress"
 }
 
+func (s ThreadStatus) Snoozed() string {
+	return "snoozed"
+}
+
+func (s ThreadStatus) UnSnoozed() string {
+	return "unsnoozed"
+}
+
+func (s ThreadStatus) DefaultStatus() string {
+	return s.Todo()
+}
+
 type LabelAddedBy struct{}
 
 func (a LabelAddedBy) User() string {

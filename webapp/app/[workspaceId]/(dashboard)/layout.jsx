@@ -1,4 +1,4 @@
-import { getSession, isAuthenticated } from "@/utils/supabase/helpers";
+import { getSession } from "@/utils/supabase/helpers";
 import { createClient } from "@/utils/supabase/server";
 
 import { Header } from "@/components/dashboard/header";
@@ -72,12 +72,6 @@ export default async function DashboardLayout({ params, children }) {
   const { workspaceId } = params;
 
   const supabase = createClient();
-
-  if (!(await isAuthenticated(supabase))) {
-    return redirect("/login/");
-  }
-
-  // const currentPath = getCurrentPath();
   const { token, error: tokenErr } = await getSession(supabase);
 
   if (tokenErr) {

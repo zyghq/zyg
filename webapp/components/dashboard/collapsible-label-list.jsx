@@ -14,7 +14,7 @@ import {
 
 import { CaretSortIcon } from "@radix-ui/react-icons";
 
-import { BugIcon, TagsIcon } from "lucide-react";
+import { TagIcon, TagsIcon } from "lucide-react";
 
 export default function CollapsibleLabelList({ workspaceId, labels }) {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -26,15 +26,12 @@ export default function CollapsibleLabelList({ workspaceId, labels }) {
       className="w-full space-y-2"
     >
       <div className="flex items-center justify-between space-x-1">
-        <Link
-          href={`/${workspaceId}/threads/labels/`}
-          className={`${buttonVariants({ variant: "ghost" })} w-full pl-3`}
-        >
+        <Button variant="ghost" className="w-full pl-3">
           <div className="mr-auto flex">
             <TagsIcon className="my-auto mr-2 h-4 w-4" />
-            <div className="my-auto">Labels</div>
+            <div className="font-normal">Labels</div>
           </div>
-        </Link>
+        </Button>
         <CollapsibleTrigger asChild>
           <Button variant="ghost" size="icon">
             <CaretSortIcon className="h-4 w-4" />
@@ -52,10 +49,14 @@ export default function CollapsibleLabelList({ workspaceId, labels }) {
           >
             <Link href={`/${workspaceId}/threads/labels/${label.labelId}/`}>
               <div className="flex">
-                <BugIcon className="my-auto mr-1 h-4 w-4 text-muted-foreground" />
-                <div className="capitalize text-foreground">{label.name}</div>
+                <TagIcon className="my-auto mr-1 h-3 w-3 text-muted-foreground" />
+                <div className="font-normal capitalize text-foreground">
+                  {label.name}
+                </div>
               </div>
-              <div className="font-mono font-light">{label.count}</div>
+              <div className="font-mono font-light text-muted-foreground">
+                {label.count}
+              </div>
             </Link>
           </Button>
         ))}

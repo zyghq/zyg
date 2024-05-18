@@ -63,7 +63,6 @@ func run(ctx context.Context) error {
 
 	// init server
 	srv := handler.NewServer(
-		ctx,
 		authService,
 		accountService,
 		workspaceService,
@@ -72,10 +71,10 @@ func run(ctx context.Context) error {
 	)
 
 	httpServer := &http.Server{
-		Addr:    *addr,
-		Handler: srv,
-		// ReadTimeout:       30 * time.Second,
-		// WriteTimeout:      90 * time.Second,
+		Addr:              *addr,
+		Handler:           srv,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      90 * time.Second,
 		IdleTimeout:       5 * time.Minute,
 		ReadHeaderTimeout: time.Minute,
 	}
