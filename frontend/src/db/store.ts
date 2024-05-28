@@ -48,14 +48,33 @@ export type ThreadChatStoreType = {
   } | null;
 };
 
+export type WorkspaceCustomerStoreType = {
+  workspaceId: string;
+  customerId: string;
+  externalId: string | null;
+  email: string | null;
+  phone: string | null;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 // add more like: Workspace | User | etc.
-type AllowedEntities = WorkspaceStoreType | ThreadChatStoreType;
+type AllowedEntities =
+  | WorkspaceStoreType
+  | ThreadChatStoreType
+  | WorkspaceCustomerStoreType;
 
 export type Dictionary<K extends string | number, V extends AllowedEntities> = {
   [key in K]: V;
 };
 
 export type ThreadChatMapStoreType = Dictionary<string, ThreadChatStoreType>;
+
+export type WorkspaceCustomerMapStoreType = Dictionary<
+  string,
+  WorkspaceCustomerStoreType
+>;
 
 export interface IWorkspaceEntities {
   hasData: boolean;
@@ -65,6 +84,7 @@ export interface IWorkspaceEntities {
   member: MembershipStoreType | null;
   metrics: WorkspaceMetricsStoreType;
   threadChats: ThreadChatMapStoreType | null;
+  customers: WorkspaceCustomerMapStoreType | null;
 }
 
 interface IWorkspaceStoreActions {
@@ -85,6 +105,7 @@ interface IWorkspaceStoreActions {
     memberId: string
   ): ThreadChatStoreType[];
   viewUnassignedThreads(state: WorkspaceStoreStateType): ThreadChatStoreType[];
+  viewCustomerName(state: WorkspaceStoreStateType, customerId: string): string;
 }
 
 export type WorkspaceStoreStateType = IWorkspaceEntities &
@@ -120,6 +141,10 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
     viewUnassignedThreads: (state: WorkspaceStoreStateType) => {
       const threads = state.threadChats ? Object.values(state.threadChats) : [];
       return threads.filter((t) => t.status === "todo" && !t.assigneeId);
+    },
+    viewCustomerName: (state: WorkspaceStoreStateType, customerId: string) => {
+      const customer = state.customers?.[customerId];
+      return customer ? customer.name : "";
     },
   }));
 };

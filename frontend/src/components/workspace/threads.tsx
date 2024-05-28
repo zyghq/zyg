@@ -10,6 +10,8 @@ import { ThreadChatStoreType } from "@/db/store";
 import { ChatBubbleIcon, ResetIcon } from "@radix-ui/react-icons";
 import { ReloadIcon } from "@radix-ui/react-icons";
 import Avatar from "boring-avatars";
+import { useRouteContext } from "@tanstack/react-router";
+import { useStore } from "zustand";
 
 function ThreadItem({
   workspaceId,
@@ -20,6 +22,15 @@ function ThreadItem({
   item: ThreadChatStoreType;
   variant?: string;
 }) {
+  const WorkspaceStore = useRouteContext({
+    from: "/workspaces/$workspaceId/_layout",
+    select: (context) => context.workspaceStore,
+  });
+
+  const customerName = useStore(WorkspaceStore.useContext(), (state) =>
+    state.viewCustomerName(state, item.customerId)
+  );
+
   //   const message = item.messages[0];
   //   const name = item?.customer?.name || "Customer";
   //   const { assignee } = item;
@@ -56,7 +67,7 @@ function ThreadItem({
         <div className="flex items-center">
           <div className="flex items-center gap-2">
             <ChatBubbleIcon />
-            <div className="font-semibold">{item.customerId}</div>
+            <div className="font-semibold">{customerName}</div>
             {!item.read && (
               <span className="flex h-2 w-2 rounded-full bg-blue-600" />
             )}
@@ -75,12 +86,7 @@ function ThreadItem({
             </div>
           )}
           {item.assigneeId && (
-            <Avatar
-              size={28}
-              name={item.assigneeId}
-              variant="beam"
-              colors={["#92A1C6", "#146A7C", "#F0AB3D", "#C271B4", "#C20D90"]}
-            />
+            <Avatar size={28} name={item.assigneeId} variant="marble" />
           )}
         </div>
         {item.replied ? (

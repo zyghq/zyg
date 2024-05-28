@@ -497,3 +497,56 @@ func (h *WorkspaceHandler) handleGetWorkspaceMembership(w http.ResponseWriter, r
 		return
 	}
 }
+
+func (h *WorkspaceHandler) handleGetWorkspaceCustomers(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+	ctx := r.Context()
+
+	workspaceId := r.PathValue("workspaceId")
+
+	fmt.Println("**** reaching code here ****", workspaceId)
+
+	workspace, err := h.ws.UserWorkspace(ctx, account.AccountId, workspaceId)
+	if errors.Is(err, services.ErrWorkspaceNotFound) {
+		slog.Warn(
+			"workspace not found or does not exist",
+			slog.String("workspaceId", workspaceId),
+		)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		slog.Error(
+			"failed to get account workspace or does not exist "+
+				"something went wrong",
+			slog.String("workspaceId", workspaceId),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Println("**** reaching code here ****", workspace.WorkspaceId)
+
+	customers, err := h.ws.WorkspaceCustomers(ctx, workspace.WorkspaceId)
+	if err != nil {
+		slog.Error(
+			"failed to get workspace customers "+
+				"something went wrong",
+			slog.String("workspaceId", workspaceId),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(customers); err != nil {
+		slog.Error(
+			"failed to encode workspace customers to json "+
+				"might need to check the json encoding defn",
+			slog.String("workspaceId", workspaceId),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+}

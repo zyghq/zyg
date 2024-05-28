@@ -7,11 +7,14 @@ import {
   threadChatMessagePreviewSchema,
   accountResponseSchema,
   membershipResponseSchema,
+  workspaceCustomerResponseSchema,
+  workspaceCustomersResponseSchema,
 } from "./schema";
 import {
   IWorkspaceEntities,
   ThreadChatStoreType,
   ThreadChatMapStoreType,
+  WorkspaceCustomerMapStoreType,
 } from "./store";
 
 export type WorkspaceResponseType = z.infer<typeof workspaceResponseSchema>;
@@ -30,6 +33,10 @@ export type AccountResponseType = z.infer<typeof accountResponseSchema>;
 
 export type MembershipResponseType = z.infer<typeof membershipResponseSchema>;
 
+export type WorkspaceCustomersResponseType = z.infer<
+  typeof workspaceCustomersResponseSchema
+>;
+
 function initialWorkspaceData(): IWorkspaceEntities {
   return {
     hasData: false,
@@ -47,6 +54,7 @@ function initialWorkspaceData(): IWorkspaceEntities {
       labels: [],
     },
     threadChats: null,
+    customers: null,
   };
 }
 
@@ -313,31 +321,46 @@ function makeThreadsStoreable(
   return mapped;
 }
 
+function makeCustomersStoreable(
+  customers: WorkspaceCustomersResponseType
+): WorkspaceCustomerMapStoreType {
+  const mapped: WorkspaceCustomerMapStoreType = {};
+  for (const customer of customers) {
+    const { customerId, ...rest } = customer;
+    mapped[customerId] = { customerId, ...rest };
+  }
+  return mapped;
+}
+
 export async function bootstrapWorkspace(
   token: string,
   workspaceId: string
 ): Promise<IWorkspaceEntities> {
   const data = initialWorkspaceData();
 
-  const getWorkspacePromise = getWorkspace(token, workspaceId);
-  const getWorkspaceMemberPromise = getWorkspaceMember(token, workspaceId);
-  const getWorkspaceMetricsPromise = getWorkspaceMetrics(token, workspaceId);
+  const getWorkspaceP = getWorkspace(token, workspaceId);
+  const getWorkspaceMemberP = getWorkspaceMember(token, workspaceId);
+  const getWorkspaceCustomersP = getWorkspaceCustomers(token, workspaceId);
+  const getWorkspaceMetricsP = getWorkspaceMetrics(token, workspaceId);
   const getWorkspaceThreadsP = getWorkspaceThreads(token, workspaceId);
 
-  const [workspaceData, memberData, metricsData, threadsData] =
+  const [workspaceData, memberData, customerData, metricsData, threadsData] =
     await Promise.all([
-      getWorkspacePromise,
-      getWorkspaceMemberPromise,
-      getWorkspaceMetricsPromise,
+      getWorkspaceP,
+      getWorkspaceMemberP,
+      getWorkspaceCustomersP,
+      getWorkspaceMetricsP,
       getWorkspaceThreadsP,
     ]);
 
   const { error: errWorkspace, data: workspace } = workspaceData;
   const { error: errMember, data: member } = memberData;
+  const { error: errCustomer, data: customers } = customerData;
   const { error: errMetrics, data: metrics } = metricsData;
   const { error: errThreads, data: threads } = threadsData;
 
-  const hasErr = errWorkspace || errMember || errMetrics || errThreads;
+  const hasErr =
+    errWorkspace || errMember || errCustomer || errMetrics || errThreads;
 
   if (hasErr) {
     data.error = new Error("error bootsrapping workspace store information");
@@ -355,12 +378,17 @@ export async function bootstrapWorkspace(
     data.member = member;
   }
 
+  if (customers && customers.length > 0) {
+    const customersMap = makeCustomersStoreable(customers);
+    data.customers = customersMap;
+  }
+
   if (metrics) {
     const { count } = metrics;
     data.metrics = count;
   }
 
-  if (threads) {
+  if (threads && threads.length > 0) {
     const threadsMap = makeThreadsStoreable(threads);
     data.threadChats = threadsMap;
   }
@@ -411,6 +439,62 @@ export async function getOrCreateZygAccount(token: string): Promise<{
     return {
       error: new Error(
         "error fetching auth account details - something went wrong"
+      ),
+      data: null,
+    };
+  }
+}
+
+export async function getWorkspaceCustomers(
+  token: string,
+  workspaceId: string
+): Promise<{
+  data: WorkspaceCustomersResponseType | null;
+  error: Error | null;
+}> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/customers/`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const { status, statusText } = response;
+      return {
+        error: new Error(
+          `error fetching workspace customers: ${status} ${statusText}`
+        ),
+        data: null,
+      };
+    }
+
+    try {
+      const data = await response.json();
+      // schema validate for each item
+      const customers = data.map((item: any) => {
+        return workspaceCustomerResponseSchema.parse({ ...item });
+      });
+      return { error: null, data: customers };
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        console.error(err.message);
+      }
+      console.error(err);
+      return {
+        error: new Error("error parsing workspace customers schema"),
+        data: null,
+      };
+    }
+  } catch (err) {
+    console.error(err);
+    return {
+      error: new Error(
+        "error fetching workspace customers - something went wrong"
       ),
       data: null,
     };

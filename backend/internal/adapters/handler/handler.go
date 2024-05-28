@@ -115,6 +115,9 @@ func NewServer(
 	mux.Handle("GET /workspaces/{workspaceId}/members/me/{$}",
 		NewEnsureAuth(wh.handleGetWorkspaceMembership, authService))
 
+	mux.Handle("GET /workspaces/{workspaceId}/customers/{$}",
+		NewEnsureAuth(wh.handleGetWorkspaceCustomers, authService))
+
 	mux.Handle("POST /workspaces/{workspaceId}/labels/{$}",
 		NewEnsureAuth(wh.handleGetOrCreateWorkspaceLabel, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/{$}",

@@ -111,3 +111,18 @@ export const membershipResponseSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
 });
+
+export const workspaceCustomerResponseSchema = z.object({
+  workspaceId: z.string(),
+  customerId: z.string(),
+  externalId: z.string().nullable().default(null),
+  email: z.string().nullable().default(null),
+  phone: z.string().nullable().default(null),
+  name: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const workspaceCustomersResponseSchema = z
+  .array(workspaceCustomerResponseSchema)
+  .default([]);

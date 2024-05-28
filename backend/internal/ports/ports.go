@@ -31,6 +31,7 @@ type WorkspaceServicer interface {
 	InitWorkspaceLabel(ctx context.Context, label domain.Label) (domain.Label, bool, error)
 	WorkspaceLabel(ctx context.Context, workspaceId string, labelId string) (domain.Label, error)
 	WorkspaceMember(ctx context.Context, accountId string, workspaceId string) (domain.Member, error)
+	WorkspaceCustomers(ctx context.Context, workspaceId string) ([]domain.Customer, error)
 	InitWorkspaceCustomerWithExternalId(ctx context.Context, c domain.Customer) (domain.Customer, bool, error)
 	InitWorkspaceCustomerWithEmail(ctx context.Context, c domain.Customer) (domain.Customer, bool, error)
 	InitWorkspaceCustomerWithPhone(ctx context.Context, c domain.Customer) (domain.Customer, bool, error)
@@ -92,6 +93,7 @@ type CustomerRepositorer interface {
 	GetOrCreateCustomerByExtId(ctx context.Context, c domain.Customer) (domain.Customer, bool, error)
 	GetOrCreateCustomerByEmail(ctx context.Context, c domain.Customer) (domain.Customer, bool, error)
 	GetOrCreateCustomerByPhone(ctx context.Context, c domain.Customer) (domain.Customer, bool, error)
+	GetListByWorkspaceId(ctx context.Context, workspaceId string) ([]domain.Customer, error)
 }
 
 type ThreadChatRepositorer interface {
