@@ -90,7 +90,6 @@ func handleGetIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func NewServer(
-	ctx context.Context, // deprecate context passing, shall we use req.Context() instead?
 	authService ports.AuthServicer,
 	accountService ports.AccountServicer,
 	workspaceService ports.WorkspaceServicer,

@@ -5,16 +5,16 @@
       "name": "ai"
     },
     {
-      "path": "webapp",
-      "name": "webapp"
-    },
-    {
       "path": "widget",
       "name": "widget"
     },
     {
       "path": "backend",
       "name": "backend"
+    },
+    {
+      "path": "frontend",
+      "name": "frontend"
     },
     {
       "path": ".",

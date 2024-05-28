@@ -1,0 +1,16 @@
+{
+  "editor.fontFamily": "'Cascadia Mono', 'SauceCodePro Nerd Font', Consolas, monospace",
+  "editor.formatOnSave": true,
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "tailwindCSS.includeLanguages": {
+    "plaintext": "html"
+  },
+  "tailwindCSS.colorDecorators": true,
+  "editor.quickSuggestions": {
+    "strings": "on"
+  },
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000
+}

@@ -71,12 +71,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Custom entries
-vectordb/
-converse/storage/
-converse/data/
-converse/store/
-
 scratch.txt
 
 secrets/

@@ -17,18 +17,47 @@ type ThreadChatHandler struct {
 	ths ports.ThreadChatServicer
 }
 
-func NewThreadChatHandler(ws ports.WorkspaceServicer, ths ports.ThreadChatServicer) *ThreadChatHandler {
+func NewThreadChatHandler(
+	ws ports.WorkspaceServicer,
+	ths ports.ThreadChatServicer,
+) *ThreadChatHandler {
 	return &ThreadChatHandler{ws: ws, ths: ths}
 }
 
 func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.Request, account *domain.Account) {
 	workspaceId := r.PathValue("workspaceId")
 
+	// from search params
+	statuses := make([]string, 0, 3)
+	reasons := make([]string, 0, 2)
+
+	values := r.URL.Query()
+	for k, v := range values {
+		if k == "status" {
+			for _, s := range v {
+				if _, ok := StatusParams[s]; ok {
+					statuses = append(statuses, s)
+				}
+			}
+		} else if k == "reason" {
+			for _, r := range v {
+				if _, ok := ReasonParams[r]; ok {
+					reasons = append(reasons, r)
+				}
+			}
+		}
+	}
+
+	// defaults
+	if len(statuses) == 0 {
+		statuses = append(statuses, domain.ThreadStatus{}.DefaultStatus())
+	}
+
 	ctx := r.Context()
 
 	workspace, err := h.ws.UserWorkspace(ctx, account.AccountId, workspaceId)
 
-	// not found workspace
+	// workspace not found
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		slog.Warn(
 			"workspace not found or does not exist for account",
@@ -49,7 +78,7 @@ func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.
 		return
 	}
 
-	threads, err := h.ths.GetWorkspaceThreadList(ctx, workspace.WorkspaceId)
+	threads, err := h.ths.GetWorkspaceThreadList(ctx, workspace.WorkspaceId, &statuses, &reasons)
 	if err != nil {
 		slog.Error(
 			"failed to get list of thread chats for workspace "+
@@ -378,7 +407,6 @@ func (h *ThreadChatHandler) handleGetLabelledThreadChats(w http.ResponseWriter, 
 
 	workspace, err := h.ws.UserWorkspace(ctx, account.AccountId, workspaceId)
 
-	// not found workspace
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		slog.Warn(
 			"workspace not found or does not exist for account",

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strconv"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/zyghq/zyg/internal/domain"
@@ -330,10 +331,18 @@ func (tc *ThreadChatDB) SetReplied(ctx context.Context, threadChatId string, rep
 // returns a list of thread chats with latest message for workspace
 // irrespective of customer
 // this is different from `GetListByWorkspaceCustomerId`
-func (tc *ThreadChatDB) GetListByWorkspaceId(ctx context.Context, workspaceId string,
+func (tc *ThreadChatDB) GetListByWorkspaceId(
+	ctx context.Context, workspaceId string,
+	statusFilters *[]string,
+	reasonFilters *[]string,
 ) ([]domain.ThreadChatWithMessage, error) {
 	var th domain.ThreadChat
 	var message domain.ThreadChatMessage
+
+	argsLen := len(*statusFilters) + len(*reasonFilters)
+	args := make([]interface{}, 0, argsLen)
+
+	args = append(args, workspaceId)
 
 	ths := make([]domain.ThreadChatWithMessage, 0, 100)
 	stmt := `SELECT
@@ -374,10 +383,35 @@ func (tc *ThreadChatDB) GetListByWorkspaceId(ctx context.Context, workspaceId st
 			thread_chat_id
 		) latest ON thm.thread_chat_id = latest.thread_chat_id
 		AND thm.sequence = latest.sequence
-		WHERE th.workspace_id = $1 
-		ORDER BY sequence DESC LIMIT 100`
+		WHERE th.workspace_id = $1`
 
-	rows, _ := tc.db.Query(ctx, stmt, workspaceId)
+	ord := ` ORDER BY sequence DESC LIMIT 100`
+
+	for i, status := range *statusFilters {
+		if i == 0 {
+			stmt += ` AND th.status = $` + strconv.Itoa(len(args)+1)
+		} else {
+			stmt += ` OR th.status = $` + strconv.Itoa(len(args)+1)
+		}
+		args = append(args, status)
+	}
+
+	for i, reason := range *reasonFilters {
+		if i == 0 {
+			stmt += ` AND th.replied = $` + strconv.Itoa(len(args)+1)
+		} else {
+			stmt += ` OR th.replied = $` + strconv.Itoa(len(args)+1)
+		}
+		if reason == "replied" {
+			args = append(args, true)
+		} else if reason == "unreplied" {
+			args = append(args, false)
+		}
+	}
+
+	stmt += ord
+
+	rows, _ := tc.db.Query(ctx, stmt, args...)
 
 	defer rows.Close()
 

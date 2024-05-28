@@ -35,8 +35,7 @@ func AuthenticateCustomer(
 	var customer domain.Customer
 	if scheme == "bearer" {
 		slog.Info("authenticate with customer JWT")
-		// TODO: update to specific secret key for customer jwt.
-		hmacSecret, err := zyg.GetEnv("SUPABASE_JWT_SECRET")
+		hmacSecret, err := zyg.GetEnv("ZYG_CUSTOMER_JWT_SECRET")
 		if err != nil {
 			return customer, fmt.Errorf("failed to get env SUPABASE_JWT_SECRET with error: %v", err)
 		}
