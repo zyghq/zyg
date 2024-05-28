@@ -14,14 +14,6 @@ const threadFiltersSearchSchema = z.object({
   status: z.enum(["todo", "snoozed", "done"]).catch("todo"),
 });
 
-// type ThreadFilterSearch = z.infer<typeof threadSearchSchema>;
-
-// type StatusSearchOptions = "todo" | "snoozed" | "done";
-
-// type ThreadSearchFilters = {
-//   status: StatusSearchOptions;
-// };
-
 export const Route = createFileRoute("/workspaces/$workspaceId/_layout")({
   validateSearch: threadFiltersSearchSchema,
   component: () => <WorkspaceLayout />,
@@ -43,6 +35,11 @@ function WorkspaceLayout() {
     (state: WorkspaceStoreStateType) => state.getWorkspaceName(state)
   );
 
+  const memberId = useStore(
+    workspaceStore.useContext(),
+    (state: WorkspaceStoreStateType) => state.getMemberId(state)
+  );
+
   const metrics = useStore(
     workspaceStore.useContext(),
     (state: WorkspaceStoreStateType) => state.getMetrics(state)
@@ -55,6 +52,7 @@ function WorkspaceLayout() {
           workspaceId={workspaceId}
           workspaceName={workspaceName}
           metrics={metrics}
+          memberId={memberId}
         />
         <div className="flex flex-col">
           <div className="grid lg:grid-cols-5">
@@ -63,6 +61,7 @@ function WorkspaceLayout() {
               workspaceId={workspaceId}
               workspaceName={workspaceName}
               metrics={metrics}
+              memberId={memberId}
             />
             <Outlet />
           </div>

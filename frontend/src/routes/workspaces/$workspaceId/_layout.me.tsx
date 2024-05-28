@@ -19,8 +19,11 @@ function MyThreads() {
     workspaceStore.useContext(),
     (state: WorkspaceStoreStateType) => state.getWorkspaceId(state)
   );
-  // TODO: add authentication
-  const memberId = "m_co60epktidu7sod96la0";
+
+  const memberId = useStore(
+    workspaceStore.useContext(),
+    (state: WorkspaceStoreStateType) => state.getMemberId(state)
+  );
   const threads = useStore(
     workspaceStore.useContext(),
     (state: WorkspaceStoreStateType) => state.viewMyTodoThreads(state, memberId)

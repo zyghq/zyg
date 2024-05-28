@@ -1,10 +1,13 @@
 import { createStore } from "zustand/vanilla";
 import { z } from "zod";
-import { workspaceResponseSchema } from "./schema";
-import { AccountType } from "./api";
+import { workspaceResponseSchema, membershipResponseSchema } from "./schema";
+import { AccountResponseType } from "./api";
 
-// inferred from schema.ts - no change.
+// inferred from schema
 export type WorkspaceStoreType = z.infer<typeof workspaceResponseSchema>;
+
+// inferred from schema
+export type MembershipStoreType = z.infer<typeof membershipResponseSchema>;
 
 export type LabelMetricsStoreType = {
   labelId: string;
@@ -59,6 +62,7 @@ export interface IWorkspaceEntities {
   isPending: boolean;
   error: Error | null;
   workspace: WorkspaceStoreType | null;
+  member: MembershipStoreType | null;
   metrics: WorkspaceMetricsStoreType;
   threadChats: ThreadChatMapStoreType | null;
 }
@@ -67,6 +71,9 @@ interface IWorkspaceStoreActions {
   updateWorkspaceStore(): void;
   getWorkspaceName(state: WorkspaceStoreStateType): string;
   getWorkspaceId(state: WorkspaceStoreStateType): string;
+  getMemberId(state: WorkspaceStoreStateType): string;
+  getMemberName(state: WorkspaceStoreStateType): string;
+  getMemberRole(state: WorkspaceStoreStateType): string;
   getMetrics(state: WorkspaceStoreStateType): WorkspaceMetricsStoreType;
   getThreadChatItem(
     state: WorkspaceStoreStateType,
@@ -93,6 +100,10 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
       state.workspace?.name || "",
     getWorkspaceId: (state: WorkspaceStoreStateType) =>
       state.workspace?.workspaceId || "",
+    getMemberId: (state: WorkspaceStoreStateType) =>
+      state.member?.memberId || "",
+    getMemberName: (state: WorkspaceStoreStateType) => state.member?.name || "",
+    getMemberRole: (state: WorkspaceStoreStateType) => state.member?.role || "",
     getMetrics: (state: WorkspaceStoreStateType) => state.metrics,
     getThreadChatItem: (state: WorkspaceStoreStateType, threadChatId: string) =>
       state.threadChats?.[threadChatId] || null,
@@ -116,12 +127,12 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
 export interface IAccount {
   hasData: boolean;
   error: Error | null;
-  account: AccountType | null;
+  account: AccountResponseType | null;
 }
 
 interface IAccountStoreActions {
   updateStore(): void;
-  getAccount(state: AccountStoreStateType): AccountType | null;
+  getAccount(state: AccountStoreStateType): AccountResponseType | null;
   getName(state: AccountStoreStateType): string;
   getAccountId(state: AccountStoreStateType): string;
   getEmail(state: AccountStoreStateType): string;

@@ -5,16 +5,14 @@ import {
   workspaceMetricsResponseSchema,
   threadChatResponseSchema,
   threadChatMessagePreviewSchema,
-  accountSchema,
+  accountResponseSchema,
+  membershipResponseSchema,
 } from "./schema";
 import {
   IWorkspaceEntities,
   ThreadChatStoreType,
   ThreadChatMapStoreType,
 } from "./store";
-
-// TODO: fix this.
-// const TOKEN = `eyJhbGciOiJIUzI1NiIsImtpZCI6InhIaUQ3b1NRUSt5NWJ6ZUIiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzE2ODE2MjkwLCJpYXQiOjE3MTY3ODc0OTAsImlzcyI6Imh0dHBzOi8vdHdqbGxqdmltb21nb29jcm5pZWwuc3VwYWJhc2UuY28vYXV0aC92MSIsInN1YiI6IjYyMmZkNDFjLWE0MzctNGNiMi1iMTNkLThjOTdjZmRjNTYyZiIsImVtYWlsIjoic2FuY2hpdHJya0BnbWFpbC5jb20iLCJwaG9uZSI6IiIsImFwcF9tZXRhZGF0YSI6eyJwcm92aWRlciI6ImVtYWlsIiwicHJvdmlkZXJzIjpbImVtYWlsIl19LCJ1c2VyX21ldGFkYXRhIjp7fSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTcxNTcwNTM0N31dLCJzZXNzaW9uX2lkIjoiM2U0Yjk2ZmUtNjk1MS00ZTI4LThiZWUtYzUyODczYmZjMmRjIiwiaXNfYW5vbnltb3VzIjpmYWxzZX0.zf9UuXjc2Reo4FrDJB-2ZUXz6QDBKZ4WKl7ic4llAdU`;
 
 export type WorkspaceResponseType = z.infer<typeof workspaceResponseSchema>;
 
@@ -28,7 +26,9 @@ export type ThreadChatMessagePreviewType = z.infer<
   typeof threadChatMessagePreviewSchema
 >;
 
-export type AccountType = z.infer<typeof accountSchema>;
+export type AccountResponseType = z.infer<typeof accountResponseSchema>;
+
+export type MembershipResponseType = z.infer<typeof membershipResponseSchema>;
 
 function initialWorkspaceData(): IWorkspaceEntities {
   return {
@@ -36,6 +36,7 @@ function initialWorkspaceData(): IWorkspaceEntities {
     isPending: true,
     error: null,
     workspace: null,
+    member: null,
     metrics: {
       active: 0,
       done: 0,
@@ -97,6 +98,58 @@ async function getWorkspace(
     return {
       error: new Error(
         "error fetching workspace details - something went wrong"
+      ),
+      data: null,
+    };
+  }
+}
+
+async function getWorkspaceMember(
+  token: string,
+  workspaceId: string
+): Promise<{ data: MembershipResponseType | null; error: Error | null }> {
+  try {
+    // make a request
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/members/me/`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const { status, statusText } = response;
+      return {
+        error: new Error(
+          `error fetching workspace member details: ${status} ${statusText}`
+        ),
+        data: null,
+      };
+    }
+
+    const data = await response.json();
+    // parse into schema
+    try {
+      const member = membershipResponseSchema.parse({ ...data });
+      return { error: null, data: member };
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        console.error(err.message);
+      }
+      console.error(err);
+      return {
+        error: new Error("error parsing workspace member schema"),
+        data: null,
+      };
+    }
+  } catch (error) {
+    console.error(error);
+    return {
+      error: new Error(
+        "error fetching workspace member details - something went wrong"
       ),
       data: null,
     };
@@ -267,20 +320,24 @@ export async function bootstrapWorkspace(
   const data = initialWorkspaceData();
 
   const getWorkspacePromise = getWorkspace(token, workspaceId);
+  const getWorkspaceMemberPromise = getWorkspaceMember(token, workspaceId);
   const getWorkspaceMetricsPromise = getWorkspaceMetrics(token, workspaceId);
   const getWorkspaceThreadsP = getWorkspaceThreads(token, workspaceId);
 
-  const [workspaceData, metricsData, threadsData] = await Promise.all([
-    getWorkspacePromise,
-    getWorkspaceMetricsPromise,
-    getWorkspaceThreadsP,
-  ]);
+  const [workspaceData, memberData, metricsData, threadsData] =
+    await Promise.all([
+      getWorkspacePromise,
+      getWorkspaceMemberPromise,
+      getWorkspaceMetricsPromise,
+      getWorkspaceThreadsP,
+    ]);
 
   const { error: errWorkspace, data: workspace } = workspaceData;
+  const { error: errMember, data: member } = memberData;
   const { error: errMetrics, data: metrics } = metricsData;
   const { error: errThreads, data: threads } = threadsData;
 
-  const hasErr = errWorkspace || errMetrics || errThreads;
+  const hasErr = errWorkspace || errMember || errMetrics || errThreads;
 
   if (hasErr) {
     data.error = new Error("error bootsrapping workspace store information");
@@ -292,6 +349,10 @@ export async function bootstrapWorkspace(
     data.workspace = workspace;
     data.hasData = true;
     data.isPending = false;
+  }
+
+  if (member) {
+    data.member = member;
   }
 
   if (metrics) {
@@ -308,7 +369,7 @@ export async function bootstrapWorkspace(
 }
 
 export async function getOrCreateZygAccount(token: string): Promise<{
-  data: AccountType | null;
+  data: AccountResponseType | null;
   error: Error | null;
 }> {
   try {
@@ -333,7 +394,7 @@ export async function getOrCreateZygAccount(token: string): Promise<{
 
     try {
       const data = await response.json();
-      const account = accountSchema.parse({ ...data });
+      const account = accountResponseSchema.parse({ ...data });
       return { error: null, data: account };
     } catch (err) {
       if (err instanceof z.ZodError) {

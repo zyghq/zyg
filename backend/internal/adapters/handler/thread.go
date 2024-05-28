@@ -27,32 +27,6 @@ func NewThreadChatHandler(
 func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.Request, account *domain.Account) {
 	workspaceId := r.PathValue("workspaceId")
 
-	// from search params
-	statuses := make([]string, 0, 3)
-	reasons := make([]string, 0, 2)
-
-	values := r.URL.Query()
-	for k, v := range values {
-		if k == "status" {
-			for _, s := range v {
-				if _, ok := StatusParams[s]; ok {
-					statuses = append(statuses, s)
-				}
-			}
-		} else if k == "reason" {
-			for _, r := range v {
-				if _, ok := ReasonParams[r]; ok {
-					reasons = append(reasons, r)
-				}
-			}
-		}
-	}
-
-	// defaults
-	if len(statuses) == 0 {
-		statuses = append(statuses, domain.ThreadStatus{}.DefaultStatus())
-	}
-
 	ctx := r.Context()
 
 	workspace, err := h.ws.UserWorkspace(ctx, account.AccountId, workspaceId)
@@ -78,7 +52,7 @@ func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.
 		return
 	}
 
-	threads, err := h.ths.GetWorkspaceThreadList(ctx, workspace.WorkspaceId, &statuses, &reasons)
+	threads, err := h.ths.GetWorkspaceThreadList(ctx, workspace.WorkspaceId)
 	if err != nil {
 		slog.Error(
 			"failed to get list of thread chats for workspace "+
