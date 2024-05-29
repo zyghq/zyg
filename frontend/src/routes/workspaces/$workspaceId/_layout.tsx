@@ -9,39 +9,71 @@ import { SideNav } from "@/components/workspace/sidenav";
 //
 // for more: https://tanstack.com/router/latest/docs/framework/react/guide/search-params
 // usage of `.catch` or `default` matters.
+const reasonsSchema = (validValues: string[]) => {
+  const sanitizeArray = (arr: string[]) => {
+    // remove duplicates
+    const uniqueValues = [...new Set(arr)];
+    // filter only valid values
+    const uniqueValidValues: string[] = uniqueValues.filter((val) =>
+      validValues.includes(val)
+    );
 
-const threadFiltersSearchSchema = z.object({
+    // no valid values
+    if (uniqueValidValues.length === 0) {
+      throw new Error("invalid reason(s) passed");
+    }
+
+    if (uniqueValidValues.length === 1) {
+      return uniqueValidValues[0];
+    }
+
+    return uniqueValidValues;
+  };
+  return z.union([
+    z.string().refine((value) => validValues.includes(value)),
+    z.array(z.string()).transform(sanitizeArray),
+    // .refine(
+    //   (arr) =>
+    //     arr.length === validValues.length &&
+    //     validValues.every((val) => arr.includes(val))
+    // ),
+    z.undefined(),
+  ]);
+};
+
+const threadSearchSchema = z.object({
   status: z.enum(["todo", "snoozed", "done"]).catch("todo"),
+  reasons: reasonsSchema(["replied", "unreplied"]).catch(""),
 });
 
 export const Route = createFileRoute("/workspaces/$workspaceId/_layout")({
-  validateSearch: threadFiltersSearchSchema,
+  validateSearch: (search) => threadSearchSchema.parse(search),
   component: () => <WorkspaceLayout />,
 });
 
 function WorkspaceLayout() {
-  const { workspaceStore, AccountStore } = Route.useRouteContext();
+  const { WorkspaceStore, AccountStore } = Route.useRouteContext();
 
   const email = useStore(AccountStore.useContext(), (state) =>
     state.getEmail(state)
   );
 
   const workspaceId = useStore(
-    workspaceStore.useContext(),
+    WorkspaceStore.useContext(),
     (state: WorkspaceStoreStateType) => state.getWorkspaceId(state)
   );
   const workspaceName = useStore(
-    workspaceStore.useContext(),
+    WorkspaceStore.useContext(),
     (state: WorkspaceStoreStateType) => state.getWorkspaceName(state)
   );
 
   const memberId = useStore(
-    workspaceStore.useContext(),
+    WorkspaceStore.useContext(),
     (state: WorkspaceStoreStateType) => state.getMemberId(state)
   );
 
   const metrics = useStore(
-    workspaceStore.useContext(),
+    WorkspaceStore.useContext(),
     (state: WorkspaceStoreStateType) => state.getMetrics(state)
   );
 

@@ -24,7 +24,7 @@ function ThreadItem({
 }) {
   const WorkspaceStore = useRouteContext({
     from: "/workspaces/$workspaceId/_layout",
-    select: (context) => context.workspaceStore,
+    select: (context) => context.WorkspaceStore,
   });
 
   const customerName = useStore(WorkspaceStore.useContext(), (state) =>

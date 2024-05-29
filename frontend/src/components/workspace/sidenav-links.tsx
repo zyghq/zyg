@@ -37,7 +37,7 @@ export default function SideNavLinks({
             buttonVariants({ variant: "ghost" }),
             "flex w-full justify-between px-3 dark:text-accent-foreground"
           )}
-          activeOptions={{ exact: true }}
+          activeOptions={{ exact: true, includeSearch: false }}
           activeProps={{
             className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
           }}
@@ -77,7 +77,7 @@ export default function SideNavLinks({
             buttonVariants({ variant: "ghost" }),
             "flex w-full justify-between px-3 dark:text-accent-foreground"
           )}
-          activeOptions={{ exact: true }}
+          activeOptions={{ exact: true, includeSearch: false }}
           activeProps={{
             className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
           }}
@@ -123,7 +123,7 @@ export default function SideNavLinks({
             buttonVariants({ variant: "ghost" }),
             "flex w-full justify-between px-3 dark:text-accent-foreground"
           )}
-          activeOptions={{ exact: true }}
+          activeOptions={{ exact: true, includeSearch: false }}
           activeProps={{
             className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
           }}

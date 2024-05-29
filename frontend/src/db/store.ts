@@ -87,6 +87,10 @@ export interface IWorkspaceEntities {
   customers: WorkspaceCustomerMapStoreType | null;
 }
 
+type ReplyStatus = "replied" | "unreplied";
+
+export type reasonsFiltersType = ReplyStatus | ReplyStatus[] | undefined;
+
 interface IWorkspaceStoreActions {
   updateWorkspaceStore(): void;
   getWorkspaceName(state: WorkspaceStoreStateType): string;
@@ -99,7 +103,10 @@ interface IWorkspaceStoreActions {
     state: WorkspaceStoreStateType,
     threadChatId: string
   ): ThreadChatStoreType | null;
-  viewAllTodoThreads(state: WorkspaceStoreStateType): ThreadChatStoreType[];
+  viewAllTodoThreads(
+    state: WorkspaceStoreStateType,
+    reasons: reasonsFiltersType
+  ): ThreadChatStoreType[];
   viewMyTodoThreads(
     state: WorkspaceStoreStateType,
     memberId: string
@@ -128,9 +135,30 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
     getMetrics: (state: WorkspaceStoreStateType) => state.metrics,
     getThreadChatItem: (state: WorkspaceStoreStateType, threadChatId: string) =>
       state.threadChats?.[threadChatId] || null,
-    viewAllTodoThreads: (state: WorkspaceStoreStateType) => {
+    viewAllTodoThreads: (state: WorkspaceStoreStateType, reasons) => {
       const threads = state.threadChats ? Object.values(state.threadChats) : [];
-      return threads.filter((t) => t.status === "todo");
+      const todoThreads = threads.filter((t) => t.status === "todo");
+      if (reasons && Array.isArray(reasons)) {
+        const uniqueReasons = [...new Set(reasons)];
+        const filtered = [];
+        for (const reason of uniqueReasons) {
+          if (reason === "replied") {
+            filtered.push(...todoThreads.filter((t) => t.replied));
+          } else if (reason === "unreplied") {
+            filtered.push(...todoThreads.filter((t) => !t.replied));
+          }
+        }
+        return filtered;
+      }
+      if (reasons && typeof reasons === "string") {
+        if (reasons === "replied") {
+          return todoThreads.filter((t) => t.replied);
+        }
+        if (reasons === "unreplied") {
+          return todoThreads.filter((t) => !t.replied);
+        }
+      }
+      return todoThreads;
     },
     viewMyTodoThreads: (state: WorkspaceStoreStateType, memberId: string) => {
       const threads = state.threadChats ? Object.values(state.threadChats) : [];

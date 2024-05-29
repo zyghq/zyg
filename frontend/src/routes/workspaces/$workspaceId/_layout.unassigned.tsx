@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useStore } from "zustand";
 import { WorkspaceStoreStateType } from "@/db/store";
 
@@ -16,35 +16,54 @@ export const Route = createFileRoute(
 });
 
 function UnassignedThreads() {
-  const { workspaceStore } = Route.useRouteContext();
+  const { WorkspaceStore } = Route.useRouteContext();
+
+  const { status } = Route.useSearch();
+  const navigate = useNavigate();
+
   const workspaceId = useStore(
-    workspaceStore.useContext(),
+    WorkspaceStore.useContext(),
     (state: WorkspaceStoreStateType) => state.getWorkspaceId(state)
   );
   const threads = useStore(
-    workspaceStore.useContext(),
+    WorkspaceStore.useContext(),
     (state: WorkspaceStoreStateType) => state.viewUnassignedThreads(state)
   );
   return (
     <main className="col-span-3 lg:col-span-4">
       <div className="container">
         <div className="mb-4 mt-4 text-xl">Unassigned Threads</div>
-        <Tabs defaultValue="todo">
+        <Tabs defaultValue={status}>
           <div className="mb-4 sm:flex sm:justify-between">
             <TabsList className="grid grid-cols-3">
-              <TabsTrigger value="todo">
+              <TabsTrigger
+                onClick={() => {
+                  navigate({ search: () => ({ status: "todo" }) });
+                }}
+                value="todo"
+              >
                 <div className="flex items-center">
                   <CircleIcon className="mr-1 h-4 w-4 text-indigo-500" />
                   Todo
                 </div>
               </TabsTrigger>
-              <TabsTrigger value="snoozed">
+              <TabsTrigger
+                onClick={() => {
+                  navigate({ search: () => ({ status: "snoozed" }) });
+                }}
+                value="snoozed"
+              >
                 <div className="flex items-center">
                   <EclipseIcon className="mr-1 h-4 w-4 text-fuchsia-500" />
                   Snoozed
                 </div>
               </TabsTrigger>
-              <TabsTrigger value="done">
+              <TabsTrigger
+                onClick={() => {
+                  navigate({ search: () => ({ status: "done" }) });
+                }}
+                value="done"
+              >
                 <div className="flex items-center">
                   <CheckCircle className="mr-1 h-4 w-4 text-green-500" />
                   Done

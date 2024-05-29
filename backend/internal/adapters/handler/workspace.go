@@ -503,8 +503,6 @@ func (h *WorkspaceHandler) handleGetWorkspaceCustomers(w http.ResponseWriter, r 
 
 	workspaceId := r.PathValue("workspaceId")
 
-	fmt.Println("**** reaching code here ****", workspaceId)
-
 	workspace, err := h.ws.UserWorkspace(ctx, account.AccountId, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		slog.Warn(
@@ -524,8 +522,6 @@ func (h *WorkspaceHandler) handleGetWorkspaceCustomers(w http.ResponseWriter, r 
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-
-	fmt.Println("**** reaching code here ****", workspace.WorkspaceId)
 
 	customers, err := h.ws.WorkspaceCustomers(ctx, workspace.WorkspaceId)
 	if err != nil {
