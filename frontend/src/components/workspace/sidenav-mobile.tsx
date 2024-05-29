@@ -31,10 +31,12 @@ export default function SideNavMobile({
   workspaceId,
   workspaceName,
   metrics,
+  memberId,
 }: {
   workspaceId: string;
   workspaceName: string;
   metrics: WorkspaceMetricsStoreType;
+  memberId: string;
 }) {
   const [open, setOpen] = React.useState(false);
 
@@ -125,6 +127,7 @@ export default function SideNavMobile({
           <SideNavLinks
             workspaceId={workspaceId}
             metrics={metrics}
+            memberId={memberId}
             openClose={setOpen}
           />
         </ScrollArea>

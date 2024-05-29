@@ -228,3 +228,31 @@ func (c *CustomerDB) GetOrCreateCustomerByPhone(ctx context.Context, customer do
 
 	return customer, isCreated, nil
 }
+
+func (c *CustomerDB) GetListByWorkspaceId(ctx context.Context, workspaceId string) ([]domain.Customer, error) {
+	var customer domain.Customer
+	customers := make([]domain.Customer, 0, 100)
+	stmt := `SELECT workspace_id, customer_id, external_id, email, phone, name, created_at, updated_at
+		FROM customer WHERE workspace_id = $1
+		ORDER BY created_at DESC LIMIT 100`
+
+	rows, _ := c.db.Query(ctx, stmt, workspaceId)
+
+	_, err := pgx.ForEachRow(rows, []any{
+		&customer.WorkspaceId, &customer.CustomerId,
+		&customer.ExternalId, &customer.Email, &customer.Phone, &customer.Name,
+		&customer.CreatedAt, &customer.UpdatedAt,
+	}, func() error {
+		customers = append(customers, customer)
+		return nil
+	})
+
+	if err != nil {
+		slog.Error("failed to query", "error", err)
+		return []domain.Customer{}, ErrQuery
+	}
+
+	defer rows.Close()
+
+	return customers, nil
+}

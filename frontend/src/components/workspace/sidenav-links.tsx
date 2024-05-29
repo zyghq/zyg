@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 
+import Avatar from "boring-avatars";
 import { Link, getRouteApi } from "@tanstack/react-router";
 
 import { ChatBubbleIcon } from "@radix-ui/react-icons";
@@ -14,10 +15,12 @@ const routeApi = getRouteApi("/workspaces/$workspaceId/_layout");
 export default function SideNavLinks({
   workspaceId,
   metrics,
+  memberId,
   openClose = () => {},
 }: {
   workspaceId: string;
   metrics: WorkspaceMetricsStoreType;
+  memberId: string;
   openClose?: (isOpen: boolean) => void | undefined;
 }) {
   const routeSearch = routeApi.useSearch();
@@ -34,7 +37,7 @@ export default function SideNavLinks({
             buttonVariants({ variant: "ghost" }),
             "flex w-full justify-between px-3 dark:text-accent-foreground"
           )}
-          activeOptions={{ exact: true }}
+          activeOptions={{ exact: true, includeSearch: false }}
           activeProps={{
             className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
           }}
@@ -74,7 +77,7 @@ export default function SideNavLinks({
             buttonVariants({ variant: "ghost" }),
             "flex w-full justify-between px-3 dark:text-accent-foreground"
           )}
-          activeOptions={{ exact: true }}
+          activeOptions={{ exact: true, includeSearch: false }}
           activeProps={{
             className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
           }}
@@ -84,7 +87,10 @@ export default function SideNavLinks({
               {isActive ? (
                 <>
                   <div className="flex">
-                    <ChatBubbleIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" />
+                    {/* <ChatBubbleIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" /> */}
+                    <div className="flex my-auto mr-2">
+                      <Avatar size={18} name={memberId} variant="marble" />
+                    </div>
                     <div className="font-normal">My Threads</div>
                   </div>
                   <Badge className="bg-indigo-500 font-mono text-white hover:bg-indigo-600">
@@ -94,7 +100,10 @@ export default function SideNavLinks({
               ) : (
                 <>
                   <div className="flex">
-                    <ChatBubbleIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" />
+                    {/* <ChatBubbleIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" /> */}
+                    <div className="flex my-auto mr-2">
+                      <Avatar size={18} name={memberId} variant="marble" />
+                    </div>
                     <div className="font-normal">My Threads</div>
                   </div>
                   <Badge variant="outline" className="font-mono font-light">
@@ -114,7 +123,7 @@ export default function SideNavLinks({
             buttonVariants({ variant: "ghost" }),
             "flex w-full justify-between px-3 dark:text-accent-foreground"
           )}
-          activeOptions={{ exact: true }}
+          activeOptions={{ exact: true, includeSearch: false }}
           activeProps={{
             className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
           }}

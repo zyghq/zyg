@@ -23,6 +23,7 @@ func NewWorkspaceService(
 	return &WorkspaceService{
 		workspaceRepo: workspaceRepo,
 		memberRepo:    memberRepo,
+		customerRepo:  customerRepo,
 	}
 }
 
@@ -100,6 +101,14 @@ func (s *WorkspaceService) WorkspaceMember(ctx context.Context, accountId string
 		return member, ErrMember
 	}
 	return member, nil
+}
+
+func (s *WorkspaceService) WorkspaceCustomers(ctx context.Context, workspaceId string) ([]domain.Customer, error) {
+	customers, err := s.customerRepo.GetListByWorkspaceId(ctx, workspaceId)
+	if err != nil {
+		return customers, ErrCustomer
+	}
+	return customers, nil
 }
 
 func (s *WorkspaceService) InitWorkspaceLabel(ctx context.Context, label domain.Label) (domain.Label, bool, error) {

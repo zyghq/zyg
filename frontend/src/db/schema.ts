@@ -93,7 +93,7 @@ export const threadChatResponseSchema = z.object({
   messages: z.array(threadChatMessagePreviewSchema).default([]),
 });
 
-export const accountSchema = z.object({
+export const accountResponseSchema = z.object({
   accountId: z.string(),
   email: z.string(),
   provider: z.string(),
@@ -101,3 +101,28 @@ export const accountSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
 });
+
+export const membershipResponseSchema = z.object({
+  workspaceId: z.string(),
+  accountId: z.string(),
+  memberId: z.string(),
+  name: z.string(),
+  role: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const workspaceCustomerResponseSchema = z.object({
+  workspaceId: z.string(),
+  customerId: z.string(),
+  externalId: z.string().nullable().default(null),
+  email: z.string().nullable().default(null),
+  phone: z.string().nullable().default(null),
+  name: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const workspaceCustomersResponseSchema = z
+  .array(workspaceCustomerResponseSchema)
+  .default([]);

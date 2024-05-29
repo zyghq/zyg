@@ -21,8 +21,7 @@ export const Route = createFileRoute("/workspaces/$workspaceId")({
   // make children happy.
   beforeLoad: () => {
     return {
-      // TODO: rename this
-      workspaceStore: WorkspaceStore,
+      WorkspaceStore: WorkspaceStore,
     };
   },
   // check if we need this, add some kind of stale timer.

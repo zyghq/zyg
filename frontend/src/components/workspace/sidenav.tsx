@@ -42,11 +42,13 @@ export function SideNav({
   workspaceId,
   workspaceName,
   metrics,
+  memberId,
 }: {
   email: string;
   workspaceId: string;
   workspaceName: string;
   metrics: WorkspaceMetricsStoreType;
+  memberId: string;
 }) {
   return (
     <div className={cn("p-4", "hidden lg:block lg:border-r")}>
@@ -90,7 +92,11 @@ export function SideNav({
         </DropdownMenuContent>
       </DropdownMenu>
       <ScrollArea className="my-4 h-[calc(100dvh-14rem)] pb-4">
-        <SideNavLinks workspaceId={workspaceId} metrics={metrics} />
+        <SideNavLinks
+          workspaceId={workspaceId}
+          metrics={metrics}
+          memberId={memberId}
+        />
       </ScrollArea>
       <div>
         <DropdownMenu>
