@@ -2,12 +2,13 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useStore } from "zustand";
 import { WorkspaceStoreStateType } from "@/db/store";
 
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DoubleArrowUpIcon } from "@radix-ui/react-icons";
 import { CheckCircle, CircleIcon, EclipseIcon } from "lucide-react";
 
 import { ThreadList } from "@/components/workspace/threads";
+import { Filters } from "@/components/workspace/filters";
+import { Sorts } from "@/components/workspace/sorts";
+import { reasonsFiltersType } from "@/db/store";
 
 export const Route = createFileRoute(
   "/workspaces/$workspaceId/_layout/unassigned"
@@ -18,7 +19,7 @@ export const Route = createFileRoute(
 function UnassignedThreads() {
   const { WorkspaceStore } = Route.useRouteContext();
 
-  const { status } = Route.useSearch();
+  const { status, reasons, sort } = Route.useSearch();
   const navigate = useNavigate();
 
   const workspaceId = useStore(
@@ -27,7 +28,8 @@ function UnassignedThreads() {
   );
   const threads = useStore(
     WorkspaceStore.useContext(),
-    (state: WorkspaceStoreStateType) => state.viewUnassignedThreads(state)
+    (state: WorkspaceStoreStateType) =>
+      state.viewUnassignedThreads(state, reasons as reasonsFiltersType, sort)
   );
   return (
     <main className="col-span-3 lg:col-span-4">
@@ -71,12 +73,8 @@ function UnassignedThreads() {
               </TabsTrigger>
             </TabsList>
             <div className="mt-4 flex gap-1 sm:my-auto">
-              ...
-              {/* <ThreadFilterDropDownMenu /> */}
-              <Button variant="outline" size="sm" className="border-dashed">
-                <DoubleArrowUpIcon className="mr-1 h-3 w-3" />
-                Sort
-              </Button>
+              <Filters />
+              <Sorts />
             </div>
           </div>
           <TabsContent value="todo" className="m-0">

@@ -42,11 +42,12 @@ export const Route = createFileRoute("/workspaces/$workspaceId")({
 });
 
 function WorkspaceContainer() {
+  const workspaceId = Route.useParams().workspaceId;
+
   const { auth } = Route.useRouteContext();
   const useAuth = auth.useContext();
-  const session = useAuth?.session;
-  const token = session?.access_token || "";
-  const workspaceId = Route.useParams().workspaceId;
+  const token = useAuth?.session?.access_token || "";
+
   const { data, isRefetching } = useSuspenseQuery(
     bootstrapWorkspaceQueryOptions(token, workspaceId)
   );
