@@ -44,6 +44,9 @@ const reasonsSchema = (validValues: string[]) => {
 const threadSearchSchema = z.object({
   status: z.enum(["todo", "snoozed", "done"]).catch("todo"),
   reasons: reasonsSchema(["replied", "unreplied"]).catch(""),
+  sort: z
+    .enum(["last-message-dsc", "created-asc", "created-dsc"])
+    .catch("last-message-dsc"),
 });
 
 export const Route = createFileRoute("/workspaces/$workspaceId/_layout")({

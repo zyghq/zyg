@@ -188,7 +188,7 @@ func (tc *ThreadChatDB) GetListByWorkspaceCustomerId(ctx context.Context, worksp
 		) latest ON thm.thread_chat_id = latest.thread_chat_id
 		AND thm.sequence = latest.sequence
 		WHERE th.workspace_id = $1 AND th.customer_id = $2
-		ORDER BY sequence DESC LIMIT 100`
+		ORDER BY message_sequence DESC LIMIT 100`
 
 	rows, _ := tc.db.Query(ctx, stmt, workspaceId, customerId)
 
@@ -373,7 +373,7 @@ func (tc *ThreadChatDB) GetListByWorkspaceId(
 		) latest ON thm.thread_chat_id = latest.thread_chat_id
 		AND thm.sequence = latest.sequence
 		WHERE th.workspace_id = $1
-		ORDER BY sequence DESC LIMIT 100`
+		ORDER BY message_sequence DESC LIMIT 100`
 
 	rows, _ := tc.db.Query(ctx, stmt, workspaceId)
 
@@ -563,7 +563,7 @@ func (tc *ThreadChatDB) GetMemberAssignedListByWorkspaceId(ctx context.Context, 
 		) latest ON thm.thread_chat_id = latest.thread_chat_id
 		AND thm.sequence = latest.sequence
 		WHERE th.workspace_id = $1 AND th.assignee_id = $2
-		ORDER BY sequence DESC LIMIT 100`
+		ORDER BY member_sequence DESC LIMIT 100`
 
 	rows, _ := tc.db.Query(ctx, stmt, workspaceId, memberId)
 
@@ -641,7 +641,7 @@ func (tc *ThreadChatDB) GetUnassignedListByWorkspaceId(ctx context.Context, work
 		) latest ON thm.thread_chat_id = latest.thread_chat_id
 		AND thm.sequence = latest.sequence
 		WHERE th.workspace_id = $1 AND th.assignee_id IS NULL
-		ORDER BY sequence DESC LIMIT 100`
+		ORDER BY message_sequence DESC LIMIT 100`
 
 	rows, _ := tc.db.Query(ctx, stmt, workspaceId)
 
@@ -719,7 +719,7 @@ func (tc *ThreadChatDB) GetLabelledListByWorkspaceId(ctx context.Context, worksp
 		AND thm.sequence = latest.sequence
 		INNER JOIN thread_chat_label tcl ON th.thread_chat_id = tcl.thread_chat_id
 		WHERE th.workspace_id = $1 AND tcl.label_id = $2
-		ORDER BY sequence DESC LIMIT 100`
+		ORDER BY message_sequence DESC LIMIT 100`
 
 	rows, _ := tc.db.Query(ctx, stmt, workspaceId, labelId)
 

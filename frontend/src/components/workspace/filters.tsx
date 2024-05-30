@@ -24,34 +24,41 @@ const routeApi = getRouteApi("/workspaces/$workspaceId/_layout");
 export function Filters() {
   const navigate = useNavigate();
   const [selectedReasons, setSelectedReasons] = React.useState<
-    string[] | string | null
-  >(null);
+    string[] | string
+  >("");
   const routeSearch = routeApi.useSearch();
   const { reasons } = routeSearch;
 
   React.useEffect(() => {
+    // check if multiple reasons are selected
     if (reasons && Array.isArray(reasons)) {
       setSelectedReasons([...reasons]);
+      // check if only 1 reason(s) is selected
     } else if (reasons && typeof reasons === "string") {
       setSelectedReasons([reasons]);
+      // if no reasons are selected
     } else {
-      setSelectedReasons([]);
+      setSelectedReasons("");
     }
   }, [reasons]);
 
   function onChecked(reason: string) {
     return navigate({
-      search: (prev: { reasons: string[] | string | null }) => {
-        const { reasons } = prev;
+      search: (prev: { reasons: string[] | string }) => {
+        const { reasons, ...others } = prev;
 
-        if (!reasons) {
-          return { reasons: reason };
+        // no existing reasons - add new reason
+        if (!reasons || reasons === "") {
+          return { reasons: reason, ...others };
         }
+
+        // found a reason - merge with existing
         if (typeof reasons === "string") {
-          return { reasons: [reasons, reason] };
+          return { reasons: [reasons, reason], ...others };
         }
+        // multiple reasons selected add more to existing
         if (Array.isArray(reasons)) {
-          return { reasons: [...reasons, reason] };
+          return { reasons: [...reasons, reason], ...others };
         }
       },
     });
@@ -60,23 +67,28 @@ export function Filters() {
   function onUnchecked(reason: string) {
     return navigate({
       search: (prev: { reasons: string[] | string | null }) => {
-        const { reasons } = prev;
+        const { reasons, ...others } = prev;
 
-        if (!reasons) {
-          return { reasons: null };
+        // no existing reasons - nothing to do
+        if (!reasons || reasons === "") {
+          return { ...others };
         }
+
+        // found a reason - remove it
         if (typeof reasons === "string" && reasons === reason) {
-          return { reasons: null };
+          return { ...others };
         }
+
+        // multiple reasons selected - remove the reason
         if (Array.isArray(reasons)) {
           const filtered = reasons.filter((r) => r !== reason);
           if (filtered.length === 0) {
-            return { reasons: null };
+            return { ...others };
           }
           if (filtered.length === 1) {
-            return { reasons: filtered[0] };
+            return { reasons: filtered[0], ...others };
           }
-          return { reasons: filtered };
+          return { reasons: filtered, ...others };
         }
       },
     });
@@ -90,7 +102,7 @@ export function Filters() {
           Filters
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="sm:58 w-48" align="start">
+      <DropdownMenuContent className="sm:58 w-48" align="end">
         <DropdownMenuGroup>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>

@@ -56,6 +56,9 @@ dependencies:
   '@tanstack/react-router':
     specifier: ^1.33.4
     version: 1.33.4(react-dom@18.3.1)(react@18.3.1)
+  '@types/lodash':
+    specifier: ^4.17.4
+    version: 4.17.4
   boring-avatars:
     specifier: ^1.10.2
     version: 1.10.2
@@ -74,6 +77,9 @@ dependencies:
   jotai:
     specifier: ^2.8.0
     version: 2.8.0(@types/react@18.3.2)(react@18.3.1)
+  lodash:
+    specifier: ^4.17.21
+    version: 4.17.21
   lucide-react:
     specifier: ^0.379.0
     version: 0.379.0(react@18.3.1)
@@ -2043,6 +2049,10 @@ packages:
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
     dev: true
 
+  /@types/lodash@4.17.4:
+    resolution: {integrity: sha512-wYCP26ZLxaT3R39kiN2+HcJ4kTd3U1waI/cY7ivWYqFP6pW3ZNpvi6Wd6PHZx7T/t8z0vlkXMg3QYLa7DZ/IJQ==}
+    dev: false
+
   /@types/node@20.12.12:
     resolution: {integrity: sha512-eWLDGF/FOSPtAvEqeRAQ4C8LSA7M1I7i0ky1I8U7kD1J5ITyW3AsRhQrKVoWf5pFKZ2kILsEGJhsI9r93PYnOw==}
     dependencies:
@@ -3121,6 +3131,10 @@ packages:
   /lodash.merge@4.6.2:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
     dev: true
+
+  /lodash@4.17.21:
+    resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
+    dev: false
 
   /loose-envify@1.4.0:
     resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}

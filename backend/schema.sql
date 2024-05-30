@@ -67,7 +67,7 @@ CREATE TABLE workspace (
     CONSTRAINT workspace_workspace_id_pkey PRIMARY KEY (workspace_id),
     CONSTRAINT workspace_account_id_fkey FOREIGN KEY (account_id) REFERENCES account (account_id)
 );
-
+-- @sanchitrk: changed usage?
 -- Represents the workspace Thread QA table
 -- This table is used to store the QA thread information linked to the workspace.
 CREATE TABLE thread_qa (
@@ -89,6 +89,8 @@ CREATE TABLE thread_qa (
     CONSTRAINT thread_qa_thread_id_parent_thread_id UNIQUE (thread_id, parent_thread_id)
 );
 
+
+-- @sanchitrk: changed usage?
 CREATE TABLE thread_qa_answer (
     workspace_id VARCHAR(255) NOT NULL,
     thread_qa_id VARCHAR(255) NOT NULL,

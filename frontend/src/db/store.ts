@@ -1,5 +1,6 @@
 import { createStore } from "zustand/vanilla";
 import { z } from "zod";
+import * as _ from "lodash";
 import { workspaceResponseSchema, membershipResponseSchema } from "./schema";
 import { AccountResponseType } from "./api";
 
@@ -91,6 +92,8 @@ type ReplyStatus = "replied" | "unreplied";
 
 export type reasonsFiltersType = ReplyStatus | ReplyStatus[] | undefined;
 
+export type sortByType = "last-message-dsc" | "created-asc" | "created-dsc";
+
 interface IWorkspaceStoreActions {
   updateWorkspaceStore(): void;
   getWorkspaceName(state: WorkspaceStoreStateType): string;
@@ -105,18 +108,63 @@ interface IWorkspaceStoreActions {
   ): ThreadChatStoreType | null;
   viewAllTodoThreads(
     state: WorkspaceStoreStateType,
-    reasons: reasonsFiltersType
+    reasons: reasonsFiltersType,
+    sortBy: sortByType
   ): ThreadChatStoreType[];
   viewMyTodoThreads(
     state: WorkspaceStoreStateType,
-    memberId: string
+    memberId: string,
+    reasons: reasonsFiltersType,
+    sortBy: sortByType
   ): ThreadChatStoreType[];
-  viewUnassignedThreads(state: WorkspaceStoreStateType): ThreadChatStoreType[];
+  viewUnassignedThreads(
+    state: WorkspaceStoreStateType,
+    reasons: reasonsFiltersType,
+    sortBy: sortByType
+  ): ThreadChatStoreType[];
   viewCustomerName(state: WorkspaceStoreStateType, customerId: string): string;
 }
 
 export type WorkspaceStoreStateType = IWorkspaceEntities &
   IWorkspaceStoreActions;
+
+function filterByReasons(
+  threads: ThreadChatStoreType[],
+  reasons: reasonsFiltersType
+) {
+  if (reasons && Array.isArray(reasons)) {
+    const uniqueReasons = [...new Set(reasons)];
+    const filtered = [];
+    for (const reason of uniqueReasons) {
+      if (reason === "replied") {
+        filtered.push(...threads.filter((t) => t.replied));
+      } else if (reason === "unreplied") {
+        filtered.push(...threads.filter((t) => !t.replied));
+      }
+    }
+    return filtered;
+  }
+  if (reasons && typeof reasons === "string") {
+    if (reasons === "replied") {
+      return threads.filter((t) => t.replied);
+    }
+    if (reasons === "unreplied") {
+      return threads.filter((t) => !t.replied);
+    }
+  }
+  // no change
+  return threads;
+}
+
+function sortThreads(threads: ThreadChatStoreType[], sortBy: sortByType) {
+  if (sortBy === "created-dsc") {
+    return _.sortBy(threads, "createdAt").reverse();
+  } else if (sortBy === "created-asc") {
+    return _.sortBy(threads, "createdAt");
+  }
+  // default sorted by last-message-dsc (from server)
+  return threads;
+}
 
 // (sanchitrk) for reference on using zustand, check this great article:
 // https://tkdodo.eu/blog/working-with-zustand
@@ -135,40 +183,43 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
     getMetrics: (state: WorkspaceStoreStateType) => state.metrics,
     getThreadChatItem: (state: WorkspaceStoreStateType, threadChatId: string) =>
       state.threadChats?.[threadChatId] || null,
-    viewAllTodoThreads: (state: WorkspaceStoreStateType, reasons) => {
+    viewAllTodoThreads: (
+      state: WorkspaceStoreStateType,
+      reasons: reasonsFiltersType,
+      sortBy: sortByType = "last-message-dsc"
+    ) => {
       const threads = state.threadChats ? Object.values(state.threadChats) : [];
       const todoThreads = threads.filter((t) => t.status === "todo");
-      if (reasons && Array.isArray(reasons)) {
-        const uniqueReasons = [...new Set(reasons)];
-        const filtered = [];
-        for (const reason of uniqueReasons) {
-          if (reason === "replied") {
-            filtered.push(...todoThreads.filter((t) => t.replied));
-          } else if (reason === "unreplied") {
-            filtered.push(...todoThreads.filter((t) => !t.replied));
-          }
-        }
-        return filtered;
-      }
-      if (reasons && typeof reasons === "string") {
-        if (reasons === "replied") {
-          return todoThreads.filter((t) => t.replied);
-        }
-        if (reasons === "unreplied") {
-          return todoThreads.filter((t) => !t.replied);
-        }
-      }
-      return todoThreads;
+      const reasonsFiltered = filterByReasons(todoThreads, reasons);
+      const sortedThreads = sortThreads(reasonsFiltered, sortBy);
+      return sortedThreads;
     },
-    viewMyTodoThreads: (state: WorkspaceStoreStateType, memberId: string) => {
+    viewMyTodoThreads: (
+      state: WorkspaceStoreStateType,
+      memberId: string,
+      reasons: reasonsFiltersType,
+      sortBy: sortByType = "last-message-dsc"
+    ) => {
       const threads = state.threadChats ? Object.values(state.threadChats) : [];
-      return threads.filter(
+      const myThreads = threads.filter(
         (t) => t.status === "todo" && t.assigneeId === memberId
       );
+      const reasonsFiltered = filterByReasons(myThreads, reasons);
+      const sortedThreads = sortThreads(reasonsFiltered, sortBy);
+      return sortedThreads;
     },
-    viewUnassignedThreads: (state: WorkspaceStoreStateType) => {
+    viewUnassignedThreads: (
+      state: WorkspaceStoreStateType,
+      reasons,
+      sortBy = "last-message-dsc"
+    ) => {
       const threads = state.threadChats ? Object.values(state.threadChats) : [];
-      return threads.filter((t) => t.status === "todo" && !t.assigneeId);
+      const unassignedThreads = threads.filter(
+        (t) => t.status === "todo" && !t.assigneeId
+      );
+      const reasonsFiltered = filterByReasons(unassignedThreads, reasons);
+      const sortedThreads = sortThreads(reasonsFiltered, sortBy);
+      return sortedThreads;
     },
     viewCustomerName: (state: WorkspaceStoreStateType, customerId: string) => {
       const customer = state.customers?.[customerId];

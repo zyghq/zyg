@@ -2,12 +2,11 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useStore } from "zustand";
 import { WorkspaceStoreStateType } from "@/db/store";
 
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DoubleArrowUpIcon } from "@radix-ui/react-icons";
 import { CheckCircle, CircleIcon, EclipseIcon } from "lucide-react";
 
 import { Filters } from "@/components/workspace/filters";
+import { Sorts } from "@/components/workspace/sorts";
 import { ThreadList } from "@/components/workspace/threads";
 
 import { reasonsFiltersType } from "@/db/store";
@@ -18,9 +17,8 @@ export const Route = createFileRoute("/workspaces/$workspaceId/_layout/")({
 
 function AllThreads() {
   const { WorkspaceStore } = Route.useRouteContext();
-
-  const { status, reasons } = Route.useSearch();
   const navigate = useNavigate();
+  const { status, reasons, sort } = Route.useSearch();
 
   const workspaceId = useStore(
     WorkspaceStore.useContext(),
@@ -29,7 +27,7 @@ function AllThreads() {
   const threads = useStore(
     WorkspaceStore.useContext(),
     (state: WorkspaceStoreStateType) =>
-      state.viewAllTodoThreads(state, reasons as reasonsFiltersType)
+      state.viewAllTodoThreads(state, reasons as reasonsFiltersType, sort)
   );
   return (
     <main className="col-span-3 lg:col-span-4">
@@ -74,10 +72,7 @@ function AllThreads() {
             </TabsList>
             <div className="mt-4 flex gap-1 sm:my-auto">
               <Filters />
-              <Button variant="outline" size="sm" className="border-dashed">
-                <DoubleArrowUpIcon className="mr-1 h-3 w-3" />
-                Sort
-              </Button>
+              <Sorts />
             </div>
           </div>
           <TabsContent value="todo" className="m-0">
