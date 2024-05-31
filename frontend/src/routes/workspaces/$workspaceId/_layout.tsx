@@ -41,12 +41,40 @@ const reasonsSchema = (validValues: string[]) => {
   ]);
 };
 
+const prioritiesSchema = (validValues: string[]) => {
+  const sanitizeArray = (arr: string[]) => {
+    // remove duplicates
+    const uniqueValues = [...new Set(arr)];
+    // filter only valid values
+    const uniqueValidValues: string[] = uniqueValues.filter((val) =>
+      validValues.includes(val)
+    );
+
+    // no valid values
+    if (uniqueValidValues.length === 0) {
+      throw new Error("invalid prioritie(s) passed");
+    }
+
+    if (uniqueValidValues.length === 1) {
+      return uniqueValidValues[0];
+    }
+
+    return uniqueValidValues;
+  };
+  return z.union([
+    z.string().refine((value) => validValues.includes(value)),
+    z.array(z.string()).transform(sanitizeArray),
+    z.undefined(),
+  ]);
+};
+
 const threadSearchSchema = z.object({
   status: z.enum(["todo", "snoozed", "done"]).catch("todo"),
   reasons: reasonsSchema(["replied", "unreplied"]).catch(""),
   sort: z
     .enum(["last-message-dsc", "created-asc", "created-dsc"])
     .catch("last-message-dsc"),
+  priorities: prioritiesSchema(["urgent", "high", "normal", "low"]).catch(""),
 });
 
 export const Route = createFileRoute("/workspaces/$workspaceId/_layout")({
