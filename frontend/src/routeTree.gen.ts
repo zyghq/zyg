@@ -14,7 +14,8 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as SignupImport } from './routes/signup'
-import { Route as LoginImport } from './routes/login'
+import { Route as SigninImport } from './routes/signin'
+import { Route as RecoverImport } from './routes/recover'
 import { Route as WorkspacesIndexImport } from './routes/workspaces/index'
 import { Route as WorkspacesAddImport } from './routes/workspaces/add'
 import { Route as WorkspacesWorkspaceIdImport } from './routes/workspaces/$workspaceId'
@@ -36,8 +37,13 @@ const SignupRoute = SignupImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const LoginRoute = LoginImport.update({
-  path: '/login',
+const SigninRoute = SigninImport.update({
+  path: '/signin',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const RecoverRoute = RecoverImport.update({
+  path: '/recover',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -108,11 +114,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexLazyImport
       parentRoute: typeof rootRoute
     }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginImport
+    '/recover': {
+      id: '/recover'
+      path: '/recover'
+      fullPath: '/recover'
+      preLoaderRoute: typeof RecoverImport
+      parentRoute: typeof rootRoute
+    }
+    '/signin': {
+      id: '/signin'
+      path: '/signin'
+      fullPath: '/signin'
+      preLoaderRoute: typeof SigninImport
       parentRoute: typeof rootRoute
     }
     '/signup': {
@@ -192,7 +205,8 @@ declare module '@tanstack/react-router' {
 
 export const routeTree = rootRoute.addChildren({
   IndexLazyRoute,
-  LoginRoute,
+  RecoverRoute,
+  SigninRoute,
   SignupRoute,
   WorkspacesWorkspaceIdRoute: WorkspacesWorkspaceIdRoute.addChildren({
     WorkspacesWorkspaceIdLayoutRoute:

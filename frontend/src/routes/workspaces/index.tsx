@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { ExitIcon, QuestionMarkIcon } from "@radix-ui/react-icons";
+import { ExitIcon } from "@radix-ui/react-icons";
 import { Icons } from "@/components/icons";
 
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
@@ -16,7 +16,6 @@ type Workspace = {
   updatedAt: string;
 };
 
-// TODO: move this from there, api?
 async function fetchWorkspaces(token: string) {
   try {
     const response = await fetch(
@@ -79,10 +78,6 @@ function Workspaces() {
             <span className="font-semibold">Zyg.</span>
           </div>
           <div className="flex justify-between space-x-2 md:justify-end">
-            <Button variant="outline" size="default">
-              <QuestionMarkIcon />
-              Help
-            </Button>
             <Button variant="outline" size="icon">
               <ExitIcon />
             </Button>

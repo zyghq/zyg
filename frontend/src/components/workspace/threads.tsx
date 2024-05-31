@@ -140,6 +140,7 @@ export function ThreadList({
             key={item.threadChatId}
             workspaceId={workspaceId}
             item={item}
+            variant={variant}
           />
         ))}
         <div

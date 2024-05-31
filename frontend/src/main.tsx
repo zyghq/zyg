@@ -1,10 +1,13 @@
 import ReactDOM from "react-dom/client";
+import { Suspense } from "react";
+
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider, AccountStore } from "@/providers";
 
 import { createClient } from "@supabase/supabase-js";
 import { createAuthContext } from "@/auth";
+import Loading from "@/components/loading";
 
 import "./globals.css";
 
@@ -13,7 +16,8 @@ const supabase = createClient(
   import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
-const auth = createAuthContext(supabase);
+// eslint-disable-next-line react-refresh/only-export-components
+const Auth = createAuthContext(supabase);
 
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
@@ -25,6 +29,9 @@ const router = createRouter({
   routeTree,
   context: {
     queryClient,
+    session: undefined!,
+    account: undefined!,
+    supaClient: undefined!,
     auth: undefined!,
     AccountStore: undefined!,
   },
@@ -41,6 +48,30 @@ declare module "@tanstack/react-router" {
   }
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
+function AuthRouter() {
+  const { isLoading, session, user, client } = Auth.useContext() || {};
+
+  if (isLoading) {
+    return <Loading />;
+  }
+
+  return (
+    <Suspense fallback={<Loading />}>
+      <RouterProvider
+        router={router}
+        context={{
+          auth: Auth,
+          session,
+          account: user,
+          supaClient: client,
+          AccountStore,
+        }}
+      />
+    </Suspense>
+  );
+}
+
 // Render the app
 const rootElement = document.getElementById("app")!;
 if (!rootElement.innerHTML) {
@@ -48,12 +79,9 @@ if (!rootElement.innerHTML) {
   root.render(
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        <auth.Provider>
-          <RouterProvider
-            router={router}
-            context={{ auth: auth, AccountStore: AccountStore }}
-          />
-        </auth.Provider>
+        <Auth.Provider>
+          <AuthRouter />
+        </Auth.Provider>
       </QueryClientProvider>
     </ThemeProvider>
   );

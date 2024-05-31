@@ -1,7 +1,7 @@
 import {
   Outlet,
   createRootRouteWithContext,
-  redirect,
+  redirect as redirectRoute,
 } from "@tanstack/react-router";
 import {
   QueryClient,
@@ -18,12 +18,15 @@ import { createAuthContext } from "@/auth";
 import { AccountStore } from "@/providers";
 import { getOrCreateZygAccount } from "@/db/api";
 
+import { Session, User, SupabaseClient } from "@supabase/supabase-js";
+
 const accountQueryOptions = (token: string) =>
   queryOptions({
     queryKey: ["account", token],
     queryFn: async () => {
+      if (!token || token === "") return null;
       const { error, data } = await getOrCreateZygAccount(token);
-      if (error) throw new Error("failed to fetch account details.");
+      if (error) throw new Error("failed to authenticate user account.");
       return data;
     },
   });
@@ -31,26 +34,27 @@ const accountQueryOptions = (token: string) =>
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
   auth: ReturnType<typeof createAuthContext>;
+  session: Session | null;
+  account: User | null;
+  supaClient: SupabaseClient;
   AccountStore: typeof AccountStore;
 }>()({
   beforeLoad: async ({ context, location }) => {
-    const unprotectedRoutes = /^\/(login|signin|favicon\.ico)(\?.*)?$/;
+    const unprotectedRoutes = /^\/(signup|signin|recover|favicon\.ico)(\?.*)?$/;
     if (unprotectedRoutes.test(location.pathname)) return;
-    const { auth } = context;
-    const { error: errSession, data } = await auth.client.auth.getSession();
-    if (errSession || !data?.session) {
-      throw redirect({
-        to: "/login",
+
+    // protected routes
+    const { session } = context;
+    if (!session) {
+      throw redirectRoute({
+        to: "/signin",
         search: {
           redirect: location.href,
         },
       });
     }
   },
-  loader: async ({ context: { queryClient, auth } }) => {
-    const { client } = auth;
-    const { data } = await client.auth.getSession();
-    const { session } = data;
+  loader: async ({ context: { queryClient, session } }) => {
     const token = session?.access_token || "";
     return queryClient.ensureQueryData(accountQueryOptions(token));
   },
@@ -58,9 +62,7 @@ export const Route = createRootRouteWithContext<{
 });
 
 function RootComponent() {
-  const { auth } = Route.useRouteContext();
-  const useAuth = auth.useContext();
-  const session = useAuth?.session;
+  const { session } = Route.useRouteContext();
   const token = session?.access_token || "";
   const { data } = useSuspenseQuery(accountQueryOptions(token));
 

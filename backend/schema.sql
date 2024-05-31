@@ -20,7 +20,6 @@
 -- Represents the auth account table
 -- This table is used to store the account information of the user pertaining to auth.
 -- Attributes will depend on the auth provider.
--- Is Confirmed
 CREATE TABLE account (
     account_id VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
@@ -36,9 +35,9 @@ CREATE TABLE account (
 );
 
 
--- Represents the account PAT table
--- Personal Access Token
--- Is Confirmed
+-- Represents the account PAT table - Personal Access Token
+-- This table is used to store the account PAT information of the account pertaining to auth.
+-- PAT is used to authenticate the account similar to API key.
 CREATE TABLE account_pat (
     account_id VARCHAR(255) NOT NULL, -- fk to account
     pat_id VARCHAR(255) NOT NULL, -- primary key
@@ -56,7 +55,6 @@ CREATE TABLE account_pat (
 -- Represents the workspace table
 -- This table is used to store the workspace information linked to the account.
 -- Account can own multiple workspaces.
--- Is Confirmed
 CREATE TABLE workspace (
     workspace_id VARCHAR(255) NOT NULL,
     account_id VARCHAR(255) NOT NULL,
@@ -89,7 +87,6 @@ CREATE TABLE thread_qa (
     CONSTRAINT thread_qa_thread_id_parent_thread_id UNIQUE (thread_id, parent_thread_id)
 );
 
-
 -- @sanchitrk: changed usage?
 CREATE TABLE thread_qa_answer (
     workspace_id VARCHAR(255) NOT NULL,
@@ -106,9 +103,8 @@ CREATE TABLE thread_qa_answer (
     CONSTRAINT thread_qa_answer_thread_qa_id_fkey FOREIGN KEY (thread_qa_id) REFERENCES thread_qa (thread_id)
 );
 
-
 -- Represents the chat thread table
--- This table is used to store the chat thread information linked to the workspace.
+-- This table is used to store the chat information linked to the workspace.
 CREATE TABLE thread_chat (
     workspace_id VARCHAR(255) NOT NULL,
     customer_id VARCHAR(255) NOT NULL,
@@ -131,7 +127,7 @@ CREATE TABLE thread_chat (
 
 
 -- Represents the chat message table
--- This table is used to store the chat message information linked to the chat thread.
+-- This table is used to store the chat messages linked to the chat thread.
 CREATE TABLE thread_chat_message (
     thread_chat_id VARCHAR(255) NOT NULL,
     thread_chat_message_id VARCHAR(255) NOT NULL,
@@ -150,9 +146,8 @@ CREATE TABLE thread_chat_message (
 
 -- Represents the member table
 -- This table is used to store the member information linked to the workspace.
--- Each member is uniquely identified by the combination of workspace_id and account_id
--- Member has ability to authenticate to the workspace, hence has link to account
--- Done
+-- Each member is uniquely identified by the combination of `workspace_id` and `account_id`
+-- Member has the ability to authenticate to the workspace, hence the link to account
 CREATE TABLE member (
     member_id VARCHAR(255) NOT NULL, -- primary key
     workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
@@ -171,8 +166,7 @@ CREATE TABLE member (
 
 -- Represents the Customer table
 -- There can be multiple customers per workspace
--- Each customer is uniquely identified by one of external_id, email and phone, each unique to the workspace
--- Done
+-- Each customer is uniquely identified by one of `external_id`, `email` and `phone`, each unique to the workspace
 CREATE TABLE customer (
     customer_id VARCHAR(255) NOT NULL, -- primary key
     workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
@@ -190,7 +184,9 @@ CREATE TABLE customer (
     CONSTRAINT customer_workspace_id_phone_key UNIQUE (workspace_id, phone)
 );
 
-
+-- Represents the label table
+-- This table is used to store the labels linked to the workspace.
+-- Each label is uniquely identified by the combination of `workspace_id` and `name`
 CREATE TABLE label (
     workspace_id VARCHAR(255) NOT NULL,
     label_id VARCHAR(255) NOT NULL,
@@ -204,7 +200,8 @@ CREATE TABLE label (
     CONSTRAINT label_workspace_id_name_key UNIQUE (workspace_id, name)
 );
 
--- Represents the Thread Chat Label table
+-- Represents the thread chat label table
+-- This table is used to store the thread chat labels linked to the thread chat.
 CREATE TABLE thread_chat_label (
     thread_chat_id VARCHAR(255) NOT NULL,
     label_id VARCHAR(255) NOT NULL,
@@ -219,26 +216,7 @@ CREATE TABLE thread_chat_label (
     CONSTRAINT th_chat_label_id_th_chat_id_label_id_key UNIQUE (thread_chat_id, label_id)
 );
 
--- Represents the Member Key table
--- There can be multiple keys per Workspace
--- Think of Member Key as alias for member account.
--- In the future we can have permissions on API keys
--- Deprecate This later
-CREATE TABLE member_key (
-    member_key_id VARCHAR(255) NOT NULL, -- primary key
-    workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
-    member_id VARCHAR(255) NOT NULL, -- fk to member
-    token VARCHAR(255) NOT NULL, -- unique API key across the system
-    name VARCHAR(255) NOT NULL, -- name of the API key
-    description TEXT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT member_key_member_key_id_pkey PRIMARY KEY (member_key_id),
-    CONSTRAINT member_key_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
-    CONSTRAINT member_key_member_id_fkey FOREIGN KEY (member_id) REFERENCES member (member_id),
-    CONSTRAINT member_key_token_key UNIQUE (token)
-);
-
+-- sanchitrk: changed usage?
 -- Represents the Event table
 -- There can be multiple events per workspace
 -- Each event is uniquely identified by the event_id
@@ -260,62 +238,6 @@ CREATE TABLE event (
     CONSTRAINT event_event_id_pkey PRIMARY KEY (event_id),
     CONSTRAINT event_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
     CONSTRAINT event_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id)
-);
-
-
--- Represents the Chat Thread table
--- There can be multiple threads per Workspace for a customer
-CREATE TABLE chat_thread (
-    workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
-    customer_id VARCHAR(255) NOT NULL, -- fk to customer
-    thread_id VARCHAR(255) NOT NULL, -- primary key
-    sequence BIGINT NOT NULL DEFAULT fn_next_id(), -- sequence number of the thread
-    assignee_id VARCHAR(255) NULL, -- fk to member
-    priority VARCHAR(127) NOT NULL, -- priority of the thread
-    status VARCHAR(127) NOT NULL, -- status of the thread
-    body TEXT NULL, -- body of the thread
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chat_thread_thread_id_pkey PRIMARY KEY (thread_id),
-    CONSTRAINT chat_thread_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
-    CONSTRAINT chat_thread_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
-    CONSTRAINT chat_thread_assignee_id_id_fkey FOREIGN KEY (assignee_id) REFERENCES member (member_id)
-);
-
--- Represents the Workspace In App Chat Key
--- There can be multiple keys per Workspace
--- Chat Key is used to initiate chat with the customer for a workspace
-CREATE TABLE chat_key (
-    workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
-    chat_key_id VARCHAR(255) NOT NULL, -- primary key
-    key VARCHAR(255) NOT NULL, -- unique key across the system
-    name VARCHAR(255) NOT NULL, -- name of the key
-    description TEXT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chat_key_chat_key_id_pkey PRIMARY KEY (chat_key_id),
-    CONSTRAINT chat_key_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
-    CONSTRAINT chat_key_key_key UNIQUE (key)
-);
-
--- Represents the Customer Chat Session
--- There can be multiple sessions per Workspace
--- Each socket connection is unique to the customer
-CREATE TABLE customer_chat_session (
-    workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
-    customer_id VARCHAR(255) NOT NULL, -- fk to customer
-    customer_chat_session_id VARCHAR(255) NOT NULL, -- primary key
-    key VARCHAR(255) NOT NULL, -- unique key across the system
-    chat_thread_id VARCHAR(255) NULL, -- fk to chat_thread
-    socket_id VARCHAR(255) NOT NULL, -- socket id from provider
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chat_session_customer_chat_session_id_pkey PRIMARY KEY (customer_chat_session_id),
-    CONSTRAINT chat_session_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
-    CONSTRAINT chat_session_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
-    CONSTRAINT chat_session_chat_thread_id_fkey FOREIGN KEY (chat_thread_id) REFERENCES chat_thread (thread_id),
-    CONSTRAINT chat_session_key_key UNIQUE (key),
-    CONSTRAINT chat_session_customer_id_socket_id_key UNIQUE (customer_id, socket_id)
 );
 
 -- ************************************ --

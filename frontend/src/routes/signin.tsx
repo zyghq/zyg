@@ -1,4 +1,9 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+  useLocation,
+} from "@tanstack/react-router";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -29,7 +34,7 @@ import { ArrowLeftIcon, ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { getOrCreateZygAccount } from "@/db/api";
 
 const searchSearchSchema = z.object({
-  redirect: z.string().catch("/workspaces"),
+  redirect: z.string().optional().catch("/workspaces"),
 });
 
 type FormInputs = {
@@ -37,9 +42,9 @@ type FormInputs = {
   password: string;
 };
 
-export const Route = createFileRoute("/login")({
+export const Route = createFileRoute("/signin")({
   validateSearch: searchSearchSchema,
-  component: () => <LoginComponent />,
+  component: () => <SignInComponent />,
 });
 
 const formSchema = z.object({
@@ -47,13 +52,19 @@ const formSchema = z.object({
   password: z.string().min(6),
 });
 
-function LoginComponent() {
-  const { auth, AccountStore } = Route.useRouteContext();
-  const navigate = useNavigate();
+function SignInComponent() {
+  const { supaClient, AccountStore } = Route.useRouteContext();
   const { redirect } = Route.useSearch();
-  const { client } = auth;
+
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const { toast } = useToast();
+
   const useStore = AccountStore.useContext();
+
+  const isRedirecton =
+    redirect === location.pathname || redirect === "/signout";
 
   const form = useForm<FormInputs>({
     resolver: zodResolver(formSchema),
@@ -69,10 +80,12 @@ function LoginComponent() {
   const onSubmit: SubmitHandler<FormInputs> = async (inputs) => {
     const { email, password } = inputs;
     try {
-      const { data, error: errSupa } = await client.auth.signInWithPassword({
-        email: email,
-        password: password,
-      });
+      const { data, error: errSupa } = await supaClient.auth.signInWithPassword(
+        {
+          email: email,
+          password: password,
+        }
+      );
       if (errSupa) {
         console.error(errSupa);
         const { name, message } = errSupa;
@@ -102,7 +115,6 @@ function LoginComponent() {
         });
         return;
       }
-      console.log("account", account);
       useStore.setState((prev) => ({
         ...prev,
         hasData: true,
@@ -110,9 +122,9 @@ function LoginComponent() {
         account: account,
       }));
       toast({
-        description: `Welcome back, ${account.email}. You are now logged in.`,
+        description: `Welcome back, ${account.email}. You are now signed in.`,
       });
-      return navigate({ to: redirect });
+      navigate({ to: isRedirecton ? redirect : "/workspaces" });
     } catch (err) {
       console.error(err);
       form.setError("root", {
@@ -128,7 +140,7 @@ function LoginComponent() {
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <Card className="mx-auto w-full max-w-sm">
             <CardHeader>
-              <CardTitle>Log in to Zyg.</CardTitle>
+              <CardTitle>Sign in to Zyg.</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {errors?.root?.type === "authError" && (
@@ -188,10 +200,10 @@ function LoginComponent() {
               />
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Button variant="outline" asChild>
-                <Link to="/signup">
-                  <ArrowLeftIcon className="mr-1 h-4 w-4" />
-                  <span>Sign Up</span>
+              <Button variant="outline" aria-label="Sign Up" asChild>
+                <Link to="/signup" preload={false}>
+                  <ArrowLeftIcon className="mr-1 h-4 w-4 my-auto" />
+                  Sign Up
                 </Link>
               </Button>
               <Button
@@ -200,12 +212,14 @@ function LoginComponent() {
                 aria-disabled={isSubmitting || isSubmitSuccessful}
                 aria-label="Log In"
               >
-                Login
+                Sign In
               </Button>
             </CardFooter>
             <CardFooter className="flex justify-center">
               <Button variant="link" asChild>
-                <Link href="/recover/">Forgot Password?</Link>
+                <Link to="/recover" preload={false}>
+                  Forgot Password?
+                </Link>
               </Button>
             </CardFooter>
           </Card>

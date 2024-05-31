@@ -5,6 +5,7 @@ export type AuthContextType = {
   client: SupabaseClient;
   session: Session | null;
   user: User | null;
+  isLoading: boolean;
 };
 
 export const createAuthContext = (supaClient: SupabaseClient) => {
@@ -12,6 +13,8 @@ export const createAuthContext = (supaClient: SupabaseClient) => {
 
   const Provider: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     const [client] = React.useState(() => supaClient);
+
+    const [isLoading, setIsLoading] = React.useState<boolean>(true);
     const [session, setSession] = React.useState<Session | null>(null);
     const [user, setUser] = React.useState<User | null>(null);
 
@@ -20,6 +23,7 @@ export const createAuthContext = (supaClient: SupabaseClient) => {
         (_event, session) => {
           setSession(session);
           setUser(session?.user || null);
+          setIsLoading(false);
         }
       );
 
@@ -34,6 +38,7 @@ export const createAuthContext = (supaClient: SupabaseClient) => {
 
         setSession(session);
         setUser(session?.user || null);
+        setIsLoading(false);
       };
 
       setData();
@@ -45,6 +50,7 @@ export const createAuthContext = (supaClient: SupabaseClient) => {
 
     const value = {
       client,
+      isLoading,
       session,
       user,
     };
