@@ -11,28 +11,30 @@ import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
 import { ThreadList } from "@/components/workspace/threads";
 import { reasonsFiltersType } from "@/db/store";
+import { useWorkspaceStore } from "@/providers";
 
-export const Route = createFileRoute("/workspaces/$workspaceId/_layout/me")({
+export const Route = createFileRoute(
+  "/_auth/workspaces/$workspaceId/_workspace/me"
+)({
   component: () => <MyThreads />,
 });
 
 function MyThreads() {
-  const { WorkspaceStore } = Route.useRouteContext();
+  const workspaceStore = useWorkspaceStore();
 
   const { status, reasons, sort } = Route.useSearch();
   const navigate = useNavigate();
 
   const workspaceId = useStore(
-    WorkspaceStore.useContext(),
+    workspaceStore,
     (state: WorkspaceStoreStateType) => state.getWorkspaceId(state)
   );
 
-  const memberId = useStore(
-    WorkspaceStore.useContext(),
-    (state: WorkspaceStoreStateType) => state.getMemberId(state)
+  const memberId = useStore(workspaceStore, (state: WorkspaceStoreStateType) =>
+    state.getMemberId(state)
   );
-  const threads = useStore(
-    WorkspaceStore.useContext(),
+  const todoThreads = useStore(
+    workspaceStore,
     (state: WorkspaceStoreStateType) =>
       state.viewMyTodoThreads(
         state,
@@ -90,7 +92,7 @@ function MyThreads() {
           <TabsContent value="todo" className="m-0">
             <ThreadList
               workspaceId={workspaceId}
-              threads={threads}
+              threads={todoThreads}
               className="h-[calc(100dvh-14rem)]"
             />
           </TabsContent>

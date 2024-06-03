@@ -10,7 +10,7 @@ import { ChatBubbleIcon } from "@radix-ui/react-icons";
 import { WorkspaceMetricsStoreType } from "@/db/store";
 import { SideNavLabelLinks } from "@/components/workspace/sidenav-label-links";
 
-const routeApi = getRouteApi("/workspaces/$workspaceId/_layout");
+const routeApi = getRouteApi("/_auth/workspaces/$workspaceId/_workspace");
 
 export default function SideNavLinks({
   workspaceId,
@@ -24,7 +24,7 @@ export default function SideNavLinks({
   openClose?: (isOpen: boolean) => void | undefined;
 }) {
   const routeSearch = routeApi.useSearch();
-  const { status } = routeSearch;
+  const { status, sort } = routeSearch;
   return (
     <React.Fragment>
       <div className="flex flex-col space-y-2">
@@ -72,7 +72,7 @@ export default function SideNavLinks({
           to="/workspaces/$workspaceId/me"
           onClick={() => openClose(false)}
           params={{ workspaceId }}
-          search={{ status: status }}
+          search={{ status, sort }}
           className={cn(
             buttonVariants({ variant: "ghost" }),
             "flex w-full justify-between px-3 dark:text-accent-foreground"
@@ -118,7 +118,7 @@ export default function SideNavLinks({
           to="/workspaces/$workspaceId/unassigned"
           onClick={() => openClose(false)}
           params={{ workspaceId }}
-          search={{ status: status }}
+          search={{ status, sort }}
           className={cn(
             buttonVariants({ variant: "ghost" }),
             "flex w-full justify-between px-3 dark:text-accent-foreground"

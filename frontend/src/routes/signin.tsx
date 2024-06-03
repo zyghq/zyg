@@ -1,4 +1,11 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  redirect,
+  Link,
+  useNavigate,
+  useRouter,
+  useRouterState,
+} from "@tanstack/react-router";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -27,9 +34,10 @@ import { useToast } from "@/components/ui/use-toast";
 
 import { ArrowLeftIcon, ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { getOrCreateZygAccount } from "@/db/api";
+import { useAuth } from "@/auth";
 
 const searchSearchSchema = z.object({
-  redirect: z.string().catch("/workspaces"),
+  redirect: z.string().optional().catch(""),
 });
 
 type FormInputs = {
@@ -37,9 +45,19 @@ type FormInputs = {
   password: string;
 };
 
-export const Route = createFileRoute("/login")({
+const fallback = "/workspaces" as const;
+
+export const Route = createFileRoute("/signin")({
   validateSearch: searchSearchSchema,
-  component: () => <LoginComponent />,
+  beforeLoad: async ({ context, search }) => {
+    const { auth } = context;
+    const session = await auth?.client.auth.getSession();
+    const { error: errSupa, data } = session;
+    if (!errSupa && data?.session) {
+      throw redirect({ to: search.redirect || fallback });
+    }
+  },
+  component: SignInComponent,
 });
 
 const formSchema = z.object({
@@ -47,13 +65,15 @@ const formSchema = z.object({
   password: z.string().min(6),
 });
 
-function LoginComponent() {
-  const { auth, AccountStore } = Route.useRouteContext();
+function SignInComponent() {
+  const auth = useAuth();
+  const router = useRouter();
+  const isLoading = useRouterState({ select: (s) => s.isLoading });
   const navigate = useNavigate();
-  const { redirect } = Route.useSearch();
-  const { client } = auth;
+
+  const search = Route.useSearch();
+
   const { toast } = useToast();
-  const useStore = AccountStore.useContext();
 
   const form = useForm<FormInputs>({
     resolver: zodResolver(formSchema),
@@ -66,13 +86,13 @@ function LoginComponent() {
   const { formState } = form;
   const { isSubmitting, errors, isSubmitSuccessful } = formState;
 
+  const isLoggingIn = isLoading || isSubmitting;
+
   const onSubmit: SubmitHandler<FormInputs> = async (inputs) => {
-    const { email, password } = inputs;
     try {
-      const { data, error: errSupa } = await client.auth.signInWithPassword({
-        email: email,
-        password: password,
-      });
+      const { email, password } = inputs;
+      const { error: errSupa, data } =
+        await auth.client.auth.signInWithPassword({ email, password });
       if (errSupa) {
         console.error(errSupa);
         const { name, message } = errSupa;
@@ -91,28 +111,26 @@ function LoginComponent() {
         }
       }
       const { session } = data;
-      const { access_token: token } = session;
-      const { error: errAccount, data: account } =
-        await getOrCreateZygAccount(token);
-      if (errAccount || !account) {
-        console.error(errAccount);
-        form.setError("root", {
-          type: "serverError",
-          message: "Something went wrong. Please try again later.",
+      if (session) {
+        const { access_token: token } = session;
+        const { error: errAccount, data: account } =
+          await getOrCreateZygAccount(token);
+        if (errAccount || !account) {
+          console.error(errAccount);
+          form.setError("root", {
+            type: "serverError",
+            message: "Something went wrong. Please try again later.",
+          });
+          return;
+        }
+
+        toast({
+          description: `Welcome back, ${account.email}. You are now signed in.`,
         });
-        return;
+
+        await router.invalidate();
+        await navigate({ to: search.redirect || fallback });
       }
-      console.log("account", account);
-      useStore.setState((prev) => ({
-        ...prev,
-        hasData: true,
-        error: null,
-        account: account,
-      }));
-      toast({
-        description: `Welcome back, ${account.email}. You are now logged in.`,
-      });
-      return navigate({ to: redirect });
     } catch (err) {
       console.error(err);
       form.setError("root", {
@@ -128,7 +146,7 @@ function LoginComponent() {
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <Card className="mx-auto w-full max-w-sm">
             <CardHeader>
-              <CardTitle>Log in to Zyg.</CardTitle>
+              <CardTitle>Sign in to Zyg.</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {errors?.root?.type === "authError" && (
@@ -188,24 +206,26 @@ function LoginComponent() {
               />
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Button variant="outline" asChild>
-                <Link to="/signup">
-                  <ArrowLeftIcon className="mr-1 h-4 w-4" />
-                  <span>Sign Up</span>
+              <Button variant="outline" aria-label="Sign Up" asChild>
+                <Link to="/signup" preload={false}>
+                  <ArrowLeftIcon className="mr-1 h-4 w-4 my-auto" />
+                  Sign Up
                 </Link>
               </Button>
               <Button
                 type="submit"
-                disabled={isSubmitting || isSubmitSuccessful}
-                aria-disabled={isSubmitting || isSubmitSuccessful}
-                aria-label="Log In"
+                disabled={isLoggingIn || isSubmitSuccessful}
+                aria-disabled={isLoggingIn || isSubmitSuccessful}
+                aria-label="Sign In"
               >
-                Login
+                Sign In
               </Button>
             </CardFooter>
             <CardFooter className="flex justify-center">
               <Button variant="link" asChild>
-                <Link href="/recover/">Forgot Password?</Link>
+                <Link to="/recover" preload={false}>
+                  Forgot Password?
+                </Link>
               </Button>
             </CardFooter>
           </Card>

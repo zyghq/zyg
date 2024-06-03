@@ -9,27 +9,25 @@ import { ThreadList } from "@/components/workspace/threads";
 import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
 import { reasonsFiltersType } from "@/db/store";
+import { useWorkspaceStore } from "@/providers";
 
 export const Route = createFileRoute(
-  "/workspaces/$workspaceId/_layout/unassigned"
+  "/_auth/workspaces/$workspaceId/_workspace/unassigned"
 )({
   component: () => <UnassignedThreads />,
 });
 
 function UnassignedThreads() {
-  const { WorkspaceStore } = Route.useRouteContext();
-
+  const workspaceStore = useWorkspaceStore();
   const { status, reasons, sort } = Route.useSearch();
   const navigate = useNavigate();
 
   const workspaceId = useStore(
-    WorkspaceStore.useContext(),
+    workspaceStore,
     (state: WorkspaceStoreStateType) => state.getWorkspaceId(state)
   );
-  const threads = useStore(
-    WorkspaceStore.useContext(),
-    (state: WorkspaceStoreStateType) =>
-      state.viewUnassignedThreads(state, reasons as reasonsFiltersType, sort)
+  const threads = useStore(workspaceStore, (state: WorkspaceStoreStateType) =>
+    state.viewUnassignedThreads(state, reasons as reasonsFiltersType, sort)
   );
   return (
     <main className="col-span-3 lg:col-span-4">

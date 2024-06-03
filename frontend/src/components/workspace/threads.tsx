@@ -10,8 +10,8 @@ import { ThreadChatStoreType } from "@/db/store";
 import { ChatBubbleIcon, ResetIcon } from "@radix-ui/react-icons";
 import { ReloadIcon } from "@radix-ui/react-icons";
 import Avatar from "boring-avatars";
-import { useRouteContext } from "@tanstack/react-router";
 import { useStore } from "zustand";
+import { useWorkspaceStore } from "@/providers";
 
 function ThreadItem({
   workspaceId,
@@ -22,12 +22,12 @@ function ThreadItem({
   item: ThreadChatStoreType;
   variant?: string;
 }) {
-  const WorkspaceStore = useRouteContext({
-    from: "/workspaces/$workspaceId/_layout",
-    select: (context) => context.WorkspaceStore,
-  });
-
-  const customerName = useStore(WorkspaceStore.useContext(), (state) =>
+  // const WorkspaceStore = useRouteContext({
+  //   from: "/_auth/workspaces/$workspaceId/_workspace",
+  //   select: (context) => context.WorkspaceStore,
+  // });
+  const workspaceStore = useWorkspaceStore();
+  const customerName = useStore(workspaceStore, (state) =>
     state.viewCustomerName(state, item.customerId)
   );
 
@@ -140,6 +140,7 @@ export function ThreadList({
             key={item.threadChatId}
             workspaceId={workspaceId}
             item={item}
+            variant={variant}
           />
         ))}
         <div
