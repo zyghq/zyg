@@ -1,4 +1,11 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+  useRouter,
+  useRouterState,
+  redirect,
+} from "@tanstack/react-router";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { useForm, SubmitHandler } from "react-hook-form";
@@ -22,9 +29,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/use-toast";
 
 import { ArrowLeftIcon, ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { getOrCreateZygAccount } from "@/db/api";
+import { useAuth } from "@/auth";
 
 type FormInputs = {
   email: string;
@@ -32,7 +41,15 @@ type FormInputs = {
 };
 
 export const Route = createFileRoute("/signup")({
-  component: () => <SignUpComponent />,
+  beforeLoad: async ({ context }) => {
+    const { auth } = context;
+    const session = await auth?.client.auth.getSession();
+    const { error: errSupa, data } = session;
+    if (!errSupa && data) {
+      throw redirect({ to: "/signout" });
+    }
+  },
+  component: SignUpComponent,
 });
 
 const formSchema = z.object({
@@ -41,10 +58,11 @@ const formSchema = z.object({
 });
 
 function SignUpComponent() {
-  const { AccountStore, supaClient } = Route.useRouteContext();
+  const auth = useAuth();
+  const router = useRouter();
+  const isLoading = useRouterState({ select: (s) => s.isLoading });
   const navigate = useNavigate();
-  // const { client } = auth;
-  const useStore = AccountStore.useContext();
+  const { toast } = useToast();
 
   const form = useForm<FormInputs>({
     resolver: zodResolver(formSchema),
@@ -57,10 +75,12 @@ function SignUpComponent() {
   const { formState } = form;
   const { isSubmitting, errors, isSubmitSuccessful } = formState;
 
+  const isSigningUp = isLoading || isSubmitting;
+
   const onSubmit: SubmitHandler<FormInputs> = async (inputs) => {
-    const { email, password } = inputs;
     try {
-      const { data, error: errSupa } = await supaClient.auth.signUp({
+      const { email, password } = inputs;
+      const { data, error: errSupa } = await auth.client.auth.signUp({
         email: email,
         password: password,
       });
@@ -106,21 +126,15 @@ function SignUpComponent() {
           message: "Something went wrong. Please try again later.",
         });
         return;
-      } else {
-        console.log(
-          "***************** in success ******************************"
-        );
-        console.log(account);
-        useStore.setState((prev) => ({
-          ...prev,
-          hasData: true,
-          error: null,
-          account: account,
-        }));
-        navigate({ to: "/workspaces/add", replace: true });
       }
+
+      toast({
+        description: "You are now signed up!",
+      });
+
+      await router.invalidate();
+      await navigate({ to: "/workspaces", replace: true });
     } catch (err) {
-      console.log("***************** in error ******************************");
       console.error(err);
       form.setError("root", {
         type: "serverError",
@@ -203,8 +217,8 @@ function SignUpComponent() {
               </Button>
               <Button
                 type="submit"
-                disabled={isSubmitting || isSubmitSuccessful}
-                aria-disabled={isSubmitting || isSubmitSuccessful}
+                disabled={isSigningUp || isSubmitSuccessful}
+                aria-disabled={isSigningUp || isSubmitSuccessful}
                 aria-label="Sign Up"
               >
                 Sign Up

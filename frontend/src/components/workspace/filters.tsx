@@ -19,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 
 import { MixerHorizontalIcon } from "@radix-ui/react-icons";
 
-const routeApi = getRouteApi("/workspaces/$workspaceId/_layout");
+const routeApi = getRouteApi("/_auth/workspaces/$workspaceId/_workspace");
 
 function ReasonsSubMenu({
   reasons,

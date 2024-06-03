@@ -1,6 +1,11 @@
 import React from "react";
 import { z } from "zod";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  useRouterState,
+  useRouter,
+} from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +17,7 @@ import {
 } from "@/components/ui/card";
 
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
+import { useAuth } from "@/auth";
 
 const searchSearchSchema = z.object({
   redirect: z.string().optional().catch("/signin"),
@@ -19,34 +25,24 @@ const searchSearchSchema = z.object({
 
 export const Route = createFileRoute("/signout")({
   validateSearch: searchSearchSchema,
-  component: () => <SignOutComponent />,
+  component: SignOutComponent,
 });
 
 function SignOutComponent() {
+  const auth = useAuth();
+  const router = useRouter();
   const navigate = Route.useNavigate();
-  const { redirect } = Route.useSearch();
-  const [isLoading, setIsLoading] = React.useState(false);
+  const isLoading = useRouterState({ select: (s) => s.isLoading });
   const [isError, setIsError] = React.useState(false);
 
-  const { auth, AccountStore } = Route.useRouteContext();
-  const { client } = auth;
-  const useStore = AccountStore.useContext();
-
   async function confirmSignOut() {
-    setIsLoading(true);
-    const { error } = await client.auth.signOut();
+    const { error } = await auth.client.auth.signOut();
     if (error) {
-      setIsLoading(false);
       setIsError(true);
       return;
     }
-    useStore.setState((prev) => ({
-      ...prev,
-      hasData: false,
-      error: null,
-      account: null,
-    }));
-    await navigate({ to: redirect });
+    await router.invalidate();
+    await navigate({ to: "/" });
   }
 
   return (

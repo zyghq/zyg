@@ -1,9 +1,9 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-
+import { useStore } from "zustand";
 import { bootstrapWorkspace } from "@/db/api";
-import { WorkspaceStore } from "@/providers";
+import { WorkspaceStoreProvider, useAccountStore } from "@/providers";
 
 const bootstrapWorkspaceQueryOptions = (token: string, workspaceId: string) =>
   queryOptions({
@@ -16,24 +16,20 @@ const bootstrapWorkspaceQueryOptions = (token: string, workspaceId: string) =>
     },
   });
 
-export const Route = createFileRoute("/workspaces/$workspaceId")({
+export const Route = createFileRoute("/_auth/workspaces/$workspaceId")({
   // attach the workspaceStore to the context
   // make children happy.
-  beforeLoad: () => {
-    return {
-      WorkspaceStore: WorkspaceStore,
-    };
-  },
+  // beforeLoad: () => {
+  //   return {
+  //     WorkspaceStore: WorkspaceStore,
+  //   };
+  // },
   // check if we need this, add some kind of stale timer.
   // https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#using-staletime-to-control-how-long-data-is-considered-fresh
   loader: async ({
-    context: { queryClient, auth },
+    context: { queryClient, token },
     params: { workspaceId },
   }) => {
-    const { client } = auth;
-    const { data } = await client.auth.getSession();
-    const { session } = data;
-    const token = session?.access_token || "";
     return queryClient.ensureQueryData(
       bootstrapWorkspaceQueryOptions(token, workspaceId)
     );
@@ -42,11 +38,10 @@ export const Route = createFileRoute("/workspaces/$workspaceId")({
 });
 
 function WorkspaceContainer() {
+  const accountStore = useAccountStore();
   const workspaceId = Route.useParams().workspaceId;
 
-  const { auth } = Route.useRouteContext();
-  const useAuth = auth.useContext();
-  const token = useAuth?.session?.access_token || "";
+  const token = useStore(accountStore, (state) => state.getToken(state));
 
   const { data, isRefetching } = useSuspenseQuery(
     bootstrapWorkspaceQueryOptions(token, workspaceId)
@@ -66,8 +61,8 @@ function WorkspaceContainer() {
   if (isRefetching) console.log("handle refetching?");
 
   return (
-    <WorkspaceStore.Provider initialValue={{ ...data }}>
+    <WorkspaceStoreProvider initialValue={{ ...data }}>
       <Outlet />
-    </WorkspaceStore.Provider>
+    </WorkspaceStoreProvider>
   );
 }

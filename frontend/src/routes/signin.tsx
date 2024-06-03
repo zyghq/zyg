@@ -1,8 +1,10 @@
 import {
   createFileRoute,
+  redirect,
   Link,
   useNavigate,
-  useLocation,
+  useRouter,
+  useRouterState,
 } from "@tanstack/react-router";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,9 +34,10 @@ import { useToast } from "@/components/ui/use-toast";
 
 import { ArrowLeftIcon, ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { getOrCreateZygAccount } from "@/db/api";
+import { useAuth } from "@/auth";
 
 const searchSearchSchema = z.object({
-  redirect: z.string().optional().catch("/workspaces"),
+  redirect: z.string().optional().catch(""),
 });
 
 type FormInputs = {
@@ -42,9 +45,19 @@ type FormInputs = {
   password: string;
 };
 
+const fallback = "/workspaces" as const;
+
 export const Route = createFileRoute("/signin")({
   validateSearch: searchSearchSchema,
-  component: () => <SignInComponent />,
+  beforeLoad: async ({ context, search }) => {
+    const { auth } = context;
+    const session = await auth?.client.auth.getSession();
+    const { error: errSupa, data } = session;
+    if (!errSupa && data?.session) {
+      throw redirect({ to: search.redirect || fallback });
+    }
+  },
+  component: SignInComponent,
 });
 
 const formSchema = z.object({
@@ -53,18 +66,14 @@ const formSchema = z.object({
 });
 
 function SignInComponent() {
-  const { supaClient, AccountStore } = Route.useRouteContext();
-  const { redirect } = Route.useSearch();
-
+  const auth = useAuth();
+  const router = useRouter();
+  const isLoading = useRouterState({ select: (s) => s.isLoading });
   const navigate = useNavigate();
-  const location = useLocation();
+
+  const search = Route.useSearch();
 
   const { toast } = useToast();
-
-  const useStore = AccountStore.useContext();
-
-  const isRedirecton =
-    redirect === location.pathname || redirect === "/signout";
 
   const form = useForm<FormInputs>({
     resolver: zodResolver(formSchema),
@@ -77,15 +86,13 @@ function SignInComponent() {
   const { formState } = form;
   const { isSubmitting, errors, isSubmitSuccessful } = formState;
 
+  const isLoggingIn = isLoading || isSubmitting;
+
   const onSubmit: SubmitHandler<FormInputs> = async (inputs) => {
-    const { email, password } = inputs;
     try {
-      const { data, error: errSupa } = await supaClient.auth.signInWithPassword(
-        {
-          email: email,
-          password: password,
-        }
-      );
+      const { email, password } = inputs;
+      const { error: errSupa, data } =
+        await auth.client.auth.signInWithPassword({ email, password });
       if (errSupa) {
         console.error(errSupa);
         const { name, message } = errSupa;
@@ -104,27 +111,26 @@ function SignInComponent() {
         }
       }
       const { session } = data;
-      const { access_token: token } = session;
-      const { error: errAccount, data: account } =
-        await getOrCreateZygAccount(token);
-      if (errAccount || !account) {
-        console.error(errAccount);
-        form.setError("root", {
-          type: "serverError",
-          message: "Something went wrong. Please try again later.",
+      if (session) {
+        const { access_token: token } = session;
+        const { error: errAccount, data: account } =
+          await getOrCreateZygAccount(token);
+        if (errAccount || !account) {
+          console.error(errAccount);
+          form.setError("root", {
+            type: "serverError",
+            message: "Something went wrong. Please try again later.",
+          });
+          return;
+        }
+
+        toast({
+          description: `Welcome back, ${account.email}. You are now signed in.`,
         });
-        return;
+
+        await router.invalidate();
+        await navigate({ to: search.redirect || fallback });
       }
-      useStore.setState((prev) => ({
-        ...prev,
-        hasData: true,
-        error: null,
-        account: account,
-      }));
-      toast({
-        description: `Welcome back, ${account.email}. You are now signed in.`,
-      });
-      navigate({ to: isRedirecton ? redirect : "/workspaces" });
     } catch (err) {
       console.error(err);
       form.setError("root", {
@@ -208,9 +214,9 @@ function SignInComponent() {
               </Button>
               <Button
                 type="submit"
-                disabled={isSubmitting || isSubmitSuccessful}
-                aria-disabled={isSubmitting || isSubmitSuccessful}
-                aria-label="Log In"
+                disabled={isLoggingIn || isSubmitSuccessful}
+                aria-disabled={isLoggingIn || isSubmitSuccessful}
+                aria-label="Sign In"
               >
                 Sign In
               </Button>
