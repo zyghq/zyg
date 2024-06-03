@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-
+import { useStore } from "zustand";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { ExitIcon, QuestionMarkIcon } from "@radix-ui/react-icons";
+import { ExitIcon } from "@radix-ui/react-icons";
 import { Icons } from "@/components/icons";
+import { buttonVariants } from "@/components/ui/button";
 
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { useAccountStore } from "@/providers";
 
 type Workspace = {
   workspaceId: string;
@@ -16,7 +18,6 @@ type Workspace = {
   updatedAt: string;
 };
 
-// TODO: move this from there, api?
 async function fetchWorkspaces(token: string) {
   try {
     const response = await fetch(
@@ -46,30 +47,27 @@ const workspacesQueryOptions = (token: string) =>
   queryOptions({
     queryKey: ["workpaces", token],
     queryFn: async () => {
+      if (!token) return [];
       return await fetchWorkspaces(token);
     },
   });
 
 // TODO: do error handling
 // https://tanstack.com/router/latest/docs/framework/react/guide/external-data-loading#error-handling-with-tanstack-query
-export const Route = createFileRoute("/workspaces/")({
-  loader: async ({ context: { queryClient, auth } }) => {
-    const { client } = auth;
-    const { data } = await client.auth.getSession();
-    const { session } = data;
-    const token = session?.access_token || "";
+export const Route = createFileRoute("/_auth/workspaces/")({
+  loader: async ({ context: { queryClient, token } }) => {
     return queryClient.ensureQueryData(workspacesQueryOptions(token));
   },
   component: Workspaces,
 });
 
 function Workspaces() {
-  const { auth } = Route.useRouteContext();
-  const useAuth = auth.useContext();
-  const session = useAuth?.session;
-  const token = session?.access_token || "";
+  const accountStore = useAccountStore();
+  const token = useStore(accountStore, (state) => state.getToken(state));
+
   const workspacesQuery = useSuspenseQuery(workspacesQueryOptions(token));
   const workspaces: Workspace[] = workspacesQuery.data;
+
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -79,13 +77,12 @@ function Workspaces() {
             <span className="font-semibold">Zyg.</span>
           </div>
           <div className="flex justify-between space-x-2 md:justify-end">
-            <Button variant="outline" size="default">
-              <QuestionMarkIcon />
-              Help
-            </Button>
-            <Button variant="outline" size="icon">
+            <Link
+              to="/signout"
+              className={buttonVariants({ size: "icon", variant: "outline" })}
+            >
               <ExitIcon />
-            </Button>
+            </Link>
           </div>
         </div>
       </header>

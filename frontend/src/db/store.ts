@@ -231,11 +231,13 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
 export interface IAccount {
   hasData: boolean;
   error: Error | null;
+  token: string;
   account: AccountResponseType | null;
 }
 
 interface IAccountStoreActions {
   updateStore(): void;
+  getToken(state: AccountStoreStateType): string;
   getAccount(state: AccountStoreStateType): AccountResponseType | null;
   getName(state: AccountStoreStateType): string;
   getAccountId(state: AccountStoreStateType): string;
@@ -247,6 +249,7 @@ export type AccountStoreStateType = IAccount & IAccountStoreActions;
 export const buildAccountStore = (initialState: IAccount) => {
   return createStore<AccountStoreStateType>()((set) => ({
     ...initialState,
+    getToken: (state: AccountStoreStateType) => state.token,
     getAccount: (state: AccountStoreStateType) => state.account,
     updateStore: () => set((state) => ({ ...state })),
     getName: (state: AccountStoreStateType) => state.account?.name || "",

@@ -1,19 +1,11 @@
 import ReactDOM from "react-dom/client";
+
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ThemeProvider, AccountStore } from "@/providers";
-
-import { createClient } from "@supabase/supabase-js";
-import { createAuthContext } from "@/auth";
+import { ThemeProvider } from "@/providers";
+import { AuthProvider, useAuth } from "@/auth";
 
 import "./globals.css";
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
-
-const auth = createAuthContext(supabase);
 
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
@@ -26,7 +18,6 @@ const router = createRouter({
   context: {
     queryClient,
     auth: undefined!,
-    AccountStore: undefined!,
   },
   defaultPreload: "intent",
   // Since we're using React Query, we don't want loader calls to ever be stale
@@ -41,6 +32,19 @@ declare module "@tanstack/react-router" {
   }
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
+function AuthRouter() {
+  const auth = useAuth();
+  return (
+    <RouterProvider
+      router={router}
+      context={{
+        auth: auth,
+      }}
+    />
+  );
+}
+
 // Render the app
 const rootElement = document.getElementById("app")!;
 if (!rootElement.innerHTML) {
@@ -48,12 +52,9 @@ if (!rootElement.innerHTML) {
   root.render(
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        <auth.Provider>
-          <RouterProvider
-            router={router}
-            context={{ auth: auth, AccountStore: AccountStore }}
-          />
-        </auth.Provider>
+        <AuthProvider>
+          <AuthRouter />
+        </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );

@@ -24,9 +24,35 @@ const createZustandContext = <TInitial, TStore extends StoreApi<any>>(
   };
 };
 
-export const WorkspaceStore = createZustandContext(buildStore);
+const workspaceStore = createZustandContext(buildStore);
+export const WorkspaceStoreContext = workspaceStore.Context;
+export const WorkspaceStoreProvider = workspaceStore.Provider;
 
-export const AccountStore = createZustandContext(buildAccountStore);
+// eslint-disable-next-line react-refresh/only-export-components
+export function useWorkspaceStore() {
+  const context = React.useContext(WorkspaceStoreContext);
+  if (!context) {
+    throw new Error(
+      "useWorkspaceStore must be used within a WorkspaceStoreProvider"
+    );
+  }
+  return context;
+}
+
+const accountStore = createZustandContext(buildAccountStore);
+export const AccoutStoreContext = accountStore.Context;
+export const AccountStoreProvider = accountStore.Provider;
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function useAccountStore() {
+  const context = React.useContext(AccoutStoreContext);
+  if (!context) {
+    throw new Error(
+      "useAccountStore must be used within an AccountStoreProvider"
+    );
+  }
+  return context;
+}
 
 // theme provider from shadcn/ui
 type Theme = "dark" | "light" | "system";

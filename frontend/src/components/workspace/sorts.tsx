@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DoubleArrowUpIcon } from "@radix-ui/react-icons";
 
-const routeApi = getRouteApi("/workspaces/$workspaceId/_layout");
+const routeApi = getRouteApi("/_auth/workspaces/$workspaceId/_workspace");
 
 export function Sorts() {
   const navigate = useNavigate();

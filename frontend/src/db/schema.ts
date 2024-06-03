@@ -106,7 +106,7 @@ export const membershipResponseSchema = z.object({
   workspaceId: z.string(),
   accountId: z.string(),
   memberId: z.string(),
-  name: z.string(),
+  name: z.string().nullable().default(null),
   role: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),

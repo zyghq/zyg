@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useStore } from "zustand";
 import { WorkspaceStoreStateType } from "@/db/store";
+import { useWorkspaceStore } from "@/providers";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, CircleIcon, EclipseIcon } from "lucide-react";
@@ -11,23 +12,23 @@ import { ThreadList } from "@/components/workspace/threads";
 
 import { reasonsFiltersType } from "@/db/store";
 
-export const Route = createFileRoute("/workspaces/$workspaceId/_layout/")({
+export const Route = createFileRoute(
+  "/_auth/workspaces/$workspaceId/_workspace/"
+)({
   component: () => <AllThreads />,
 });
 
 function AllThreads() {
-  const { WorkspaceStore } = Route.useRouteContext();
+  const workspaceStore = useWorkspaceStore();
   const navigate = useNavigate();
   const { status, reasons, sort } = Route.useSearch();
 
   const workspaceId = useStore(
-    WorkspaceStore.useContext(),
+    workspaceStore,
     (state: WorkspaceStoreStateType) => state.getWorkspaceId(state)
   );
-  const threads = useStore(
-    WorkspaceStore.useContext(),
-    (state: WorkspaceStoreStateType) =>
-      state.viewAllTodoThreads(state, reasons as reasonsFiltersType, sort)
+  const threads = useStore(workspaceStore, (state: WorkspaceStoreStateType) =>
+    state.viewAllTodoThreads(state, reasons as reasonsFiltersType, sort)
   );
   return (
     <main className="col-span-3 lg:col-span-4">
