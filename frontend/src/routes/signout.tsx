@@ -1,10 +1,10 @@
 import React from "react";
-import { z } from "zod";
 import {
   createFileRoute,
   Link,
   useRouterState,
   useRouter,
+  redirect,
 } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
@@ -17,32 +17,40 @@ import {
 } from "@/components/ui/card";
 
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
-import { useAuth } from "@/auth";
-
-const searchSearchSchema = z.object({
-  redirect: z.string().optional().catch("/signin"),
-});
+// import { useAuth } from "@/auth";
 
 export const Route = createFileRoute("/signout")({
-  validateSearch: searchSearchSchema,
+  beforeLoad: async ({ context }) => {
+    console.log("**** beforeLoad in signout ****");
+    const { supabaseClient } = context;
+    const { error, data } = await supabaseClient.auth.getSession();
+    console.log("**** error ****", error);
+    console.log("**** data ****", data);
+
+    const isAuthenticated = !error && data?.session;
+
+    if (!isAuthenticated) {
+      throw redirect({ to: "/signin" });
+    }
+  },
   component: SignOutComponent,
 });
 
 function SignOutComponent() {
-  const auth = useAuth();
+  const { supabaseClient } = Route.useRouteContext();
   const router = useRouter();
   const navigate = Route.useNavigate();
   const isLoading = useRouterState({ select: (s) => s.isLoading });
   const [isError, setIsError] = React.useState(false);
 
   async function confirmSignOut() {
-    const { error } = await auth.client.auth.signOut();
+    const { error } = await supabaseClient.auth.signOut();
     if (error) {
       setIsError(true);
       return;
     }
     await router.invalidate();
-    await navigate({ to: "/" });
+    await navigate({ to: "/signin" });
   }
 
   return (

@@ -1,9 +1,9 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { useStore } from "zustand";
+// import { useStore } from "zustand";
 import { bootstrapWorkspace } from "@/db/api";
-import { WorkspaceStoreProvider, useAccountStore } from "@/providers";
+import { WorkspaceStoreProvider } from "@/providers";
 
 const bootstrapWorkspaceQueryOptions = (token: string, workspaceId: string) =>
   queryOptions({
@@ -38,10 +38,11 @@ export const Route = createFileRoute("/_auth/workspaces/$workspaceId")({
 });
 
 function WorkspaceContainer() {
-  const accountStore = useAccountStore();
+  const { token } = Route.useRouteContext();
+  // const accountStore = useAccountStore();
   const workspaceId = Route.useParams().workspaceId;
 
-  const token = useStore(accountStore, (state) => state.getToken(state));
+  // const token = useStore(accountStore, (state) => state.getToken(state));
 
   const { data, isRefetching } = useSuspenseQuery(
     bootstrapWorkspaceQueryOptions(token, workspaceId)

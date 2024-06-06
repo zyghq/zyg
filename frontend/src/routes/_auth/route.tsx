@@ -7,7 +7,9 @@ const accountQueryOptions = (token: string) =>
   queryOptions({
     queryKey: ["account", token],
     queryFn: async () => {
-      if (!token || token === "") return null;
+      console.log("*** accountQueryOptions start ****");
+      console.log("*** token ****", token);
+      console.log("*** accountQueryOptions end ****");
       const { error, data } = await getOrCreateZygAccount(token);
       if (error) throw new Error("failed to authenticate user account.");
       return data;
@@ -16,16 +18,27 @@ const accountQueryOptions = (token: string) =>
 
 export const Route = createFileRoute("/_auth")({
   beforeLoad: async ({ context }) => {
-    const { auth } = context;
-    const session = await auth?.client.auth.getSession();
-    const { error, data } = session;
+    console.log("*** beforeLoad start ****");
+    const { supabaseClient } = context;
+    const { error, data } = await supabaseClient.auth.getSession();
     if (error || !data?.session) {
       throw redirect({ to: "/signin" });
     }
+
+    console.log("*** error ****", error);
+    console.log("*** data ****", data);
+
     const token = data.session.access_token;
+
+    console.log("*** token ****", token);
+    console.log("*** beforeLoad end ****");
     return { token };
   },
-  loader: async ({ context: { queryClient, token } }) => {
+  loader: async ({ context: { queryClient, supabaseClient } }) => {
+    const { error, data } = await supabaseClient.auth.getSession();
+    if (error || !data?.session) throw redirect({ to: "/signin" });
+    const token = data.session.access_token;
+    console.log("*********** Token in loader ***********", token);
     return queryClient.ensureQueryData(accountQueryOptions(token));
   },
   component: AuthLayout,
@@ -33,27 +46,30 @@ export const Route = createFileRoute("/_auth")({
 
 function AuthLayout() {
   const { token } = Route.useRouteContext();
-  const { data } = useSuspenseQuery(accountQueryOptions(token));
+  // const { data } = useSuspenseQuery(accountQueryOptions(token));
+
+  console.log("*********** Token in AuthLayout ***********", token);
 
   return (
-    <AccountStoreProvider
-      initialValue={{
-        hasData: data ? true : false,
-        error: data ? null : new Error("failed to fetch account details"),
-        token,
-        account: data
-          ? {
-              email: data.email,
-              accountId: data.accountId,
-              name: data.name,
-              provider: data.provider,
-              createdAt: data.createdAt,
-              updatedAt: data.updatedAt,
-            }
-          : null,
-      }}
-    >
-      <Outlet />
-    </AccountStoreProvider>
+    <Outlet />
+    // <AccountStoreProvider
+    //   initialValue={{
+    //     hasData: data ? true : false,
+    //     error: data ? null : new Error("failed to fetch account details"),
+    //     token,
+    //     account: data
+    //       ? {
+    //           email: data.email,
+    //           accountId: data.accountId,
+    //           name: data.name,
+    //           provider: data.provider,
+    //           createdAt: data.createdAt,
+    //           updatedAt: data.updatedAt,
+    //         }
+    //       : null,
+    //   }}
+    // >
+    //   <Outlet />
+    // </AccountStoreProvider>
   );
 }

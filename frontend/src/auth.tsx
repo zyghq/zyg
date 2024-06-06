@@ -1,22 +1,11 @@
 import React from "react";
-import {
-  Session,
-  User,
-  createClient,
-  // AuthResponse,
-  SupabaseClient,
-} from "@supabase/supabase-js";
+import { Session, createClient, SupabaseClient } from "@supabase/supabase-js";
 
 export interface AuthContext {
   client: SupabaseClient;
-  // signInWithPassword: (
-  //   email: string,
-  //   password: string
-  // ) => Promise<AuthResponse>;
-  // signUp: (email: string, password: string) => Promise<AuthResponse>;
   session: Session | null;
-  user: User | null;
   isLoading: boolean;
+  isAuthenticated: boolean;
 }
 
 const supaClient = createClient(
@@ -31,45 +20,14 @@ export const AuthProvider: React.FC<{ children?: React.ReactNode }> = ({
 }) => {
   const [client] = React.useState(() => supaClient);
   const [session, setSession] = React.useState<Session | null>(null);
-  const [user, setUser] = React.useState<User | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
 
-  // const signInWithPassword = React.useCallback(
-  //   async (email: string, password: string) => {
-  //     const { data, error } = await supaClient.auth.signInWithPassword({
-  //       email,
-  //       password,
-  //     });
-  //     if (error) {
-  //       console.error("error signing with password", error);
-  //       return { error, data };
-  //     }
-  //     setSession(data.session);
-  //     setUser(data.session?.user || null);
-  //     return { error, data };
-  //   },
-  //   []
-  // );
-
-  // const signUp = React.useCallback(async (email: string, password: string) => {
-  //   const { data, error } = await supaClient.auth.signUp({
-  //     email,
-  //     password,
-  //   });
-  //   if (error) {
-  //     console.error("error signing up", error);
-  //     return { data, error };
-  //   }
-  //   setSession(data.session);
-  //   setUser(data.session?.user || null);
-  //   return { error, data };
-  // }, []);
+  const isAuthenticated = React.useMemo(() => !!session, [session]);
 
   React.useEffect(() => {
     const { data: listener } = supaClient.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
-        setUser(session?.user || null);
         setIsLoading(false);
       }
     );
@@ -84,7 +42,6 @@ export const AuthProvider: React.FC<{ children?: React.ReactNode }> = ({
       }
 
       setSession(session);
-      setUser(session?.user || null);
       setIsLoading(false);
     };
 
@@ -95,11 +52,17 @@ export const AuthProvider: React.FC<{ children?: React.ReactNode }> = ({
     };
   }, []);
 
+  // console.log("*** in auth context start ****");
+  // console.log("isAuthenticated", isAuthenticated);
+  // console.log("session", session);
+  // console.log("isLoading", isLoading);
+  // console.log("*** in auth context end ****");
+
   const value = {
     client,
     session,
-    user,
     isLoading,
+    isAuthenticated,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

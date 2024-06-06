@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useStore } from "zustand";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+// import { useStore } from "zustand";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Icons } from "@/components/icons";
 import { buttonVariants } from "@/components/ui/button";
 
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { useAccountStore } from "@/providers";
+// import { useAccountStore } from "@/providers";
 
 type Workspace = {
   workspaceId: string;
@@ -47,7 +47,6 @@ const workspacesQueryOptions = (token: string) =>
   queryOptions({
     queryKey: ["workpaces", token],
     queryFn: async () => {
-      if (!token) return [];
       return await fetchWorkspaces(token);
     },
   });
@@ -55,15 +54,17 @@ const workspacesQueryOptions = (token: string) =>
 // TODO: do error handling
 // https://tanstack.com/router/latest/docs/framework/react/guide/external-data-loading#error-handling-with-tanstack-query
 export const Route = createFileRoute("/_auth/workspaces/")({
-  loader: async ({ context: { queryClient, token } }) => {
+  loader: async ({ context: { queryClient, supabaseClient } }) => {
+    const { error, data } = await supabaseClient.auth.getSession();
+    if (error || !data?.session) throw redirect({ to: "/signin" });
+    const token = data.session.access_token;
     return queryClient.ensureQueryData(workspacesQueryOptions(token));
   },
   component: Workspaces,
 });
 
 function Workspaces() {
-  const accountStore = useAccountStore();
-  const token = useStore(accountStore, (state) => state.getToken(state));
+  const { token } = Route.useRouteContext();
 
   const workspacesQuery = useSuspenseQuery(workspacesQueryOptions(token));
   const workspaces: Workspace[] = workspacesQuery.data;
@@ -79,6 +80,7 @@ function Workspaces() {
           <div className="flex justify-between space-x-2 md:justify-end">
             <Link
               to="/signout"
+              preload={false}
               className={buttonVariants({ size: "icon", variant: "outline" })}
             >
               <ExitIcon />
@@ -96,28 +98,32 @@ function Workspaces() {
         <Button variant="default" asChild>
           <Link to={"/workspaces/add"}>Create Workspace</Link>
         </Button>
-        <Separator className="my-4 md:w-1/3" />
-        <div className="text-lg font-semibold">Open a Workspace</div>
-        <div className="mt-4 space-y-2 md:w-3/5 lg:w-2/5">
-          {workspaces.map((workspace) => (
-            <Card key={workspace.workspaceId}>
-              <CardHeader>
-                <CardTitle>{workspace.name}</CardTitle>
-              </CardHeader>
-              <CardFooter className="justify-end">
-                <Button asChild>
-                  <Link
-                    to={"/workspaces/$workspaceId"}
-                    params={{ workspaceId: workspace.workspaceId }}
-                    search={{ status: "todo" }}
-                  >
-                    Open
-                  </Link>
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+        {workspaces && workspaces.length > 0 && (
+          <>
+            <Separator className="my-4 md:w-1/3" />
+            <div className="text-lg font-semibold">Open a Workspace</div>
+            <div className="mt-4 space-y-2 md:w-3/5 lg:w-2/5">
+              {workspaces.map((workspace) => (
+                <Card key={workspace.workspaceId}>
+                  <CardHeader>
+                    <CardTitle>{workspace.name}</CardTitle>
+                  </CardHeader>
+                  <CardFooter className="justify-end">
+                    <Button asChild>
+                      <Link
+                        to={"/workspaces/$workspaceId"}
+                        params={{ workspaceId: workspace.workspaceId }}
+                        search={{ status: "todo" }}
+                      >
+                        Open
+                      </Link>
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

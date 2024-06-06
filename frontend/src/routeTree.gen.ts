@@ -22,6 +22,7 @@ import { Route as AuthWorkspacesIndexImport } from './routes/_auth/workspaces/in
 import { Route as AuthWorkspacesAddImport } from './routes/_auth/workspaces/add'
 import { Route as AuthWorkspacesWorkspaceIdImport } from './routes/_auth/workspaces/$workspaceId'
 import { Route as AuthWorkspacesWorkspaceIdWorkspaceRouteImport } from './routes/_auth/workspaces/$workspaceId/_workspace/route'
+import { Route as AuthWorkspacesWorkspaceIdSetupIndexImport } from './routes/_auth/workspaces/$workspaceId/setup/index'
 import { Route as AuthWorkspacesWorkspaceIdWorkspaceIndexImport } from './routes/_auth/workspaces/$workspaceId/_workspace/index'
 import { Route as AuthWorkspacesWorkspaceIdThreadsThreadIdImport } from './routes/_auth/workspaces/$workspaceId/threads/$threadId'
 import { Route as AuthWorkspacesWorkspaceIdWorkspaceUnassignedImport } from './routes/_auth/workspaces/$workspaceId/_workspace/unassigned'
@@ -82,6 +83,12 @@ const AuthWorkspacesWorkspaceIdRoute = AuthWorkspacesWorkspaceIdImport.update({
 const AuthWorkspacesWorkspaceIdWorkspaceRouteRoute =
   AuthWorkspacesWorkspaceIdWorkspaceRouteImport.update({
     id: '/_workspace',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdRoute,
+  } as any)
+
+const AuthWorkspacesWorkspaceIdSetupIndexRoute =
+  AuthWorkspacesWorkspaceIdSetupIndexImport.update({
+    path: '/setup/',
     getParentRoute: () => AuthWorkspacesWorkspaceIdRoute,
   } as any)
 
@@ -217,6 +224,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceIndexImport
       parentRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceRouteImport
     }
+    '/_auth/workspaces/$workspaceId/setup/': {
+      id: '/_auth/workspaces/$workspaceId/setup/'
+      path: '/setup'
+      fullPath: '/workspaces/$workspaceId/setup'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSetupIndexImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdImport
+    }
     '/_auth/workspaces/$workspaceId/_workspace/labels/$labelId': {
       id: '/_auth/workspaces/$workspaceId/_workspace/labels/$labelId'
       path: '/labels/$labelId'
@@ -241,6 +255,7 @@ export const routeTree = rootRoute.addChildren({
           AuthWorkspacesWorkspaceIdWorkspaceLabelsLabelIdRoute,
         }),
       AuthWorkspacesWorkspaceIdThreadsThreadIdRoute,
+      AuthWorkspacesWorkspaceIdSetupIndexRoute,
     }),
     AuthWorkspacesAddRoute,
     AuthWorkspacesIndexRoute,

@@ -33,7 +33,7 @@ import { useToast } from "@/components/ui/use-toast";
 
 import { ArrowLeftIcon, ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { getOrCreateZygAccount } from "@/db/api";
-import { useAuth } from "@/auth";
+// import { useAuth } from "@/auth";
 
 type FormInputs = {
   email: string;
@@ -42,12 +42,18 @@ type FormInputs = {
 
 export const Route = createFileRoute("/signup")({
   beforeLoad: async ({ context }) => {
-    const { auth } = context;
-    const session = await auth?.client.auth.getSession();
-    const { error: errSupa, data } = session;
-    if (!errSupa && data) {
-      throw redirect({ to: "/signout" });
+    const { supabaseClient } = context;
+    const { error, data } = await supabaseClient.auth.getSession();
+
+    const isAuthenticated = !error && data?.session;
+    if (isAuthenticated) {
+      throw redirect({ to: "/workspaces" });
     }
+
+    // const { error: errSupa, data } = session;
+    // if (!errSupa && data) {
+    //   throw redirect({ to: "/signout" });
+    // }
   },
   component: SignUpComponent,
 });
@@ -58,7 +64,8 @@ const formSchema = z.object({
 });
 
 function SignUpComponent() {
-  const auth = useAuth();
+  const { supabaseClient } = Route.useRouteContext();
+  // const auth = useAuth();
   const router = useRouter();
   const isLoading = useRouterState({ select: (s) => s.isLoading });
   const navigate = useNavigate();
@@ -80,7 +87,7 @@ function SignUpComponent() {
   const onSubmit: SubmitHandler<FormInputs> = async (inputs) => {
     try {
       const { email, password } = inputs;
-      const { data, error: errSupa } = await auth.client.auth.signUp({
+      const { data, error: errSupa } = await supabaseClient.auth.signUp({
         email: email,
         password: password,
       });

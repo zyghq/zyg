@@ -1,3 +1,4 @@
+// import React from "react";
 import {
   createFileRoute,
   redirect,
@@ -34,7 +35,8 @@ import { useToast } from "@/components/ui/use-toast";
 
 import { ArrowLeftIcon, ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { getOrCreateZygAccount } from "@/db/api";
-import { useAuth } from "@/auth";
+// import { Session } from "@supabase/supabase-js";
+// import { useAuth } from "@/auth";
 
 const searchSearchSchema = z.object({
   redirect: z.string().optional().catch(""),
@@ -45,17 +47,34 @@ type FormInputs = {
   password: string;
 };
 
+// const supabaseClient = createClient(
+//   import.meta.env.VITE_SUPABASE_URL,
+//   import.meta.env.VITE_SUPABASE_ANON_KEY
+// );
+
 const fallback = "/workspaces" as const;
 
 export const Route = createFileRoute("/signin")({
   validateSearch: searchSearchSchema,
   beforeLoad: async ({ context, search }) => {
-    const { auth } = context;
-    const session = await auth?.client.auth.getSession();
-    const { error: errSupa, data } = session;
-    if (!errSupa && data?.session) {
+    console.log("**** beforeLoad in signin ****");
+    const { supabaseClient } = context;
+    const { error, data } = await supabaseClient.auth.getSession();
+    console.log("**** error ****", error);
+    console.log("**** data ****", data);
+
+    const isAuthenticated = !error && data?.session;
+    if (isAuthenticated) {
       throw redirect({ to: search.redirect || fallback });
     }
+    // const { isAuthenticated } = context;
+    // if (isAuthenticated) throw redirect({ to: search.redirect || fallback });
+    // const { auth } = context;
+    // const session = await auth?.client.auth.getSession();
+    // const { error: errSupa, data } = session;
+    // if (!errSupa && data?.session) {
+    //   throw redirect({ to: search.redirect || fallback });
+    // }
   },
   component: SignInComponent,
 });
@@ -66,14 +85,83 @@ const formSchema = z.object({
 });
 
 function SignInComponent() {
-  const auth = useAuth();
+  const { supabaseClient } = Route.useRouteContext();
   const router = useRouter();
   const isLoading = useRouterState({ select: (s) => s.isLoading });
   const navigate = useNavigate();
-
   const search = Route.useSearch();
-
   const { toast } = useToast();
+
+  // const [session, setSession] = React.useState<Session | null>(null);
+
+  // React.useEffect(() => {
+  //   const setData = async () => {
+  //     const {
+  //       data: { session },
+  //       error,
+  //     } = await supabaseClient.auth.getSession();
+  //     if (error) {
+  //       throw error;
+  //     }
+  //     setSession(session);
+  //   };
+
+  //   setData();
+  // }, [supabaseClient]);
+
+  // const [signedIn, setSignedIn] = React.useState(false);
+  // const [isSigningIn, setIsSigningIn] = React.useState(false);
+
+  // const [, setSession] = React.useState<Session | null>(null);
+  // const [isSigningIn, setIsSigningIn] = React.useState(true);
+
+  // React.useEffect(() => {
+  //   const { data: listener } = supabaseClient.auth.onAuthStateChange(
+  //     (_event, session) => {
+  //       setSession(session);
+  //       setIsSigningIn(false);
+  //     }
+  //   );
+
+  //   const setData = async () => {
+  //     const {
+  //       data: { session },
+  //       error,
+  //     } = await supabaseClient.auth.getSession();
+  //     if (error) {
+  //       throw error;
+  //     }
+
+  //     setSession(session);
+  //     setIsSigningIn(false);
+
+  //     // if (session) {
+  //     //   await router.invalidate();
+  //     //   await navigate({ to: search.redirect || fallback });
+  //     // }
+  //   };
+
+  //   setData();
+
+  //   return () => {
+  //     listener?.subscription.unsubscribe();
+  //   };
+  // }, [supabaseClient, navigate, router, search]);
+
+  // React.useEffect(() => {
+  //   const doRedirect = async () => {
+  //     if (session) {
+  //       await router.invalidate();
+  //       await navigate({ to: search.redirect || fallback });
+  //     }
+  //   };
+  //   if (session) {
+  //     toast({
+  //       description: `Welcome back, ${session.user.email}. You are now signed in.`,
+  //     });
+  //     doRedirect();
+  //   }
+  // }, [session, router, navigate, search, toast]);
 
   const form = useForm<FormInputs>({
     resolver: zodResolver(formSchema),
@@ -88,11 +176,18 @@ function SignInComponent() {
 
   const isLoggingIn = isLoading || isSubmitting;
 
+  // async function doRedirect() {
+  //   if (signedIn) {
+  //     await router.invalidate();
+  //     await navigate({ to: search.redirect || fallback });
+  //   }
+  // }
+
   const onSubmit: SubmitHandler<FormInputs> = async (inputs) => {
     try {
       const { email, password } = inputs;
       const { error: errSupa, data } =
-        await auth.client.auth.signInWithPassword({ email, password });
+        await supabaseClient.auth.signInWithPassword({ email, password });
       if (errSupa) {
         console.error(errSupa);
         const { name, message } = errSupa;
@@ -123,11 +218,9 @@ function SignInComponent() {
           });
           return;
         }
-
         toast({
           description: `Welcome back, ${account.email}. You are now signed in.`,
         });
-
         await router.invalidate();
         await navigate({ to: search.redirect || fallback });
       }
