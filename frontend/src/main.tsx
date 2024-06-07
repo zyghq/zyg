@@ -1,4 +1,3 @@
-// import React from "react";
 import ReactDOM from "react-dom/client";
 
 import { RouterProvider, createRouter } from "@tanstack/react-router";
@@ -37,32 +36,6 @@ declare module "@tanstack/react-router" {
     router: typeof router;
   }
 }
-
-// eslint-disable-next-line react-refresh/only-export-components
-// function AuthRouter() {
-//   const auth = useAuth();
-//   const { isLoading, isAuthenticated, session } = auth;
-//   console.log("*** in auth router start ****");
-//   console.log("isLoading", isLoading);
-//   console.log("isAuthenticated", isAuthenticated);
-//   console.log("session", session);
-//   console.log("*** in auth router end ****");
-
-//   // const routerContext = React.useMemo(
-//   //   () => ({
-//   //     isLoading,
-//   //   }),
-//   //   [isLoading]
-//   // );
-
-//   // React.useEffect(() => {
-//   //   router.invalidate();
-//   // }, [routerContext]);
-
-//   // if (isLoading) return <div>Auth Is Loading...</div>;
-
-//   return <RouterProvider router={router} />;
-// }
 
 // Render the app
 const rootElement = document.getElementById("app")!;

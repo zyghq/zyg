@@ -17,16 +17,16 @@ import { Route as SigninImport } from './routes/signin'
 import { Route as RecoverImport } from './routes/recover'
 import { Route as AuthRouteImport } from './routes/_auth/route'
 import { Route as IndexImport } from './routes/index'
-import { Route as WorkspacesIndexImport } from './routes/workspaces/index'
-import { Route as WorkspacesAddImport } from './routes/workspaces/add'
-import { Route as WorkspacesWorkspaceIdImport } from './routes/workspaces/$workspaceId'
-import { Route as WorkspacesWorkspaceIdWorkspaceRouteImport } from './routes/workspaces/$workspaceId/_workspace/route'
-import { Route as WorkspacesWorkspaceIdSetupIndexImport } from './routes/workspaces/$workspaceId/setup/index'
-import { Route as WorkspacesWorkspaceIdWorkspaceIndexImport } from './routes/workspaces/$workspaceId/_workspace/index'
-import { Route as WorkspacesWorkspaceIdThreadsThreadIdImport } from './routes/workspaces/$workspaceId/threads/$threadId'
-import { Route as WorkspacesWorkspaceIdWorkspaceUnassignedImport } from './routes/workspaces/$workspaceId/_workspace/unassigned'
-import { Route as WorkspacesWorkspaceIdWorkspaceMeImport } from './routes/workspaces/$workspaceId/_workspace/me'
-import { Route as WorkspacesWorkspaceIdWorkspaceLabelsLabelIdImport } from './routes/workspaces/$workspaceId/_workspace/labels.$labelId'
+import { Route as AuthWorkspacesIndexImport } from './routes/_auth/workspaces/index'
+import { Route as AuthWorkspacesAddImport } from './routes/_auth/workspaces/add'
+import { Route as AuthWorkspacesWorkspaceIdImport } from './routes/_auth/workspaces/$workspaceId'
+import { Route as AuthWorkspacesWorkspaceIdWorkspaceRouteImport } from './routes/_auth/workspaces/$workspaceId/_workspace/route'
+import { Route as AuthWorkspacesWorkspaceIdSetupIndexImport } from './routes/_auth/workspaces/$workspaceId/setup/index'
+import { Route as AuthWorkspacesWorkspaceIdWorkspaceIndexImport } from './routes/_auth/workspaces/$workspaceId/_workspace/index'
+import { Route as AuthWorkspacesWorkspaceIdThreadsThreadIdImport } from './routes/_auth/workspaces/$workspaceId/threads/$threadId'
+import { Route as AuthWorkspacesWorkspaceIdWorkspaceUnassignedImport } from './routes/_auth/workspaces/$workspaceId/_workspace/unassigned'
+import { Route as AuthWorkspacesWorkspaceIdWorkspaceMeImport } from './routes/_auth/workspaces/$workspaceId/_workspace/me'
+import { Route as AuthWorkspacesWorkspaceIdWorkspaceLabelsLabelIdImport } from './routes/_auth/workspaces/$workspaceId/_workspace/labels.$labelId'
 
 // Create/Update Routes
 
@@ -60,61 +60,61 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const WorkspacesIndexRoute = WorkspacesIndexImport.update({
+const AuthWorkspacesIndexRoute = AuthWorkspacesIndexImport.update({
   path: '/workspaces/',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => AuthRouteRoute,
 } as any)
 
-const WorkspacesAddRoute = WorkspacesAddImport.update({
+const AuthWorkspacesAddRoute = AuthWorkspacesAddImport.update({
   path: '/workspaces/add',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => AuthRouteRoute,
 } as any)
 
-const WorkspacesWorkspaceIdRoute = WorkspacesWorkspaceIdImport.update({
+const AuthWorkspacesWorkspaceIdRoute = AuthWorkspacesWorkspaceIdImport.update({
   path: '/workspaces/$workspaceId',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => AuthRouteRoute,
 } as any)
 
-const WorkspacesWorkspaceIdWorkspaceRouteRoute =
-  WorkspacesWorkspaceIdWorkspaceRouteImport.update({
+const AuthWorkspacesWorkspaceIdWorkspaceRouteRoute =
+  AuthWorkspacesWorkspaceIdWorkspaceRouteImport.update({
     id: '/_workspace',
-    getParentRoute: () => WorkspacesWorkspaceIdRoute,
+    getParentRoute: () => AuthWorkspacesWorkspaceIdRoute,
   } as any)
 
-const WorkspacesWorkspaceIdSetupIndexRoute =
-  WorkspacesWorkspaceIdSetupIndexImport.update({
+const AuthWorkspacesWorkspaceIdSetupIndexRoute =
+  AuthWorkspacesWorkspaceIdSetupIndexImport.update({
     path: '/setup/',
-    getParentRoute: () => WorkspacesWorkspaceIdRoute,
+    getParentRoute: () => AuthWorkspacesWorkspaceIdRoute,
   } as any)
 
-const WorkspacesWorkspaceIdWorkspaceIndexRoute =
-  WorkspacesWorkspaceIdWorkspaceIndexImport.update({
+const AuthWorkspacesWorkspaceIdWorkspaceIndexRoute =
+  AuthWorkspacesWorkspaceIdWorkspaceIndexImport.update({
     path: '/',
-    getParentRoute: () => WorkspacesWorkspaceIdWorkspaceRouteRoute,
+    getParentRoute: () => AuthWorkspacesWorkspaceIdWorkspaceRouteRoute,
   } as any)
 
-const WorkspacesWorkspaceIdThreadsThreadIdRoute =
-  WorkspacesWorkspaceIdThreadsThreadIdImport.update({
+const AuthWorkspacesWorkspaceIdThreadsThreadIdRoute =
+  AuthWorkspacesWorkspaceIdThreadsThreadIdImport.update({
     path: '/threads/$threadId',
-    getParentRoute: () => WorkspacesWorkspaceIdRoute,
+    getParentRoute: () => AuthWorkspacesWorkspaceIdRoute,
   } as any)
 
-const WorkspacesWorkspaceIdWorkspaceUnassignedRoute =
-  WorkspacesWorkspaceIdWorkspaceUnassignedImport.update({
+const AuthWorkspacesWorkspaceIdWorkspaceUnassignedRoute =
+  AuthWorkspacesWorkspaceIdWorkspaceUnassignedImport.update({
     path: '/unassigned',
-    getParentRoute: () => WorkspacesWorkspaceIdWorkspaceRouteRoute,
+    getParentRoute: () => AuthWorkspacesWorkspaceIdWorkspaceRouteRoute,
   } as any)
 
-const WorkspacesWorkspaceIdWorkspaceMeRoute =
-  WorkspacesWorkspaceIdWorkspaceMeImport.update({
+const AuthWorkspacesWorkspaceIdWorkspaceMeRoute =
+  AuthWorkspacesWorkspaceIdWorkspaceMeImport.update({
     path: '/me',
-    getParentRoute: () => WorkspacesWorkspaceIdWorkspaceRouteRoute,
+    getParentRoute: () => AuthWorkspacesWorkspaceIdWorkspaceRouteRoute,
   } as any)
 
-const WorkspacesWorkspaceIdWorkspaceLabelsLabelIdRoute =
-  WorkspacesWorkspaceIdWorkspaceLabelsLabelIdImport.update({
+const AuthWorkspacesWorkspaceIdWorkspaceLabelsLabelIdRoute =
+  AuthWorkspacesWorkspaceIdWorkspaceLabelsLabelIdImport.update({
     path: '/labels/$labelId',
-    getParentRoute: () => WorkspacesWorkspaceIdWorkspaceRouteRoute,
+    getParentRoute: () => AuthWorkspacesWorkspaceIdWorkspaceRouteRoute,
   } as any)
 
 // Populate the FileRoutesByPath interface
@@ -163,75 +163,75 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupImport
       parentRoute: typeof rootRoute
     }
-    '/workspaces/$workspaceId': {
-      id: '/workspaces/$workspaceId'
+    '/_auth/workspaces/$workspaceId': {
+      id: '/_auth/workspaces/$workspaceId'
       path: '/workspaces/$workspaceId'
       fullPath: '/workspaces/$workspaceId'
-      preLoaderRoute: typeof WorkspacesWorkspaceIdImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdImport
+      parentRoute: typeof AuthRouteImport
     }
-    '/workspaces/add': {
-      id: '/workspaces/add'
+    '/_auth/workspaces/add': {
+      id: '/_auth/workspaces/add'
       path: '/workspaces/add'
       fullPath: '/workspaces/add'
-      preLoaderRoute: typeof WorkspacesAddImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof AuthWorkspacesAddImport
+      parentRoute: typeof AuthRouteImport
     }
-    '/workspaces/': {
-      id: '/workspaces/'
+    '/_auth/workspaces/': {
+      id: '/_auth/workspaces/'
       path: '/workspaces'
       fullPath: '/workspaces'
-      preLoaderRoute: typeof WorkspacesIndexImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof AuthWorkspacesIndexImport
+      parentRoute: typeof AuthRouteImport
     }
-    '/workspaces/$workspaceId/_workspace': {
-      id: '/workspaces/$workspaceId/_workspace'
+    '/_auth/workspaces/$workspaceId/_workspace': {
+      id: '/_auth/workspaces/$workspaceId/_workspace'
       path: ''
       fullPath: '/workspaces/$workspaceId'
-      preLoaderRoute: typeof WorkspacesWorkspaceIdWorkspaceRouteImport
-      parentRoute: typeof WorkspacesWorkspaceIdImport
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceRouteImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdImport
     }
-    '/workspaces/$workspaceId/_workspace/me': {
-      id: '/workspaces/$workspaceId/_workspace/me'
+    '/_auth/workspaces/$workspaceId/_workspace/me': {
+      id: '/_auth/workspaces/$workspaceId/_workspace/me'
       path: '/me'
       fullPath: '/workspaces/$workspaceId/me'
-      preLoaderRoute: typeof WorkspacesWorkspaceIdWorkspaceMeImport
-      parentRoute: typeof WorkspacesWorkspaceIdWorkspaceRouteImport
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceMeImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceRouteImport
     }
-    '/workspaces/$workspaceId/_workspace/unassigned': {
-      id: '/workspaces/$workspaceId/_workspace/unassigned'
+    '/_auth/workspaces/$workspaceId/_workspace/unassigned': {
+      id: '/_auth/workspaces/$workspaceId/_workspace/unassigned'
       path: '/unassigned'
       fullPath: '/workspaces/$workspaceId/unassigned'
-      preLoaderRoute: typeof WorkspacesWorkspaceIdWorkspaceUnassignedImport
-      parentRoute: typeof WorkspacesWorkspaceIdWorkspaceRouteImport
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceUnassignedImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceRouteImport
     }
-    '/workspaces/$workspaceId/threads/$threadId': {
-      id: '/workspaces/$workspaceId/threads/$threadId'
+    '/_auth/workspaces/$workspaceId/threads/$threadId': {
+      id: '/_auth/workspaces/$workspaceId/threads/$threadId'
       path: '/threads/$threadId'
       fullPath: '/workspaces/$workspaceId/threads/$threadId'
-      preLoaderRoute: typeof WorkspacesWorkspaceIdThreadsThreadIdImport
-      parentRoute: typeof WorkspacesWorkspaceIdImport
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdThreadsThreadIdImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdImport
     }
-    '/workspaces/$workspaceId/_workspace/': {
-      id: '/workspaces/$workspaceId/_workspace/'
+    '/_auth/workspaces/$workspaceId/_workspace/': {
+      id: '/_auth/workspaces/$workspaceId/_workspace/'
       path: '/'
       fullPath: '/workspaces/$workspaceId/'
-      preLoaderRoute: typeof WorkspacesWorkspaceIdWorkspaceIndexImport
-      parentRoute: typeof WorkspacesWorkspaceIdWorkspaceRouteImport
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceIndexImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceRouteImport
     }
-    '/workspaces/$workspaceId/setup/': {
-      id: '/workspaces/$workspaceId/setup/'
+    '/_auth/workspaces/$workspaceId/setup/': {
+      id: '/_auth/workspaces/$workspaceId/setup/'
       path: '/setup'
       fullPath: '/workspaces/$workspaceId/setup'
-      preLoaderRoute: typeof WorkspacesWorkspaceIdSetupIndexImport
-      parentRoute: typeof WorkspacesWorkspaceIdImport
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSetupIndexImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdImport
     }
-    '/workspaces/$workspaceId/_workspace/labels/$labelId': {
-      id: '/workspaces/$workspaceId/_workspace/labels/$labelId'
+    '/_auth/workspaces/$workspaceId/_workspace/labels/$labelId': {
+      id: '/_auth/workspaces/$workspaceId/_workspace/labels/$labelId'
       path: '/labels/$labelId'
       fullPath: '/workspaces/$workspaceId/labels/$labelId'
-      preLoaderRoute: typeof WorkspacesWorkspaceIdWorkspaceLabelsLabelIdImport
-      parentRoute: typeof WorkspacesWorkspaceIdWorkspaceRouteImport
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceLabelsLabelIdImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceRouteImport
     }
   }
 }
@@ -240,24 +240,25 @@ declare module '@tanstack/react-router' {
 
 export const routeTree = rootRoute.addChildren({
   IndexRoute,
-  AuthRouteRoute,
+  AuthRouteRoute: AuthRouteRoute.addChildren({
+    AuthWorkspacesWorkspaceIdRoute: AuthWorkspacesWorkspaceIdRoute.addChildren({
+      AuthWorkspacesWorkspaceIdWorkspaceRouteRoute:
+        AuthWorkspacesWorkspaceIdWorkspaceRouteRoute.addChildren({
+          AuthWorkspacesWorkspaceIdWorkspaceMeRoute,
+          AuthWorkspacesWorkspaceIdWorkspaceUnassignedRoute,
+          AuthWorkspacesWorkspaceIdWorkspaceIndexRoute,
+          AuthWorkspacesWorkspaceIdWorkspaceLabelsLabelIdRoute,
+        }),
+      AuthWorkspacesWorkspaceIdThreadsThreadIdRoute,
+      AuthWorkspacesWorkspaceIdSetupIndexRoute,
+    }),
+    AuthWorkspacesAddRoute,
+    AuthWorkspacesIndexRoute,
+  }),
   RecoverRoute,
   SigninRoute,
   SignoutRoute,
   SignupRoute,
-  WorkspacesWorkspaceIdRoute: WorkspacesWorkspaceIdRoute.addChildren({
-    WorkspacesWorkspaceIdWorkspaceRouteRoute:
-      WorkspacesWorkspaceIdWorkspaceRouteRoute.addChildren({
-        WorkspacesWorkspaceIdWorkspaceMeRoute,
-        WorkspacesWorkspaceIdWorkspaceUnassignedRoute,
-        WorkspacesWorkspaceIdWorkspaceIndexRoute,
-        WorkspacesWorkspaceIdWorkspaceLabelsLabelIdRoute,
-      }),
-    WorkspacesWorkspaceIdThreadsThreadIdRoute,
-    WorkspacesWorkspaceIdSetupIndexRoute,
-  }),
-  WorkspacesAddRoute,
-  WorkspacesIndexRoute,
 })
 
 /* prettier-ignore-end */

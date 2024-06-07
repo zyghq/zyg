@@ -12,7 +12,7 @@ import { reasonsFiltersType } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
 
 export const Route = createFileRoute(
-  "/workspaces/$workspaceId/_workspace/unassigned"
+  "/_auth/workspaces/$workspaceId/_workspace/unassigned"
 )({
   component: () => <UnassignedThreads />,
 });

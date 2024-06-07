@@ -41,14 +41,12 @@ type FormInputs = {
 
 export const Route = createFileRoute("/signup")({
   beforeLoad: async ({ context }) => {
-    console.log("**** beforeLoad in signup ****");
     const { supabaseClient } = context;
     const { error, data } = await supabaseClient.auth.getSession();
     const isAuthenticated = !error && data?.session;
     if (isAuthenticated) {
       throw redirect({ to: "/workspaces" });
     }
-    console.log("**** beforeLoad in signup end ****");
   },
   component: SignUpComponent,
 });

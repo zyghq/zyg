@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ExitIcon } from "@radix-ui/react-icons";
 import { Icons } from "@/components/icons";
 import { buttonVariants } from "@/components/ui/button";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions } from "@tanstack/react-query";
 
 type Workspace = {
   workspaceId: string;
@@ -16,7 +16,6 @@ type Workspace = {
 };
 
 async function fetchWorkspaces(token: string) {
-  console.log("*** using token ***", token);
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/`,
@@ -53,37 +52,33 @@ const workspacesQueryOptions = (token: string) =>
 
 // TODO: do error handling
 // https://tanstack.com/router/latest/docs/framework/react/guide/external-data-loading#error-handling-with-tanstack-query
-export const Route = createFileRoute("/workspaces/")({
-  beforeLoad: async ({ context }) => {
-    console.log("**** beforeLoad in workspaces ****");
-    const { supabaseClient } = context;
-    const { error, data } = await supabaseClient.auth.getSession();
-    const isAuthenticated = !error && data?.session;
-    if (!isAuthenticated) {
-      throw redirect({ to: "/signin" });
-    }
-    const token = data.session.access_token as string;
-    console.log("**** beforeLoad in workspaces end ****");
-    return { token };
-  },
+export const Route = createFileRoute("/_auth/workspaces/")({
+  // beforeLoad: async ({ context }) => {
+  //   console.log("**** beforeLoad in workspaces ****");
+  //   const { supabaseClient } = context;
+  //   const { error, data } = await supabaseClient.auth.getSession();
+  //   const isAuthenticated = !error && data?.session;
+  //   if (!isAuthenticated) {
+  //     throw redirect({ to: "/signin" });
+  //   }
+  //   const token = data.session.access_token as string;
+  //   console.log("**** beforeLoad in workspaces end ****");
+  //   return { token };
+  // },
   loader: async ({ context: { queryClient, supabaseClient } }) => {
     const { error, data } = await supabaseClient.auth.getSession();
     if (error || !data?.session) throw redirect({ to: "/signin" });
     const token = data.session.access_token as string;
-    console.log("**** loader in workspaces loader start ****");
-    console.log("**** token value ****", token);
-    console.log("**** loader in workspaces loader end ****");
+    // console.log("**** loader in workspaces loader start ****");
+    // console.log("**** token value ****", token);
+    // console.log("**** loader in workspaces loader end ****");
     return queryClient.ensureQueryData(workspacesQueryOptions(token));
   },
   component: Workspaces,
 });
 
 function Workspaces() {
-  // const { token } = Route.useRouteContext();
-  const workspaces = Route.useLoaderData();
-  // const workspacesQuery = useSuspenseQuery(workspacesQueryOptions(token));
-  // const workspaces: Workspace[] = workspacesQuery.data;
-
+  const workspaces: Workspace[] = Route.useLoaderData();
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

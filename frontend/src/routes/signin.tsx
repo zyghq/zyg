@@ -50,14 +50,12 @@ const fallback = "/workspaces" as const;
 export const Route = createFileRoute("/signin")({
   validateSearch: searchSearchSchema,
   beforeLoad: async ({ context, search }) => {
-    console.log("**** beforeLoad in signin ****");
     const { supabaseClient } = context;
     const { error, data } = await supabaseClient.auth.getSession();
     const isAuthenticated = !error && data?.session;
     if (isAuthenticated) {
       throw redirect({ to: search.redirect || fallback });
     }
-    console.log("**** beforeLoad in signin end ****");
   },
   component: SignInComponent,
 });
