@@ -91,7 +91,7 @@ export function SideNav({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <ScrollArea className="my-4 h-[calc(100dvh-14rem)] pb-4">
+      <ScrollArea className="my-4 h-[calc(100dvh-14rem)] pb-2">
         <SideNavLinks
           workspaceId={workspaceId}
           metrics={metrics}

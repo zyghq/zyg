@@ -123,7 +123,7 @@ export default function SideNavMobile({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <ScrollArea className="my-4 h-full pb-4">
+        <ScrollArea className="my-4 h-full pb-2 pr-4">
           <SideNavLinks
             workspaceId={workspaceId}
             metrics={metrics}

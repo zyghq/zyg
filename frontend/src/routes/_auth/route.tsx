@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { queryOptions } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 import { getOrCreateZygAccount } from "@/db/api";
 import { AccountStoreProvider } from "@/providers";
 
@@ -34,7 +34,23 @@ export const Route = createFileRoute("/_auth")({
 });
 
 function AuthLayout() {
-  const data = Route.useLoaderData();
+  const { token } = Route.useRouteContext();
+  const initialData = Route.useLoaderData();
+
+  const response = useQuery({
+    queryKey: ["account", token],
+    queryFn: async () => {
+      const { error, data } = await getOrCreateZygAccount(token);
+      if (error) throw new Error("failed to authenticate user account.");
+      return data;
+    },
+    initialData: initialData,
+    enabled: !!token,
+    staleTime: 1000 * 60 * 1,
+  });
+
+  const { data } = response;
+
   return (
     <AccountStoreProvider
       initialValue={{
