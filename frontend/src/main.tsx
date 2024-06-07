@@ -4,7 +4,6 @@ import ReactDOM from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/providers";
-// import { AuthProvider, useAuth } from "@/auth";
 import { createClient } from "@supabase/supabase-js";
 
 import "./globals.css";
@@ -25,9 +24,6 @@ const router = createRouter({
   context: {
     queryClient,
     supabaseClient,
-    // isAuthenticated?: false,
-    // session: undefined!,
-    // isLoading: undefined!,
   },
   defaultPreload: "intent",
   // Since we're using React Query, we don't want loader calls to ever be stale
@@ -75,9 +71,6 @@ if (!rootElement.innerHTML) {
   root.render(
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        {/* <AuthProvider>
-          <AuthRouter />
-        </AuthProvider> */}
         <RouterProvider router={router} />
       </QueryClientProvider>
     </ThemeProvider>

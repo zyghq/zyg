@@ -1,39 +1,52 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useStore } from "zustand";
 import { WorkspaceStoreStateType } from "@/db/store";
-import { useWorkspaceStore } from "@/providers";
 
+// import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// import { DoubleArrowUpIcon } from "@radix-ui/react-icons";
 import { CheckCircle, CircleIcon, EclipseIcon } from "lucide-react";
 
 import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
 import { ThreadList } from "@/components/workspace/threads";
-
 import { reasonsFiltersType } from "@/db/store";
+import { useWorkspaceStore } from "@/providers";
 
 export const Route = createFileRoute(
-  "/_auth/workspaces/$workspaceId/_workspace/"
+  "/workspaces/$workspaceId/_workspace/me"
 )({
-  component: () => <AllThreads />,
+  component: () => <MyThreads />,
 });
 
-function AllThreads() {
+function MyThreads() {
   const workspaceStore = useWorkspaceStore();
-  const navigate = useNavigate();
+
   const { status, reasons, sort } = Route.useSearch();
+  const navigate = useNavigate();
 
   const workspaceId = useStore(
     workspaceStore,
     (state: WorkspaceStoreStateType) => state.getWorkspaceId(state)
   );
-  const threads = useStore(workspaceStore, (state: WorkspaceStoreStateType) =>
-    state.viewAllTodoThreads(state, reasons as reasonsFiltersType, sort)
+
+  const memberId = useStore(workspaceStore, (state: WorkspaceStoreStateType) =>
+    state.getMemberId(state)
+  );
+  const todoThreads = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreStateType) =>
+      state.viewMyTodoThreads(
+        state,
+        memberId,
+        reasons as reasonsFiltersType,
+        sort
+      )
   );
   return (
     <main className="col-span-3 lg:col-span-4">
       <div className="container">
-        <div className="mb-4 mt-4 text-xl">All Threads</div>
+        <div className="mb-4 mt-4 text-xl">My Threads</div>
         <Tabs defaultValue={status}>
           <div className="mb-4 sm:flex sm:justify-between">
             <TabsList className="grid grid-cols-3">
@@ -79,7 +92,7 @@ function AllThreads() {
           <TabsContent value="todo" className="m-0">
             <ThreadList
               workspaceId={workspaceId}
-              threads={threads}
+              threads={todoThreads}
               className="h-[calc(100dvh-14rem)]"
             />
           </TabsContent>

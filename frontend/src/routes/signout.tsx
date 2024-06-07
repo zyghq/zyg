@@ -17,21 +17,17 @@ import {
 } from "@/components/ui/card";
 
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
-// import { useAuth } from "@/auth";
 
 export const Route = createFileRoute("/signout")({
   beforeLoad: async ({ context }) => {
     console.log("**** beforeLoad in signout ****");
     const { supabaseClient } = context;
     const { error, data } = await supabaseClient.auth.getSession();
-    console.log("**** error ****", error);
-    console.log("**** data ****", data);
-
     const isAuthenticated = !error && data?.session;
-
     if (!isAuthenticated) {
       throw redirect({ to: "/signin" });
     }
+    console.log("**** beforeLoad in signout end ****");
   },
   component: SignOutComponent,
 });

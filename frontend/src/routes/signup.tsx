@@ -33,7 +33,6 @@ import { useToast } from "@/components/ui/use-toast";
 
 import { ArrowLeftIcon, ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { getOrCreateZygAccount } from "@/db/api";
-// import { useAuth } from "@/auth";
 
 type FormInputs = {
   email: string;
@@ -42,18 +41,14 @@ type FormInputs = {
 
 export const Route = createFileRoute("/signup")({
   beforeLoad: async ({ context }) => {
+    console.log("**** beforeLoad in signup ****");
     const { supabaseClient } = context;
     const { error, data } = await supabaseClient.auth.getSession();
-
     const isAuthenticated = !error && data?.session;
     if (isAuthenticated) {
       throw redirect({ to: "/workspaces" });
     }
-
-    // const { error: errSupa, data } = session;
-    // if (!errSupa && data) {
-    //   throw redirect({ to: "/signout" });
-    // }
+    console.log("**** beforeLoad in signup end ****");
   },
   component: SignUpComponent,
 });
@@ -65,7 +60,6 @@ const formSchema = z.object({
 
 function SignUpComponent() {
   const { supabaseClient } = Route.useRouteContext();
-  // const auth = useAuth();
   const router = useRouter();
   const isLoading = useRouterState({ select: (s) => s.isLoading });
   const navigate = useNavigate();

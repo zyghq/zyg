@@ -16,7 +16,7 @@ const bootstrapWorkspaceQueryOptions = (token: string, workspaceId: string) =>
     },
   });
 
-export const Route = createFileRoute("/_auth/workspaces/$workspaceId")({
+export const Route = createFileRoute("/workspaces/$workspaceId")({
   // attach the workspaceStore to the context
   // make children happy.
   // beforeLoad: () => {
