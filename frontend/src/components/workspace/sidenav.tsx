@@ -13,9 +13,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-// import CollapsibleLabelList from "@/components/dashboard/collapsible-label-list";
-// import SidebarLinks from "@/components/dashboard/sidebar-links";
-
 import { WorkspaceMetricsStoreType } from "@/db/store";
 
 import SideNavLinks from "@/components/workspace/sidenav-links";

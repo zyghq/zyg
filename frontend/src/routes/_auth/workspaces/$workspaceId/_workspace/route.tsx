@@ -78,7 +78,9 @@ const threadSearchSchema = z.object({
   priorities: prioritiesSchema(["urgent", "high", "normal", "low"]).catch(""),
 });
 
-export const Route = createFileRoute("/_auth/workspaces/$workspaceId/_workspace")({
+export const Route = createFileRoute(
+  "/_auth/workspaces/$workspaceId/_workspace"
+)({
   validateSearch: (search) => threadSearchSchema.parse(search),
   component: WorkspaceLayout,
 });
@@ -110,6 +112,7 @@ function WorkspaceLayout() {
     <div vaul-drawer-wrapper="">
       <div className="flex flex-col">
         <Header
+          email={email}
           workspaceId={workspaceId}
           workspaceName={workspaceName}
           metrics={metrics}

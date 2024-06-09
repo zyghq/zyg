@@ -28,11 +28,13 @@ import { WorkspaceMetricsStoreType } from "@/db/store";
 import SideNavLinks from "@/components/workspace/sidenav-links";
 
 export default function SideNavMobile({
+  email,
   workspaceId,
   workspaceName,
   metrics,
   memberId,
 }: {
+  email: string;
   workspaceId: string;
   workspaceName: string;
   metrics: WorkspaceMetricsStoreType;
@@ -91,8 +93,8 @@ export default function SideNavMobile({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="mx-1">
-            <DropdownMenuLabel className="text-zinc-500">
-              sanchitrrk@gmail.com
+            <DropdownMenuLabel className="text-muted-foreground">
+              {email}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
@@ -140,7 +142,7 @@ export default function SideNavMobile({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="mx-1">
-              <DropdownMenuLabel className="text-zinc-500">
+              <DropdownMenuLabel className="text-muted-foreground">
                 How can we help?
               </DropdownMenuLabel>
               <DropdownMenuSeparator />

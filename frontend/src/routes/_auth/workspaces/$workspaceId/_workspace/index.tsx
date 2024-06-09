@@ -32,8 +32,8 @@ function AllThreads() {
   );
   return (
     <main className="col-span-3 lg:col-span-4">
-      <div className="container">
-        <div className="mb-4 mt-4 text-xl">All Threads</div>
+      <div className="container px-2 sm:px-4">
+        <div className="mx-1 my-2 text-xl sm:my-4">All Threads</div>
         <Tabs defaultValue={status}>
           <div className="mb-4 sm:flex sm:justify-between">
             <TabsList className="grid grid-cols-3">
