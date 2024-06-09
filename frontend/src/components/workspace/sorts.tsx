@@ -46,7 +46,7 @@ export function Sorts() {
           Sort
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end">
+      <DropdownMenuContent className="w-58 mx-1" align="end">
         <DropdownMenuRadioGroup
           onSelect={(e) => e.preventDefault()}
           value={selectedSort}

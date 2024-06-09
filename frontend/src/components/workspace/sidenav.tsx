@@ -13,9 +13,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-// import CollapsibleLabelList from "@/components/dashboard/collapsible-label-list";
-// import SidebarLinks from "@/components/dashboard/sidebar-links";
-
 import { WorkspaceMetricsStoreType } from "@/db/store";
 
 import SideNavLinks from "@/components/workspace/sidenav-links";
@@ -91,7 +88,7 @@ export function SideNav({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <ScrollArea className="my-4 h-[calc(100dvh-14rem)] pb-4">
+      <ScrollArea className="my-4 h-[calc(100dvh-14rem)] pb-2">
         <SideNavLinks
           workspaceId={workspaceId}
           metrics={metrics}

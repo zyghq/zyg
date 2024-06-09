@@ -34,7 +34,6 @@ import { useToast } from "@/components/ui/use-toast";
 
 import { ArrowLeftIcon, ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { getOrCreateZygAccount } from "@/db/api";
-import { useAuth } from "@/auth";
 
 const searchSearchSchema = z.object({
   redirect: z.string().optional().catch(""),
@@ -50,10 +49,10 @@ const fallback = "/workspaces" as const;
 export const Route = createFileRoute("/signin")({
   validateSearch: searchSearchSchema,
   beforeLoad: async ({ context, search }) => {
-    const { auth } = context;
-    const session = await auth?.client.auth.getSession();
-    const { error: errSupa, data } = session;
-    if (!errSupa && data?.session) {
+    const { supabaseClient } = context;
+    const { error, data } = await supabaseClient.auth.getSession();
+    const isAuthenticated = !error && data?.session;
+    if (isAuthenticated) {
       throw redirect({ to: search.redirect || fallback });
     }
   },
@@ -66,13 +65,11 @@ const formSchema = z.object({
 });
 
 function SignInComponent() {
-  const auth = useAuth();
+  const { supabaseClient } = Route.useRouteContext();
   const router = useRouter();
   const isLoading = useRouterState({ select: (s) => s.isLoading });
   const navigate = useNavigate();
-
   const search = Route.useSearch();
-
   const { toast } = useToast();
 
   const form = useForm<FormInputs>({
@@ -92,7 +89,7 @@ function SignInComponent() {
     try {
       const { email, password } = inputs;
       const { error: errSupa, data } =
-        await auth.client.auth.signInWithPassword({ email, password });
+        await supabaseClient.auth.signInWithPassword({ email, password });
       if (errSupa) {
         console.error(errSupa);
         const { name, message } = errSupa;
@@ -123,11 +120,9 @@ function SignInComponent() {
           });
           return;
         }
-
         toast({
           description: `Welcome back, ${account.email}. You are now signed in.`,
         });
-
         await router.invalidate();
         await navigate({ to: search.redirect || fallback });
       }

@@ -1,14 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useStore } from "zustand";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { ExitIcon } from "@radix-ui/react-icons";
 import { Icons } from "@/components/icons";
 import { buttonVariants } from "@/components/ui/button";
-
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { useAccountStore } from "@/providers";
+import { queryOptions } from "@tanstack/react-query";
 
 type Workspace = {
   workspaceId: string;
@@ -38,6 +35,7 @@ async function fetchWorkspaces(token: string) {
     // Ok
     return await response.json();
   } catch (err) {
+    console.log("*** error fetching workspaces in fetch API call ***", err);
     console.error(err);
     throw new Error("error fetching workspaces");
   }
@@ -47,27 +45,40 @@ const workspacesQueryOptions = (token: string) =>
   queryOptions({
     queryKey: ["workpaces", token],
     queryFn: async () => {
-      if (!token) return [];
       return await fetchWorkspaces(token);
     },
+    enabled: !!token,
   });
 
 // TODO: do error handling
 // https://tanstack.com/router/latest/docs/framework/react/guide/external-data-loading#error-handling-with-tanstack-query
 export const Route = createFileRoute("/_auth/workspaces/")({
-  loader: async ({ context: { queryClient, token } }) => {
+  // beforeLoad: async ({ context }) => {
+  //   console.log("**** beforeLoad in workspaces ****");
+  //   const { supabaseClient } = context;
+  //   const { error, data } = await supabaseClient.auth.getSession();
+  //   const isAuthenticated = !error && data?.session;
+  //   if (!isAuthenticated) {
+  //     throw redirect({ to: "/signin" });
+  //   }
+  //   const token = data.session.access_token as string;
+  //   console.log("**** beforeLoad in workspaces end ****");
+  //   return { token };
+  // },
+  loader: async ({ context: { queryClient, supabaseClient } }) => {
+    const { error, data } = await supabaseClient.auth.getSession();
+    if (error || !data?.session) throw redirect({ to: "/signin" });
+    const token = data.session.access_token as string;
+    // console.log("**** loader in workspaces loader start ****");
+    // console.log("**** token value ****", token);
+    // console.log("**** loader in workspaces loader end ****");
     return queryClient.ensureQueryData(workspacesQueryOptions(token));
   },
   component: Workspaces,
 });
 
 function Workspaces() {
-  const accountStore = useAccountStore();
-  const token = useStore(accountStore, (state) => state.getToken(state));
-
-  const workspacesQuery = useSuspenseQuery(workspacesQueryOptions(token));
-  const workspaces: Workspace[] = workspacesQuery.data;
-
+  const workspaces: Workspace[] = Route.useLoaderData();
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -79,6 +90,7 @@ function Workspaces() {
           <div className="flex justify-between space-x-2 md:justify-end">
             <Link
               to="/signout"
+              preload={false}
               className={buttonVariants({ size: "icon", variant: "outline" })}
             >
               <ExitIcon />
@@ -96,28 +108,32 @@ function Workspaces() {
         <Button variant="default" asChild>
           <Link to={"/workspaces/add"}>Create Workspace</Link>
         </Button>
-        <Separator className="my-4 md:w-1/3" />
-        <div className="text-lg font-semibold">Open a Workspace</div>
-        <div className="mt-4 space-y-2 md:w-3/5 lg:w-2/5">
-          {workspaces.map((workspace) => (
-            <Card key={workspace.workspaceId}>
-              <CardHeader>
-                <CardTitle>{workspace.name}</CardTitle>
-              </CardHeader>
-              <CardFooter className="justify-end">
-                <Button asChild>
-                  <Link
-                    to={"/workspaces/$workspaceId"}
-                    params={{ workspaceId: workspace.workspaceId }}
-                    search={{ status: "todo" }}
-                  >
-                    Open
-                  </Link>
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+        {workspaces && workspaces.length > 0 && (
+          <>
+            <Separator className="my-4 md:w-1/3" />
+            <div className="text-lg font-semibold">Open a Workspace</div>
+            <div className="mt-4 space-y-2 md:w-3/5 lg:w-2/5">
+              {workspaces.map((workspace) => (
+                <Card key={workspace.workspaceId}>
+                  <CardHeader>
+                    <CardTitle>{workspace.name}</CardTitle>
+                  </CardHeader>
+                  <CardFooter className="justify-end">
+                    <Button asChild>
+                      <Link
+                        to={"/workspaces/$workspaceId"}
+                        params={{ workspaceId: workspace.workspaceId }}
+                        search={{ status: "todo" }}
+                      >
+                        Open
+                      </Link>
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -13,11 +13,13 @@ import { WorkspaceMetricsStoreType } from "@/db/store";
 import SideNavMobile from "@/components/workspace/sidenav-mobile";
 
 export function Header({
+  email,
   workspaceId,
   workspaceName,
   metrics,
   memberId,
 }: {
+  email: string;
   workspaceId: string;
   workspaceName: string;
   metrics: WorkspaceMetricsStoreType;
@@ -33,6 +35,7 @@ export function Header({
           </Link>
         </div>
         <SideNavMobile
+          email={email}
           workspaceId={workspaceId}
           workspaceName={workspaceName}
           metrics={metrics}

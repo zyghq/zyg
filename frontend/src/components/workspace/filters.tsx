@@ -290,7 +290,7 @@ export function Filters() {
           Filters
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="sm:58 w-48" align="end">
+      <DropdownMenuContent className="sm:58 w-48 mx-1" align="end">
         <DropdownMenuGroup>
           <ReasonsSubMenu reasons={reasons} />
           <PrioritiesSubMenu priorities={priorities} />
@@ -301,10 +301,9 @@ export function Filters() {
             <DropdownMenuSubTrigger>Assignee</DropdownMenuSubTrigger>
             <DropdownMenuPortal>
               <DropdownMenuSubContent className="mx-2">
-                <DropdownMenuItem>Email</DropdownMenuItem>
-                <DropdownMenuItem>Message</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>More...</DropdownMenuItem>
+                <DropdownMenuItem>Member 1</DropdownMenuItem>
+                <DropdownMenuItem>Member 2</DropdownMenuItem>
+                <DropdownMenuItem>Member 3</DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuPortal>
           </DropdownMenuSub>
