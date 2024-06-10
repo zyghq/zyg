@@ -500,3 +500,85 @@ export async function getWorkspaceCustomers(
     };
   }
 }
+
+export async function createWorkspace(
+  token: string,
+  body: { name: string }
+): Promise<{
+  data: { workspaceId: string; workspaceName: string } | null;
+  error: Error | null;
+}> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ...body }),
+      }
+    );
+    if (!response.ok) {
+      const { status, statusText } = response;
+      const error = new Error(
+        `error creating workspace with status: ${status} and statusText: ${statusText}`
+      );
+      return { error, data: null };
+    }
+    const data = await response.json();
+    const { workspaceId, name } = data;
+    return {
+      error: null,
+      data: { workspaceId, workspaceName: name },
+    };
+  } catch (err) {
+    console.error(err);
+    return {
+      error: new Error("error creating workspace - something went wrong"),
+      data: null,
+    };
+  }
+}
+
+export async function updateWorkspace(
+  token: string,
+  body: { name: string }
+): Promise<{
+  data: { workspaceId: string; workspaceName: string } | null;
+  error: Error | null;
+}> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ...body }),
+      }
+    );
+    if (!response.ok) {
+      const { status, statusText } = response;
+      const error = new Error(
+        `error creating workspace with status: ${status} and statusText: ${statusText}`
+      );
+      return { error, data: null };
+    }
+    const data = await response.json();
+    const { workspaceId, name } = data;
+    return {
+      error: null,
+      data: { workspaceId, workspaceName: name },
+    };
+  } catch (err) {
+    console.error(err);
+    return {
+      error: new Error("error creating workspace - something went wrong"),
+      data: null,
+    };
+  }
+}

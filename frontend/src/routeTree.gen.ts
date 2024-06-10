@@ -20,8 +20,10 @@ import { Route as IndexImport } from './routes/index'
 import { Route as AuthWorkspacesIndexImport } from './routes/_auth/workspaces/index'
 import { Route as AuthWorkspacesAddImport } from './routes/_auth/workspaces/add'
 import { Route as AuthWorkspacesWorkspaceIdImport } from './routes/_auth/workspaces/$workspaceId'
+import { Route as AuthWorkspacesWorkspaceIdSettingsRouteImport } from './routes/_auth/workspaces/$workspaceId/settings/route'
 import { Route as AuthWorkspacesWorkspaceIdWorkspaceRouteImport } from './routes/_auth/workspaces/$workspaceId/_workspace/route'
 import { Route as AuthWorkspacesWorkspaceIdSetupIndexImport } from './routes/_auth/workspaces/$workspaceId/setup/index'
+import { Route as AuthWorkspacesWorkspaceIdSettingsIndexImport } from './routes/_auth/workspaces/$workspaceId/settings/index'
 import { Route as AuthWorkspacesWorkspaceIdWorkspaceIndexImport } from './routes/_auth/workspaces/$workspaceId/_workspace/index'
 import { Route as AuthWorkspacesWorkspaceIdThreadsThreadIdImport } from './routes/_auth/workspaces/$workspaceId/threads/$threadId'
 import { Route as AuthWorkspacesWorkspaceIdWorkspaceUnassignedImport } from './routes/_auth/workspaces/$workspaceId/_workspace/unassigned'
@@ -75,6 +77,12 @@ const AuthWorkspacesWorkspaceIdRoute = AuthWorkspacesWorkspaceIdImport.update({
   getParentRoute: () => AuthRouteRoute,
 } as any)
 
+const AuthWorkspacesWorkspaceIdSettingsRouteRoute =
+  AuthWorkspacesWorkspaceIdSettingsRouteImport.update({
+    path: '/settings',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdRoute,
+  } as any)
+
 const AuthWorkspacesWorkspaceIdWorkspaceRouteRoute =
   AuthWorkspacesWorkspaceIdWorkspaceRouteImport.update({
     id: '/_workspace',
@@ -85,6 +93,12 @@ const AuthWorkspacesWorkspaceIdSetupIndexRoute =
   AuthWorkspacesWorkspaceIdSetupIndexImport.update({
     path: '/setup/',
     getParentRoute: () => AuthWorkspacesWorkspaceIdRoute,
+  } as any)
+
+const AuthWorkspacesWorkspaceIdSettingsIndexRoute =
+  AuthWorkspacesWorkspaceIdSettingsIndexImport.update({
+    path: '/',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
   } as any)
 
 const AuthWorkspacesWorkspaceIdWorkspaceIndexRoute =
@@ -191,6 +205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceRouteImport
       parentRoute: typeof AuthWorkspacesWorkspaceIdImport
     }
+    '/_auth/workspaces/$workspaceId/settings': {
+      id: '/_auth/workspaces/$workspaceId/settings'
+      path: '/settings'
+      fullPath: '/workspaces/$workspaceId/settings'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdImport
+    }
     '/_auth/workspaces/$workspaceId/_workspace/me': {
       id: '/_auth/workspaces/$workspaceId/_workspace/me'
       path: '/me'
@@ -218,6 +239,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/workspaces/$workspaceId/'
       preLoaderRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceIndexImport
       parentRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceRouteImport
+    }
+    '/_auth/workspaces/$workspaceId/settings/': {
+      id: '/_auth/workspaces/$workspaceId/settings/'
+      path: '/'
+      fullPath: '/workspaces/$workspaceId/settings/'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsIndexImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
     }
     '/_auth/workspaces/$workspaceId/setup/': {
       id: '/_auth/workspaces/$workspaceId/setup/'
@@ -248,6 +276,10 @@ export const routeTree = rootRoute.addChildren({
           AuthWorkspacesWorkspaceIdWorkspaceUnassignedRoute,
           AuthWorkspacesWorkspaceIdWorkspaceIndexRoute,
           AuthWorkspacesWorkspaceIdWorkspaceLabelsLabelIdRoute,
+        }),
+      AuthWorkspacesWorkspaceIdSettingsRouteRoute:
+        AuthWorkspacesWorkspaceIdSettingsRouteRoute.addChildren({
+          AuthWorkspacesWorkspaceIdSettingsIndexRoute,
         }),
       AuthWorkspacesWorkspaceIdThreadsThreadIdRoute,
       AuthWorkspacesWorkspaceIdSetupIndexRoute,
