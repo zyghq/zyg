@@ -156,7 +156,7 @@ function SignUpComponent() {
                   <ExclamationTriangleIcon className="h-4 w-4" />
                   <AlertTitle>Error</AlertTitle>
                   <AlertDescription>
-                    {`${errors?.root?.message || "Please try agian later."}`}
+                    {`${errors?.root?.message || "Please try again later."}`}
                   </AlertDescription>
                 </Alert>
               )}

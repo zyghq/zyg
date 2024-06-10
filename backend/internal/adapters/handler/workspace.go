@@ -129,6 +129,69 @@ func (h *WorkspaceHandler) handleGetWorkspace(w http.ResponseWriter, r *http.Req
 	}
 }
 
+func (h *WorkspaceHandler) handleUpdateWorkspace(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+	defer func(r io.ReadCloser) {
+		_, _ = io.Copy(io.Discard, r)
+		_ = r.Close()
+	}(r.Body)
+
+	var rb WorkspaceReqPayload
+	err := json.NewDecoder(r.Body).Decode(&rb)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	workspaceId := r.PathValue("workspaceId")
+
+	workspace, err := h.ws.UserWorkspace(ctx, account.AccountId, workspaceId)
+	if errors.Is(err, services.ErrWorkspaceNotFound) {
+		slog.Warn(
+			"workspace not found or does not exist",
+			slog.String("workspaceId", workspaceId),
+		)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		slog.Error(
+			"failed to get account workspace or does not exist "+
+				"something went wrong",
+			slog.String("workspaceId", workspaceId),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	// apply updates
+	workspace.Name = rb.Name
+
+	workspace, err = h.ws.UpdateWorkspace(ctx, workspace.WorkspaceId, workspace)
+	if err != nil {
+		slog.Error(
+			"failed to update workspace "+
+				"something went wrong",
+			slog.String("workspaceId", workspaceId),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(workspace); err != nil {
+		slog.Error(
+			"failed to encode workspace to json "+
+				"might need to check the json encoding defn",
+			slog.String("workspaceId", workspace.WorkspaceId),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+}
+
 func (h *WorkspaceHandler) handleGetOrCreateWorkspaceLabel(w http.ResponseWriter, r *http.Request, account *domain.Account) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)

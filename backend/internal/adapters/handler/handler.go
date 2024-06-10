@@ -96,9 +96,9 @@ func NewServer(
 	customerService ports.CustomerServicer,
 	threadChatService ports.ThreadChatServicer,
 ) http.Handler {
-	// initialize new server mux
 	mux := http.NewServeMux()
 
+	// creates service handlers
 	ah := NewAccountHandler(accountService)
 	wh := NewWorkspaceHandler(workspaceService, customerService)
 	th := NewThreadChatHandler(workspaceService, threadChatService)
@@ -111,6 +111,7 @@ func NewServer(
 
 	mux.Handle("POST /workspaces/{$}", NewEnsureAuth(wh.handleCreateWorkspace, authService))
 	mux.Handle("GET /workspaces/{$}", NewEnsureAuth(wh.handleGetWorkspaces, authService))
+	mux.Handle("PATCH /workspaces/{workspaceId}/{$}", NewEnsureAuth(wh.handleUpdateWorkspace, authService))
 
 	mux.Handle("GET /workspaces/{workspaceId}/members/me/{$}",
 		NewEnsureAuth(wh.handleGetWorkspaceMembership, authService))
