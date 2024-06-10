@@ -75,8 +75,6 @@ function GeneralSettings() {
         return;
       }
       if (data) {
-        console.log("update store...");
-        console.log("data", data);
         const { workspaceName } = data;
         workspaceStore.getState().updateWorkspaceName(workspaceName);
       }
