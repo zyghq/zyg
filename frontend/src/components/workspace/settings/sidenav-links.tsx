@@ -94,39 +94,48 @@ export function SideNavLinks({
             >
               <div className="flex">Members</div>
             </Link>
-            <Button
-              variant="ghost"
-              asChild
-              className="flex w-full justify-between"
+            <Link
+              to="/workspaces/$workspaceId/settings/labels"
+              params={{ workspaceId }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+              }}
             >
-              <Link href={`/`}>
-                <div className="flex">
-                  <div className="my-auto">AI</div>
-                </div>
-              </Link>
-            </Button>
-            <Button
-              variant="ghost"
-              asChild
-              className="flex w-full justify-between"
+              <div className="flex">Labels</div>
+            </Link>
+            <Link
+              to="/workspaces/$workspaceId/settings/ai"
+              params={{ workspaceId }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+              }}
             >
-              <Link href={`/`}>
-                <div className="flex">
-                  <div className="my-auto">Labels</div>
-                </div>
-              </Link>
-            </Button>
-            <Button
-              variant="ghost"
-              asChild
-              className="flex w-full justify-between"
+              <div className="flex">AI</div>
+            </Link>
+            <Link
+              to="/workspaces/$workspaceId/settings/billing"
+              params={{ workspaceId }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+              }}
             >
-              <Link href={`/`}>
-                <div className="flex">
-                  <div className="my-auto">Billing</div>
-                </div>
-              </Link>
-            </Button>
+              <div className="flex">Billing</div>
+            </Link>
           </div>
           {/* G3 */}
           <div className="my-4 flex items-center gap-1">
