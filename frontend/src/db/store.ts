@@ -123,6 +123,7 @@ interface IWorkspaceStoreActions {
     sortBy: sortByType
   ): ThreadChatStoreType[];
   viewCustomerName(state: WorkspaceStoreStateType, customerId: string): string;
+  updateWorkspaceName(name: string): void;
 }
 
 export type WorkspaceStoreStateType = IWorkspaceEntities &
@@ -224,6 +225,16 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
     viewCustomerName: (state: WorkspaceStoreStateType, customerId: string) => {
       const customer = state.customers?.[customerId];
       return customer ? customer.name : "";
+    },
+    updateWorkspaceName: (name: string) => {
+      set((state) => {
+        if (state.workspace) {
+          state.workspace.name = name;
+          return state;
+        } else {
+          return state;
+        }
+      });
     },
   }));
 };

@@ -544,6 +544,7 @@ export async function createWorkspace(
 
 export async function updateWorkspace(
   token: string,
+  workspaceId: string,
   body: { name: string }
 ): Promise<{
   data: { workspaceId: string; workspaceName: string } | null;
@@ -551,7 +552,7 @@ export async function updateWorkspace(
 }> {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_ZYG_URL}/workspaces/`,
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/`,
       {
         method: "PATCH",
         headers: {
@@ -569,10 +570,10 @@ export async function updateWorkspace(
       return { error, data: null };
     }
     const data = await response.json();
-    const { workspaceId, name } = data;
+    const { workspaceId: id, name } = data;
     return {
       error: null,
-      data: { workspaceId, workspaceName: name },
+      data: { workspaceId: id, workspaceName: name },
     };
   } catch (err) {
     console.error(err);

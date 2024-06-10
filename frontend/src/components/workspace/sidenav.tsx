@@ -59,7 +59,7 @@ export function SideNav({
             <CaretSortIcon className="my-auto h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="mx-1">
+        <DropdownMenuContent align="start">
           <DropdownMenuLabel className="text-muted-foreground">
             {email}
           </DropdownMenuLabel>
@@ -102,46 +102,40 @@ export function SideNav({
           memberId={memberId}
         />
       </ScrollArea>
-      <div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button className="flex" variant="outline">
-              <LifeBuoyIcon className="my-auto mr-2 h-4 w-4" />
-              <div className="my-auto">Support</div>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="mx-1">
-            <DropdownMenuLabel className="text-muted-foreground">
-              How can we help?
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <ChatBubbleIcon className="my-auto mr-2 h-4 w-4" />
-              <div className="my-auto">Get in touch</div>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link
-                className="flex"
-                target="_blank"
-                href="https://zyg.ai/docs/"
-              >
-                <ReaderIcon className="my-auto mr-2 h-4 w-4" />
-                <div className="my-auto">Documentation</div>
-                <OpenInNewWindowIcon className="my-auto ml-2 h-4 w-4" />
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <UsersIcon className="my-auto mr-2 h-4 w-4" />
-              Join Slack
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <BugIcon className="my-auto mr-2 h-4 w-4" />
-              Bug Report
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button className="flex" variant="outline">
+            <LifeBuoyIcon className="my-auto mr-2 h-4 w-4" />
+            <div className="my-auto">Support</div>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuLabel className="text-muted-foreground">
+            How can we help?
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem>
+            <ChatBubbleIcon className="my-auto mr-2 h-4 w-4" />
+            <div className="my-auto">Get in touch</div>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link className="flex" target="_blank" href="https://zyg.ai/docs/">
+              <ReaderIcon className="my-auto mr-2 h-4 w-4" />
+              <div className="my-auto">Documentation</div>
+              <OpenInNewWindowIcon className="my-auto ml-2 h-4 w-4" />
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            <UsersIcon className="my-auto mr-2 h-4 w-4" />
+            Join Slack
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem>
+            <BugIcon className="my-auto mr-2 h-4 w-4" />
+            Bug Report
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

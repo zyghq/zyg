@@ -92,7 +92,7 @@ export default function SideNavMobile({
               <CaretSortIcon className="my-auto h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="mx-1">
+          <DropdownMenuContent align="start">
             <DropdownMenuLabel className="text-muted-foreground">
               {email}
             </DropdownMenuLabel>
@@ -148,7 +148,7 @@ export default function SideNavMobile({
                 <div className="my-auto">Support</div>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="mx-1">
+            <DropdownMenuContent align="start">
               <DropdownMenuLabel className="text-muted-foreground">
                 How can we help?
               </DropdownMenuLabel>

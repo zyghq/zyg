@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
+import { ExclamationTriangleIcon, CheckIcon } from "@radix-ui/react-icons";
 import { ClipboardCopyIcon } from "@radix-ui/react-icons";
 import { useStore } from "zustand";
 import { useWorkspaceStore } from "@/providers";
@@ -63,7 +63,9 @@ function GeneralSettings() {
   const onSubmit: SubmitHandler<FormInputs> = async (inputs) => {
     try {
       const { name } = inputs;
-      const { error, data } = await updateWorkspace(token, { name });
+      const { error, data } = await updateWorkspace(token, workspaceId, {
+        name,
+      });
       if (error) {
         console.error(error);
         form.setError("root", {
@@ -74,6 +76,9 @@ function GeneralSettings() {
       }
       if (data) {
         console.log("update store...");
+        console.log("data", data);
+        const { workspaceName } = data;
+        workspaceStore.getState().updateWorkspaceName(workspaceName);
       }
     } catch (err) {
       console.error(err);
@@ -135,14 +140,22 @@ function GeneralSettings() {
                   </Button>
                 </div>
               </div>
-              <Button
-                type="submit"
-                disabled={isUpdating || isSubmitSuccessful}
-                aria-disabled={isUpdating || isSubmitSuccessful}
-                aria-label="Create Workspace"
-              >
-                Save
-              </Button>
+              <div className="flex space-x-4">
+                <Button
+                  type="submit"
+                  disabled={isUpdating}
+                  aria-disabled={isUpdating}
+                  aria-label="Create Workspace"
+                >
+                  Save
+                </Button>
+                {isSubmitSuccessful && (
+                  <div className="flex my-auto text-green-500">
+                    <CheckIcon className="my-auto h-4 w-4" />
+                    <div className="text-sm my-auto">Workspace Updated!</div>
+                  </div>
+                )}
+              </div>
             </form>
           </Form>
         </div>

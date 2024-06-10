@@ -25,6 +25,7 @@ type CustomerAuthServicer interface {
 
 type WorkspaceServicer interface {
 	CreateWorkspace(ctx context.Context, w domain.Workspace) (domain.Workspace, error)
+	UpdateWorkspace(ctx context.Context, workspaceId string, w domain.Workspace) (domain.Workspace, error)
 	GetWorkspace(ctx context.Context, workspaceId string) (domain.Workspace, error)
 	UserWorkspace(ctx context.Context, accountId string, workspaceId string) (domain.Workspace, error)
 	UserWorkspaceList(ctx context.Context, accountId string) ([]domain.Workspace, error)
@@ -74,6 +75,7 @@ type AccountRepositorer interface {
 
 type WorkspaceRepositorer interface {
 	CreateWorkspace(ctx context.Context, w domain.Workspace) (domain.Workspace, error)
+	UpdateWorkspaceById(ctx context.Context, workspaceId string, w domain.Workspace) (domain.Workspace, error)
 	GetWorkspaceById(ctx context.Context, workspaceId string) (domain.Workspace, error)
 	GetByAccountWorkspaceId(ctx context.Context, accountId string, workspaceId string) (domain.Workspace, error)
 	GetListByAccountId(ctx context.Context, accountId string) ([]domain.Workspace, error)

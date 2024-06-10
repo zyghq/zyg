@@ -73,6 +73,26 @@ func (w *WorkspaceDB) CreateWorkspace(ctx context.Context, workspace domain.Work
 	return workspace, nil
 }
 
+func (w *WorkspaceDB) UpdateWorkspaceById(
+	ctx context.Context, workspaceId string, workspace domain.Workspace,
+) (domain.Workspace, error) {
+	err := w.db.QueryRow(ctx, `UPDATE workspace SET
+		name = $1, updated_at = NOW()
+		WHERE workspace_id = $2
+		RETURNING
+		workspace_id, account_id, name, created_at, updated_at`, workspace.Name, workspaceId).Scan(
+		&workspace.WorkspaceId, &workspace.AccountId, &workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt,
+	)
+
+	// check if the query returned an error
+	if err != nil {
+		slog.Error("failed to update query", "error", err)
+		return domain.Workspace{}, ErrQuery
+	}
+
+	return workspace, nil
+}
+
 func (w *WorkspaceDB) GetWorkspaceById(ctx context.Context, workspaceId string) (domain.Workspace, error) {
 	var workspace domain.Workspace
 	err := w.db.QueryRow(ctx, `SELECT 
@@ -96,7 +116,9 @@ func (w *WorkspaceDB) GetWorkspaceById(ctx context.Context, workspaceId string) 
 	return workspace, nil
 }
 
-func (w *WorkspaceDB) GetByAccountWorkspaceId(ctx context.Context, accountId string, workspaceId string) (domain.Workspace, error) {
+func (w *WorkspaceDB) GetByAccountWorkspaceId(
+	ctx context.Context, accountId string, workspaceId string,
+) (domain.Workspace, error) {
 	var workspace domain.Workspace
 	err := w.db.QueryRow(ctx, `SELECT
 		workspace_id, account_id, name, created_at, updated_at
@@ -181,7 +203,9 @@ func (w *WorkspaceDB) GetOrCreateLabel(ctx context.Context, label domain.Label) 
 	return label, isCreated, nil
 }
 
-func (w *WorkspaceDB) GetWorkspaceLabelById(ctx context.Context, workspaceId string, labelId string) (domain.Label, error) {
+func (w *WorkspaceDB) GetWorkspaceLabelById(
+	ctx context.Context, workspaceId string, labelId string,
+) (domain.Label, error) {
 	var label domain.Label
 	err := w.db.QueryRow(ctx, `SELECT
 		label_id, workspace_id, name, icon, created_at, updated_at
