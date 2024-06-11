@@ -102,6 +102,7 @@ export const accountResponseSchema = z.object({
   updatedAt: z.string(),
 });
 
+// @sanchitrk: membership can have more data like perms, etc.
 export const membershipResponseSchema = z.object({
   workspaceId: z.string(),
   accountId: z.string(),
@@ -126,3 +127,22 @@ export const workspaceCustomerResponseSchema = z.object({
 export const workspaceCustomersResponseSchema = z
   .array(workspaceCustomerResponseSchema)
   .default([]);
+
+export const workspaceLabelResponseSchema = z.object({
+  workspaceId: z.string(),
+  labelId: z.string(),
+  name: z.string(),
+  icon: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const workspaceMemberResponseSchema = z.object({
+  workspaceId: z.string(),
+  accountId: z.string(),
+  memberId: z.string(),
+  name: z.string().nullable().default(null),
+  role: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});

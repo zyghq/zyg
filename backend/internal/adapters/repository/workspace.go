@@ -150,6 +150,8 @@ func (w *WorkspaceDB) GetListByAccountId(ctx context.Context, accountId string) 
 
 	rows, _ := w.db.Query(ctx, stmt, accountId)
 
+	defer rows.Close()
+
 	_, err := pgx.ForEachRow(rows, []any{
 		&workspace.WorkspaceId, &workspace.AccountId,
 		&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt,
@@ -162,8 +164,6 @@ func (w *WorkspaceDB) GetListByAccountId(ctx context.Context, accountId string) 
 		slog.Error("failed to query", "error", err)
 		return []domain.Workspace{}, ErrQuery
 	}
-
-	defer rows.Close()
 
 	return ws, nil
 }
@@ -226,4 +226,30 @@ func (w *WorkspaceDB) GetWorkspaceLabelById(
 	}
 
 	return label, nil
+}
+
+func (w *WorkspaceDB) GetLabelListByWorkspaceId(ctx context.Context, workspaceId string) ([]domain.Label, error) {
+	var label domain.Label
+	labels := make([]domain.Label, 0, 100)
+	stmt := `SELECT label_id, workspace_id, name, icon, created_at, updated_at
+		FROM label WHERE workspace_id = $1`
+
+	rows, _ := w.db.Query(ctx, stmt, workspaceId)
+
+	defer rows.Close()
+
+	_, err := pgx.ForEachRow(rows, []any{
+		&label.LabelId, &label.WorkspaceId, &label.Name, &label.Icon,
+		&label.CreatedAt, &label.UpdatedAt,
+	}, func() error {
+		labels = append(labels, label)
+		return nil
+	})
+
+	if err != nil {
+		slog.Error("failed to query", "error", err)
+		return []domain.Label{}, ErrQuery
+	}
+
+	return labels, nil
 }

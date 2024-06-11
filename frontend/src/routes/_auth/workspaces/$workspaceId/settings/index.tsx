@@ -75,8 +75,6 @@ function GeneralSettings() {
         return;
       }
       if (data) {
-        console.log("update store...");
-        console.log("data", data);
         const { workspaceName } = data;
         workspaceStore.getState().updateWorkspaceName(workspaceName);
       }
@@ -98,67 +96,65 @@ function GeneralSettings() {
           </div>
           <Separator />
         </div>
-        <div className="">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              {errors?.root?.type === "serverError" && (
-                <Alert variant="destructive">
-                  <ExclamationTriangleIcon className="h-4 w-4" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>
-                    {`${errors?.root?.message || "Please try again later."}`}
-                  </AlertDescription>
-                </Alert>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            {errors?.root?.type === "serverError" && (
+              <Alert variant="destructive">
+                <ExclamationTriangleIcon className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>
+                  {`${errors?.root?.message || "Please try again later."}`}
+                </AlertDescription>
+              </Alert>
+            )}
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Zyg" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Typically your company or team name.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
               )}
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Zyg" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Typically your company or team name.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div>
-                <div className="text-sm font-normal">Workspace ID</div>
-                <div className="text-xs text-muted-foreground">
-                  We might ask you for support inquiries.
-                </div>
-                <div className="mt-4 flex w-full items-center">
-                  <code className="mr-2 rounded-lg border bg-muted p-2">
-                    {workspaceId}
-                  </code>
-                  <Button variant="ghost" size="sm">
-                    <ClipboardCopyIcon className="h-4 w-4" />
-                  </Button>
-                </div>
+            />
+            <div>
+              <div className="text-sm font-normal">Workspace ID</div>
+              <div className="text-xs text-muted-foreground">
+                We might ask you for support inquiries.
               </div>
-              <div className="flex space-x-4">
-                <Button
-                  type="submit"
-                  disabled={isUpdating}
-                  aria-disabled={isUpdating}
-                  aria-label="Create Workspace"
-                >
-                  Save
+              <div className="mt-4 flex w-full items-center">
+                <code className="mr-2 rounded-lg border bg-muted p-2">
+                  {workspaceId}
+                </code>
+                <Button variant="ghost" size="sm">
+                  <ClipboardCopyIcon className="h-4 w-4" />
                 </Button>
-                {isSubmitSuccessful && (
-                  <div className="flex my-auto text-green-500">
-                    <CheckIcon className="my-auto h-4 w-4" />
-                    <div className="text-sm my-auto">Workspace Updated!</div>
-                  </div>
-                )}
               </div>
-            </form>
-          </Form>
-        </div>
+            </div>
+            <div className="flex space-x-4">
+              <Button
+                type="submit"
+                disabled={isUpdating}
+                aria-disabled={isUpdating}
+                aria-label="Create Workspace"
+              >
+                Save
+              </Button>
+              {isSubmitSuccessful && (
+                <div className="flex my-auto text-green-500">
+                  <CheckIcon className="my-auto h-4 w-4" />
+                  <div className="text-sm my-auto">Workspace Updated!</div>
+                </div>
+              )}
+            </div>
+          </form>
+        </Form>
       </div>
     </div>
   );

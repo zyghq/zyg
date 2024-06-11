@@ -1,7 +1,7 @@
 import React from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useParams } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatBubbleIcon, CodeIcon } from "@radix-ui/react-icons";
 import { BlocksIcon } from "lucide-react";
@@ -9,14 +9,23 @@ import Avatar from "boring-avatars";
 import { Icons } from "@/components/icons";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 
-export function SideNavLinks({ maxHeight }: { maxHeight?: string }) {
+export function SideNavLinks({
+  accountId,
+  maxHeight,
+}: {
+  accountId: string;
+  maxHeight?: string;
+}) {
+  const { workspaceId } = useParams({
+    from: "/_auth/workspaces/$workspaceId/settings",
+  });
   return (
     <React.Fragment>
       <ScrollArea className={cn("px-2", maxHeight)}>
         <div className="px-2 pb-8">
           {/* G1 */}
           <div className="my-4 flex items-center gap-1">
-            <Avatar name="Sanchit Rk" size={32} />
+            <Avatar name={accountId} size={32} variant="marble" />
             <div>
               <div className="text-xs font-medium">Sanchit Rk</div>
               <div className="text-xs text-foreground">Account</div>
@@ -57,61 +66,76 @@ export function SideNavLinks({ maxHeight }: { maxHeight?: string }) {
           </div>
           {/* G2 Items */}
           <div className="flex flex-col gap-1">
-            <Button
-              variant="ghost"
-              asChild
-              className="flex w-full justify-between"
+            <Link
+              to="/workspaces/$workspaceId/settings"
+              params={{ workspaceId }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+              }}
             >
-              <Link href={`/`}>
-                <div className="flex">
-                  <div className="my-auto">General</div>
-                </div>
-              </Link>
-            </Button>
-            <Button
-              variant="ghost"
-              asChild
-              className="flex w-full justify-between"
+              <div className="flex">General</div>
+            </Link>
+            <Link
+              to="/workspaces/$workspaceId/settings/members"
+              params={{ workspaceId }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+              }}
             >
-              <Link href={`/`}>
-                <div className="flex">
-                  <div className="my-auto">Members</div>
-                </div>
-              </Link>
-            </Button>
-            <Button
-              variant="ghost"
-              asChild
-              className="flex w-full justify-between"
+              <div className="flex">Members</div>
+            </Link>
+            <Link
+              to="/workspaces/$workspaceId/settings/labels"
+              params={{ workspaceId }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+              }}
             >
-              <Link href={`/`}>
-                <div className="flex">
-                  <div className="my-auto">AI</div>
-                </div>
-              </Link>
-            </Button>
-            <Button
-              variant="ghost"
-              asChild
-              className="flex w-full justify-between"
+              <div className="flex">Labels</div>
+            </Link>
+            <Link
+              to="/workspaces/$workspaceId/settings/ai"
+              params={{ workspaceId }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+              }}
             >
-              <Link href={`/`}>
-                <div className="flex">
-                  <div className="my-auto">Labels</div>
-                </div>
-              </Link>
-            </Button>
-            <Button
-              variant="ghost"
-              asChild
-              className="flex w-full justify-between"
+              <div className="flex">AI</div>
+            </Link>
+            <Link
+              to="/workspaces/$workspaceId/settings/billing"
+              params={{ workspaceId }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+              }}
             >
-              <Link href={`/`}>
-                <div className="flex">
-                  <div className="my-auto">Billing</div>
-                </div>
-              </Link>
-            </Button>
+              <div className="flex">Billing</div>
+            </Link>
           </div>
           {/* G3 */}
           <div className="my-4 flex items-center gap-1">

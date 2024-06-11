@@ -317,6 +317,25 @@ func (th ThreadChat) GenId() string {
 	return "th_" + xid.New().String()
 }
 
+func (l Label) MarshalJSON() ([]byte, error) {
+	aux := &struct {
+		LabelId     string `json:"labelId"`
+		WorkspaceId string `json:"workspaceId"`
+		Name        string `json:"name"`
+		Icon        string `json:"icon"`
+		CreatedAt   string `json:"createdAt"`
+		UpdatedAt   string `json:"updatedAt"`
+	}{
+		LabelId:     l.LabelId,
+		WorkspaceId: l.WorkspaceId,
+		Name:        l.Name,
+		Icon:        l.Icon,
+		CreatedAt:   l.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   l.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
+}
+
 type ThreadChatMessage struct {
 	ThreadChatId        string
 	ThreadChatMessageId string

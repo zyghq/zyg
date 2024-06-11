@@ -1,4 +1,9 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  redirect,
+  useRouterState,
+} from "@tanstack/react-router";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -53,32 +58,19 @@ const workspacesQueryOptions = (token: string) =>
 // TODO: do error handling
 // https://tanstack.com/router/latest/docs/framework/react/guide/external-data-loading#error-handling-with-tanstack-query
 export const Route = createFileRoute("/_auth/workspaces/")({
-  // beforeLoad: async ({ context }) => {
-  //   console.log("**** beforeLoad in workspaces ****");
-  //   const { supabaseClient } = context;
-  //   const { error, data } = await supabaseClient.auth.getSession();
-  //   const isAuthenticated = !error && data?.session;
-  //   if (!isAuthenticated) {
-  //     throw redirect({ to: "/signin" });
-  //   }
-  //   const token = data.session.access_token as string;
-  //   console.log("**** beforeLoad in workspaces end ****");
-  //   return { token };
-  // },
   loader: async ({ context: { queryClient, supabaseClient } }) => {
     const { error, data } = await supabaseClient.auth.getSession();
     if (error || !data?.session) throw redirect({ to: "/signin" });
     const token = data.session.access_token as string;
-    // console.log("**** loader in workspaces loader start ****");
-    // console.log("**** token value ****", token);
-    // console.log("**** loader in workspaces loader end ****");
     return queryClient.ensureQueryData(workspacesQueryOptions(token));
   },
   component: Workspaces,
 });
 
 function Workspaces() {
+  const isLoading = useRouterState({ select: (s) => s.isLoading });
   const workspaces: Workspace[] = Route.useLoaderData();
+
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -105,7 +97,7 @@ function Workspaces() {
           live and test environments.
           <br /> Customers and team members are specific to a workspace.
         </p>
-        <Button variant="default" asChild>
+        <Button variant="default" asChild disabled={isLoading}>
           <Link to={"/workspaces/add"}>Create Workspace</Link>
         </Button>
         {workspaces && workspaces.length > 0 && (
