@@ -105,7 +105,7 @@ func (h *AccountHandler) handleGetOrCreateAccount(w http.ResponseWriter, r *http
 
 func (h *AccountHandler) handleGetPatList(w http.ResponseWriter, r *http.Request, account *domain.Account) {
 	ctx := r.Context()
-	aps, err := h.as.UserPatList(ctx, account.AccountId)
+	aps, err := h.as.UserPats(ctx, account.AccountId)
 	if err != nil {
 		slog.Error("failed to pat list "+
 			"something went wrong",

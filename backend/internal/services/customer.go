@@ -23,7 +23,7 @@ func NewCustomerService(repo ports.CustomerRepositorer) *CustomerService {
 	}
 }
 
-func (s *CustomerService) GetWorkspaceCustomer(ctx context.Context, workspaceId string, customerId string,
+func (s *CustomerService) WorkspaceCustomer(ctx context.Context, workspaceId string, customerId string,
 ) (domain.Customer, error) {
 	customer, err := s.repo.GetByWorkspaceCustomerId(ctx, workspaceId, customerId)
 	if err != nil {
@@ -32,7 +32,7 @@ func (s *CustomerService) GetWorkspaceCustomer(ctx context.Context, workspaceId 
 	return customer, nil
 }
 
-func (s *CustomerService) GetWorkspaceCustomerWithExternalId(ctx context.Context, workspaceId string, externalId string,
+func (s *CustomerService) WorkspaceCustomerWithExternalId(ctx context.Context, workspaceId string, externalId string,
 ) (domain.Customer, error) {
 	customer, err := s.repo.GetWorkspaceCustomerByExtId(ctx, workspaceId, externalId)
 
@@ -46,7 +46,7 @@ func (s *CustomerService) GetWorkspaceCustomerWithExternalId(ctx context.Context
 	return customer, nil
 }
 
-func (s *CustomerService) GetWorkspaceCustomerWithEmail(ctx context.Context, workspaceId string, email string,
+func (s *CustomerService) WorkspaceCustomerWithEmail(ctx context.Context, workspaceId string, email string,
 ) (domain.Customer, error) {
 	customer, err := s.repo.GetWorkspaceCustomerByEmail(ctx, workspaceId, email)
 	if err != nil {
@@ -55,7 +55,7 @@ func (s *CustomerService) GetWorkspaceCustomerWithEmail(ctx context.Context, wor
 	return customer, nil
 }
 
-func (s *CustomerService) GetWorkspaceCustomerWithPhone(ctx context.Context, workspaceId string, email string,
+func (s *CustomerService) WorkspaceCustomerWithPhone(ctx context.Context, workspaceId string, email string,
 ) (domain.Customer, error) {
 	customer, err := s.repo.GetWorkspaceCustomerByPhone(ctx, workspaceId, email)
 	if err != nil {
@@ -64,7 +64,7 @@ func (s *CustomerService) GetWorkspaceCustomerWithPhone(ctx context.Context, wor
 	return customer, nil
 }
 
-func (s *CustomerService) IssueJwt(c domain.Customer) (string, error) {
+func (s *CustomerService) IssueCustomerJwt(c domain.Customer) (string, error) {
 	var externalId string
 	var email string
 	var phone string

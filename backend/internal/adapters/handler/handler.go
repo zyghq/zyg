@@ -111,8 +111,12 @@ func NewServer(
 
 	mux.Handle("POST /workspaces/{$}", NewEnsureAuth(wh.handleCreateWorkspace, authService))
 	mux.Handle("GET /workspaces/{$}", NewEnsureAuth(wh.handleGetWorkspaces, authService))
+
+	mux.Handle("GET /workspaces/{workspaceId}/{$}", NewEnsureAuth(wh.handleGetWorkspace, authService))
 	mux.Handle("PATCH /workspaces/{workspaceId}/{$}", NewEnsureAuth(wh.handleUpdateWorkspace, authService))
 
+	mux.Handle("GET /workspaces/{workspaceId}/members/{$}",
+		NewEnsureAuth(wh.handleGetWorkspaceMembers, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/members/me/{$}",
 		NewEnsureAuth(wh.handleGetWorkspaceMembership, authService))
 
@@ -121,8 +125,8 @@ func NewServer(
 
 	mux.Handle("POST /workspaces/{workspaceId}/labels/{$}",
 		NewEnsureAuth(wh.handleGetOrCreateWorkspaceLabel, authService))
-	mux.Handle("GET /workspaces/{workspaceId}/{$}",
-		NewEnsureAuth(wh.handleGetWorkspace, authService))
+	mux.Handle("GET /workspaces/{workspaceId}/labels/{$}",
+		NewEnsureAuth(wh.handleGetWorkspaceLabels, authService))
 
 	// returns all threads in a workspace
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{$}",

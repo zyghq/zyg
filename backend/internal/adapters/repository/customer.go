@@ -238,6 +238,8 @@ func (c *CustomerDB) GetListByWorkspaceId(ctx context.Context, workspaceId strin
 
 	rows, _ := c.db.Query(ctx, stmt, workspaceId)
 
+	defer rows.Close()
+
 	_, err := pgx.ForEachRow(rows, []any{
 		&customer.WorkspaceId, &customer.CustomerId,
 		&customer.ExternalId, &customer.Email, &customer.Phone, &customer.Name,
@@ -251,8 +253,6 @@ func (c *CustomerDB) GetListByWorkspaceId(ctx context.Context, workspaceId strin
 		slog.Error("failed to query", "error", err)
 		return []domain.Customer{}, ErrQuery
 	}
-
-	defer rows.Close()
 
 	return customers, nil
 }

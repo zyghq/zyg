@@ -742,7 +742,6 @@ func (tc *ThreadChatDB) GetLabelledListByWorkspaceId(ctx context.Context, worksp
 		}
 		ths = append(ths, thm)
 		return nil
-
 	})
 
 	if err != nil {

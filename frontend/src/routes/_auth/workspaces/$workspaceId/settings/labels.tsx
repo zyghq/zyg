@@ -5,6 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { z } from "zod";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useStore } from "zustand";
+import { useWorkspaceStore } from "@/providers";
 import {
   Form,
   FormControl,
@@ -30,6 +32,9 @@ const formSchema = z.object({
 });
 
 function LabelSettings() {
+  const workspaceStore = useWorkspaceStore();
+  const labels = useStore(workspaceStore, (state) => state.viewLabels(state));
+
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -57,7 +62,9 @@ function LabelSettings() {
             <TabsList className="flex">
               <TabsTrigger value="active">
                 Active
-                <span className="ml-1 text-muted-foreground">12</span>
+                <span className="ml-1 text-muted-foreground">
+                  {labels.length}
+                </span>
               </TabsTrigger>
               <TabsTrigger value="archived">
                 Archived
@@ -87,10 +94,22 @@ function LabelSettings() {
                   <Button type="submit">Add</Button>
                 </form>
               </Form>
-              <div className="flex flex-col gap-1">
-                <LabelItem label={"urgent"} />
-                <LabelItem label={"bug"} />
-              </div>
+              {labels && labels.length > 0 ? (
+                <div className="flex flex-col gap-1">
+                  {labels.map((label) => (
+                    <LabelItem key={label.labelId} label={label.name} />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-start gap-2 rounded-lg border p-3 text-left">
+                  <div className="flex w-full flex-col gap-1">
+                    <div className="text-md">There are no labels.</div>
+                    <div className="text-sm text-muted-foreground">
+                      {`You can add labels to your workspace to categorize your threads.`}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </TabsContent>
           <TabsContent value="archived">

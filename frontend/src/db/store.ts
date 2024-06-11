@@ -1,7 +1,12 @@
 import { createStore } from "zustand/vanilla";
 import { z } from "zod";
-import * as _ from "lodash";
-import { workspaceResponseSchema, membershipResponseSchema } from "./schema";
+import _ from "lodash";
+import {
+  workspaceResponseSchema,
+  membershipResponseSchema,
+  workspaceLabelResponseSchema,
+  workspaceMemberResponseSchema,
+} from "./schema";
 import { AccountResponseType } from "./api";
 
 // inferred from schema
@@ -9,6 +14,16 @@ export type WorkspaceStoreType = z.infer<typeof workspaceResponseSchema>;
 
 // inferred from schema
 export type MembershipStoreType = z.infer<typeof membershipResponseSchema>;
+
+// inferred from schema
+export type WorkspaceLabelStoreType = z.infer<
+  typeof workspaceLabelResponseSchema
+>;
+
+// inferred from schema
+export type WorkspaceMemberStoreType = z.infer<
+  typeof workspaceMemberResponseSchema
+>;
 
 export type LabelMetricsStoreType = {
   labelId: string;
@@ -64,7 +79,9 @@ export type WorkspaceCustomerStoreType = {
 type AllowedEntities =
   | WorkspaceStoreType
   | ThreadChatStoreType
-  | WorkspaceCustomerStoreType;
+  | WorkspaceCustomerStoreType
+  | WorkspaceLabelStoreType
+  | WorkspaceMemberStoreType;
 
 export type Dictionary<K extends string | number, V extends AllowedEntities> = {
   [key in K]: V;
@@ -77,6 +94,16 @@ export type WorkspaceCustomerMapStoreType = Dictionary<
   WorkspaceCustomerStoreType
 >;
 
+export type WorkspaceLabelMapStoreType = Dictionary<
+  string,
+  WorkspaceLabelStoreType
+>;
+
+export type WorkspaceMemberMapStoreType = Dictionary<
+  string,
+  WorkspaceMemberStoreType
+>;
+
 export interface IWorkspaceEntities {
   hasData: boolean;
   isPending: boolean;
@@ -86,6 +113,8 @@ export interface IWorkspaceEntities {
   metrics: WorkspaceMetricsStoreType;
   threadChats: ThreadChatMapStoreType | null;
   customers: WorkspaceCustomerMapStoreType | null;
+  labels: WorkspaceLabelMapStoreType | null;
+  members: WorkspaceMemberMapStoreType | null;
 }
 
 type ReplyStatus = "replied" | "unreplied";
@@ -124,6 +153,8 @@ interface IWorkspaceStoreActions {
   ): ThreadChatStoreType[];
   viewCustomerName(state: WorkspaceStoreStateType, customerId: string): string;
   updateWorkspaceName(name: string): void;
+  viewLabels(state: WorkspaceStoreStateType): WorkspaceLabelStoreType[];
+  viewMembers(state: WorkspaceStoreStateType): WorkspaceMemberStoreType[];
 }
 
 export type WorkspaceStoreStateType = IWorkspaceEntities &
@@ -225,6 +256,14 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
     viewCustomerName: (state: WorkspaceStoreStateType, customerId: string) => {
       const customer = state.customers?.[customerId];
       return customer ? customer.name : "";
+    },
+    viewLabels: (state: WorkspaceStoreStateType) => {
+      const labels = state.labels ? Object.values(state.labels) : [];
+      return labels;
+    },
+    viewMembers: (state: WorkspaceStoreStateType) => {
+      const members = state.members ? Object.values(state.members) : [];
+      return members;
     },
     updateWorkspaceName: (name: string) => {
       set((state) => {

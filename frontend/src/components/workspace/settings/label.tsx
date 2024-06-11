@@ -17,7 +17,7 @@ export function LabelItem({ label }: { label: string }) {
       <div className="flex w-full flex-col">
         <div className="flex items-center">
           <div className="flex items-center gap-2">
-            <ShieldAlertIcon className="h-4 w-4" />
+            <ShieldAlertIcon className="h-4 w-4 text-muted-foreground" />
             <div className="font-normal">{label}</div>
           </div>
           <div className="ml-auto">

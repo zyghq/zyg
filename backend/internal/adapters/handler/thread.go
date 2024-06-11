@@ -52,7 +52,7 @@ func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.
 		return
 	}
 
-	threads, err := h.ths.GetWorkspaceThreadList(ctx, workspace.WorkspaceId)
+	threads, err := h.ths.WorkspaceThreads(ctx, workspace.WorkspaceId)
 	if err != nil {
 		slog.Error(
 			"failed to get list of thread chats for workspace "+
@@ -550,7 +550,7 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 	}
 
 	// check thread chat against workspace
-	thread, err := h.ths.GetWorkspaceThread(ctx, workspaceId, threadId)
+	thread, err := h.ths.WorkspaceThread(ctx, workspaceId, threadId)
 
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		slog.Warn(
@@ -826,7 +826,7 @@ func (h *ThreadChatHandler) handleGetThreadChatLabels(w http.ResponseWriter, r *
 
 	resp := make([]SetThChatLabelRespPayload, 0, 100)
 
-	labels, err := h.ths.GetLabelList(ctx, threadId)
+	labels, err := h.ths.ThreadLabels(ctx, threadId)
 	if err != nil {
 		slog.Error(
 			"failed to get list of labels for thread chat "+

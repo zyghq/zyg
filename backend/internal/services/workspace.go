@@ -90,7 +90,7 @@ func (s *WorkspaceService) UserWorkspace(
 	return workspace, nil
 }
 
-func (s *WorkspaceService) UserWorkspaceList(ctx context.Context, accountId string) ([]domain.Workspace, error) {
+func (s *WorkspaceService) UserWorkspaces(ctx context.Context, accountId string) ([]domain.Workspace, error) {
 	workspaces, err := s.workspaceRepo.GetListByAccountId(ctx, accountId)
 
 	if errors.Is(err, repository.ErrQuery) {
@@ -114,6 +114,14 @@ func (s *WorkspaceService) WorkspaceMember(ctx context.Context, accountId string
 		return member, ErrMember
 	}
 	return member, nil
+}
+
+func (s *WorkspaceService) WorkspaceMembers(ctx context.Context, workspaceId string) ([]domain.Member, error) {
+	members, err := s.memberRepo.GetListByWorkspaceId(ctx, workspaceId)
+	if err != nil {
+		return members, ErrMember
+	}
+	return members, nil
 }
 
 func (s *WorkspaceService) WorkspaceCustomers(ctx context.Context, workspaceId string) ([]domain.Customer, error) {
@@ -148,6 +156,14 @@ func (s *WorkspaceService) WorkspaceLabel(ctx context.Context, workspaceId strin
 		return label, ErrLabelNotFound
 	}
 	return label, err
+}
+
+func (s *WorkspaceService) WorkspaceLabels(ctx context.Context, workspaceId string) ([]domain.Label, error) {
+	labels, err := s.workspaceRepo.GetLabelListByWorkspaceId(ctx, workspaceId)
+	if err != nil {
+		return labels, ErrLabel
+	}
+	return labels, nil
 }
 
 func (s *WorkspaceService) InitWorkspaceCustomerWithExternalId(ctx context.Context, c domain.Customer) (domain.Customer, bool, error) {

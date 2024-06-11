@@ -2,9 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlusIcon, DotsHorizontalIcon } from "@radix-ui/react-icons";
+import { useWorkspaceStore } from "@/providers";
+import { useStore } from "zustand";
+import React from "react";
+import Avatar from "boring-avatars";
+import { format } from "date-fns";
 
 export const Route = createFileRoute(
   "/_auth/workspaces/$workspaceId/settings/members"
@@ -12,7 +16,15 @@ export const Route = createFileRoute(
   component: MemberSettings,
 });
 
+// date-fns format date string to 12 Jan 2024
+const formatDate = (date: string) => {
+  const dateObj = new Date(date);
+  return format(dateObj, "MMMM d, yyyy");
+};
+
 function MemberSettings() {
+  const workspaceStore = useWorkspaceStore();
+  const members = useStore(workspaceStore, (state) => state.viewMembers(state));
   return (
     <div className="container">
       <div className="max-w-2xl">
@@ -35,64 +47,52 @@ function MemberSettings() {
           </div>
           <TabsContent value="members">
             <div className="mt-8 flex flex-col gap-2">
-              <div className="flex flex-col items-start gap-2 rounded-lg border p-3 text-left">
-                <div className="flex w-full flex-col gap-1">
-                  <div className="flex items-center">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src="https://github.com/shadcn.png" />
-                        <AvatarFallback>CN</AvatarFallback>
-                      </Avatar>
-                      <div className="">
-                        <div className="font-normal"> Sanchit Rk</div>
-                        <div className="text-xs text-muted-foreground">
-                          sanchitrrk@gmail.com
+              {members && members.length > 0 ? (
+                <React.Fragment>
+                  {members.map((member) => (
+                    <div
+                      key={member.memberId}
+                      className="flex flex-col items-start gap-2 rounded-lg border p-3 text-left"
+                    >
+                      <div className="flex w-full flex-col gap-1">
+                        <div className="flex items-center">
+                          <div className="flex items-center gap-2">
+                            <Avatar
+                              name={member.memberId}
+                              size={32}
+                              variant="marble"
+                            />
+                            <div className="flex flex-col">
+                              <div className="font-normal">{member.name}</div>
+                              <div className="text-xs text-muted-foreground"></div>
+                            </div>
+                          </div>
+                          <div className="ml-auto mr-2 text-sm text-muted-foreground capitalize">
+                            {member.role}
+                          </div>
+                          <Button variant="ghost" size="sm">
+                            <DotsHorizontalIcon className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground">
+                            {`Member since ${formatDate(member.createdAt)}`}
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <div className="ml-auto mr-2 text-sm text-muted-foreground">
-                      Primary Owner
-                    </div>
-                    <Button variant="ghost" size="sm">
-                      <DotsHorizontalIcon className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground">
-                      Member since 12th Jan 2024
+                  ))}
+                </React.Fragment>
+              ) : (
+                <div className="flex flex-col items-start gap-2 rounded-lg border p-3 text-left">
+                  <div className="flex w-full flex-col gap-1">
+                    <div className="text-md">No members.</div>
+                    <div className="text-sm text-muted-foreground">
+                      {`When someone joins this workspace, they'll appear here.`}
                     </div>
                   </div>
                 </div>
-              </div>
-              <div className="flex flex-col items-start gap-2 rounded-lg border p-3 text-left">
-                <div className="flex w-full flex-col gap-1">
-                  <div className="flex items-center">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src="https://github.com/shadcn.png" />
-                        <AvatarFallback>CN</AvatarFallback>
-                      </Avatar>
-                      <div className="">
-                        <div className="font-normal"> Sanchit Rk</div>
-                        <div className="text-xs text-muted-foreground">
-                          sanchitrrk@gmail.com
-                        </div>
-                      </div>
-                    </div>
-                    <div className="ml-auto mr-2 text-sm text-muted-foreground">
-                      Primary Owner
-                    </div>
-                    <Button variant="ghost" size="sm">
-                      <DotsHorizontalIcon className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground">
-                      Member since 12th Jan 2024
-                    </div>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </TabsContent>
           <TabsContent value="invites">
