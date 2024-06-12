@@ -146,39 +146,48 @@ export function SideNavLinks({
           </div>
           {/* G3 Items */}
           <div className="flex flex-col gap-1">
-            <Button
-              variant="ghost"
-              asChild
-              className="flex w-full justify-between"
+            <Link
+              to="/workspaces/$workspaceId/settings/slack"
+              params={{ workspaceId }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+              }}
             >
-              <Link href={`/`}>
-                <div className="flex">
-                  <div className="my-auto">Slack</div>
-                </div>
-              </Link>
-            </Button>
-            <Button
-              variant="ghost"
-              asChild
-              className="flex w-full justify-between"
+              <div className="flex">Slack</div>
+            </Link>
+            <Link
+              to="/workspaces/$workspaceId/settings/email"
+              params={{ workspaceId }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+              }}
             >
-              <Link href={`/`}>
-                <div className="flex">
-                  <div className="my-auto">Email</div>
-                </div>
-              </Link>
-            </Button>
-            <Button
-              variant="ghost"
-              asChild
-              className="flex w-full justify-between"
+              <div className="flex">Email</div>
+            </Link>
+            <Link
+              to="/workspaces/$workspaceId/settings/chat"
+              params={{ workspaceId }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+              }}
             >
-              <Link href={`/`}>
-                <div className="flex">
-                  <div className="my-auto">Chat</div>
-                </div>
-              </Link>
-            </Button>
+              <div className="flex">Chat</div>
+            </Link>
           </div>
           {/* G4 */}
           <div className="my-4 flex items-center gap-1">
@@ -189,24 +198,34 @@ export function SideNavLinks({
           </div>
           {/* G4 Items */}
           <div className="flex flex-col gap-1">
-            <Button
-              variant="ghost"
-              asChild
-              className="flex w-full justify-between"
+            <Link
+              to="/workspaces/$workspaceId/settings/github"
+              params={{ workspaceId }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+              }}
             >
-              <div className="flex">
-                <div className="my-auto">GitHub</div>
-              </div>
-            </Button>
-            <Button
-              variant="ghost"
-              asChild
-              className="flex w-full justify-between"
+              <div className="flex">Github</div>
+            </Link>
+            <Link
+              to="/workspaces/$workspaceId/settings/linear"
+              params={{ workspaceId }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+              }}
             >
-              <div className="flex">
-                <div className="my-auto">Linear</div>
-              </div>
-            </Button>
+              <div className="flex">Linear</div>
+            </Link>
           </div>
           {/* G5 */}
           <div className="my-4 flex items-center gap-1">
@@ -217,33 +236,48 @@ export function SideNavLinks({
           </div>
           {/* G5 Items */}
           <div className="flex flex-col gap-1">
-            <Button
-              variant="ghost"
-              asChild
-              className="flex w-full justify-between"
+            <Link
+              to="/workspaces/$workspaceId/settings/webhooks"
+              params={{ workspaceId }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+              }}
             >
-              <div className="flex">
-                <div className="my-auto">Webhooks</div>
-              </div>
-            </Button>
-            <Button
-              variant="ghost"
-              asChild
-              className="flex w-full justify-between"
+              <div className="flex">Webhooks</div>
+            </Link>
+            <Link
+              to="/workspaces/$workspaceId/settings/pats"
+              params={{ workspaceId }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+              }}
             >
-              <div className="flex">
-                <div className="my-auto">Events</div>
-              </div>
-            </Button>
-            <Button
-              variant="ghost"
-              asChild
-              className="flex w-full justify-between"
+              <div className="flex">Personal Access Tokens</div>
+            </Link>
+            <Link
+              to="/workspaces/$workspaceId/settings/events"
+              params={{ workspaceId }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+              }}
             >
-              <div className="flex">
-                <div className="my-auto">SDKs</div>
-              </div>
-            </Button>
+              <div className="flex">Events</div>
+            </Link>
           </div>
         </div>
       </ScrollArea>
