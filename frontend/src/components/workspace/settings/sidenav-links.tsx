@@ -257,7 +257,7 @@ export function SideNavLinks({
                 buttonVariants({ variant: "ghost" }),
                 "flex w-full justify-between px-3 dark:text-accent-foreground"
               )}
-              activeOptions={{ exact: true, includeSearch: false }}
+              activeOptions={{ exact: false, includeSearch: false }}
               activeProps={{
                 className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
               }}
