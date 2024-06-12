@@ -92,14 +92,19 @@ export default function SideNavMobile({
               <CaretSortIcon className="my-auto h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="mx-1">
+          <DropdownMenuContent align="start">
             <DropdownMenuLabel className="text-muted-foreground">
               {email}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <GearIcon className="my-auto mr-2 h-4 w-4" />
-              <div className="my-auto">Settings</div>
+            <DropdownMenuItem asChild>
+              <Link
+                to="/workspaces/$workspaceId/settings"
+                params={{ workspaceId }}
+              >
+                <GearIcon className="my-auto mr-2 h-4 w-4" />
+                <div className="my-auto">Settings</div>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link
@@ -114,18 +119,20 @@ export default function SideNavMobile({
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/workspaces/">
+              <Link to="/workspaces">
                 <WidthIcon className="my-auto mr-2 h-4 w-4" />
                 <div className="my-auto">Switch Workspace</div>
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <ExitIcon className="my-auto mr-2 h-4 w-4" />
-              <div className="my-auto">Logout</div>
+            <DropdownMenuItem asChild>
+              <Link to="/signout">
+                <ExitIcon className="my-auto mr-2 h-4 w-4" />
+                <div className="my-auto">Sign Out</div>
+              </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <ScrollArea className="my-4 h-full pb-2 pr-4">
+        <ScrollArea className="my-4 h-full pb-2">
           <SideNavLinks
             workspaceId={workspaceId}
             metrics={metrics}
@@ -141,7 +148,7 @@ export default function SideNavMobile({
                 <div className="my-auto">Support</div>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="mx-1">
+            <DropdownMenuContent align="start">
               <DropdownMenuLabel className="text-muted-foreground">
                 How can we help?
               </DropdownMenuLabel>

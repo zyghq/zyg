@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+
 import { ClipboardCopyIcon } from "@radix-ui/react-icons";
 
 const formSchema = z.object({
@@ -57,7 +58,7 @@ export function WorkspaceEditForm({ workspaceId }) {
           )}
         />
         <div>
-          <div className="text-sm font-normal">Workspace ID</div>
+          <div className="text-sm font-bold">Workspace ID</div>
           <div className="text-xs text-muted-foreground">
             We might ask you for support inquiries.
           </div>

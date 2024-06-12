@@ -67,7 +67,7 @@ func (s *AccountService) IssuePersonalAccessToken(ctx context.Context, ap domain
 	return ap, nil
 }
 
-func (s *AccountService) UserPatList(ctx context.Context, accountId string) ([]domain.AccountPAT, error) {
+func (s *AccountService) UserPats(ctx context.Context, accountId string) ([]domain.AccountPAT, error) {
 	apList, err := s.repo.GetPatListByAccountId(ctx, accountId)
 
 	if errors.Is(err, repository.ErrQuery) {

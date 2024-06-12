@@ -1,7 +1,13 @@
 import { createStore } from "zustand/vanilla";
 import { z } from "zod";
-import * as _ from "lodash";
-import { workspaceResponseSchema, membershipResponseSchema } from "./schema";
+import _ from "lodash";
+import {
+  workspaceResponseSchema,
+  membershipResponseSchema,
+  workspaceLabelResponseSchema,
+  workspaceMemberResponseSchema,
+  accountPatSchema,
+} from "./schema";
 import { AccountResponseType } from "./api";
 
 // inferred from schema
@@ -9,6 +15,19 @@ export type WorkspaceStoreType = z.infer<typeof workspaceResponseSchema>;
 
 // inferred from schema
 export type MembershipStoreType = z.infer<typeof membershipResponseSchema>;
+
+// inferred from schema
+export type WorkspaceLabelStoreType = z.infer<
+  typeof workspaceLabelResponseSchema
+>;
+
+// inferred from schema
+export type WorkspaceMemberStoreType = z.infer<
+  typeof workspaceMemberResponseSchema
+>;
+
+// inferred from schema
+export type AccountPatStoreType = z.infer<typeof accountPatSchema>;
 
 export type LabelMetricsStoreType = {
   labelId: string;
@@ -60,11 +79,15 @@ export type WorkspaceCustomerStoreType = {
   updatedAt: string;
 };
 
-// add more like: Workspace | User | etc.
+// add more entitites as supported by store
+// e.g: Workspace | User | etc.
 type AllowedEntities =
   | WorkspaceStoreType
   | ThreadChatStoreType
-  | WorkspaceCustomerStoreType;
+  | WorkspaceCustomerStoreType
+  | WorkspaceLabelStoreType
+  | WorkspaceMemberStoreType
+  | AccountPatStoreType;
 
 export type Dictionary<K extends string | number, V extends AllowedEntities> = {
   [key in K]: V;
@@ -77,6 +100,18 @@ export type WorkspaceCustomerMapStoreType = Dictionary<
   WorkspaceCustomerStoreType
 >;
 
+export type WorkspaceLabelMapStoreType = Dictionary<
+  string,
+  WorkspaceLabelStoreType
+>;
+
+export type WorkspaceMemberMapStoreType = Dictionary<
+  string,
+  WorkspaceMemberStoreType
+>;
+
+export type AccountPatMapStoreType = Dictionary<string, AccountPatStoreType>;
+
 export interface IWorkspaceEntities {
   hasData: boolean;
   isPending: boolean;
@@ -86,6 +121,9 @@ export interface IWorkspaceEntities {
   metrics: WorkspaceMetricsStoreType;
   threadChats: ThreadChatMapStoreType | null;
   customers: WorkspaceCustomerMapStoreType | null;
+  labels: WorkspaceLabelMapStoreType | null;
+  members: WorkspaceMemberMapStoreType | null;
+  pats: AccountPatMapStoreType | null;
 }
 
 type ReplyStatus = "replied" | "unreplied";
@@ -123,6 +161,11 @@ interface IWorkspaceStoreActions {
     sortBy: sortByType
   ): ThreadChatStoreType[];
   viewCustomerName(state: WorkspaceStoreStateType, customerId: string): string;
+  updateWorkspaceName(name: string): void;
+  viewLabels(state: WorkspaceStoreStateType): WorkspaceLabelStoreType[];
+  viewMembers(state: WorkspaceStoreStateType): WorkspaceMemberStoreType[];
+  viewPats(state: WorkspaceStoreStateType): AccountPatStoreType[];
+  addPat(pat: AccountPatStoreType): void;
 }
 
 export type WorkspaceStoreStateType = IWorkspaceEntities &
@@ -168,6 +211,8 @@ function sortThreads(threads: ThreadChatStoreType[], sortBy: sortByType) {
 
 // (sanchitrk) for reference on using zustand, check this great article:
 // https://tkdodo.eu/blog/working-with-zustand
+//
+// @sanchitrk: shall we rename it to `buildWorkspaceStore` ?
 export const buildStore = (initialState: IWorkspaceEntities) => {
   return createStore<WorkspaceStoreStateType>()((set) => ({
     ...initialState,
@@ -224,6 +269,39 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
     viewCustomerName: (state: WorkspaceStoreStateType, customerId: string) => {
       const customer = state.customers?.[customerId];
       return customer ? customer.name : "";
+    },
+    viewLabels: (state: WorkspaceStoreStateType) => {
+      const labels = state.labels ? Object.values(state.labels) : [];
+      return labels;
+    },
+    viewMembers: (state: WorkspaceStoreStateType) => {
+      const members = state.members ? Object.values(state.members) : [];
+      return members;
+    },
+    viewPats: (state: WorkspaceStoreStateType) => {
+      const pats = state.pats ? Object.values(state.pats) : [];
+      return _.sortBy(pats, "patId").reverse();
+    },
+    updateWorkspaceName: (name: string) => {
+      set((state) => {
+        if (state.workspace) {
+          state.workspace.name = name;
+          return state;
+        } else {
+          return state;
+        }
+      });
+    },
+    addPat: (pat: AccountPatStoreType) => {
+      const { patId } = pat;
+      set((state) => {
+        if (state.pats) {
+          state.pats[patId] = { ...pat };
+          return state;
+        } else {
+          return state;
+        }
+      });
     },
   }));
 };

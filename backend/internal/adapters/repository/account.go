@@ -118,6 +118,8 @@ func (a *AccountDB) GetPatListByAccountId(ctx context.Context, accountId string)
 	// ignore the error - handled by the caller
 	rows, _ := a.db.Query(ctx, stmt, accountId)
 
+	defer rows.Close()
+
 	// iterate over the each row
 	// specific to pgx
 	_, err := pgx.ForEachRow(rows, []any{
@@ -132,8 +134,6 @@ func (a *AccountDB) GetPatListByAccountId(ctx context.Context, accountId string)
 		slog.Error("failed to query got error", "error", err)
 		return []domain.AccountPAT{}, ErrQuery
 	}
-
-	defer rows.Close()
 
 	return aps, nil
 }

@@ -20,12 +20,27 @@ import { Route as IndexImport } from './routes/index'
 import { Route as AuthWorkspacesIndexImport } from './routes/_auth/workspaces/index'
 import { Route as AuthWorkspacesAddImport } from './routes/_auth/workspaces/add'
 import { Route as AuthWorkspacesWorkspaceIdImport } from './routes/_auth/workspaces/$workspaceId'
+import { Route as AuthWorkspacesWorkspaceIdSettingsRouteImport } from './routes/_auth/workspaces/$workspaceId/settings/route'
 import { Route as AuthWorkspacesWorkspaceIdWorkspaceRouteImport } from './routes/_auth/workspaces/$workspaceId/_workspace/route'
 import { Route as AuthWorkspacesWorkspaceIdSetupIndexImport } from './routes/_auth/workspaces/$workspaceId/setup/index'
+import { Route as AuthWorkspacesWorkspaceIdSettingsIndexImport } from './routes/_auth/workspaces/$workspaceId/settings/index'
 import { Route as AuthWorkspacesWorkspaceIdWorkspaceIndexImport } from './routes/_auth/workspaces/$workspaceId/_workspace/index'
 import { Route as AuthWorkspacesWorkspaceIdThreadsThreadIdImport } from './routes/_auth/workspaces/$workspaceId/threads/$threadId'
+import { Route as AuthWorkspacesWorkspaceIdSettingsWebhooksImport } from './routes/_auth/workspaces/$workspaceId/settings/webhooks'
+import { Route as AuthWorkspacesWorkspaceIdSettingsSlackImport } from './routes/_auth/workspaces/$workspaceId/settings/slack'
+import { Route as AuthWorkspacesWorkspaceIdSettingsMembersImport } from './routes/_auth/workspaces/$workspaceId/settings/members'
+import { Route as AuthWorkspacesWorkspaceIdSettingsLinearImport } from './routes/_auth/workspaces/$workspaceId/settings/linear'
+import { Route as AuthWorkspacesWorkspaceIdSettingsLabelsImport } from './routes/_auth/workspaces/$workspaceId/settings/labels'
+import { Route as AuthWorkspacesWorkspaceIdSettingsGithubImport } from './routes/_auth/workspaces/$workspaceId/settings/github'
+import { Route as AuthWorkspacesWorkspaceIdSettingsEventsImport } from './routes/_auth/workspaces/$workspaceId/settings/events'
+import { Route as AuthWorkspacesWorkspaceIdSettingsEmailImport } from './routes/_auth/workspaces/$workspaceId/settings/email'
+import { Route as AuthWorkspacesWorkspaceIdSettingsChatImport } from './routes/_auth/workspaces/$workspaceId/settings/chat'
+import { Route as AuthWorkspacesWorkspaceIdSettingsBillingImport } from './routes/_auth/workspaces/$workspaceId/settings/billing'
+import { Route as AuthWorkspacesWorkspaceIdSettingsAiImport } from './routes/_auth/workspaces/$workspaceId/settings/ai'
 import { Route as AuthWorkspacesWorkspaceIdWorkspaceUnassignedImport } from './routes/_auth/workspaces/$workspaceId/_workspace/unassigned'
 import { Route as AuthWorkspacesWorkspaceIdWorkspaceMeImport } from './routes/_auth/workspaces/$workspaceId/_workspace/me'
+import { Route as AuthWorkspacesWorkspaceIdSettingsPatsIndexImport } from './routes/_auth/workspaces/$workspaceId/settings/pats/index'
+import { Route as AuthWorkspacesWorkspaceIdSettingsPatsAddImport } from './routes/_auth/workspaces/$workspaceId/settings/pats/add'
 import { Route as AuthWorkspacesWorkspaceIdWorkspaceLabelsLabelIdImport } from './routes/_auth/workspaces/$workspaceId/_workspace/labels.$labelId'
 
 // Create/Update Routes
@@ -75,6 +90,12 @@ const AuthWorkspacesWorkspaceIdRoute = AuthWorkspacesWorkspaceIdImport.update({
   getParentRoute: () => AuthRouteRoute,
 } as any)
 
+const AuthWorkspacesWorkspaceIdSettingsRouteRoute =
+  AuthWorkspacesWorkspaceIdSettingsRouteImport.update({
+    path: '/settings',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdRoute,
+  } as any)
+
 const AuthWorkspacesWorkspaceIdWorkspaceRouteRoute =
   AuthWorkspacesWorkspaceIdWorkspaceRouteImport.update({
     id: '/_workspace',
@@ -85,6 +106,12 @@ const AuthWorkspacesWorkspaceIdSetupIndexRoute =
   AuthWorkspacesWorkspaceIdSetupIndexImport.update({
     path: '/setup/',
     getParentRoute: () => AuthWorkspacesWorkspaceIdRoute,
+  } as any)
+
+const AuthWorkspacesWorkspaceIdSettingsIndexRoute =
+  AuthWorkspacesWorkspaceIdSettingsIndexImport.update({
+    path: '/',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
   } as any)
 
 const AuthWorkspacesWorkspaceIdWorkspaceIndexRoute =
@@ -99,6 +126,72 @@ const AuthWorkspacesWorkspaceIdThreadsThreadIdRoute =
     getParentRoute: () => AuthWorkspacesWorkspaceIdRoute,
   } as any)
 
+const AuthWorkspacesWorkspaceIdSettingsWebhooksRoute =
+  AuthWorkspacesWorkspaceIdSettingsWebhooksImport.update({
+    path: '/webhooks',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+  } as any)
+
+const AuthWorkspacesWorkspaceIdSettingsSlackRoute =
+  AuthWorkspacesWorkspaceIdSettingsSlackImport.update({
+    path: '/slack',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+  } as any)
+
+const AuthWorkspacesWorkspaceIdSettingsMembersRoute =
+  AuthWorkspacesWorkspaceIdSettingsMembersImport.update({
+    path: '/members',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+  } as any)
+
+const AuthWorkspacesWorkspaceIdSettingsLinearRoute =
+  AuthWorkspacesWorkspaceIdSettingsLinearImport.update({
+    path: '/linear',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+  } as any)
+
+const AuthWorkspacesWorkspaceIdSettingsLabelsRoute =
+  AuthWorkspacesWorkspaceIdSettingsLabelsImport.update({
+    path: '/labels',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+  } as any)
+
+const AuthWorkspacesWorkspaceIdSettingsGithubRoute =
+  AuthWorkspacesWorkspaceIdSettingsGithubImport.update({
+    path: '/github',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+  } as any)
+
+const AuthWorkspacesWorkspaceIdSettingsEventsRoute =
+  AuthWorkspacesWorkspaceIdSettingsEventsImport.update({
+    path: '/events',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+  } as any)
+
+const AuthWorkspacesWorkspaceIdSettingsEmailRoute =
+  AuthWorkspacesWorkspaceIdSettingsEmailImport.update({
+    path: '/email',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+  } as any)
+
+const AuthWorkspacesWorkspaceIdSettingsChatRoute =
+  AuthWorkspacesWorkspaceIdSettingsChatImport.update({
+    path: '/chat',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+  } as any)
+
+const AuthWorkspacesWorkspaceIdSettingsBillingRoute =
+  AuthWorkspacesWorkspaceIdSettingsBillingImport.update({
+    path: '/billing',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+  } as any)
+
+const AuthWorkspacesWorkspaceIdSettingsAiRoute =
+  AuthWorkspacesWorkspaceIdSettingsAiImport.update({
+    path: '/ai',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+  } as any)
+
 const AuthWorkspacesWorkspaceIdWorkspaceUnassignedRoute =
   AuthWorkspacesWorkspaceIdWorkspaceUnassignedImport.update({
     path: '/unassigned',
@@ -109,6 +202,18 @@ const AuthWorkspacesWorkspaceIdWorkspaceMeRoute =
   AuthWorkspacesWorkspaceIdWorkspaceMeImport.update({
     path: '/me',
     getParentRoute: () => AuthWorkspacesWorkspaceIdWorkspaceRouteRoute,
+  } as any)
+
+const AuthWorkspacesWorkspaceIdSettingsPatsIndexRoute =
+  AuthWorkspacesWorkspaceIdSettingsPatsIndexImport.update({
+    path: '/pats/',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+  } as any)
+
+const AuthWorkspacesWorkspaceIdSettingsPatsAddRoute =
+  AuthWorkspacesWorkspaceIdSettingsPatsAddImport.update({
+    path: '/pats/add',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
   } as any)
 
 const AuthWorkspacesWorkspaceIdWorkspaceLabelsLabelIdRoute =
@@ -191,6 +296,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceRouteImport
       parentRoute: typeof AuthWorkspacesWorkspaceIdImport
     }
+    '/_auth/workspaces/$workspaceId/settings': {
+      id: '/_auth/workspaces/$workspaceId/settings'
+      path: '/settings'
+      fullPath: '/workspaces/$workspaceId/settings'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdImport
+    }
     '/_auth/workspaces/$workspaceId/_workspace/me': {
       id: '/_auth/workspaces/$workspaceId/_workspace/me'
       path: '/me'
@@ -204,6 +316,83 @@ declare module '@tanstack/react-router' {
       fullPath: '/workspaces/$workspaceId/unassigned'
       preLoaderRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceUnassignedImport
       parentRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceRouteImport
+    }
+    '/_auth/workspaces/$workspaceId/settings/ai': {
+      id: '/_auth/workspaces/$workspaceId/settings/ai'
+      path: '/ai'
+      fullPath: '/workspaces/$workspaceId/settings/ai'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsAiImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+    }
+    '/_auth/workspaces/$workspaceId/settings/billing': {
+      id: '/_auth/workspaces/$workspaceId/settings/billing'
+      path: '/billing'
+      fullPath: '/workspaces/$workspaceId/settings/billing'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsBillingImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+    }
+    '/_auth/workspaces/$workspaceId/settings/chat': {
+      id: '/_auth/workspaces/$workspaceId/settings/chat'
+      path: '/chat'
+      fullPath: '/workspaces/$workspaceId/settings/chat'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsChatImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+    }
+    '/_auth/workspaces/$workspaceId/settings/email': {
+      id: '/_auth/workspaces/$workspaceId/settings/email'
+      path: '/email'
+      fullPath: '/workspaces/$workspaceId/settings/email'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsEmailImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+    }
+    '/_auth/workspaces/$workspaceId/settings/events': {
+      id: '/_auth/workspaces/$workspaceId/settings/events'
+      path: '/events'
+      fullPath: '/workspaces/$workspaceId/settings/events'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsEventsImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+    }
+    '/_auth/workspaces/$workspaceId/settings/github': {
+      id: '/_auth/workspaces/$workspaceId/settings/github'
+      path: '/github'
+      fullPath: '/workspaces/$workspaceId/settings/github'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsGithubImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+    }
+    '/_auth/workspaces/$workspaceId/settings/labels': {
+      id: '/_auth/workspaces/$workspaceId/settings/labels'
+      path: '/labels'
+      fullPath: '/workspaces/$workspaceId/settings/labels'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsLabelsImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+    }
+    '/_auth/workspaces/$workspaceId/settings/linear': {
+      id: '/_auth/workspaces/$workspaceId/settings/linear'
+      path: '/linear'
+      fullPath: '/workspaces/$workspaceId/settings/linear'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsLinearImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+    }
+    '/_auth/workspaces/$workspaceId/settings/members': {
+      id: '/_auth/workspaces/$workspaceId/settings/members'
+      path: '/members'
+      fullPath: '/workspaces/$workspaceId/settings/members'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsMembersImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+    }
+    '/_auth/workspaces/$workspaceId/settings/slack': {
+      id: '/_auth/workspaces/$workspaceId/settings/slack'
+      path: '/slack'
+      fullPath: '/workspaces/$workspaceId/settings/slack'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsSlackImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+    }
+    '/_auth/workspaces/$workspaceId/settings/webhooks': {
+      id: '/_auth/workspaces/$workspaceId/settings/webhooks'
+      path: '/webhooks'
+      fullPath: '/workspaces/$workspaceId/settings/webhooks'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsWebhooksImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
     }
     '/_auth/workspaces/$workspaceId/threads/$threadId': {
       id: '/_auth/workspaces/$workspaceId/threads/$threadId'
@@ -219,6 +408,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceIndexImport
       parentRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceRouteImport
     }
+    '/_auth/workspaces/$workspaceId/settings/': {
+      id: '/_auth/workspaces/$workspaceId/settings/'
+      path: '/'
+      fullPath: '/workspaces/$workspaceId/settings/'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsIndexImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+    }
     '/_auth/workspaces/$workspaceId/setup/': {
       id: '/_auth/workspaces/$workspaceId/setup/'
       path: '/setup'
@@ -232,6 +428,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/workspaces/$workspaceId/labels/$labelId'
       preLoaderRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceLabelsLabelIdImport
       parentRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceRouteImport
+    }
+    '/_auth/workspaces/$workspaceId/settings/pats/add': {
+      id: '/_auth/workspaces/$workspaceId/settings/pats/add'
+      path: '/pats/add'
+      fullPath: '/workspaces/$workspaceId/settings/pats/add'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsPatsAddImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+    }
+    '/_auth/workspaces/$workspaceId/settings/pats/': {
+      id: '/_auth/workspaces/$workspaceId/settings/pats/'
+      path: '/pats'
+      fullPath: '/workspaces/$workspaceId/settings/pats'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsPatsIndexImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
     }
   }
 }
@@ -248,6 +458,23 @@ export const routeTree = rootRoute.addChildren({
           AuthWorkspacesWorkspaceIdWorkspaceUnassignedRoute,
           AuthWorkspacesWorkspaceIdWorkspaceIndexRoute,
           AuthWorkspacesWorkspaceIdWorkspaceLabelsLabelIdRoute,
+        }),
+      AuthWorkspacesWorkspaceIdSettingsRouteRoute:
+        AuthWorkspacesWorkspaceIdSettingsRouteRoute.addChildren({
+          AuthWorkspacesWorkspaceIdSettingsAiRoute,
+          AuthWorkspacesWorkspaceIdSettingsBillingRoute,
+          AuthWorkspacesWorkspaceIdSettingsChatRoute,
+          AuthWorkspacesWorkspaceIdSettingsEmailRoute,
+          AuthWorkspacesWorkspaceIdSettingsEventsRoute,
+          AuthWorkspacesWorkspaceIdSettingsGithubRoute,
+          AuthWorkspacesWorkspaceIdSettingsLabelsRoute,
+          AuthWorkspacesWorkspaceIdSettingsLinearRoute,
+          AuthWorkspacesWorkspaceIdSettingsMembersRoute,
+          AuthWorkspacesWorkspaceIdSettingsSlackRoute,
+          AuthWorkspacesWorkspaceIdSettingsWebhooksRoute,
+          AuthWorkspacesWorkspaceIdSettingsIndexRoute,
+          AuthWorkspacesWorkspaceIdSettingsPatsAddRoute,
+          AuthWorkspacesWorkspaceIdSettingsPatsIndexRoute,
         }),
       AuthWorkspacesWorkspaceIdThreadsThreadIdRoute,
       AuthWorkspacesWorkspaceIdSetupIndexRoute,

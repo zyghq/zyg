@@ -35,7 +35,7 @@ func (s *ThreadChatService) CreateCustomerThread(ctx context.Context, th domain.
 
 // returns a thread chat by workspace and thread chat.
 // a thread chat is unique in a workspace.
-func (s *ThreadChatService) GetWorkspaceThread(ctx context.Context, workspaceId string, threadChatId string,
+func (s *ThreadChatService) WorkspaceThread(ctx context.Context, workspaceId string, threadChatId string,
 ) (domain.ThreadChat, error) {
 	thread, err := s.repo.GetByWorkspaceThreadChatId(ctx, workspaceId, threadChatId)
 
@@ -51,7 +51,7 @@ func (s *ThreadChatService) GetWorkspaceThread(ctx context.Context, workspaceId 
 }
 
 // returns a list of thread chat for the customer in the workspace.
-func (s *ThreadChatService) GetWorkspaceCustomerList(ctx context.Context, workspaceId string, customerId string,
+func (s *ThreadChatService) WorkspaceCustomers(ctx context.Context, workspaceId string, customerId string,
 ) ([]domain.ThreadChatWithMessage, error) {
 	threads, err := s.repo.GetListByWorkspaceCustomerId(ctx, workspaceId, customerId)
 
@@ -83,7 +83,7 @@ func (s *ThreadChatService) MarkReplied(ctx context.Context, threadChatId string
 }
 
 // returns a list of thread chat in the workspace.
-func (s *ThreadChatService) GetWorkspaceThreadList(ctx context.Context, workspaceId string) ([]domain.ThreadChatWithMessage, error) {
+func (s *ThreadChatService) WorkspaceThreads(ctx context.Context, workspaceId string) ([]domain.ThreadChatWithMessage, error) {
 	threads, err := s.repo.GetListByWorkspaceId(ctx, workspaceId)
 	if err != nil {
 		return threads, ErrThreadChat
@@ -144,7 +144,7 @@ func (s *ThreadChatService) AddLabel(ctx context.Context, thl domain.ThreadChatL
 }
 
 // returns a list of labels added to the thread chat.
-func (s *ThreadChatService) GetLabelList(ctx context.Context, threadChatId string) ([]domain.ThreadChatLabelled, error) {
+func (s *ThreadChatService) ThreadLabels(ctx context.Context, threadChatId string) ([]domain.ThreadChatLabelled, error) {
 	labels, err := s.repo.GetLabelListByThreadChatId(ctx, threadChatId)
 	if err != nil {
 		return labels, ErrThChatLabel
@@ -177,7 +177,7 @@ func (s *ThreadChatService) CreateMemberMessage(ctx context.Context, th domain.T
 }
 
 // returns a list of messages for the thread chat item.
-func (s *ThreadChatService) GetMessageList(ctx context.Context, threadChatId string,
+func (s *ThreadChatService) ThreadChatMessages(ctx context.Context, threadChatId string,
 ) ([]domain.ThreadChatMessage, error) {
 	messages, err := s.repo.GetMessageListByThreadChatId(ctx, threadChatId)
 	if err != nil {

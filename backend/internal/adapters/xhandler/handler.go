@@ -52,7 +52,7 @@ func AuthenticateCustomer(
 
 		slog.Info("authenticated customer with customer id", slog.String("customerId", sub))
 
-		customer, err = authz.GetWorkspaceCustomer(ctx, cc.WorkspaceId, sub)
+		customer, err = authz.WorkspaceCustomer(ctx, cc.WorkspaceId, sub)
 
 		if errors.Is(err, services.ErrCustomerNotFound) {
 			slog.Warn(
@@ -288,7 +288,7 @@ func (h *CustomerHandler) handleCreateThChatMessage(
 		return
 	}
 
-	th, err := h.ths.GetWorkspaceThread(ctx, workspace.WorkspaceId, threadId)
+	th, err := h.ths.WorkspaceThread(ctx, workspace.WorkspaceId, threadId)
 
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		slog.Warn(
@@ -420,7 +420,7 @@ func (h *CustomerHandler) handleGetThChatMesssages(
 		return
 	}
 
-	th, err := h.ths.GetWorkspaceThread(ctx, workspace.WorkspaceId, threadId)
+	th, err := h.ths.WorkspaceThread(ctx, workspace.WorkspaceId, threadId)
 
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		slog.Warn(
@@ -432,7 +432,7 @@ func (h *CustomerHandler) handleGetThChatMesssages(
 		return
 	}
 
-	results, err := h.ths.GetMessageList(ctx, th.ThreadChatId)
+	results, err := h.ths.ThreadChatMessages(ctx, th.ThreadChatId)
 
 	if err != nil {
 		slog.Error(
@@ -543,7 +543,7 @@ func (h *CustomerHandler) handleGetCustomerThChats(
 		return
 	}
 
-	ths, err := h.ths.GetWorkspaceCustomerList(ctx, workspace.WorkspaceId, customer.CustomerId)
+	ths, err := h.ths.WorkspaceCustomers(ctx, workspace.WorkspaceId, customer.CustomerId)
 
 	if errors.Is(err, services.ErrThreadChat) {
 		slog.Error(
