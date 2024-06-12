@@ -11,6 +11,7 @@ import {
   workspaceCustomersResponseSchema,
   workspaceLabelResponseSchema,
   workspaceMemberResponseSchema,
+  accountPatSchema,
 } from "./schema";
 import {
   IWorkspaceEntities,
@@ -19,6 +20,7 @@ import {
   WorkspaceCustomerMapStoreType,
   WorkspaceLabelMapStoreType,
   WorkspaceMemberMapStoreType,
+  AccountPatMapStoreType,
 } from "./store";
 
 export type WorkspaceResponseType = z.infer<typeof workspaceResponseSchema>;
@@ -49,6 +51,8 @@ export type WorkspaceMemberResponseType = z.infer<
   typeof workspaceMemberResponseSchema
 >;
 
+export type AccountPatResponseType = z.infer<typeof accountPatSchema>;
+
 function initialWorkspaceData(): IWorkspaceEntities {
   return {
     hasData: false,
@@ -69,11 +73,12 @@ function initialWorkspaceData(): IWorkspaceEntities {
     customers: null,
     labels: null,
     members: null,
+    pats: null,
   };
 }
 
 // API call to fetch workspace details
-async function getWorkspace(
+export async function getWorkspace(
   token: string,
   workspaceId: string
 ): Promise<{ data: WorkspaceResponseType | null; error: Error | null }> {
@@ -125,7 +130,7 @@ async function getWorkspace(
   }
 }
 
-async function getWorkspaceMember(
+export async function getWorkspaceMember(
   token: string,
   workspaceId: string
 ): Promise<{ data: MembershipResponseType | null; error: Error | null }> {
@@ -177,7 +182,7 @@ async function getWorkspaceMember(
 }
 
 // API call to fetch workspace metrics
-async function getWorkspaceMetrics(
+export async function getWorkspaceMetrics(
   token: string,
   workspaceId: string
 ): Promise<{ data: WorkspaceMetricsResponseType | null; error: Error | null }> {
@@ -227,7 +232,7 @@ async function getWorkspaceMetrics(
 }
 
 // API call to fetch thread chats
-async function getWorkspaceThreads(
+export async function getWorkspaceThreads(
   token: string,
   workspaceId: string
 ): Promise<{ data: ThreadChatResponseType[] | null; error: Error | null }> {
@@ -281,7 +286,7 @@ async function getWorkspaceThreads(
 }
 
 // API call to fetch workspace labels
-async function getWorkspaceLabels(
+export async function getWorkspaceLabels(
   token: string,
   workspaceId: string
 ): Promise<{
@@ -332,6 +337,99 @@ async function getWorkspaceLabels(
       error: new Error(
         "error fetching workspace labels - something went wrong"
       ),
+      data: null,
+    };
+  }
+}
+
+export async function getAccountPats(token: string): Promise<{
+  data: AccountPatResponseType[] | null;
+  error: Error | null;
+}> {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_ZYG_URL}/pats/`, {
+      method: "GET",
+      headers: {
+        // "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const { status, statusText } = response;
+      return {
+        error: new Error(
+          `error fetching account pats: ${status} ${statusText}`
+        ),
+        data: null,
+      };
+    }
+
+    try {
+      const data = await response.json();
+      // schema validate for each item
+      const pats = data.map((item: any) => {
+        return accountPatSchema.parse({ ...item });
+      });
+      return { error: null, data: pats };
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        console.error(err.message);
+      } else console.error(err);
+      return {
+        error: new Error("error parsing account pat schema"),
+        data: null,
+      };
+    }
+  } catch (err) {
+    console.error(err);
+    return {
+      error: new Error("error fetching account pats - something went wrong"),
+      data: null,
+    };
+  }
+}
+
+export async function createAccountPat(
+  token: string,
+  body: { name: string; description: string }
+): Promise<{
+  data: AccountPatResponseType | null;
+  error: Error | null;
+}> {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_ZYG_URL}/pats/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ ...body }),
+    });
+    if (!response.ok) {
+      const { status, statusText } = response;
+      const error = new Error(
+        `error creating account pat with status: ${status} and statusText: ${statusText}`
+      );
+      return { error, data: null };
+    }
+    try {
+      const data = await response.json();
+      const pat = accountPatSchema.parse({ ...data });
+      return { error: null, data: pat };
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        console.error(err.message);
+      } else console.error(err);
+      return {
+        error: new Error("error parsing account pat schema"),
+        data: null,
+      };
+    }
+  } catch (err) {
+    console.error(err);
+    return {
+      error: new Error("error creating account pat - something went wrong"),
       data: null,
     };
   }
@@ -428,97 +526,15 @@ function makeMembersStoreable(
   return mapped;
 }
 
-export async function bootstrapWorkspace(
-  token: string,
-  workspaceId: string
-): Promise<IWorkspaceEntities> {
-  const data = initialWorkspaceData();
-
-  const getWorkspaceP = getWorkspace(token, workspaceId);
-  const getWorkspaceMemberP = getWorkspaceMember(token, workspaceId);
-  const getWorkspaceCustomersP = getWorkspaceCustomers(token, workspaceId);
-  const getWorkspaceMetricsP = getWorkspaceMetrics(token, workspaceId);
-  const getWorkspaceThreadsP = getWorkspaceThreads(token, workspaceId);
-  const getWorkspaceLabelsP = getWorkspaceLabels(token, workspaceId);
-  const getWorkspaceMembersP = getWorkspaceMembers(token, workspaceId);
-
-  const [
-    workspaceData,
-    memberData,
-    customerData,
-    metricsData,
-    threadsData,
-    labelsData,
-    membersData,
-  ] = await Promise.all([
-    getWorkspaceP,
-    getWorkspaceMemberP,
-    getWorkspaceCustomersP,
-    getWorkspaceMetricsP,
-    getWorkspaceThreadsP,
-    getWorkspaceLabelsP,
-    getWorkspaceMembersP,
-  ]);
-
-  const { error: errWorkspace, data: workspace } = workspaceData;
-  const { error: errMember, data: member } = memberData;
-  const { error: errCustomer, data: customers } = customerData;
-  const { error: errMetrics, data: metrics } = metricsData;
-  const { error: errThreads, data: threads } = threadsData;
-  const { error: errLabels, data: labels } = labelsData;
-  const { error: errMembers, data: members } = membersData;
-
-  const hasErr =
-    errWorkspace ||
-    errMember ||
-    errCustomer ||
-    errMetrics ||
-    errThreads ||
-    errLabels ||
-    errMembers;
-
-  if (hasErr) {
-    data.error = new Error("error bootsrapping workspace store information");
-    data.isPending = false;
-    return data;
+function makePatsStoreable(
+  pats: AccountPatResponseType[]
+): AccountPatMapStoreType {
+  const mapped: AccountPatMapStoreType = {};
+  for (const pat of pats) {
+    const { patId, ...rest } = pat;
+    mapped[patId] = { patId, ...rest };
   }
-
-  if (workspace) {
-    data.workspace = workspace;
-    data.hasData = true;
-    data.isPending = false;
-  }
-
-  if (member) {
-    data.member = member;
-  }
-
-  if (customers && customers.length > 0) {
-    const customersMap = makeCustomersStoreable(customers);
-    data.customers = customersMap;
-  }
-
-  if (metrics) {
-    const { count } = metrics;
-    data.metrics = count;
-  }
-
-  if (members && members.length > 0) {
-    const membersMap = makeMembersStoreable(members);
-    data.members = membersMap;
-  }
-
-  if (threads && threads.length > 0) {
-    const threadsMap = makeThreadsStoreable(threads);
-    data.threadChats = threadsMap;
-  }
-
-  if (labels && labels.length > 0) {
-    const labelsMap = makeLabelsStoreable(labels);
-    data.labels = labelsMap;
-  }
-
-  return data;
+  return mapped;
 }
 
 export async function getOrCreateZygAccount(token: string): Promise<{
@@ -760,4 +776,107 @@ export async function getWorkspaceMembers(
       data: null,
     };
   }
+}
+
+export async function bootstrapWorkspace(
+  token: string,
+  workspaceId: string
+): Promise<IWorkspaceEntities> {
+  const data = initialWorkspaceData();
+
+  const getWorkspaceP = getWorkspace(token, workspaceId);
+  const getWorkspaceMemberP = getWorkspaceMember(token, workspaceId);
+  const getWorkspaceCustomersP = getWorkspaceCustomers(token, workspaceId);
+  const getWorkspaceMetricsP = getWorkspaceMetrics(token, workspaceId);
+  const getWorkspaceThreadsP = getWorkspaceThreads(token, workspaceId);
+  const getWorkspaceLabelsP = getWorkspaceLabels(token, workspaceId);
+  const getWorkspaceMembersP = getWorkspaceMembers(token, workspaceId);
+  const getAccountPatsP = getAccountPats(token);
+
+  const [
+    workspaceData,
+    memberData,
+    customerData,
+    metricsData,
+    threadsData,
+    labelsData,
+    membersData,
+    patsData,
+  ] = await Promise.all([
+    getWorkspaceP,
+    getWorkspaceMemberP,
+    getWorkspaceCustomersP,
+    getWorkspaceMetricsP,
+    getWorkspaceThreadsP,
+    getWorkspaceLabelsP,
+    getWorkspaceMembersP,
+    getAccountPatsP,
+  ]);
+
+  const { error: errWorkspace, data: workspace } = workspaceData;
+  const { error: errMember, data: member } = memberData;
+  const { error: errCustomer, data: customers } = customerData;
+  const { error: errMetrics, data: metrics } = metricsData;
+  const { error: errThreads, data: threads } = threadsData;
+  const { error: errLabels, data: labels } = labelsData;
+  const { error: errMembers, data: members } = membersData;
+  const { error: errPats, data: pats } = patsData;
+
+  const hasErr =
+    errWorkspace ||
+    errMember ||
+    errCustomer ||
+    errMetrics ||
+    errThreads ||
+    errLabels ||
+    errMembers ||
+    errPats;
+
+  if (hasErr) {
+    data.error = new Error("error bootsrapping workspace store information");
+    data.isPending = false;
+    return data;
+  }
+
+  if (workspace) {
+    data.workspace = workspace;
+    data.hasData = true;
+    data.isPending = false;
+  }
+
+  if (member) {
+    data.member = member;
+  }
+
+  if (customers && customers.length > 0) {
+    const customersMap = makeCustomersStoreable(customers);
+    data.customers = customersMap;
+  }
+
+  if (metrics) {
+    const { count } = metrics;
+    data.metrics = count;
+  }
+
+  if (members && members.length > 0) {
+    const membersMap = makeMembersStoreable(members);
+    data.members = membersMap;
+  }
+
+  if (threads && threads.length > 0) {
+    const threadsMap = makeThreadsStoreable(threads);
+    data.threadChats = threadsMap;
+  }
+
+  if (labels && labels.length > 0) {
+    const labelsMap = makeLabelsStoreable(labels);
+    data.labels = labelsMap;
+  }
+
+  if (pats && pats.length > 0) {
+    const patsMap = makePatsStoreable(pats);
+    data.pats = patsMap;
+  }
+
+  return data;
 }

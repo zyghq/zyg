@@ -132,7 +132,7 @@ function GeneralSettings() {
                 <code className="mr-2 rounded-lg border bg-muted p-2">
                   {workspaceId}
                 </code>
-                <Button variant="ghost" size="sm">
+                <Button type="button" variant="ghost" size="sm">
                   <ClipboardCopyIcon className="h-4 w-4" />
                 </Button>
               </div>

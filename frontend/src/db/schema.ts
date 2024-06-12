@@ -146,3 +146,13 @@ export const workspaceMemberResponseSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
 });
+
+export const accountPatSchema = z.object({
+  accountId: z.string(),
+  patId: z.string(),
+  token: z.string(),
+  name: z.string(),
+  description: z.string().nullable().default(null),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});

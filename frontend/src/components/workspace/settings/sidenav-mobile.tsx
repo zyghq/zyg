@@ -6,7 +6,13 @@ import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SideNavLinks } from "@/components/workspace/settings/sidenav-links";
 
-export function SideNavMobile({ workspaceId }: { workspaceId: string }) {
+export function SideNavMobile({
+  workspaceId,
+  accountId,
+}: {
+  workspaceId: string;
+  accountId: string;
+}) {
   const [open, setOpen] = React.useState(false);
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -60,7 +66,7 @@ export function SideNavMobile({ workspaceId }: { workspaceId: string }) {
             </Link>
           </div>
         </div>
-        <SideNavLinks maxHeight="h-[calc(100dvh-7rem)]" />
+        <SideNavLinks accountId={accountId} maxHeight="h-[calc(100dvh-7rem)]" />
       </SheetContent>
     </Sheet>
   );

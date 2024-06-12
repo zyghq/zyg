@@ -33,7 +33,7 @@ function SettingsLayout() {
               Settings
             </Link>
           </div>
-          <SideNavMobile workspaceId={workspaceId} />
+          <SideNavMobile accountId={accountId} workspaceId={workspaceId} />
         </div>
       </header>
       <div className="flex flex-col">
