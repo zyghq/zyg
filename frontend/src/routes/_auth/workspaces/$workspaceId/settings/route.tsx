@@ -1,3 +1,4 @@
+import * as React from "react";
 import { createFileRoute, Outlet, Link } from "@tanstack/react-router";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import { SideNavLinks } from "@/components/workspace/settings/sidenav-links";
@@ -19,9 +20,10 @@ function SettingsLayout() {
   const accountId = useStore(accountStore, (state) =>
     state.getAccountId(state)
   );
+
   return (
-    <div className="flex flex-col">
-      <header className="sticky top-0 z-50 flex h-14 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <React.Fragment>
+      <header className="fixed top-0 left-0 right-0 z-50 flex h-14 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 bottom-[calc(100vh-theme(spacing.14))]">
         <div className="mx-4 flex w-full items-center">
           <div className="hidden md:flex">
             <Link
@@ -36,19 +38,17 @@ function SettingsLayout() {
           <SideNavMobile accountId={accountId} workspaceId={workspaceId} />
         </div>
       </header>
-      <div className="flex flex-col">
-        <div className="flex">
-          <div className="hidden min-w-80 flex-col border-r lg:flex">
-            <SideNavLinks
-              accountId={accountId}
-              maxHeight="h-[calc(100dvh-8rem)]"
-            />
-          </div>
-          <main className="flex-1">
-            <Outlet />
-          </main>
-        </div>
+      <div className="flex min-h-screen">
+        <aside className="sticky top-14 h-[calc(100vh-theme(spacing.14))] w-80 overflow-y-auto">
+          <SideNavLinks
+            accountId={accountId}
+            maxHeight="h-[calc(100dvh-8rem)]"
+          />
+        </aside>
+        <main className="flex-1 mt-14 pb-4">
+          <Outlet />
+        </main>
       </div>
-    </div>
+    </React.Fragment>
   );
 }
