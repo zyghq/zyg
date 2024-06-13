@@ -21,10 +21,10 @@ import {
   OpenInNewWindowIcon,
   ReaderIcon,
   WidthIcon,
+  HamburgerMenuIcon,
 } from "@radix-ui/react-icons";
 import { BugIcon, LifeBuoyIcon, UsersIcon } from "lucide-react";
 import { WorkspaceMetricsStoreType } from "@/db/store";
-
 import SideNavLinks from "@/components/workspace/sidenav-links";
 
 export default function SideNavMobile({
@@ -46,6 +46,13 @@ export default function SideNavMobile({
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button
+          size="icon"
+          variant="ghost"
+          className="flex md:hidden my-auto mr-4"
+        >
+          <HamburgerMenuIcon className="h-4 w-4" />
+        </Button>
+        {/* <Button
           variant="ghost"
           className="my-auto mr-4 px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 md:hidden"
         >
@@ -79,7 +86,7 @@ export default function SideNavMobile({
             ></path>
           </svg>
           <span className="sr-only">Toggle Menu</span>
-        </Button>
+        </Button> */}
       </SheetTrigger>
       <SheetContent side="left" className="p-2">
         <DropdownMenu>

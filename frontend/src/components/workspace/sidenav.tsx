@@ -1,7 +1,5 @@
-import { cn } from "@/lib/utils";
-
+import * as React from "react";
 import { Link } from "@tanstack/react-router";
-
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,9 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
 import { WorkspaceMetricsStoreType } from "@/db/store";
-
 import SideNavLinks from "@/components/workspace/sidenav-links";
 
 import {
@@ -48,7 +44,7 @@ export function SideNav({
   memberId: string;
 }) {
   return (
-    <div className={cn("p-4", "hidden lg:block lg:border-r")}>
+    <React.Fragment>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="flex justify-between">
@@ -136,6 +132,6 @@ export function SideNav({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-    </div>
+    </React.Fragment>
   );
 }

@@ -44,72 +44,66 @@ function MyThreads() {
       )
   );
   return (
-    <main className="col-span-3 lg:col-span-4">
-      <div className="container px-2 sm:px-4">
-        <div className="mx-1 my-2 text-xl sm:my-4">My Threads</div>
-        <Tabs defaultValue={status}>
-          <div className="mb-4 sm:flex sm:justify-between">
-            <TabsList className="grid grid-cols-3">
-              <TabsTrigger
-                onClick={() => {
-                  navigate({ search: () => ({ status: "todo" }) });
-                }}
-                value="todo"
-              >
-                <div className="flex items-center">
-                  <CircleIcon className="mr-1 h-4 w-4 text-indigo-500" />
-                  Todo
-                </div>
-              </TabsTrigger>
-              <TabsTrigger
-                onClick={() => {
-                  navigate({ search: () => ({ status: "snoozed" }) });
-                }}
-                value="snoozed"
-              >
-                <div className="flex items-center">
-                  <EclipseIcon className="mr-1 h-4 w-4 text-fuchsia-500" />
-                  Snoozed
-                </div>
-              </TabsTrigger>
-              <TabsTrigger
-                onClick={() => {
-                  navigate({ search: () => ({ status: "done" }) });
-                }}
-                value="done"
-              >
-                <div className="flex items-center">
-                  <CheckCircle className="mr-1 h-4 w-4 text-green-500" />
-                  Done
-                </div>
-              </TabsTrigger>
-            </TabsList>
-            <div className="mt-4 flex gap-1 sm:my-auto">
-              <Filters />
-              <Sorts />
-            </div>
+    <div className="container">
+      <div className="mx-1 my-2 text-xl sm:my-4">My Threads</div>
+      <Tabs defaultValue={status}>
+        <div className="mb-4 sm:flex sm:justify-between">
+          <TabsList className="grid grid-cols-3">
+            <TabsTrigger
+              onClick={() => {
+                navigate({ search: () => ({ status: "todo" }) });
+              }}
+              value="todo"
+            >
+              <div className="flex items-center">
+                <CircleIcon className="mr-1 h-4 w-4 text-indigo-500" />
+                Todo
+              </div>
+            </TabsTrigger>
+            <TabsTrigger
+              onClick={() => {
+                navigate({ search: () => ({ status: "snoozed" }) });
+              }}
+              value="snoozed"
+            >
+              <div className="flex items-center">
+                <EclipseIcon className="mr-1 h-4 w-4 text-fuchsia-500" />
+                Snoozed
+              </div>
+            </TabsTrigger>
+            <TabsTrigger
+              onClick={() => {
+                navigate({ search: () => ({ status: "done" }) });
+              }}
+              value="done"
+            >
+              <div className="flex items-center">
+                <CheckCircle className="mr-1 h-4 w-4 text-green-500" />
+                Done
+              </div>
+            </TabsTrigger>
+          </TabsList>
+          <div className="mt-4 flex gap-1 sm:my-auto">
+            <Filters />
+            <Sorts />
           </div>
-          <TabsContent value="todo" className="m-0">
-            <ThreadList
-              workspaceId={workspaceId}
-              threads={todoThreads}
-              className="h-[calc(100dvh-14rem)]"
-            />
-          </TabsContent>
-          <TabsContent value="snoozed" className="m-0">
-            {/* <ThreadList
+        </div>
+        <TabsContent value="todo" className="m-0">
+          <ThreadList workspaceId={workspaceId} threads={todoThreads} />
+        </TabsContent>
+        <TabsContent value="snoozed" className="m-0">
+          {/* <ThreadList
           items={threads.filter((item) => !item.read)}
           className="h-[calc(100dvh-14rem)]"
         /> */}
-          </TabsContent>
-          <TabsContent value="done" className="m-0">
-            {/* <Threads items={threads} /> */}
-            {/* <ScrollArea className="h-[calc(100vh-14rem)] pr-1">
+        </TabsContent>
+        <TabsContent value="done" className="m-0">
+          {/* <Threads items={threads} /> */}
+          {/* <ScrollArea className="h-[calc(100vh-14rem)] pr-1">
           <div className="flex flex-col gap-2">...</div>
         </ScrollArea> */}
-          </TabsContent>
-        </Tabs>
-      </div>
-    </main>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
