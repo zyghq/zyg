@@ -68,17 +68,45 @@ func (s *AccountService) IssuePersonalAccessToken(ctx context.Context, ap domain
 }
 
 func (s *AccountService) UserPats(ctx context.Context, accountId string) ([]domain.AccountPAT, error) {
-	apList, err := s.repo.GetPatListByAccountId(ctx, accountId)
+	pats, err := s.repo.GetPatListByAccountId(ctx, accountId)
 
 	if errors.Is(err, repository.ErrQuery) {
-		return apList, ErrPat
+		return pats, ErrPat
 	}
 
 	if err != nil {
-		return apList, err
+		return pats, err
 	}
 
-	return apList, nil
+	return pats, nil
+}
+
+func (s *AccountService) UserPat(ctx context.Context, patId string) (domain.AccountPAT, error) {
+	pat, err := s.repo.GetPatByPatId(ctx, patId)
+
+	if errors.Is(err, repository.ErrEmpty) {
+		return domain.AccountPAT{}, ErrPatNotFound
+	}
+
+	if errors.Is(err, repository.ErrQuery) {
+		return domain.AccountPAT{}, ErrPat
+	}
+
+	if err != nil {
+		return domain.AccountPAT{}, err
+	}
+
+	return pat, nil
+}
+
+func (s *AccountService) HardDeletePat(ctx context.Context, patId string) error {
+	err := s.repo.HardDeletePatByPatId(ctx, patId)
+	if err != nil {
+		return err
+	}
+	// probably send a mail that the token was deleted
+	// send via background job
+	return nil
 }
 
 func (s *AccountService) PatAccount(ctx context.Context, token string) (domain.Account, error) {

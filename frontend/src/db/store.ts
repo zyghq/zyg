@@ -166,6 +166,7 @@ interface IWorkspaceStoreActions {
   viewMembers(state: WorkspaceStoreStateType): WorkspaceMemberStoreType[];
   viewPats(state: WorkspaceStoreStateType): AccountPatStoreType[];
   addPat(pat: AccountPatStoreType): void;
+  deletePat(patId: string): void;
 }
 
 export type WorkspaceStoreStateType = IWorkspaceEntities &
@@ -297,6 +298,16 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
       set((state) => {
         if (state.pats) {
           state.pats[patId] = { ...pat };
+          return state;
+        } else {
+          return state;
+        }
+      });
+    },
+    deletePat: (patId: string) => {
+      set((state) => {
+        if (state.pats) {
+          delete state.pats[patId];
           return state;
         } else {
           return state;

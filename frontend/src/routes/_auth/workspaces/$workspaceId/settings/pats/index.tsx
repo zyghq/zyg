@@ -1,10 +1,10 @@
+import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "@radix-ui/react-icons";
 import { useWorkspaceStore } from "@/providers";
 import { useStore } from "zustand";
-import React from "react";
 import { KeyRoundIcon } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { deletePat } from "@/db/api";
 
 export const Route = createFileRoute(
   "/_auth/workspaces/$workspaceId/settings/pats/"
@@ -30,9 +31,47 @@ const formatDate = (date: string) => {
   return format(dateObj, "MMMM d, yyyy");
 };
 
-function DeleteConfirmationDialog() {
+function DeleteConfirmationDialog({
+  deleteFunc,
+  resetFunc,
+  isError,
+  isDeleting,
+  isDeleted,
+}: {
+  deleteFunc: () => void;
+  resetFunc: () => void;
+  isError: boolean;
+  isDeleting: boolean;
+  isDeleted: boolean;
+}) {
+  const [open, setOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (isDeleted) {
+      setOpen(false);
+    }
+  }, [isDeleted]);
+
+  function onDelete(
+    e: React.BaseSyntheticEvent<
+      MouseEvent,
+      EventTarget & HTMLButtonElement,
+      EventTarget
+    >
+  ) {
+    e.preventDefault();
+    deleteFunc();
+  }
+
+  function onCancel() {
+    setOpen(false);
+    setTimeout(() => {
+      resetFunc();
+    }, 100);
+  }
+
   return (
-    <AlertDialog>
+    <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
         <Button variant="destructive" size="sm">
           Delete
@@ -50,18 +89,54 @@ function DeleteConfirmationDialog() {
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction>I understand, delete it</AlertDialogAction>
+          <AlertDialogCancel onClick={() => onCancel()}>
+            Cancel
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={onDelete} disabled={isDeleting}>
+            I understand, delete it
+          </AlertDialogAction>
         </AlertDialogFooter>
+        {isError && (
+          <div className="text-xs text-red-500">
+            Something went wrong. Please try again later.
+          </div>
+        )}
       </AlertDialogContent>
     </AlertDialog>
   );
 }
 
 function PatSettings() {
+  const { token } = Route.useRouteContext();
   const { workspaceId } = Route.useParams();
   const workspaceStore = useWorkspaceStore();
+
   const pats = useStore(workspaceStore, (state) => state.viewPats(state));
+
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [isDeleted, setIsDeleted] = React.useState(false);
+  const [isError, setIsError] = React.useState(false);
+
+  function onDelete(token: string, patId: string) {
+    return async () => {
+      setIsDeleting(true);
+      const { error } = await deletePat(token, patId);
+      if (error) {
+        setIsError(true);
+      } else {
+        workspaceStore.getState().deletePat(patId);
+        setIsDeleted(true);
+      }
+      setIsDeleting(false);
+    };
+  }
+
+  function reset() {
+    setIsDeleting(false);
+    setIsDeleted(false);
+    setIsError(false);
+  }
+
   return (
     <div className="container">
       <div className="max-w-2xl">
@@ -100,7 +175,13 @@ function PatSettings() {
                         </div>
                       </div>
                       <div className="ml-auto">
-                        <DeleteConfirmationDialog />
+                        <DeleteConfirmationDialog
+                          deleteFunc={onDelete(token, pat.patId)}
+                          resetFunc={reset}
+                          isError={isError}
+                          isDeleting={isDeleting}
+                          isDeleted={isDeleted}
+                        />
                       </div>
                     </div>
                     <div className="flex flex-col">

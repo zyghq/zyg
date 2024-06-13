@@ -2,11 +2,13 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
 
 	"github.com/zyghq/zyg"
+	"github.com/zyghq/zyg/internal/adapters/repository"
 	"github.com/zyghq/zyg/internal/domain"
 	"github.com/zyghq/zyg/internal/ports"
 	"github.com/zyghq/zyg/internal/services"
@@ -171,4 +173,36 @@ func (h *AccountHandler) handleCreatePat(w http.ResponseWriter, r *http.Request,
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+}
+
+func (h *AccountHandler) handleDeletePat(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+	ctx := r.Context()
+	patId := r.PathValue("patId")
+
+	pat, err := h.as.UserPat(ctx, patId)
+	if errors.Is(err, repository.ErrEmpty) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		slog.Error("failed to get pat by pat id "+
+			"something went wrong",
+			slog.String("patId", patId),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	err = h.as.HardDeletePat(ctx, pat.PatId)
+	if err != nil {
+		slog.Error("failed to delete pat "+
+			"something went wrong",
+			slog.String("patId", pat.PatId),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	// return http status 204 no content
+	w.WriteHeader(http.StatusNoContent)
 }

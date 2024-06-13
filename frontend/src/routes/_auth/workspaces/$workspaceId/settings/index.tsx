@@ -18,10 +18,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ExclamationTriangleIcon, CheckIcon } from "@radix-ui/react-icons";
-import { ClipboardCopyIcon } from "@radix-ui/react-icons";
+import { ClipboardCopyIcon, CheckCircledIcon } from "@radix-ui/react-icons";
 import { useStore } from "zustand";
 import { useWorkspaceStore } from "@/providers";
 import { updateWorkspace } from "@/db/api";
+import { useCopyToClipboard } from "@uidotdev/usehooks";
 
 const formSchema = z.object({
   name: z.string().min(3),
@@ -46,6 +47,9 @@ function GeneralSettings() {
   const workspaceName = useStore(workspaceStore, (state) =>
     state.getWorkspaceName(state)
   );
+
+  const [copiedText, copyToClipboard] = useCopyToClipboard();
+  const hasCopiedText = Boolean(copiedText);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -132,8 +136,19 @@ function GeneralSettings() {
                 <code className="mr-2 rounded-lg border bg-muted p-2">
                   {workspaceId}
                 </code>
-                <Button type="button" variant="ghost" size="sm">
-                  <ClipboardCopyIcon className="h-4 w-4" />
+                <Button
+                  disabled={hasCopiedText}
+                  aria-disabled={hasCopiedText}
+                  onClick={() => copyToClipboard(workspaceId)}
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                >
+                  {hasCopiedText ? (
+                    <CheckCircledIcon className="h-5 w-5 text-green-500" />
+                  ) : (
+                    <ClipboardCopyIcon className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>

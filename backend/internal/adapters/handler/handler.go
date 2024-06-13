@@ -98,7 +98,7 @@ func NewServer(
 ) http.Handler {
 	mux := http.NewServeMux()
 
-	// creates service handlers
+	// create service handlers
 	ah := NewAccountHandler(accountService)
 	wh := NewWorkspaceHandler(workspaceService, customerService)
 	th := NewThreadChatHandler(workspaceService, threadChatService)
@@ -108,6 +108,7 @@ func NewServer(
 
 	mux.Handle("POST /pats/{$}", NewEnsureAuth(ah.handleCreatePat, authService))
 	mux.Handle("GET /pats/{$}", NewEnsureAuth(ah.handleGetPatList, authService))
+	mux.Handle("DELETE /pats/{patId}/{$}", NewEnsureAuth(ah.handleDeletePat, authService))
 
 	mux.Handle("POST /workspaces/{$}", NewEnsureAuth(wh.handleCreateWorkspace, authService))
 	mux.Handle("GET /workspaces/{$}", NewEnsureAuth(wh.handleGetWorkspaces, authService))

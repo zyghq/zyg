@@ -39,7 +39,7 @@ function SettingsLayout() {
         </div>
       </header>
       <div className="flex min-h-screen">
-        <aside className="sticky top-14 h-[calc(100vh-theme(spacing.14))] w-80 overflow-y-auto">
+        <aside className="hidden sticky top-14 h-[calc(100vh-theme(spacing.14))] w-80 overflow-y-auto md:block">
           <SideNavLinks
             accountId={accountId}
             maxHeight="h-[calc(100dvh-8rem)]"
