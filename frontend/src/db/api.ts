@@ -778,6 +778,40 @@ export async function getWorkspaceMembers(
   }
 }
 
+export async function deletePat(
+  token: string,
+  patId: string
+): Promise<{
+  error: Error | null;
+}> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/pats/${patId}/`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const { status, statusText } = response;
+      return {
+        error: new Error(
+          `error deleting pat with status: ${status} and statusText: ${statusText}`
+        ),
+      };
+    }
+    return { error: null };
+  } catch (err) {
+    console.error(err);
+    return {
+      error: new Error("error deleting pat - something went wrong"),
+    };
+  }
+}
+
 export async function bootstrapWorkspace(
   token: string,
   workspaceId: string

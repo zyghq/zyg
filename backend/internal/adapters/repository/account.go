@@ -138,6 +138,42 @@ func (a *AccountDB) GetPatListByAccountId(ctx context.Context, accountId string)
 	return aps, nil
 }
 
+func (a *AccountDB) GetPatByPatId(ctx context.Context, patId string) (domain.AccountPAT, error) {
+	var pat domain.AccountPAT
+
+	stmt := `SELECT
+		account_id, pat_id, token, name, description,
+		created_at, updated_at
+		FROM account_pat
+		WHERE pat_id = $1`
+
+	err := a.db.QueryRow(ctx, stmt, patId).Scan(
+		&pat.AccountId, &pat.PatId, &pat.Token,
+		&pat.Name, &pat.Description, &pat.CreatedAt, &pat.UpdatedAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.AccountPAT{}, ErrEmpty
+	}
+
+	if err != nil {
+		slog.Error("failed to query", "error", err)
+		return domain.AccountPAT{}, ErrQuery
+	}
+
+	return pat, nil
+}
+
+func (a *AccountDB) HardDeletePatByPatId(ctx context.Context, patId string) error {
+	stmt := `DELETE FROM account_pat WHERE pat_id = $1`
+	_, err := a.db.Exec(ctx, stmt, patId)
+	if err != nil {
+		slog.Error("failed to delete pat", "error", err)
+		return ErrQuery
+	}
+	return nil
+}
+
 func (a *AccountDB) GetAccountByToken(ctx context.Context, token string) (domain.Account, error) {
 	var account domain.Account
 

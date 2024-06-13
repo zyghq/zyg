@@ -12,6 +12,8 @@ type AccountServicer interface {
 	IssuePersonalAccessToken(ctx context.Context, ap domain.AccountPAT) (domain.AccountPAT, error)
 	UserPats(ctx context.Context, accountId string) ([]domain.AccountPAT, error)
 	PatAccount(ctx context.Context, token string) (domain.Account, error)
+	UserPat(ctx context.Context, patId string) (domain.AccountPAT, error)
+	HardDeletePat(ctx context.Context, patId string) error
 }
 
 type AuthServicer interface {
@@ -73,6 +75,8 @@ type AccountRepositorer interface {
 	CreatePersonalAccessToken(ctx context.Context, ap domain.AccountPAT) (domain.AccountPAT, error)
 	GetPatListByAccountId(ctx context.Context, accountId string) ([]domain.AccountPAT, error)
 	GetAccountByToken(ctx context.Context, token string) (domain.Account, error)
+	GetPatByPatId(ctx context.Context, patId string) (domain.AccountPAT, error)
+	HardDeletePatByPatId(ctx context.Context, patId string) error
 }
 
 type WorkspaceRepositorer interface {

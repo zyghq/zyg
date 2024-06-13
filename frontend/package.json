@@ -31,6 +31,7 @@
     "@tanstack/react-query-devtools": "^5.37.1",
     "@tanstack/react-router": "^1.33.4",
     "@types/lodash": "^4.17.4",
+    "@uidotdev/usehooks": "^2.4.1",
     "boring-avatars": "^1.10.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
