@@ -1,8 +1,5 @@
-import {
-  createFileRoute,
-  useRouterState,
-  useNavigate,
-} from "@tanstack/react-router";
+import * as React from "react";
+import { createFileRoute, useRouterState, Link } from "@tanstack/react-router";
 import { Separator } from "@/components/ui/separator";
 import { z } from "zod";
 import { useToast } from "@/components/ui/use-toast";
@@ -21,11 +18,14 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   ExclamationTriangleIcon,
   ClipboardCopyIcon,
+  CheckCircledIcon,
 } from "@radix-ui/react-icons";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createAccountPat } from "@/db/api";
 import { useWorkspaceStore } from "@/providers";
+import { ArrowLeftIcon } from "lucide-react";
+import { useCopyToClipboard } from "@uidotdev/usehooks";
 
 export const Route = createFileRoute(
   "/_auth/workspaces/$workspaceId/settings/pats/add"
@@ -48,8 +48,11 @@ function AddNewPat() {
   const { workspaceId } = Route.useParams();
   const workspaceStore = useWorkspaceStore();
   const isLoading = useRouterState({ select: (s) => s.isLoading });
-  const navigate = useNavigate();
   const { toast } = useToast();
+  const [generatedToken, setGeneratedToken] = React.useState("");
+
+  const [copiedText, copyToClipboard] = useCopyToClipboard();
+  const hasCopiedText = Boolean(copiedText);
 
   const form = useForm<FormInputs>({
     resolver: zodResolver(formSchema),
@@ -80,14 +83,11 @@ function AddNewPat() {
         return;
       }
       if (data) {
-        const { name } = data;
-        workspaceStore.getState().addPat(data);
+        const { name, token, ...rest } = data;
+        setGeneratedToken(token);
+        workspaceStore.getState().addPat({ name, token: "", ...rest });
         toast({
           description: `Token ${name} is now added.`,
-        });
-        await navigate({
-          to: "/workspaces/$workspaceId/settings/pats",
-          params: { workspaceId },
         });
       }
     } catch (err) {
@@ -128,7 +128,11 @@ function AddNewPat() {
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input {...field} autoComplete="off" />
+                    <Input
+                      {...field}
+                      autoComplete="off"
+                      disabled={isSubmitSuccessful}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -145,6 +149,7 @@ function AddNewPat() {
                       className="resize-none"
                       {...field}
                       autoComplete="off"
+                      disabled={isSubmitSuccessful}
                     />
                   </FormControl>
                   <FormMessage />
@@ -155,26 +160,49 @@ function AddNewPat() {
               <div className="flex my-auto">
                 <div className="flex flex-col space-y-1">
                   <code className="mr-1 rounded-lg border bg-muted p-1">
-                    {"xxxxxxxklasjdkljfhas"}
+                    {generatedToken}
                   </code>
                   <div className="text-sm">
                     {`Please copy this generated token. It won't be shown again.`}
                   </div>
                 </div>
-                <Button type="button" variant="ghost" size="sm">
-                  <ClipboardCopyIcon className="h-4 w-4" />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={hasCopiedText}
+                  aria-disabled={hasCopiedText}
+                  onClick={() => copyToClipboard(generatedToken)}
+                >
+                  {hasCopiedText ? (
+                    <CheckCircledIcon className="h-5 w-5 text-green-500" />
+                  ) : (
+                    <ClipboardCopyIcon className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             )}
             <div className="flex space-x-4">
-              <Button
-                type="submit"
-                disabled={isAdding}
-                aria-disabled={isAdding}
-                aria-label="Add new Personal Access Token"
-              >
-                Add Token
-              </Button>
+              {isSubmitSuccessful ? (
+                <Button asChild>
+                  <Link
+                    to={`/workspaces/${workspaceId}/settings/pats`}
+                    params={{ workspaceId }}
+                  >
+                    <ArrowLeftIcon className="h-4 w-4 mr-1" />
+                    Yes, Copied
+                  </Link>
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  disabled={isAdding}
+                  aria-disabled={isAdding}
+                  aria-label="Add new Personal Access Token"
+                >
+                  Add Token
+                </Button>
+              )}
             </div>
           </form>
         </Form>
