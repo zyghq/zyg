@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeftIcon } from "@radix-ui/react-icons";
+import { ArrowLeftIcon, HamburgerMenuIcon } from "@radix-ui/react-icons";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -18,6 +18,13 @@ export function SideNavMobile({
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button
+          size="icon"
+          variant="ghost"
+          className="flex md:hidden my-auto mr-4"
+        >
+          <HamburgerMenuIcon className="h-4 w-4" />
+        </Button>
+        {/* <Button
           variant="ghost"
           className="my-auto px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 md:hidden"
         >
@@ -51,7 +58,7 @@ export function SideNavMobile({
             ></path>
           </svg>
           <span className="sr-only">Toggle Menu</span>
-        </Button>
+        </Button> */}
       </SheetTrigger>
       <SheetContent side="left" className="p-0">
         <div className="flex h-14 w-full items-center border-b">

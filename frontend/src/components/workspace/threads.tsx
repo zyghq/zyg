@@ -2,11 +2,8 @@ import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-
 import { formatDistanceToNow } from "date-fns";
 import { ThreadChatStoreType } from "@/db/store";
-
 import { ChatBubbleIcon, ResetIcon } from "@radix-ui/react-icons";
 import { ReloadIcon } from "@radix-ui/react-icons";
 import Avatar from "boring-avatars";
@@ -122,39 +119,35 @@ function ThreadItem({
 export function ThreadList({
   workspaceId,
   threads,
-  className,
   variant = "default",
 }: {
   workspaceId: string;
   threads: ThreadChatStoreType[];
-  className: string;
   variant?: string;
 }) {
   return (
-    <ScrollArea className={cn("pr-1", className)}>
+    <div
+      className={cn("flex flex-col gap-2", variant === "compress" && "gap-0")}
+    >
+      {threads.map((item: ThreadChatStoreType) => (
+        <ThreadItem
+          key={item.threadChatId}
+          workspaceId={workspaceId}
+          item={item}
+          variant={variant}
+        />
+      ))}
       <div
-        className={cn("flex flex-col gap-2", variant === "compress" && "gap-0")}
+        className={cn(
+          "flex justify-start",
+          variant === "compress" && "m-1 justify-center"
+        )}
       >
-        {threads.map((item: ThreadChatStoreType) => (
-          <ThreadItem
-            key={item.threadChatId}
-            workspaceId={workspaceId}
-            item={item}
-            variant={variant}
-          />
-        ))}
-        <div
-          className={cn(
-            "flex justify-start",
-            variant === "compress" && "m-1 justify-center"
-          )}
-        >
-          <Button variant="outline" size="sm">
-            <ReloadIcon className="mr-1 h-3 w-3" />
-            Load more
-          </Button>
-        </div>
+        <Button variant="outline" size="sm">
+          <ReloadIcon className="mr-1 h-3 w-3" />
+          Load more
+        </Button>
       </div>
-    </ScrollArea>
+    </div>
   );
 }

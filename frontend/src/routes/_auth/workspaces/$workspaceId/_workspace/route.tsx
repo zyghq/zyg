@@ -1,3 +1,4 @@
+import * as React from "react";
 import { z } from "zod";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
@@ -109,28 +110,54 @@ function WorkspaceLayout() {
   );
 
   return (
-    <div vaul-drawer-wrapper="">
-      <div className="flex flex-col">
-        <Header
-          email={email}
-          workspaceId={workspaceId}
-          workspaceName={workspaceName}
-          metrics={metrics}
-          memberId={memberId}
-        />
-        <div className="flex flex-col">
-          <div className="grid lg:grid-cols-5">
-            <SideNav
-              email={email}
-              workspaceId={workspaceId}
-              workspaceName={workspaceName}
-              metrics={metrics}
-              memberId={memberId}
-            />
-            <Outlet />
-          </div>
-        </div>
+    <React.Fragment>
+      <Header
+        email={email}
+        workspaceId={workspaceId}
+        workspaceName={workspaceName}
+        metrics={metrics}
+        memberId={memberId}
+      />
+      <div className="flex min-h-screen">
+        <aside className="hidden sticky top-14 h-[calc(100vh-theme(spacing.14))] w-80 overflow-y-auto md:block p-4 md:border-r">
+          <SideNav
+            email={email}
+            workspaceId={workspaceId}
+            workspaceName={workspaceName}
+            metrics={metrics}
+            memberId={memberId}
+          />
+        </aside>
+        <main className="flex-1 mt-14 pb-4">
+          <Outlet />
+        </main>
       </div>
-    </div>
+    </React.Fragment>
   );
+
+  // return (
+  //   <div>
+  //     <div className="flex flex-col">
+  //       <Header
+  //         email={email}
+  //         workspaceId={workspaceId}
+  //         workspaceName={workspaceName}
+  //         metrics={metrics}
+  //         memberId={memberId}
+  //       />
+  //       <div className="flex flex-col">
+  //         <div className="grid lg:grid-cols-5">
+  //           <SideNav
+  //             email={email}
+  //             workspaceId={workspaceId}
+  //             workspaceName={workspaceName}
+  //             metrics={metrics}
+  //             memberId={memberId}
+  //           />
+  //           <Outlet />
+  //         </div>
+  //       </div>
+  //     </div>
+  //   </div>
+  // );
 }
