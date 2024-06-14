@@ -5,7 +5,7 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useStore } from "zustand";
 import { WorkspaceStoreStateType } from "@/db/store";
 import { Header } from "@/components/workspace/header";
-import { SideNav } from "@/components/workspace/sidenav";
+import SideNavLinks from "@/components/workspace/sidenav-links";
 import { useAccountStore, useWorkspaceStore } from "@/providers";
 
 //
@@ -119,8 +119,9 @@ function WorkspaceLayout() {
         memberId={memberId}
       />
       <div className="flex min-h-screen">
-        <aside className="hidden sticky top-14 h-[calc(100vh-theme(spacing.14))] w-80 overflow-y-auto md:block p-4 md:border-r">
-          <SideNav
+        <aside className="hidden sticky top-14 h-[calc(100vh-theme(spacing.14))] w-80 overflow-y-auto md:block md:border-r">
+          <SideNavLinks
+            maxHeight="h-[calc(100dvh-8rem)]"
             email={email}
             workspaceId={workspaceId}
             workspaceName={workspaceName}

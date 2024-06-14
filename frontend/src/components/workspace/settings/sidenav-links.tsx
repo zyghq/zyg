@@ -3,11 +3,28 @@ import { Link, useParams } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChatBubbleIcon, CodeIcon } from "@radix-ui/react-icons";
 import { BlocksIcon } from "lucide-react";
 import Avatar from "boring-avatars";
 import { Icons } from "@/components/icons";
-import { ArrowLeftIcon } from "@radix-ui/react-icons";
+import {
+  CodeIcon,
+  ChatBubbleIcon,
+  OpenInNewWindowIcon,
+  ReaderIcon,
+} from "@radix-ui/react-icons";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Bug as BugIcon,
+  LifeBuoy as LifeBuoyIcon,
+  Users as UsersIcon,
+} from "lucide-react";
 
 export function SideNavLinks({
   accountId,
@@ -21,10 +38,10 @@ export function SideNavLinks({
   });
   return (
     <React.Fragment>
-      <ScrollArea className={cn("px-2", maxHeight)}>
-        <div className="px-2 pb-8">
+      <ScrollArea className={maxHeight}>
+        <div className="p-4">
           {/* G1 */}
-          <div className="my-4 flex items-center gap-1">
+          <div className="mb-4 flex items-center gap-1">
             <Avatar name={accountId} size={32} variant="marble" />
             <div>
               <div className="text-xs font-medium">Sanchit Rk</div>
@@ -284,10 +301,44 @@ export function SideNavLinks({
       <div className="sticky bottom-0 flex h-14 border-t">
         <div className="flex w-full items-center">
           <div className="mx-4">
-            <Button size="sm" variant="outline">
-              <ArrowLeftIcon className="mr-2 h-4 w-4" />
-              Support
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <LifeBuoyIcon className="mr-2 h-4 w-4" />
+                  Support
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel className="text-muted-foreground">
+                  How can we help?
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <ChatBubbleIcon className="my-auto mr-2 h-4 w-4" />
+                  <div className="my-auto">Get in touch</div>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link
+                    className="flex"
+                    target="_blank"
+                    href="https://zyg.ai/docs/"
+                  >
+                    <ReaderIcon className="my-auto mr-2 h-4 w-4" />
+                    <div className="my-auto">Documentation</div>
+                    <OpenInNewWindowIcon className="my-auto ml-2 h-4 w-4" />
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <UsersIcon className="my-auto mr-2 h-4 w-4" />
+                  Join Slack
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <BugIcon className="my-auto mr-2 h-4 w-4" />
+                  Bug Report
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
