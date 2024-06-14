@@ -17,13 +17,16 @@ import (
 )
 
 func CheckAuthCredentials(r *http.Request) (string, string, error) {
-	ath := r.Header.Get("Authorization")
-	if ath == "" {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
 		return "", "", fmt.Errorf("no authorization header provided")
 	}
-	cred := strings.Split(ath, " ")
-	scheme := strings.ToLower(cred[0])
-	return scheme, cred[1], nil
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid token")
+	}
+	scheme := strings.ToLower(parts[0])
+	return scheme, parts[1], nil
 }
 
 func AuthenticateAccount(ctx context.Context, authz ports.AuthServicer, scheme string, cred string) (domain.Account, error) {
