@@ -1,5 +1,45 @@
-# Zyg
+<p align="center">
+  <a href="https://www.zyg.ai">
+    <h1 align="center">Zyg</h1>
+  </a>
+  <p align="center">
+    Open source customer support for modern product focused SaaS companies.
+    <br />
+    <a href="https://www.zyg.ai">Website</a>
+    ·
+    <a href="https://x.com/_sanchitrk">X</a>
+    ·
+    <a href="https://github.com/zyghq/zyg/issues">Issues</a>
+  </p>
+</p>
 
-Zyg is an open, source-available, developer-first customer support platform for modern, product-focused SaaS companies.
+## About
 
-![ZygDemo](https://github.com/zyghq/zyg/assets/12800711/5cce2941-8d1e-4a21-a7d7-7bac16ae7881)
+Zyg is an open source customer support platform for modern product focused SaaS companies with built in AI-native features.
+
+## Key Features
+
+- **Widget Support:** Enhance customer support effortlessly with our seamless embeddable widget.
+- **RAG Resolve (Todo):** Save time responding to FAQs with AI powered Semantic Search.
+- **Conversation Analytics (Todo):** Bring the voice of your customers to product planning and development.
+- **more coming soon**...
+
+## Built with
+
+- [Go](https://go.dev/)
+- [PostgreSQL](https://www.postgresql.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [shadcn/ui](https://ui.shadcn.com/)
+- [TanStack](https://tanstack.com/)
+- [Next.js](https://nextjs.org/)
+- [Langchain](https://langchain.com/)
+- [Supabase](https://supabase.com/)
+
+## Feature Requests
+
+To request a feature, open a [GitHub issue](https://github.com/zyghq/zyg/issues). If you don't have a GitHub account, you can DM me on [X](https://x.com/_sanchitrk).
+
+
+## Getting Started for Developers
+
+Todo;
