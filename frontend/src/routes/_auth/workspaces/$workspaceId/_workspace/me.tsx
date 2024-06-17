@@ -1,16 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useStore } from "zustand";
 import { WorkspaceStoreStateType } from "@/db/store";
-
-// import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-// import { DoubleArrowUpIcon } from "@radix-ui/react-icons";
 import { CheckCircle, CircleIcon, EclipseIcon } from "lucide-react";
-
 import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
 import { ThreadList } from "@/components/workspace/threads";
-import { reasonsFiltersType } from "@/db/store";
+import { reasonsFiltersType, assigneesFiltersType } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
 
 export const Route = createFileRoute(
@@ -22,7 +18,7 @@ export const Route = createFileRoute(
 function MyThreads() {
   const workspaceStore = useWorkspaceStore();
 
-  const { status, reasons, sort } = Route.useSearch();
+  const { status, reasons, sort, assignees } = Route.useSearch();
   const navigate = useNavigate();
 
   const workspaceId = useStore(
@@ -39,10 +35,17 @@ function MyThreads() {
       state.viewMyTodoThreads(
         state,
         memberId,
+        assignees as assigneesFiltersType,
         reasons as reasonsFiltersType,
         sort
       )
   );
+
+  const assignedMembers = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreStateType) => state.viewAssignees(state)
+  );
+
   return (
     <div className="container">
       <div className="mx-1 my-2 text-xl sm:my-4">My Threads</div>
@@ -84,7 +87,10 @@ function MyThreads() {
             </TabsTrigger>
           </TabsList>
           <div className="mt-4 flex gap-1 sm:my-auto">
-            <Filters />
+            <Filters
+              assignedMembers={assignedMembers}
+              disableAssigneeFilter={true}
+            />
             <Sorts />
           </div>
         </div>

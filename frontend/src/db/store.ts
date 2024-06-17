@@ -129,8 +129,14 @@ export interface IWorkspaceEntities {
 type ReplyStatus = "replied" | "unreplied";
 
 export type reasonsFiltersType = ReplyStatus | ReplyStatus[] | undefined;
+export type assigneesFiltersType = string | string[] | undefined;
 
 export type sortByType = "last-message-dsc" | "created-asc" | "created-dsc";
+
+export type AssigneeType = {
+  assigneeId: string;
+  name: string;
+};
 
 interface IWorkspaceStoreActions {
   updateWorkspaceStore(): void;
@@ -146,21 +152,25 @@ interface IWorkspaceStoreActions {
   ): ThreadChatStoreType | null;
   viewAllTodoThreads(
     state: WorkspaceStoreStateType,
+    assigness: assigneesFiltersType,
     reasons: reasonsFiltersType,
     sortBy: sortByType
   ): ThreadChatStoreType[];
   viewMyTodoThreads(
     state: WorkspaceStoreStateType,
     memberId: string,
+    assignees: assigneesFiltersType,
     reasons: reasonsFiltersType,
     sortBy: sortByType
   ): ThreadChatStoreType[];
-  viewUnassignedThreads(
+  viewUnassignedTodoThreads(
     state: WorkspaceStoreStateType,
+    assignees: assigneesFiltersType,
     reasons: reasonsFiltersType,
     sortBy: sortByType
   ): ThreadChatStoreType[];
   viewCustomerName(state: WorkspaceStoreStateType, customerId: string): string;
+  viewAssignees(state: WorkspaceStoreStateType): AssigneeType[];
   updateWorkspaceName(name: string): void;
   viewLabels(state: WorkspaceStoreStateType): WorkspaceLabelStoreType[];
   viewMembers(state: WorkspaceStoreStateType): WorkspaceMemberStoreType[];
@@ -200,6 +210,25 @@ function filterByReasons(
   return threads;
 }
 
+function filterByAssignees(
+  threads: ThreadChatStoreType[],
+  assignees: assigneesFiltersType
+) {
+  if (assignees && Array.isArray(assignees)) {
+    const uniqueAssignees = [...new Set(assignees)];
+    const filtered = [];
+    for (const assignee of uniqueAssignees) {
+      filtered.push(...threads.filter((t) => t.assigneeId === assignee));
+    }
+    return filtered;
+  }
+  if (assignees && typeof assignees === "string") {
+    return threads.filter((t) => t.assigneeId === assignees);
+  }
+  // no change
+  return threads;
+}
+
 function sortThreads(threads: ThreadChatStoreType[], sortBy: sortByType) {
   if (sortBy === "created-dsc") {
     return _.sortBy(threads, "createdAt").reverse();
@@ -231,18 +260,21 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
       state.threadChats?.[threadChatId] || null,
     viewAllTodoThreads: (
       state: WorkspaceStoreStateType,
+      assigness: assigneesFiltersType,
       reasons: reasonsFiltersType,
       sortBy: sortByType = "last-message-dsc"
     ) => {
       const threads = state.threadChats ? Object.values(state.threadChats) : [];
       const todoThreads = threads.filter((t) => t.status === "todo");
-      const reasonsFiltered = filterByReasons(todoThreads, reasons);
+      const assigneesFiltered = filterByAssignees(todoThreads, assigness);
+      const reasonsFiltered = filterByReasons(assigneesFiltered, reasons);
       const sortedThreads = sortThreads(reasonsFiltered, sortBy);
       return sortedThreads;
     },
     viewMyTodoThreads: (
       state: WorkspaceStoreStateType,
       memberId: string,
+      assignees: assigneesFiltersType,
       reasons: reasonsFiltersType,
       sortBy: sortByType = "last-message-dsc"
     ) => {
@@ -250,12 +282,14 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
       const myThreads = threads.filter(
         (t) => t.status === "todo" && t.assigneeId === memberId
       );
-      const reasonsFiltered = filterByReasons(myThreads, reasons);
+      const assigneesFiltered = filterByAssignees(myThreads, assignees);
+      const reasonsFiltered = filterByReasons(assigneesFiltered, reasons);
       const sortedThreads = sortThreads(reasonsFiltered, sortBy);
       return sortedThreads;
     },
-    viewUnassignedThreads: (
+    viewUnassignedTodoThreads: (
       state: WorkspaceStoreStateType,
+      assignees: assigneesFiltersType,
       reasons,
       sortBy = "last-message-dsc"
     ) => {
@@ -263,13 +297,40 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
       const unassignedThreads = threads.filter(
         (t) => t.status === "todo" && !t.assigneeId
       );
-      const reasonsFiltered = filterByReasons(unassignedThreads, reasons);
+      const assigneesFiltered = filterByAssignees(unassignedThreads, assignees);
+      const reasonsFiltered = filterByReasons(assigneesFiltered, reasons);
       const sortedThreads = sortThreads(reasonsFiltered, sortBy);
       return sortedThreads;
     },
     viewCustomerName: (state: WorkspaceStoreStateType, customerId: string) => {
       const customer = state.customers?.[customerId];
       return customer ? customer.name : "";
+    },
+    viewAssignees: (state: WorkspaceStoreStateType) => {
+      // Get all threads
+      const threads = state.threadChats ? Object.values(state.threadChats) : [];
+
+      // Extract unique, valid assignee IDs
+      const assigneeIds = _.uniq(
+        threads
+          .map((t) => t.assigneeId)
+          .filter((a): a is string => a !== undefined)
+      );
+
+      // Map assignee IDs to members
+      const assignees = assigneeIds
+        .map((a) => {
+          const member = state.members?.[a];
+          if (member) {
+            return {
+              assigneeId: member.memberId,
+              name: member.name || "n/a",
+            } as AssigneeType;
+          }
+        })
+        .filter((m): m is AssigneeType => m !== undefined);
+
+      return assignees;
     },
     viewLabels: (state: WorkspaceStoreStateType) => {
       const labels = state.labels ? Object.values(state.labels) : [];

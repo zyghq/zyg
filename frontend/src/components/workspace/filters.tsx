@@ -1,4 +1,5 @@
 import React from "react";
+import { cn } from "@/lib/utils";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,6 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
-  DropdownMenuItem,
   DropdownMenuPortal,
   DropdownMenuSeparator,
   DropdownMenuSub,
@@ -15,9 +15,19 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Separator } from "@/components/ui/separator";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 
-import { MixerHorizontalIcon } from "@radix-ui/react-icons";
+import { Separator } from "@/components/ui/separator";
+import { MixerHorizontalIcon, CheckIcon } from "@radix-ui/react-icons";
+import Avatar from "boring-avatars";
+import { AssigneeType } from "@/db/store";
 
 const routeApi = getRouteApi("/_auth/workspaces/$workspaceId/_workspace");
 
@@ -103,7 +113,7 @@ function ReasonsSubMenu({
         {selectedReasons && selectedReasons.length > 0 && (
           <React.Fragment>
             <Separator orientation="vertical" className="mx-1 h-3" />
-            <Badge variant="secondary" className="px-1 text-xs font-normal">
+            <Badge variant="secondary" className="px-1 text-xs font-normal p-0">
               {selectedReasons.length} selected
             </Badge>
           </React.Fragment>
@@ -221,7 +231,7 @@ function PrioritiesSubMenu({
         {selectedPriorities && selectedPriorities.length > 0 && (
           <React.Fragment>
             <Separator orientation="vertical" className="mx-1 h-3" />
-            <Badge variant="secondary" className="px-1 text-xs font-normal">
+            <Badge variant="secondary" className="px-1 text-xs font-normal p-0">
               {selectedPriorities.length} selected
             </Badge>
           </React.Fragment>
@@ -279,9 +289,160 @@ function PrioritiesSubMenu({
   );
 }
 
-export function Filters() {
+function AssigneeSubMenu({
+  assignees,
+  assignedMembers,
+}: {
+  assignees: string[] | string | undefined;
+  assignedMembers: AssigneeType[];
+}) {
+  const navigate = useNavigate();
+  const [selectedMembers, setSelectedMembers] = React.useState<
+    string | string[]
+  >("");
+
+  React.useEffect(() => {
+    // check if multiple members are selected
+    if (assignees && Array.isArray(assignees)) {
+      setSelectedMembers([...assignees]);
+      // check if only 1 member(s) is selected
+    } else if (assignees && typeof assignees === "string") {
+      setSelectedMembers([assignees]);
+      // if no members are selected
+    } else {
+      setSelectedMembers("");
+    }
+  }, [assignees]);
+
+  function onChecked(member: string) {
+    return navigate({
+      search: (prev: { assignees: string[] | string }) => {
+        // search params
+        const { assignees, ...others } = prev;
+
+        // no existing members - add new member
+        if (!assignees || assignees === "") {
+          return { assignees: member, ...others };
+        }
+
+        // found a member - merge with existing
+        if (typeof assignees === "string") {
+          return { assignees: [assignees, member], ...others };
+        }
+        // multiple members selected add more to existing
+        if (Array.isArray(assignees)) {
+          const uniques = [...new Set([...assignees, member])];
+          return { assignees: uniques, ...others };
+        }
+      },
+    });
+  }
+
+  function onUnchecked(member: string) {
+    return navigate({
+      search: (prev: { assignees: string[] | string | null }) => {
+        const { assignees, ...others } = prev;
+
+        // no existing members - nothing to do
+        if (!assignees || assignees === "") {
+          return { ...others };
+        }
+
+        // found a member - remove it
+        if (typeof assignees === "string" && assignees === member) {
+          return { ...others };
+        }
+
+        // multiple members selected - remove the member
+        if (Array.isArray(assignees)) {
+          const filtered = assignees.filter((r) => r !== member);
+          if (filtered.length === 0) {
+            return { ...others };
+          }
+          if (filtered.length === 1) {
+            return { assignees: filtered[0], ...others };
+          }
+          return { assignees: filtered, ...others };
+        }
+      },
+    });
+  }
+
+  function onSelect(member: string) {
+    const isChecked =
+      member === selectedMembers ||
+      (Array.isArray(selectedMembers) && selectedMembers.includes(member));
+
+    if (isChecked) {
+      onUnchecked(member);
+    } else {
+      onChecked(member);
+    }
+  }
+
+  const isChecked = (member: string) => {
+    const t =
+      member === selectedMembers ||
+      (Array.isArray(selectedMembers) && selectedMembers.includes(member));
+    return t;
+  };
+
+  return (
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger>
+        Assignee
+        {selectedMembers && selectedMembers.length > 0 && (
+          <React.Fragment>
+            <Separator orientation="vertical" className="mx-1 h-3" />
+            <Badge variant="secondary" className="px-1 text-xs font-normal p-0">
+              {selectedMembers.length} selected
+            </Badge>
+          </React.Fragment>
+        )}
+      </DropdownMenuSubTrigger>
+      <DropdownMenuPortal>
+        <DropdownMenuSubContent className="mx-2">
+          <Command>
+            <CommandList>
+              <CommandInput placeholder="Filter" />
+              <CommandEmpty>No results</CommandEmpty>
+              <CommandGroup>
+                {assignedMembers.map((m) => (
+                  <CommandItem
+                    key={m.assigneeId}
+                    onSelect={() => onSelect(m.assigneeId)}
+                    className="text-sm"
+                  >
+                    <div className="flex gap-2">
+                      <Avatar name={m.assigneeId} size={20} />
+                      {m.name}
+                    </div>
+                    <CheckIcon
+                      className={cn(
+                        "ml-auto h-4 w-4",
+                        isChecked(m.assigneeId) ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </DropdownMenuSubContent>
+      </DropdownMenuPortal>
+    </DropdownMenuSub>
+  );
+}
+
+export function Filters({
+  assignedMembers,
+  disableAssigneeFilter = false,
+}: {
+  assignedMembers: AssigneeType[];
+  disableAssigneeFilter?: boolean;
+}) {
   const routeSearch = routeApi.useSearch();
-  const { reasons, priorities } = routeSearch;
+  const { reasons, priorities, assignees } = routeSearch;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -295,19 +456,17 @@ export function Filters() {
           <ReasonsSubMenu reasons={reasons} />
           <PrioritiesSubMenu priorities={priorities} />
         </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>Assignee</DropdownMenuSubTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent className="mx-2">
-                <DropdownMenuItem>Member 1</DropdownMenuItem>
-                <DropdownMenuItem>Member 2</DropdownMenuItem>
-                <DropdownMenuItem>Member 3</DropdownMenuItem>
-              </DropdownMenuSubContent>
-            </DropdownMenuPortal>
-          </DropdownMenuSub>
-        </DropdownMenuGroup>
+        {!disableAssigneeFilter && (
+          <React.Fragment>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <AssigneeSubMenu
+                assignees={assignees}
+                assignedMembers={assignedMembers}
+              />
+            </DropdownMenuGroup>
+          </React.Fragment>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

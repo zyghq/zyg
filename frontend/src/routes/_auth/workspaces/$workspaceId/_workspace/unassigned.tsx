@@ -8,7 +8,7 @@ import { CheckCircle, CircleIcon, EclipseIcon } from "lucide-react";
 import { ThreadList } from "@/components/workspace/threads";
 import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
-import { reasonsFiltersType } from "@/db/store";
+import { reasonsFiltersType, assigneesFiltersType } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
 
 export const Route = createFileRoute(
@@ -19,7 +19,7 @@ export const Route = createFileRoute(
 
 function UnassignedThreads() {
   const workspaceStore = useWorkspaceStore();
-  const { status, reasons, sort } = Route.useSearch();
+  const { status, reasons, sort, assignees } = Route.useSearch();
   const navigate = useNavigate();
 
   const workspaceId = useStore(
@@ -27,8 +27,19 @@ function UnassignedThreads() {
     (state: WorkspaceStoreStateType) => state.getWorkspaceId(state)
   );
   const threads = useStore(workspaceStore, (state: WorkspaceStoreStateType) =>
-    state.viewUnassignedThreads(state, reasons as reasonsFiltersType, sort)
+    state.viewUnassignedTodoThreads(
+      state,
+      assignees as assigneesFiltersType,
+      reasons as reasonsFiltersType,
+      sort
+    )
   );
+
+  const assignedMembers = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreStateType) => state.viewAssignees(state)
+  );
+
   return (
     <div className="container">
       <div className="mx-1 my-2 text-xl sm:my-4">Unassigned Threads</div>
@@ -70,7 +81,7 @@ function UnassignedThreads() {
             </TabsTrigger>
           </TabsList>
           <div className="mt-4 flex gap-1 sm:my-auto">
-            <Filters />
+            <Filters assignedMembers={assignedMembers} />
             <Sorts />
           </div>
         </div>

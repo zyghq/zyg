@@ -70,6 +70,12 @@ const prioritiesSchema = (validValues: string[]) => {
   ]);
 };
 
+const assigneesScheme = z.union([
+  z.string(),
+  z.array(z.string()),
+  z.undefined(),
+]);
+
 const threadSearchSchema = z.object({
   status: z.enum(["todo", "snoozed", "done"]).catch("todo"),
   reasons: reasonsSchema(["replied", "unreplied"]).catch(""),
@@ -77,6 +83,7 @@ const threadSearchSchema = z.object({
     .enum(["last-message-dsc", "created-asc", "created-dsc"])
     .catch("last-message-dsc"),
   priorities: prioritiesSchema(["urgent", "high", "normal", "low"]).catch(""),
+  assignees: assigneesScheme.catch(""),
 });
 
 export const Route = createFileRoute(
@@ -135,30 +142,4 @@ function WorkspaceLayout() {
       </div>
     </React.Fragment>
   );
-
-  // return (
-  //   <div>
-  //     <div className="flex flex-col">
-  //       <Header
-  //         email={email}
-  //         workspaceId={workspaceId}
-  //         workspaceName={workspaceName}
-  //         metrics={metrics}
-  //         memberId={memberId}
-  //       />
-  //       <div className="flex flex-col">
-  //         <div className="grid lg:grid-cols-5">
-  //           <SideNav
-  //             email={email}
-  //             workspaceId={workspaceId}
-  //             workspaceName={workspaceName}
-  //             metrics={metrics}
-  //             memberId={memberId}
-  //           />
-  //           <Outlet />
-  //         </div>
-  //       </div>
-  //     </div>
-  //   </div>
-  // );
 }

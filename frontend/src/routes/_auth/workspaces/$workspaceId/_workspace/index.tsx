@@ -10,7 +10,7 @@ import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
 import { ThreadList } from "@/components/workspace/threads";
 
-import { reasonsFiltersType } from "@/db/store";
+import { reasonsFiltersType, assigneesFiltersType } from "@/db/store";
 
 export const Route = createFileRoute(
   "/_auth/workspaces/$workspaceId/_workspace/"
@@ -21,15 +21,26 @@ export const Route = createFileRoute(
 function AllThreads() {
   const workspaceStore = useWorkspaceStore();
   const navigate = useNavigate();
-  const { status, reasons, sort } = Route.useSearch();
+  const { status, reasons, sort, assignees } = Route.useSearch();
 
   const workspaceId = useStore(
     workspaceStore,
     (state: WorkspaceStoreStateType) => state.getWorkspaceId(state)
   );
   const threads = useStore(workspaceStore, (state: WorkspaceStoreStateType) =>
-    state.viewAllTodoThreads(state, reasons as reasonsFiltersType, sort)
+    state.viewAllTodoThreads(
+      state,
+      assignees as assigneesFiltersType,
+      reasons as reasonsFiltersType,
+      sort
+    )
   );
+
+  const assignedMembers = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreStateType) => state.viewAssignees(state)
+  );
+
   return (
     <div className="container">
       <div className="mx-1 my-2 text-xl sm:my-4">All Threads</div>
@@ -71,7 +82,7 @@ function AllThreads() {
             </TabsTrigger>
           </TabsList>
           <div className="mt-4 flex gap-1 sm:my-auto">
-            <Filters />
+            <Filters assignedMembers={assignedMembers} />
             <Sorts />
           </div>
         </div>
