@@ -74,6 +74,7 @@ function initialWorkspaceData(): IWorkspaceEntities {
     labels: null,
     members: null,
     pats: null,
+    currentViewableThreads: [],
   };
 }
 

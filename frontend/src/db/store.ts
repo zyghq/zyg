@@ -124,6 +124,7 @@ export interface IWorkspaceEntities {
   labels: WorkspaceLabelMapStoreType | null;
   members: WorkspaceMemberMapStoreType | null;
   pats: AccountPatMapStoreType | null;
+  currentViewableThreads: ThreadChatStoreType[] | [];
 }
 
 type ReplyStatus = "replied" | "unreplied";
@@ -169,6 +170,9 @@ interface IWorkspaceStoreActions {
     reasons: reasonsFiltersType,
     sortBy: sortByType
   ): ThreadChatStoreType[];
+  viewCurrentViewableThreads(
+    state: WorkspaceStoreStateType
+  ): ThreadChatStoreType[];
   viewCustomerName(state: WorkspaceStoreStateType, customerId: string): string;
   viewAssignees(state: WorkspaceStoreStateType): AssigneeType[];
   updateWorkspaceName(name: string): void;
@@ -177,6 +181,9 @@ interface IWorkspaceStoreActions {
   viewPats(state: WorkspaceStoreStateType): AccountPatStoreType[];
   addPat(pat: AccountPatStoreType): void;
   deletePat(patId: string): void;
+  // setCurrentViewableThreads(
+  //   currentViewableThreads: ThreadChatStoreType[]
+  // ): void;
 }
 
 export type WorkspaceStoreStateType = IWorkspaceEntities &
@@ -269,6 +276,7 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
       const assigneesFiltered = filterByAssignees(todoThreads, assigness);
       const reasonsFiltered = filterByReasons(assigneesFiltered, reasons);
       const sortedThreads = sortThreads(reasonsFiltered, sortBy);
+      state.currentViewableThreads = [...sortedThreads];
       return sortedThreads;
     },
     viewMyTodoThreads: (
@@ -285,6 +293,7 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
       const assigneesFiltered = filterByAssignees(myThreads, assignees);
       const reasonsFiltered = filterByReasons(assigneesFiltered, reasons);
       const sortedThreads = sortThreads(reasonsFiltered, sortBy);
+      state.currentViewableThreads = [...sortedThreads];
       return sortedThreads;
     },
     viewUnassignedTodoThreads: (
@@ -300,8 +309,20 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
       const assigneesFiltered = filterByAssignees(unassignedThreads, assignees);
       const reasonsFiltered = filterByReasons(assigneesFiltered, reasons);
       const sortedThreads = sortThreads(reasonsFiltered, sortBy);
+      state.currentViewableThreads = [...sortedThreads];
       return sortedThreads;
     },
+    viewCurrentViewableThreads: (
+      state: WorkspaceStoreStateType
+    ): ThreadChatStoreType[] => {
+      return state.currentViewableThreads;
+    },
+    // setCurrentViewableThreads(currentViewableThreads) {
+    //   set((state) => {
+    //     state.currentViewableThreads = [...currentViewableThreads];
+    //     return state;
+    //   });
+    // },
     viewCustomerName: (state: WorkspaceStoreStateType, customerId: string) => {
       const customer = state.customers?.[customerId];
       return customer ? customer.name : "";

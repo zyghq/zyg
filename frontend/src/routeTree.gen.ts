@@ -25,7 +25,6 @@ import { Route as AuthWorkspacesWorkspaceIdWorkspaceRouteImport } from './routes
 import { Route as AuthWorkspacesWorkspaceIdSetupIndexImport } from './routes/_auth/workspaces/$workspaceId/setup/index'
 import { Route as AuthWorkspacesWorkspaceIdSettingsIndexImport } from './routes/_auth/workspaces/$workspaceId/settings/index'
 import { Route as AuthWorkspacesWorkspaceIdWorkspaceIndexImport } from './routes/_auth/workspaces/$workspaceId/_workspace/index'
-import { Route as AuthWorkspacesWorkspaceIdThreadsThreadIdImport } from './routes/_auth/workspaces/$workspaceId/threads/$threadId'
 import { Route as AuthWorkspacesWorkspaceIdSettingsWebhooksImport } from './routes/_auth/workspaces/$workspaceId/settings/webhooks'
 import { Route as AuthWorkspacesWorkspaceIdSettingsSlackImport } from './routes/_auth/workspaces/$workspaceId/settings/slack'
 import { Route as AuthWorkspacesWorkspaceIdSettingsMembersImport } from './routes/_auth/workspaces/$workspaceId/settings/members'
@@ -39,6 +38,7 @@ import { Route as AuthWorkspacesWorkspaceIdSettingsBillingImport } from './route
 import { Route as AuthWorkspacesWorkspaceIdSettingsAiImport } from './routes/_auth/workspaces/$workspaceId/settings/ai'
 import { Route as AuthWorkspacesWorkspaceIdWorkspaceUnassignedImport } from './routes/_auth/workspaces/$workspaceId/_workspace/unassigned'
 import { Route as AuthWorkspacesWorkspaceIdWorkspaceMeImport } from './routes/_auth/workspaces/$workspaceId/_workspace/me'
+import { Route as AuthWorkspacesWorkspaceIdThreadsThreadIdIndexImport } from './routes/_auth/workspaces/$workspaceId/threads/$threadId/index'
 import { Route as AuthWorkspacesWorkspaceIdSettingsPatsIndexImport } from './routes/_auth/workspaces/$workspaceId/settings/pats/index'
 import { Route as AuthWorkspacesWorkspaceIdSettingsPatsAddImport } from './routes/_auth/workspaces/$workspaceId/settings/pats/add'
 import { Route as AuthWorkspacesWorkspaceIdWorkspaceLabelsLabelIdImport } from './routes/_auth/workspaces/$workspaceId/_workspace/labels.$labelId'
@@ -120,12 +120,6 @@ const AuthWorkspacesWorkspaceIdWorkspaceIndexRoute =
     getParentRoute: () => AuthWorkspacesWorkspaceIdWorkspaceRouteRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdThreadsThreadIdRoute =
-  AuthWorkspacesWorkspaceIdThreadsThreadIdImport.update({
-    path: '/threads/$threadId',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdRoute,
-  } as any)
-
 const AuthWorkspacesWorkspaceIdSettingsWebhooksRoute =
   AuthWorkspacesWorkspaceIdSettingsWebhooksImport.update({
     path: '/webhooks',
@@ -202,6 +196,12 @@ const AuthWorkspacesWorkspaceIdWorkspaceMeRoute =
   AuthWorkspacesWorkspaceIdWorkspaceMeImport.update({
     path: '/me',
     getParentRoute: () => AuthWorkspacesWorkspaceIdWorkspaceRouteRoute,
+  } as any)
+
+const AuthWorkspacesWorkspaceIdThreadsThreadIdIndexRoute =
+  AuthWorkspacesWorkspaceIdThreadsThreadIdIndexImport.update({
+    path: '/threads/$threadId/',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdRoute,
   } as any)
 
 const AuthWorkspacesWorkspaceIdSettingsPatsIndexRoute =
@@ -394,13 +394,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsWebhooksImport
       parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
     }
-    '/_auth/workspaces/$workspaceId/threads/$threadId': {
-      id: '/_auth/workspaces/$workspaceId/threads/$threadId'
-      path: '/threads/$threadId'
-      fullPath: '/workspaces/$workspaceId/threads/$threadId'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdThreadsThreadIdImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdImport
-    }
     '/_auth/workspaces/$workspaceId/_workspace/': {
       id: '/_auth/workspaces/$workspaceId/_workspace/'
       path: '/'
@@ -443,6 +436,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsPatsIndexImport
       parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
     }
+    '/_auth/workspaces/$workspaceId/threads/$threadId/': {
+      id: '/_auth/workspaces/$workspaceId/threads/$threadId/'
+      path: '/threads/$threadId'
+      fullPath: '/workspaces/$workspaceId/threads/$threadId'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdThreadsThreadIdIndexImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdImport
+    }
   }
 }
 
@@ -476,8 +476,8 @@ export const routeTree = rootRoute.addChildren({
           AuthWorkspacesWorkspaceIdSettingsPatsAddRoute,
           AuthWorkspacesWorkspaceIdSettingsPatsIndexRoute,
         }),
-      AuthWorkspacesWorkspaceIdThreadsThreadIdRoute,
       AuthWorkspacesWorkspaceIdSetupIndexRoute,
+      AuthWorkspacesWorkspaceIdThreadsThreadIdIndexRoute,
     }),
     AuthWorkspacesAddRoute,
     AuthWorkspacesIndexRoute,

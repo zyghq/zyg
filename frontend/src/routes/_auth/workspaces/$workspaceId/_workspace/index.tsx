@@ -35,7 +35,6 @@ function AllThreads() {
       sort
     )
   );
-
   const assignedMembers = useStore(
     workspaceStore,
     (state: WorkspaceStoreStateType) => state.viewAssignees(state)

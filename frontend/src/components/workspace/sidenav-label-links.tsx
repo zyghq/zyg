@@ -23,7 +23,7 @@ export function SideNavLabelLinks({
   labels: LabelMetricsStoreType[];
 }) {
   const routeSearch = routeApi.useSearch();
-  const { status } = routeSearch;
+  const { status, sort } = routeSearch;
   const [isOpen, setIsOpen] = React.useState(false);
   return (
     <Collapsible
@@ -51,7 +51,7 @@ export function SideNavLabelLinks({
             key={label.labelId}
             to="/workspaces/$workspaceId/labels/$labelId"
             params={{ workspaceId, labelId: label.labelId }}
-            search={{ status: status }}
+            search={{ status: status, sort: sort }}
             className={cn(
               buttonVariants({ variant: "ghost" }),
               "flex w-full justify-between px-3 dark:text-accent-foreground"
