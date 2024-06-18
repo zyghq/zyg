@@ -92,6 +92,10 @@ function ThreadDetail() {
   console.log("error", error);
   console.log("data", data);
 
+  if (currentThreads.length === 0 && activeThread) {
+    currentThreads.push(activeThread);
+  }
+
   return (
     <React.Fragment>
       <div className="flex min-h-screen">
@@ -103,7 +107,11 @@ function ThreadDetail() {
                   <ArrowLeftIcon className="h-4 w-4" />
                 </Link>
               </Button>
-              <SidePanelThreadList title="All Threads" />
+              <SidePanelThreadList
+                threads={currentThreads}
+                title="All Threads"
+                workspaceId={workspaceId}
+              />
               {prevItem ? (
                 <Button variant="outline" size="icon" asChild>
                   <Link
@@ -143,7 +151,6 @@ function ThreadDetail() {
                   workspaceId={workspaceId}
                   threads={currentThreads}
                   variant="compress"
-                  activeThread={activeThread}
                 />
               </ScrollArea>
             </ResizablePanel>

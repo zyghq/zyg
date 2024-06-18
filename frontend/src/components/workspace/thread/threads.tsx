@@ -120,41 +120,23 @@ export function ThreadList({
   workspaceId,
   threads,
   variant = "default",
-  activeThread = null,
 }: {
   workspaceId: string;
   threads: ThreadChatStoreType[];
   variant?: string;
-  activeThread?: ThreadChatStoreType | null;
 }) {
-  const renderActiveIf = (thread: ThreadChatStoreType | null) => {
-    if (thread) {
-      return (
-        <ThreadItem
-          key={thread.threadChatId}
-          workspaceId={workspaceId}
-          item={thread}
-          variant={variant}
-        />
-      );
-    }
-    return null;
-  };
-
   return (
     <div
       className={cn("flex flex-col gap-2", variant === "compress" && "gap-0")}
     >
-      {threads && threads.length > 0
-        ? threads.map((item: ThreadChatStoreType) => (
-            <ThreadItem
-              key={item.threadChatId}
-              workspaceId={workspaceId}
-              item={item}
-              variant={variant}
-            />
-          ))
-        : renderActiveIf(activeThread)}
+      {threads.map((item: ThreadChatStoreType) => (
+        <ThreadItem
+          key={item.threadChatId}
+          workspaceId={workspaceId}
+          item={item}
+          variant={variant}
+        />
+      ))}
     </div>
   );
 }
