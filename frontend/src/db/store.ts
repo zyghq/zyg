@@ -181,9 +181,6 @@ interface IWorkspaceStoreActions {
   viewPats(state: WorkspaceStoreStateType): AccountPatStoreType[];
   addPat(pat: AccountPatStoreType): void;
   deletePat(patId: string): void;
-  // setCurrentViewableThreads(
-  //   currentViewableThreads: ThreadChatStoreType[]
-  // ): void;
 }
 
 export type WorkspaceStoreStateType = IWorkspaceEntities &

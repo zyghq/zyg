@@ -1,12 +1,12 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
-  // ArrowDownIcon,
-  // ArrowUpIcon,
+  ArrowDownIcon,
+  ArrowUpIcon,
   ChatBubbleIcon,
   DotsHorizontalIcon,
-  HomeIcon,
   ResetIcon,
   ArrowLeftIcon,
 } from "@radix-ui/react-icons";
@@ -24,6 +24,8 @@ import { useStore } from "zustand";
 import { WorkspaceStoreStateType } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
 import { ThreadList } from "@/components/workspace/thread/threads";
+import { ThreadChatStoreType } from "@/db/store";
+import { getWorkspaceThreadChatMessages } from "@/db/api";
 
 export const Route = createFileRoute(
   "/_auth/workspaces/$workspaceId/threads/$threadId/"
@@ -31,9 +33,23 @@ export const Route = createFileRoute(
   component: ThreadDetail,
 });
 
+function getPrevNextFromCurrent(
+  threads: ThreadChatStoreType[],
+  threadId: string
+) {
+  const currentIndex = threads.findIndex(
+    (thread) => thread.threadChatId === threadId
+  );
+
+  const prevItem = threads[currentIndex - 1] || null;
+  const nextItem = threads[currentIndex + 1] || null;
+
+  return { prevItem, nextItem };
+}
+
 function ThreadDetail() {
+  const { token } = Route.useRouteContext();
   const { workspaceId, threadId } = Route.useParams();
-  const { history } = useRouter();
   const workspaceStore = useWorkspaceStore();
 
   const currentThreads = useStore(
@@ -46,25 +62,68 @@ function ThreadDetail() {
     (state: WorkspaceStoreStateType) => state.getThreadChatItem(state, threadId)
   );
 
+  const customerName = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreStateType) =>
+      state.viewCustomerName(state, activeThread?.customerId || "")
+  );
+
+  const threadStatus = activeThread?.status || "n/a";
+
+  const { prevItem, nextItem } = getPrevNextFromCurrent(
+    currentThreads,
+    threadId
+  );
+
+  const { isPending, error, data } = useQuery({
+    queryKey: ["messages", threadId, workspaceId, token],
+    queryFn: async () => {
+      const { error, data } = await getWorkspaceThreadChatMessages(
+        token,
+        workspaceId,
+        threadId
+      );
+      if (error) throw new Error("failed to fetch thread messages");
+      return data;
+    },
+  });
+
+  console.log("isPending", isPending);
+  console.log("error", error);
+  console.log("data", data);
+
   return (
     <React.Fragment>
       <div className="flex min-h-screen">
         <aside className="sticky overflow-y-auto md:border-r">
           <div className="flex">
             <div className="flex flex-col gap-4 px-2 py-4">
-              <Button
-                onClick={() => history.go(-1)}
-                variant="outline"
-                size="icon"
-              >
-                <ArrowLeftIcon className="h-4 w-4" />
-              </Button>
               <Button variant="outline" size="icon" asChild>
                 <Link to={"/workspaces/$workspaceId"} params={{ workspaceId }}>
-                  <HomeIcon className="h-4 w-4" />
+                  <ArrowLeftIcon className="h-4 w-4" />
                 </Link>
               </Button>
               <SidePanelThreadList title="All Threads" />
+              {prevItem ? (
+                <Button variant="outline" size="icon" asChild>
+                  <Link
+                    to="/workspaces/$workspaceId/threads/$threadId"
+                    params={{ workspaceId, threadId: prevItem.threadChatId }}
+                  >
+                    <ArrowUpIcon className="h-4 w-4" />
+                  </Link>
+                </Button>
+              ) : null}
+              {nextItem ? (
+                <Button variant="outline" size="icon" asChild>
+                  <Link
+                    to="/workspaces/$workspaceId/threads/$threadId"
+                    params={{ workspaceId, threadId: nextItem.threadChatId }}
+                  >
+                    <ArrowDownIcon className="h-4 w-4" />
+                  </Link>
+                </Button>
+              ) : null}
             </div>
           </div>
         </aside>
@@ -96,12 +155,14 @@ function ThreadDetail() {
                     <div className="flex h-14 min-h-14 flex-col justify-center border-b px-4">
                       <div className="flex">
                         <div className="text-sm font-semibold">
-                          {"customerName"}
+                          {customerName}
                         </div>
                       </div>
                       <div className="flex items-center">
                         <CircleIcon className="mr-1 h-3 w-3 text-indigo-500" />
-                        <span className="items-center text-xs">{"status"}</span>
+                        <span className="items-center text-xs capitalize">
+                          {threadStatus}
+                        </span>
                         <Separator orientation="vertical" className="mx-2" />
                         <ChatBubbleIcon className="h-3 w-3" />
                         {/* disabled for now, enable for something else perhaps? */}

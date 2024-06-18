@@ -685,6 +685,118 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 	}
 }
 
+func (h *ThreadChatHandler) handleGetThChatMesssages(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+	workspaceId := r.PathValue("workspaceId")
+	threadId := r.PathValue("threadId")
+
+	ctx := r.Context()
+
+	thread, err := h.ths.WorkspaceThread(ctx, workspaceId, threadId)
+	if errors.Is(err, services.ErrThreadChatNotFound) {
+		slog.Warn(
+			"no thread chat found",
+			slog.String("threadChatId", threadId),
+			slog.String("workspaceId", workspaceId),
+		)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		slog.Error(
+			"failed to get thread chat "+
+				"something went wrong",
+			slog.String("threadChatId", threadId),
+			slog.String("workspaceId", workspaceId),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	messages, err := h.ths.ThreadChatMessages(ctx, thread.ThreadChatId)
+	if err != nil {
+		slog.Error(
+			"failed to get list of thread chat messages for thread chat "+
+				"something went wrong",
+			slog.String("threadChatId", threadId),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	results := make([]ThChatMessageRespPayload, 0, 100)
+	for _, message := range messages {
+		var msgCustomerRepr *ThCustomerRespPayload
+		var msgMemberRepr *ThMemberRespPayload
+
+		// for thread message - either of them
+		if message.CustomerId.Valid {
+			msgCustomerRepr = &ThCustomerRespPayload{
+				CustomerId: message.CustomerId.String,
+				Name:       message.CustomerName,
+			}
+		} else if message.MemberId.Valid {
+			msgMemberRepr = &ThMemberRespPayload{
+				MemberId: message.MemberId.String,
+				Name:     message.MemberName,
+			}
+		}
+
+		threadMessage := ThChatMessageRespPayload{
+			ThreadChatId:        thread.ThreadChatId,
+			ThreadChatMessageId: message.ThreadChatMessageId,
+			Body:                message.Body,
+			Sequence:            message.Sequence,
+			Customer:            msgCustomerRepr,
+			Member:              msgMemberRepr,
+			CreatedAt:           message.CreatedAt,
+			UpdatedAt:           message.UpdatedAt,
+		}
+		results = append(results, threadMessage)
+	}
+
+	var threadAssigneeRepr *ThMemberRespPayload
+
+	// for thread
+	threadCustomerRepr := ThCustomerRespPayload{
+		CustomerId: thread.CustomerId,
+		Name:       thread.CustomerName,
+	}
+
+	// for thread
+	if thread.AssigneeId.Valid {
+		threadAssigneeRepr = &ThMemberRespPayload{
+			MemberId: thread.AssigneeId.String,
+			Name:     thread.AssigneeName,
+		}
+	}
+
+	resp := ThChatRespPayload{
+		ThreadChatId: thread.ThreadChatId,
+		Sequence:     thread.Sequence,
+		Status:       thread.Status,
+		Read:         thread.Read,
+		Replied:      thread.Replied,
+		Customer:     threadCustomerRepr,
+		Assignee:     threadAssigneeRepr,
+		CreatedAt:    thread.CreatedAt,
+		UpdatedAt:    thread.UpdatedAt,
+		Messages:     results,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error(
+			"failed to encode thread chat messages to json "+
+				"check the json encoding defn",
+			slog.String("threadChatId", thread.ThreadChatId),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+}
+
 func (h *ThreadChatHandler) handleSetThChatLabel(w http.ResponseWriter, r *http.Request, account *domain.Account) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)

@@ -12,6 +12,7 @@ import {
   workspaceLabelResponseSchema,
   workspaceMemberResponseSchema,
   accountPatSchema,
+  threadChatMessagesResponseSchema,
 } from "./schema";
 import {
   IWorkspaceEntities,
@@ -49,6 +50,10 @@ export type WorkspaceLabelResponseType = z.infer<
 
 export type WorkspaceMemberResponseType = z.infer<
   typeof workspaceMemberResponseSchema
+>;
+
+export type ThreadChatMessagesResponseType = z.infer<
+  typeof threadChatMessagesResponseSchema
 >;
 
 export type AccountPatResponseType = z.infer<typeof accountPatSchema>;
@@ -914,4 +919,57 @@ export async function bootstrapWorkspace(
   }
 
   return data;
+}
+
+export async function getWorkspaceThreadChatMessages(
+  token: string,
+  workspaceId: string,
+  threadChatId: string
+): Promise<{
+  data: ThreadChatMessagesResponseType | null;
+  error: Error | null;
+}> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadChatId}/messages/`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const { status, statusText } = response;
+      return {
+        error: new Error(
+          `error fetching workspace thread chat messages: ${status} ${statusText}`
+        ),
+        data: null,
+      };
+    }
+
+    try {
+      const data = await response.json();
+      const parsed = threadChatMessagesResponseSchema.parse({ ...data });
+      return { error: null, data: parsed };
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        console.error(err.message);
+      } else console.error(err);
+      return {
+        error: new Error("error parsing workspace thread chat messages schema"),
+        data: null,
+      };
+    }
+  } catch (err) {
+    console.error(err);
+    return {
+      error: new Error(
+        "error fetching workspace thread chat messages - something went wrong"
+      ),
+      data: null,
+    };
+  }
 }

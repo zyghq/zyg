@@ -156,3 +156,48 @@ export const accountPatSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
 });
+
+export const threadChatMessageSchema = z.object({
+  threadChatId: z.string(),
+  threadChatMessageId: z.string(),
+  body: z.string(),
+  sequence: z.number(),
+  member: z
+    .object({
+      memberId: z.string(),
+      name: z.string(),
+    })
+    .nullable()
+    .default(null),
+  customer: z
+    .object({
+      customerId: z.string(),
+      name: z.string(),
+    })
+    .nullable()
+    .default(null),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const threadChatMessagesResponseSchema = z.object({
+  threadChatId: z.string(),
+  sequence: z.number(),
+  status: z.string(),
+  read: z.boolean(),
+  replied: z.boolean(),
+  customer: z.object({
+    customerId: z.string(),
+    name: z.string(),
+  }),
+  assignee: z
+    .object({
+      memberId: z.string(),
+      name: z.string(),
+    })
+    .nullable()
+    .default(null),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  messages: z.array(threadChatMessageSchema).default([]),
+});

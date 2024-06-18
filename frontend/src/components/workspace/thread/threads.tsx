@@ -127,10 +127,7 @@ export function ThreadList({
   variant?: string;
   activeThread?: ThreadChatStoreType | null;
 }) {
-  console.log("threads--->", threads);
-
   const renderActiveIf = (thread: ThreadChatStoreType | null) => {
-    console.log("activeThread--->", activeThread);
     if (thread) {
       return (
         <ThreadItem

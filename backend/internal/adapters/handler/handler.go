@@ -29,7 +29,9 @@ func CheckAuthCredentials(r *http.Request) (string, string, error) {
 	return scheme, parts[1], nil
 }
 
-func AuthenticateAccount(ctx context.Context, authz ports.AuthServicer, scheme string, cred string) (domain.Account, error) {
+func AuthenticateAccount(
+	ctx context.Context, authz ports.AuthServicer, scheme string, cred string,
+) (domain.Account, error) {
 	if scheme == "token" {
 		account, err := authz.CheckPatAccount(ctx, cred)
 		if err != nil {
@@ -99,6 +101,7 @@ func NewServer(
 	customerService ports.CustomerServicer,
 	threadChatService ports.ThreadChatServicer,
 ) http.Handler {
+	// initiates new server mux
 	mux := http.NewServeMux()
 
 	// create service handlers
@@ -121,6 +124,7 @@ func NewServer(
 
 	mux.Handle("GET /workspaces/{workspaceId}/members/{$}",
 		NewEnsureAuth(wh.handleGetWorkspaceMembers, authService))
+
 	mux.Handle("GET /workspaces/{workspaceId}/members/me/{$}",
 		NewEnsureAuth(wh.handleGetWorkspaceMembership, authService))
 
@@ -132,27 +136,24 @@ func NewServer(
 	mux.Handle("GET /workspaces/{workspaceId}/labels/{$}",
 		NewEnsureAuth(wh.handleGetWorkspaceLabels, authService))
 
-	// returns all threads in a workspace
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{$}",
 		NewEnsureAuth(th.handleGetThreadChats, authService))
 
-	// returns all threads in a workspace assigned to the authenticated member
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/me/{$}",
 		NewEnsureAuth(th.handleGetMyThreadChats, authService))
-
-	// returns all threads in a workspace unassigned
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/unassigned/{$}",
 		NewEnsureAuth(th.handleGetUnassignedThreadChats, authService))
-
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/labels/{labelId}/{$}",
 		NewEnsureAuth(th.handleGetLabelledThreadChats, authService))
 
 	mux.Handle("POST /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
 		NewEnsureAuth(th.handleCreateThChatMessage, authService))
 
+	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
+		NewEnsureAuth(th.handleGetThChatMesssages, authService))
+
 	mux.Handle("PUT /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
 		NewEnsureAuth(th.handleSetThChatLabel, authService))
-
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
 		NewEnsureAuth(th.handleGetThreadChatLabels, authService))
 
