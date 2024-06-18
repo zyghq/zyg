@@ -34,7 +34,6 @@ CREATE TABLE account (
     CONSTRAINT account_auth_user_id_key UNIQUE (auth_user_id)
 );
 
-
 -- Represents the account PAT table - Personal Access Token
 -- This table is used to store the account PAT information of the account pertaining to auth.
 -- PAT is used to authenticate the account similar to API key.
@@ -65,6 +64,46 @@ CREATE TABLE workspace (
     CONSTRAINT workspace_workspace_id_pkey PRIMARY KEY (workspace_id),
     CONSTRAINT workspace_account_id_fkey FOREIGN KEY (account_id) REFERENCES account (account_id)
 );
+
+-- Represents the member table
+-- This table is used to store the member information linked to the workspace.
+-- Each member is uniquely identified by the combination of `workspace_id` and `account_id`
+-- Member has the ability to authenticate to the workspace, hence the link to account
+CREATE TABLE member (
+    member_id VARCHAR(255) NOT NULL, -- primary key
+    workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
+    account_id VARCHAR(255) NOT NULL, -- fk to account
+    name VARCHAR NULL, -- name of the member
+    role VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT member_member_id_pkey PRIMARY KEY (member_id),
+    CONSTRAINT member_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
+    CONSTRAINT member_account_id_fkey FOREIGN KEY (account_id) REFERENCES account (account_id),
+    CONSTRAINT member_workspace_id_account_id_key UNIQUE (workspace_id, account_id)
+);
+
+-- Represents the Customer table
+-- There can be multiple customers per workspace
+-- Each customer is uniquely identified by one of `external_id`, `email` and `phone`, each unique to the workspace
+CREATE TABLE customer (
+    customer_id VARCHAR(255) NOT NULL, -- primary key
+    workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
+    external_id VARCHAR(255) NULL, -- external id of the customer
+    email VARCHAR(255) NULL, -- email of the customer
+    phone VARCHAR(255) NULL, -- phone of the customer
+    name VARCHAR(255)  NULL, -- name of the customer
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT customer_customer_id_pkey PRIMARY KEY (customer_id),
+    CONSTRAINT customer_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
+    CONSTRAINT customer_workspace_id_external_id_key UNIQUE (workspace_id, external_id),
+    CONSTRAINT customer_workspace_id_email_key UNIQUE (workspace_id, email),
+    CONSTRAINT customer_workspace_id_phone_key UNIQUE (workspace_id, phone)
+);
+
 -- @sanchitrk: changed usage?
 -- Represents the workspace Thread QA table
 -- This table is used to store the QA thread information linked to the workspace.
@@ -144,46 +183,6 @@ CREATE TABLE thread_chat_message (
     CONSTRAINT thread_chat_message_member_id_fkey FOREIGN KEY (member_id) REFERENCES member (member_id)
 );
 
--- Represents the member table
--- This table is used to store the member information linked to the workspace.
--- Each member is uniquely identified by the combination of `workspace_id` and `account_id`
--- Member has the ability to authenticate to the workspace, hence the link to account
-CREATE TABLE member (
-    member_id VARCHAR(255) NOT NULL, -- primary key
-    workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
-    account_id VARCHAR(255) NOT NULL, -- fk to account
-    name VARCHAR NULL, -- name of the member
-    role VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    CONSTRAINT member_member_id_pkey PRIMARY KEY (member_id),
-    CONSTRAINT member_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
-    CONSTRAINT member_account_id_fkey FOREIGN KEY (account_id) REFERENCES account (account_id),
-    CONSTRAINT member_workspace_id_account_id_key UNIQUE (workspace_id, account_id),
-    CONSTRAINT member_slug_key UNIQUE (slug)
-);
-
--- Represents the Customer table
--- There can be multiple customers per workspace
--- Each customer is uniquely identified by one of `external_id`, `email` and `phone`, each unique to the workspace
-CREATE TABLE customer (
-    customer_id VARCHAR(255) NOT NULL, -- primary key
-    workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
-    external_id VARCHAR(255) NULL, -- external id of the customer
-    email VARCHAR(255) NULL, -- email of the customer
-    phone VARCHAR(255) NULL, -- phone of the customer
-    name VARCHAR(255)  NULL, -- name of the customer
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    CONSTRAINT customer_customer_id_pkey PRIMARY KEY (customer_id),
-    CONSTRAINT customer_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
-    CONSTRAINT customer_workspace_id_external_id_key UNIQUE (workspace_id, external_id),
-    CONSTRAINT customer_workspace_id_email_key UNIQUE (workspace_id, email),
-    CONSTRAINT customer_workspace_id_phone_key UNIQUE (workspace_id, phone)
-);
-
 -- Represents the label table
 -- This table is used to store the labels linked to the workspace.
 -- Each label is uniquely identified by the combination of `workspace_id` and `name`
@@ -215,6 +214,10 @@ CREATE TABLE thread_chat_label (
     CONSTRAINT th_chat_label_label_id_fkey FOREIGN KEY (label_id) REFERENCES label (label_id),
     CONSTRAINT th_chat_label_id_th_chat_id_label_id_key UNIQUE (thread_chat_id, label_id)
 );
+
+-- ************************************ --
+-- tables below have been changed or deprecated.
+-- ************************************ --
 
 -- sanchitrk: changed usage?
 -- Represents the Event table
