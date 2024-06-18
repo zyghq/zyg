@@ -1,0 +1,25 @@
+services:
+  
+  postgres:
+    image: postgres:15
+    container_name: postgres 
+    environment:
+      POSTGRES_DB: zygdevdb
+      POSTGRES_USER: zygdev
+      POSTGRES_PASSWORD: VeryS3cure
+    volumes:
+      - db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdb:/data
+
+volumes:
+  db:
+  redisdb:

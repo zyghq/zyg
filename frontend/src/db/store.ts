@@ -317,12 +317,6 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
     ): ThreadChatStoreType[] => {
       return state.currentViewableThreads;
     },
-    // setCurrentViewableThreads(currentViewableThreads) {
-    //   set((state) => {
-    //     state.currentViewableThreads = [...currentViewableThreads];
-    //     return state;
-    //   });
-    // },
     viewCustomerName: (state: WorkspaceStoreStateType, customerId: string) => {
       const customer = state.customers?.[customerId];
       return customer ? customer.name : "";
@@ -382,6 +376,7 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
           state.pats[patId] = { ...pat };
           return state;
         } else {
+          state.pats = { [patId]: { ...pat } };
           return state;
         }
       });
