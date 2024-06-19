@@ -1,5 +1,6 @@
 import { createStore } from "zustand/vanilla";
 import { z } from "zod";
+import { immer } from "zustand/middleware/immer";
 import _ from "lodash";
 import {
   workspaceResponseSchema,
@@ -181,6 +182,8 @@ interface IWorkspaceStoreActions {
   viewPats(state: WorkspaceStoreStateType): AccountPatStoreType[];
   addPat(pat: AccountPatStoreType): void;
   deletePat(patId: string): void;
+  addLabel(label: WorkspaceLabelStoreType): void;
+  updateLabel(labelId: string, label: WorkspaceLabelStoreType): void;
 }
 
 export type WorkspaceStoreStateType = IWorkspaceEntities &
@@ -248,147 +251,189 @@ function sortThreads(threads: ThreadChatStoreType[], sortBy: sortByType) {
 //
 // @sanchitrk: shall we rename it to `buildWorkspaceStore` ?
 export const buildStore = (initialState: IWorkspaceEntities) => {
-  return createStore<WorkspaceStoreStateType>()((set) => ({
-    ...initialState,
-    updateWorkspaceStore: () => set((state) => ({ ...state })),
-    getWorkspaceName: (state: WorkspaceStoreStateType) =>
-      state.workspace?.name || "",
-    getWorkspaceId: (state: WorkspaceStoreStateType) =>
-      state.workspace?.workspaceId || "",
-    getMemberId: (state: WorkspaceStoreStateType) =>
-      state.member?.memberId || "",
-    getMemberName: (state: WorkspaceStoreStateType) => state.member?.name || "",
-    getMemberRole: (state: WorkspaceStoreStateType) => state.member?.role || "",
-    getMetrics: (state: WorkspaceStoreStateType) => state.metrics,
-    getThreadChatItem: (state: WorkspaceStoreStateType, threadChatId: string) =>
-      state.threadChats?.[threadChatId] || null,
-    viewAllTodoThreads: (
-      state: WorkspaceStoreStateType,
-      assigness: assigneesFiltersType,
-      reasons: reasonsFiltersType,
-      sortBy: sortByType = "last-message-dsc"
-    ) => {
-      const threads = state.threadChats ? Object.values(state.threadChats) : [];
-      const todoThreads = threads.filter((t) => t.status === "todo");
-      const assigneesFiltered = filterByAssignees(todoThreads, assigness);
-      const reasonsFiltered = filterByReasons(assigneesFiltered, reasons);
-      const sortedThreads = sortThreads(reasonsFiltered, sortBy);
-      state.currentViewableThreads = [...sortedThreads];
-      return sortedThreads;
-    },
-    viewMyTodoThreads: (
-      state: WorkspaceStoreStateType,
-      memberId: string,
-      assignees: assigneesFiltersType,
-      reasons: reasonsFiltersType,
-      sortBy: sortByType = "last-message-dsc"
-    ) => {
-      const threads = state.threadChats ? Object.values(state.threadChats) : [];
-      const myThreads = threads.filter(
-        (t) => t.status === "todo" && t.assigneeId === memberId
-      );
-      const assigneesFiltered = filterByAssignees(myThreads, assignees);
-      const reasonsFiltered = filterByReasons(assigneesFiltered, reasons);
-      const sortedThreads = sortThreads(reasonsFiltered, sortBy);
-      state.currentViewableThreads = [...sortedThreads];
-      return sortedThreads;
-    },
-    viewUnassignedTodoThreads: (
-      state: WorkspaceStoreStateType,
-      assignees: assigneesFiltersType,
-      reasons,
-      sortBy = "last-message-dsc"
-    ) => {
-      const threads = state.threadChats ? Object.values(state.threadChats) : [];
-      const unassignedThreads = threads.filter(
-        (t) => t.status === "todo" && !t.assigneeId
-      );
-      const assigneesFiltered = filterByAssignees(unassignedThreads, assignees);
-      const reasonsFiltered = filterByReasons(assigneesFiltered, reasons);
-      const sortedThreads = sortThreads(reasonsFiltered, sortBy);
-      state.currentViewableThreads = [...sortedThreads];
-      return sortedThreads;
-    },
-    viewCurrentViewableThreads: (
-      state: WorkspaceStoreStateType
-    ): ThreadChatStoreType[] => {
-      return state.currentViewableThreads;
-    },
-    viewCustomerName: (state: WorkspaceStoreStateType, customerId: string) => {
-      const customer = state.customers?.[customerId];
-      return customer ? customer.name : "";
-    },
-    viewAssignees: (state: WorkspaceStoreStateType) => {
-      // Get all threads
-      const threads = state.threadChats ? Object.values(state.threadChats) : [];
+  return createStore<WorkspaceStoreStateType>()(
+    immer((set) => ({
+      ...initialState,
+      updateWorkspaceStore: () => set((state) => ({ ...state })),
+      getWorkspaceName: (state: WorkspaceStoreStateType) =>
+        state.workspace?.name || "",
+      getWorkspaceId: (state: WorkspaceStoreStateType) =>
+        state.workspace?.workspaceId || "",
+      getMemberId: (state: WorkspaceStoreStateType) =>
+        state.member?.memberId || "",
+      getMemberName: (state: WorkspaceStoreStateType) =>
+        state.member?.name || "",
+      getMemberRole: (state: WorkspaceStoreStateType) =>
+        state.member?.role || "",
+      getMetrics: (state: WorkspaceStoreStateType) => state.metrics,
+      getThreadChatItem: (
+        state: WorkspaceStoreStateType,
+        threadChatId: string
+      ) => state.threadChats?.[threadChatId] || null,
+      viewAllTodoThreads: (
+        state: WorkspaceStoreStateType,
+        assigness: assigneesFiltersType,
+        reasons: reasonsFiltersType,
+        sortBy: sortByType = "last-message-dsc"
+      ) => {
+        const threads = state.threadChats
+          ? Object.values(state.threadChats)
+          : [];
+        const todoThreads = threads.filter((t) => t.status === "todo");
+        const assigneesFiltered = filterByAssignees(todoThreads, assigness);
+        const reasonsFiltered = filterByReasons(assigneesFiltered, reasons);
+        const sortedThreads = sortThreads(reasonsFiltered, sortBy);
+        state.currentViewableThreads = [...sortedThreads];
+        return sortedThreads;
+      },
+      viewMyTodoThreads: (
+        state: WorkspaceStoreStateType,
+        memberId: string,
+        assignees: assigneesFiltersType,
+        reasons: reasonsFiltersType,
+        sortBy: sortByType = "last-message-dsc"
+      ) => {
+        const threads = state.threadChats
+          ? Object.values(state.threadChats)
+          : [];
+        const myThreads = threads.filter(
+          (t) => t.status === "todo" && t.assigneeId === memberId
+        );
+        const assigneesFiltered = filterByAssignees(myThreads, assignees);
+        const reasonsFiltered = filterByReasons(assigneesFiltered, reasons);
+        const sortedThreads = sortThreads(reasonsFiltered, sortBy);
+        state.currentViewableThreads = [...sortedThreads];
+        return sortedThreads;
+      },
+      viewUnassignedTodoThreads: (
+        state: WorkspaceStoreStateType,
+        assignees: assigneesFiltersType,
+        reasons,
+        sortBy = "last-message-dsc"
+      ) => {
+        const threads = state.threadChats
+          ? Object.values(state.threadChats)
+          : [];
+        const unassignedThreads = threads.filter(
+          (t) => t.status === "todo" && !t.assigneeId
+        );
+        const assigneesFiltered = filterByAssignees(
+          unassignedThreads,
+          assignees
+        );
+        const reasonsFiltered = filterByReasons(assigneesFiltered, reasons);
+        const sortedThreads = sortThreads(reasonsFiltered, sortBy);
+        state.currentViewableThreads = [...sortedThreads];
+        return sortedThreads;
+      },
+      viewCurrentViewableThreads: (
+        state: WorkspaceStoreStateType
+      ): ThreadChatStoreType[] => {
+        return state.currentViewableThreads;
+      },
+      viewCustomerName: (
+        state: WorkspaceStoreStateType,
+        customerId: string
+      ) => {
+        const customer = state.customers?.[customerId];
+        return customer ? customer.name : "";
+      },
+      viewAssignees: (state: WorkspaceStoreStateType) => {
+        // Get all threads
+        const threads = state.threadChats
+          ? Object.values(state.threadChats)
+          : [];
 
-      // Extract unique, valid assignee IDs
-      const assigneeIds = _.uniq(
-        threads
-          .map((t) => t.assigneeId)
-          .filter((a): a is string => a !== undefined)
-      );
+        // Extract unique, valid assignee IDs
+        const assigneeIds = _.uniq(
+          threads
+            .map((t) => t.assigneeId)
+            .filter((a): a is string => a !== undefined)
+        );
 
-      // Map assignee IDs to members
-      const assignees = assigneeIds
-        .map((a) => {
-          const member = state.members?.[a];
-          if (member) {
-            return {
-              assigneeId: member.memberId,
-              name: member.name || "n/a",
-            } as AssigneeType;
+        // Map assignee IDs to members
+        const assignees = assigneeIds
+          .map((a) => {
+            const member = state.members?.[a];
+            if (member) {
+              return {
+                assigneeId: member.memberId,
+                name: member.name || "n/a",
+              } as AssigneeType;
+            }
+          })
+          .filter((m): m is AssigneeType => m !== undefined);
+
+        return assignees;
+      },
+      viewLabels: (state: WorkspaceStoreStateType) => {
+        const labels = state.labels ? Object.values(state.labels) : [];
+        return _.sortBy(labels, "labelId").reverse();
+      },
+      viewMembers: (state: WorkspaceStoreStateType) => {
+        const members = state.members ? Object.values(state.members) : [];
+        return members;
+      },
+      viewPats: (state: WorkspaceStoreStateType) => {
+        const pats = state.pats ? Object.values(state.pats) : [];
+        return _.sortBy(pats, "patId").reverse();
+      },
+      updateWorkspaceName: (name: string) => {
+        set((state) => {
+          if (state.workspace) {
+            state.workspace.name = name;
+            return state;
+          } else {
+            return state;
           }
-        })
-        .filter((m): m is AssigneeType => m !== undefined);
-
-      return assignees;
-    },
-    viewLabels: (state: WorkspaceStoreStateType) => {
-      const labels = state.labels ? Object.values(state.labels) : [];
-      return labels;
-    },
-    viewMembers: (state: WorkspaceStoreStateType) => {
-      const members = state.members ? Object.values(state.members) : [];
-      return members;
-    },
-    viewPats: (state: WorkspaceStoreStateType) => {
-      const pats = state.pats ? Object.values(state.pats) : [];
-      return _.sortBy(pats, "patId").reverse();
-    },
-    updateWorkspaceName: (name: string) => {
-      set((state) => {
-        if (state.workspace) {
-          state.workspace.name = name;
-          return state;
-        } else {
-          return state;
-        }
-      });
-    },
-    addPat: (pat: AccountPatStoreType) => {
-      const { patId } = pat;
-      set((state) => {
-        if (state.pats) {
-          state.pats[patId] = { ...pat };
-          return state;
-        } else {
-          state.pats = { [patId]: { ...pat } };
-          return state;
-        }
-      });
-    },
-    deletePat: (patId: string) => {
-      set((state) => {
-        if (state.pats) {
-          delete state.pats[patId];
-          return state;
-        } else {
-          return state;
-        }
-      });
-    },
-  }));
+        });
+      },
+      addLabel: (label: WorkspaceLabelStoreType) => {
+        const { labelId } = label;
+        set((state) => {
+          if (state.labels) {
+            state.labels[labelId] = { ...label };
+            return state;
+          } else {
+            state.labels = { [labelId]: { ...label } };
+            return state;
+          }
+        });
+      },
+      updateLabel: (labelId: string, label: WorkspaceLabelStoreType) => {
+        set((state) => {
+          if (state.labels) {
+            state.labels[labelId] = { ...label };
+            return state;
+          } else {
+            return state;
+          }
+        });
+      },
+      addPat: (pat: AccountPatStoreType) => {
+        const { patId } = pat;
+        set((state) => {
+          if (state.pats) {
+            state.pats[patId] = { ...pat };
+            return state;
+          } else {
+            state.pats = { [patId]: { ...pat } };
+            return state;
+          }
+        });
+      },
+      deletePat: (patId: string) => {
+        set((state) => {
+          if (state.pats) {
+            delete state.pats[patId];
+            return state;
+          } else {
+            return state;
+          }
+        });
+      },
+    }))
+  );
 };
 
 export interface IAccount {

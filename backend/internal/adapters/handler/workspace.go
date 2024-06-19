@@ -168,7 +168,7 @@ func (h *WorkspaceHandler) handleUpdateWorkspace(w http.ResponseWriter, r *http.
 	// apply updates
 	workspace.Name = rb.Name
 
-	workspace, err = h.ws.UpdateWorkspace(ctx, workspace.WorkspaceId, workspace)
+	workspace, err = h.ws.UpdateWorkspace(ctx, workspace)
 	if err != nil {
 		slog.Error(
 			"failed to update workspace "+
@@ -218,7 +218,6 @@ func (h *WorkspaceHandler) handleGetOrCreateWorkspaceLabel(w http.ResponseWriter
 		)
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
-
 	}
 
 	if err != nil {
@@ -285,6 +284,83 @@ func (h *WorkspaceHandler) handleGetOrCreateWorkspaceLabel(w http.ResponseWriter
 	}
 }
 
+func (h *WorkspaceHandler) handleUpdateWorkspaceLabel(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+	defer func(r io.ReadCloser) {
+		_, _ = io.Copy(io.Discard, r)
+		_ = r.Close()
+	}(r.Body)
+
+	workspaceId := r.PathValue("workspaceId")
+	labelId := r.PathValue("labelId")
+	var reqp CrLabelReqPayload
+
+	err := json.NewDecoder(r.Body).Decode(&reqp)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+
+	label, err := h.ws.WorkspaceLabel(ctx, workspaceId, labelId)
+	if errors.Is(err, services.ErrLabelNotFound) {
+		slog.Warn(
+			"label not found or does not exist",
+			slog.String("labelId", labelId),
+			slog.String("workspaceId", workspaceId),
+		)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		slog.Error(
+			"failed to get label by id "+
+				"something went wrong",
+			slog.String("labelId", labelId),
+			slog.String("workspaceId", workspaceId),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	// apply updates
+	label.Name = reqp.Name
+	label.Icon = reqp.Icon
+
+	label, err = h.ws.UpdateWorkspaceLabel(ctx, label.WorkspaceId, label)
+	if err != nil {
+		slog.Error(
+			"failed to update label "+
+				"something went wrong",
+			slog.String("labelId", labelId),
+			slog.String("workspaceId", workspaceId),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	response := CrLabelRespPayload{
+		LabelId:   label.LabelId,
+		Name:      label.Name,
+		Icon:      label.Icon,
+		CreatedAt: label.CreatedAt,
+		UpdatedAt: label.UpdatedAt,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		slog.Error(
+			"failed to encode label to json "+
+				"might need to check the json encoding defn",
+			slog.String("labelId", label.LabelId),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+}
+
 func (h *WorkspaceHandler) handleGetWorkspaceLabels(w http.ResponseWriter, r *http.Request, account *domain.Account) {
 	ctx := r.Context()
 
@@ -310,7 +386,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceLabels(w http.ResponseWriter, r *ht
 		return
 	}
 
-	labels, err := h.ws.WorkspaceLabels(ctx, workspace.WorkspaceId)
+	results, err := h.ws.WorkspaceLabels(ctx, workspace.WorkspaceId)
 	if err != nil {
 		slog.Error(
 			"failed to get workspace labels "+
@@ -319,6 +395,17 @@ func (h *WorkspaceHandler) handleGetWorkspaceLabels(w http.ResponseWriter, r *ht
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
+	}
+
+	labels := make([]CrLabelRespPayload, 0, len(results))
+	for _, l := range results {
+		labels = append(labels, CrLabelRespPayload{
+			LabelId:   l.LabelId,
+			Name:      l.Name,
+			Icon:      l.Icon,
+			CreatedAt: l.CreatedAt,
+			UpdatedAt: l.UpdatedAt,
+		})
 	}
 
 	w.Header().Set("Content-Type", "application/json")

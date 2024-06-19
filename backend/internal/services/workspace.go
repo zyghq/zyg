@@ -41,17 +41,21 @@ func (s *WorkspaceService) CreateWorkspace(ctx context.Context, w domain.Workspa
 	return workspace, nil
 }
 
-func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, workspaceId string, w domain.Workspace) (domain.Workspace, error) {
-	workspace, err := s.workspaceRepo.UpdateWorkspaceById(ctx, workspaceId, w)
-
-	if errors.Is(err, repository.ErrQuery) {
-		return workspace, ErrWorkspace
-	}
-
+func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, w domain.Workspace) (domain.Workspace, error) {
+	workspace, err := s.workspaceRepo.UpdateWorkspaceById(ctx, w)
 	if err != nil {
 		return workspace, err
 	}
 	return workspace, nil
+}
+
+func (s *WorkspaceService) UpdateWorkspaceLabel(ctx context.Context, workspaceId string, label domain.Label) (domain.Label, error) {
+	label, err := s.workspaceRepo.UpdateWorkspaceLabelById(ctx, workspaceId, label)
+	if err != nil {
+		return label, err
+	}
+
+	return label, nil
 }
 
 func (s *WorkspaceService) GetWorkspace(ctx context.Context, workspaceId string) (domain.Workspace, error) {

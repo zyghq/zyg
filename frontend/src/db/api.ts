@@ -497,9 +497,8 @@ function makeLabelsStoreable(
 ): WorkspaceLabelMapStoreType {
   const mapped: WorkspaceLabelMapStoreType = {};
   for (const label of labels) {
-    const { workspaceId, labelId, name, icon, createdAt, updatedAt } = label;
+    const { labelId, name, icon, createdAt, updatedAt } = label;
     mapped[labelId] = {
-      workspaceId,
       labelId,
       name,
       icon,
@@ -710,7 +709,7 @@ export async function updateWorkspace(
     if (!response.ok) {
       const { status, statusText } = response;
       const error = new Error(
-        `error creating workspace with status: ${status} and statusText: ${statusText}`
+        `error updating workspace with status: ${status} and statusText: ${statusText}`
       );
       return { error, data: null };
     }
@@ -723,7 +722,7 @@ export async function updateWorkspace(
   } catch (err) {
     console.error(err);
     return {
-      error: new Error("error creating workspace - something went wrong"),
+      error: new Error("error updating workspace - something went wrong"),
       data: null,
     };
   }
@@ -969,6 +968,99 @@ export async function getWorkspaceThreadChatMessages(
       error: new Error(
         "error fetching workspace thread chat messages - something went wrong"
       ),
+      data: null,
+    };
+  }
+}
+
+export async function createWorkspaceLabel(
+  token: string,
+  workspaceId: string,
+  body: { name: string }
+): Promise<{ data: WorkspaceLabelResponseType | null; error: Error | null }> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/labels/`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ...body }),
+      }
+    );
+    if (!response.ok) {
+      const { status, statusText } = response;
+      const error = new Error(
+        `error creating label with status: ${status} and statusText: ${statusText}`
+      );
+      return { error, data: null };
+    }
+    try {
+      const data = await response.json();
+      const parsed = workspaceLabelResponseSchema.parse({ ...data });
+      return { error: null, data: parsed };
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        console.error(err.message);
+      } else console.error(err);
+      return {
+        error: new Error("error parsing workspace label schema"),
+        data: null,
+      };
+    }
+  } catch (err) {
+    console.error(err);
+    return {
+      error: new Error("error creating label - something went wrong"),
+      data: null,
+    };
+  }
+}
+
+export async function updateWorkspaceLabel(
+  token: string,
+  workspaceId: string,
+  labelId: string,
+  body: { name: string }
+): Promise<{ data: WorkspaceLabelResponseType | null; error: Error | null }> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/labels/${labelId}/`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ...body }),
+      }
+    );
+    if (!response.ok) {
+      const { status, statusText } = response;
+      const error = new Error(
+        `error updating label with status: ${status} and statusText: ${statusText}`
+      );
+      return { error, data: null };
+    }
+    try {
+      const data = await response.json();
+      const parsed = workspaceLabelResponseSchema.parse({ ...data });
+      return { error: null, data: parsed };
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        console.error(err.message);
+      } else console.error(err);
+      return {
+        error: new Error("error parsing workspace label schema"),
+        data: null,
+      };
+    }
+  } catch (err) {
+    console.error(err);
+    return {
+      error: new Error("error workspace label - something went wrong"),
       data: null,
     };
   }

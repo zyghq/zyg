@@ -28,6 +28,23 @@ type CrLabelRespPayload struct {
 	UpdatedAt time.Time
 }
 
+func (l CrLabelRespPayload) MarshalJSON() ([]byte, error) {
+	aux := &struct {
+		LabelId   string `json:"labelId"`
+		Name      string `json:"name"`
+		Icon      string `json:"icon"`
+		CreatedAt string `json:"createdAt"`
+		UpdatedAt string `json:"updatedAt"`
+	}{
+		LabelId:   l.LabelId,
+		Name:      l.Name,
+		Icon:      l.Icon,
+		CreatedAt: l.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: l.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
+}
+
 type ThCustomerRespPayload struct {
 	CustomerId string
 	Name       sql.NullString

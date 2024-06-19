@@ -45,16 +45,16 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("db query failed got error: %v", err)
 	}
 
-	slog.Info("database", slog.Any("dbtime", tm.Format(time.RFC1123)))
+	slog.Info("database up and running", slog.Any("time", tm.Format(time.RFC1123)))
 
-	// initialize respective stores
+	// init stores
 	accountStore := repository.NewAccountDB(db)
 	workspaceStore := repository.NewWorkspaceDB(db)
 	memberStore := repository.NewMemberDB(db)
 	customerStore := repository.NewCustomerDB(db)
 	threadChatStore := repository.NewThreadChatDB(db)
 
-	// initialize respective services
+	// init services
 	authService := services.NewAuthService(accountStore)
 	accountService := services.NewAccountService(accountStore)
 	workspaceService := services.NewWorkspaceService(workspaceStore, memberStore, customerStore)

@@ -129,7 +129,6 @@ export const workspaceCustomersResponseSchema = z
   .default([]);
 
 export const workspaceLabelResponseSchema = z.object({
-  workspaceId: z.string(),
   labelId: z.string(),
   name: z.string(),
   icon: z.string(),

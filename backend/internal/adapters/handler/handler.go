@@ -135,6 +135,8 @@ func NewServer(
 		NewEnsureAuth(wh.handleGetOrCreateWorkspaceLabel, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/labels/{$}",
 		NewEnsureAuth(wh.handleGetWorkspaceLabels, authService))
+	mux.Handle("PATCH /workspaces/{workspaceId}/labels/{labelId}/{$}",
+		NewEnsureAuth(wh.handleUpdateWorkspaceLabel, authService))
 
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{$}",
 		NewEnsureAuth(th.handleGetThreadChats, authService))

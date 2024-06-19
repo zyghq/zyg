@@ -6,6 +6,7 @@ import { ThreadChatStoreType } from "@/db/store";
 import { ChatBubbleIcon, ResetIcon } from "@radix-ui/react-icons";
 import Avatar from "boring-avatars";
 import { useStore } from "zustand";
+import { WorkspaceStoreStateType } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
 
 function ThreadItem({
@@ -22,8 +23,10 @@ function ThreadItem({
   //   select: (context) => context.WorkspaceStore,
   // });
   const workspaceStore = useWorkspaceStore();
-  const customerName = useStore(workspaceStore, (state) =>
-    state.viewCustomerName(state, item.customerId)
+  const customerName = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreStateType) =>
+      state.viewCustomerName(state, item.customerId)
   );
 
   //   const message = item.messages[0];

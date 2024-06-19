@@ -7,6 +7,7 @@ import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useStore } from "zustand";
 import { useWorkspaceStore } from "@/providers";
+import { createWorkspaceLabel } from "@/db/api";
 import {
   Form,
   FormControl,
@@ -16,6 +17,8 @@ import {
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useMutation } from "@tanstack/react-query";
+import { WorkspaceStoreStateType, WorkspaceLabelStoreType } from "@/db/store";
 
 export const Route = createFileRoute(
   "/_auth/workspaces/$workspaceId/settings/labels"
@@ -32,8 +35,12 @@ const formSchema = z.object({
 });
 
 function LabelSettings() {
+  const { workspaceId } = Route.useParams();
+  const { token } = Route.useRouteContext();
   const workspaceStore = useWorkspaceStore();
-  const labels = useStore(workspaceStore, (state) => state.viewLabels(state));
+  const labels = useStore(workspaceStore, (state: WorkspaceStoreStateType) =>
+    state.viewLabels(state)
+  ) as WorkspaceLabelStoreType[];
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -42,11 +49,43 @@ function LabelSettings() {
     },
   });
 
+  const mutation = useMutation({
+    mutationFn: async (inputs: { name: string }) => {
+      const { name } = inputs;
+      const { error, data } = await createWorkspaceLabel(token, workspaceId, {
+        name,
+      });
+      if (error) {
+        throw new Error(error.message);
+      }
+      if (!data) {
+        throw new Error("no data returned");
+      }
+      return data;
+    },
+    onError: (error) => {
+      console.error(error);
+      form.setError("name", {
+        type: "serverError",
+        message: "Something went wrong. Please try again later.",
+      });
+    },
+    onSuccess: (data) => {
+      workspaceStore.getState().addLabel(data);
+      form.reset();
+    },
+  });
+
   const onSubmit: SubmitHandler<FormInputs> = async (inputs) => {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
-    console.log(inputs);
+    await mutation.mutateAsync(inputs);
   };
+
+  const { formState } = form;
+  const { isSubmitting } = formState;
+
+  const isCreating = isSubmitting || mutation.isPending;
+
+  console.log(labels);
 
   return (
     <div className="container">
@@ -77,7 +116,7 @@ function LabelSettings() {
               <Form {...form}>
                 <form
                   onSubmit={form.handleSubmit(onSubmit)}
-                  className="flex items-center space-x-2"
+                  className="flex space-x-2"
                 >
                   <FormField
                     control={form.control}
@@ -85,19 +124,32 @@ function LabelSettings() {
                     render={({ field }) => (
                       <FormItem className="w-full">
                         <FormControl>
-                          <Input placeholder="Label" {...field} />
+                          <Input
+                            required
+                            autoComplete="off"
+                            placeholder="Label"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <Button type="submit">Add</Button>
+                  <Button disabled={isCreating} type="submit">
+                    Add
+                  </Button>
                 </form>
               </Form>
               {labels && labels.length > 0 ? (
                 <div className="flex flex-col gap-1">
                   {labels.map((label) => (
-                    <LabelItem key={label.labelId} label={label.name} />
+                    <LabelItem
+                      key={label.labelId}
+                      token={token}
+                      workspaceId={workspaceId}
+                      labelId={label.labelId}
+                      label={label.name}
+                    />
                   ))}
                 </div>
               ) : (
