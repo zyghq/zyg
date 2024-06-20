@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { cn } from "@/lib/utils";
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -6,8 +7,6 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   ChatBubbleIcon,
-  DotsHorizontalIcon,
-  ResetIcon,
   ArrowLeftIcon,
 } from "@radix-ui/react-icons";
 import {
@@ -24,8 +23,12 @@ import { useStore } from "zustand";
 import { WorkspaceStoreStateType } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
 import { ThreadList } from "@/components/workspace/thread/threads";
-import { ThreadChatStoreType } from "@/db/store";
-import { getWorkspaceThreadChatMessages } from "@/db/api";
+import { CurrentThreadQueueType, ThreadChatMessageType } from "@/db/store";
+import {
+  getWorkspaceThreadChatMessages,
+  ThreadChatMessagesResponseType,
+} from "@/db/api";
+import { NotFound } from "@/components/notfound";
 
 export const Route = createFileRoute(
   "/_auth/workspaces/$workspaceId/threads/$threadId/"
@@ -34,9 +37,12 @@ export const Route = createFileRoute(
 });
 
 function getPrevNextFromCurrent(
-  threads: ThreadChatStoreType[],
+  currentQueue: CurrentThreadQueueType | null,
   threadId: string
 ) {
+  if (!currentQueue) return { prevItem: null, nextItem: null };
+
+  const { threads } = currentQueue;
   const currentIndex = threads.findIndex(
     (thread) => thread.threadChatId === threadId
   );
@@ -47,14 +53,63 @@ function getPrevNextFromCurrent(
   return { prevItem, nextItem };
 }
 
+function Message({
+  message,
+  memberId,
+  memberName,
+}: {
+  message: ThreadChatMessageType;
+  memberId: string;
+  memberName: string;
+}) {
+  const { createdAt } = message;
+  const date = new Date(createdAt);
+  const time = date.toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const isCustomer = message.customer ? true : false;
+  const isMember = message.member ? true : false;
+
+  const customerId = message.customer?.customerId || "C";
+
+  const isMe = message.member?.memberId === memberId;
+
+  return (
+    <div className="flex">
+      <div className={`flex ${isMe ? "ml-auto" : "mr-auto"}`}>
+        <div className="flex space-x-2">
+          {isCustomer && (
+            <Avatar name={customerId} size={32} variant="marble" />
+          )}
+          <div className="p-2 rounded-lg bg-gray-100 dark:bg-accent">
+            <div className="text-muted-foreground">{`${isMe ? "You" : memberName}`}</div>
+            <p className="text-sm">{message.body}</p>
+            <div className="flex text-xs justify-end text-muted-foreground mt-1">
+              {time}
+            </div>
+          </div>
+          {isMember && <Avatar name={memberId} size={32} variant="marble" />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ThreadDetail() {
   const { token } = Route.useRouteContext();
   const { workspaceId, threadId } = Route.useParams();
+  const bottomRef = React.useRef<null | HTMLDivElement>(null);
+
   const workspaceStore = useWorkspaceStore();
 
-  const currentThreads = useStore(
+  const currentQueue = useStore(
     workspaceStore,
-    (state: WorkspaceStoreStateType) => state.viewCurrentViewableThreads(state)
+    (state: WorkspaceStoreStateType) => state.viewCurrentThreadQueue(state)
   );
 
   const activeThread = useStore(
@@ -68,12 +123,17 @@ function ThreadDetail() {
       state.viewCustomerName(state, activeThread?.customerId || "")
   );
 
-  const threadStatus = activeThread?.status || "n/a";
-
-  const { prevItem, nextItem } = getPrevNextFromCurrent(
-    currentThreads,
-    threadId
+  const memberId = useStore(workspaceStore, (state: WorkspaceStoreStateType) =>
+    state.getMemberId(state)
   );
+  const memberName = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreStateType) => state.getMemberName(state)
+  );
+
+  const threadStatus = activeThread?.status || "";
+
+  const { prevItem, nextItem } = getPrevNextFromCurrent(currentQueue, threadId);
 
   const { isPending, error, data } = useQuery({
     queryKey: ["messages", threadId, workspaceId, token],
@@ -84,22 +144,88 @@ function ThreadDetail() {
         threadId
       );
       if (error) throw new Error("failed to fetch thread messages");
-      return data;
+      return data as ThreadChatMessagesResponseType;
     },
+    enabled: !!activeThread,
   });
 
-  console.log("isPending", isPending);
-  console.log("error", error);
-  console.log("data", data);
+  React.useEffect(() => {
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [data]);
 
-  if (currentThreads.length === 0 && activeThread) {
-    currentThreads.push(activeThread);
+  function renderMessages(
+    isPending: boolean,
+    data?: ThreadChatMessagesResponseType
+  ) {
+    if (isPending) {
+      return (
+        <div className="flex justify-center mt-12">
+          <svg
+            className="animate-spin h-5 w-5 text-indigo-500"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+        </div>
+      );
+    }
+    if (data && data.messages.length > 0) {
+      const { messages } = data;
+      const messagesReversed = Array.from(messages).reverse();
+      return (
+        <div className="p-4 space-y-2">
+          {messagesReversed.map((message) => (
+            <Message
+              key={message.threadChatMessageId}
+              message={message}
+              memberId={memberId}
+              memberName={memberName}
+            />
+          ))}
+          <div ref={bottomRef}></div>
+        </div>
+      );
+    }
+    return (
+      <div className="flex justify-center mt-12 text-muted-foreground">
+        No results
+      </div>
+    );
+  }
+
+  if (!activeThread) {
+    return <NotFound />;
+  }
+
+  if (error) {
+    return <div>errror</div>;
   }
 
   return (
     <React.Fragment>
       <div className="flex min-h-screen">
-        <aside className="sticky overflow-y-auto md:border-r">
+        <aside
+          className={cn(
+            "sticky overflow-y-auto",
+            currentQueue ? "border-r" : ""
+          )}
+        >
           <div className="flex">
             <div className="flex flex-col gap-4 px-2 py-4">
               <Button variant="outline" size="icon" asChild>
@@ -107,11 +233,13 @@ function ThreadDetail() {
                   <ArrowLeftIcon className="h-4 w-4" />
                 </Link>
               </Button>
-              <SidePanelThreadList
-                threads={currentThreads}
-                title="All Threads"
-                workspaceId={workspaceId}
-              />
+              {currentQueue && (
+                <SidePanelThreadList
+                  threads={currentQueue.threads}
+                  title="All Threads"
+                  workspaceId={workspaceId}
+                />
+              )}
               {prevItem ? (
                 <Button variant="outline" size="icon" asChild>
                   <Link
@@ -141,20 +269,22 @@ function ThreadDetail() {
               defaultSize={25}
               minSize={20}
               maxSize={30}
-              className="hidden sm:block"
+              className={cn("hidden", currentQueue ? "sm:block" : "")}
             >
               <div className="flex h-14 flex-col justify-center border-b px-4">
                 <div className="font-semibold">All Threads</div>
               </div>
               <ScrollArea className="h-[calc(100dvh-4rem)]">
-                <ThreadList
-                  workspaceId={workspaceId}
-                  threads={currentThreads}
-                  variant="compress"
-                />
+                {currentQueue && (
+                  <ThreadList
+                    workspaceId={workspaceId}
+                    threads={currentQueue.threads}
+                    variant="compress"
+                  />
+                )}
               </ScrollArea>
             </ResizablePanel>
-            <ResizableHandle withHandle={false} />
+            <ResizableHandle withHandle={true} />
             <ResizablePanel defaultSize={50} className="flex flex-col">
               <ResizablePanelGroup direction="vertical">
                 <ResizablePanel defaultSize={75}>
@@ -177,122 +307,8 @@ function ThreadDetail() {
                       <span className="font-mono text-xs">12/44</span> */}
                       </div>
                     </div>
-                    <ScrollArea className="flex h-full flex-auto flex-col px-2 pb-4">
-                      <div className="flex flex-col gap-1">
-                        <div className="m-4">
-                          <div className="flex items-center font-mono text-sm font-medium">
-                            <span className="mr-1 flex h-1 w-1 rounded-full bg-fuchsia-500" />
-                            Monday, 14 February 2024
-                          </div>
-                        </div>
-                        {/* message */}
-                        <div className="flex flex-col gap-2 rounded-lg border bg-background p-4">
-                          <div className="flex w-full flex-col gap-1">
-                            <div className="flex items-center">
-                              <div className="flex items-center gap-2">
-                                <Avatar
-                                  size={28}
-                                  name="name"
-                                  variant="marble"
-                                />
-                                <div className="font-medium">Emily Davis</div>
-                                <span className="flex h-1 w-1 rounded-full bg-blue-600" />
-                                <span className="text-xs">3d ago.</span>
-                              </div>
-                              <div className="ml-auto">
-                                <Button variant="ghost" size="icon">
-                                  <DotsHorizontalIcon className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                            <div className="font-medium">
-                              {"Welcome To Plain."}
-                            </div>
-                          </div>
-                          <div className="rounded-lg p-4 text-left text-muted-foreground hover:bg-accent">
-                            {`Hi, welcome to Plain! We're so happy you're here! This
-                      message is automated but if you need to talk to us you can
-                      press the support button in the bottom left at anytime. In
-                      the meantime let's use this thread to show you how Plain
-                      works. 🌱 When customers reach out to you, they will show
-                      up in your Plain workspace in a thread just like this. 🏷️
-                      Each thread has a priority, an assignee, labels, and
-                      Linear issues. Use the right-hand panel to set and change
-                      those. ✉️ Reply by clicking into the composer below or
-                      pressing R. Try sending a reply now. 🚀`}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <div className="m-4">
-                          <div className="flex items-center font-mono text-sm font-medium">
-                            <span className="mr-1 flex h-1 w-1 rounded-full bg-fuchsia-500" />
-                            Monday, 14 February 2024
-                          </div>
-                        </div>
-                        {/* message */}
-                        <div className="flex flex-col gap-2 rounded-lg border bg-background p-4">
-                          <div className="flex w-full flex-col gap-1">
-                            <div className="flex items-center">
-                              <div className="flex items-center gap-2">
-                                <Avatar size={28} name="name" variant="beam" />
-                                <div className="font-medium">Emily Davis</div>
-                                <span className="flex h-1 w-1 rounded-full bg-blue-600" />
-                                <span className="text-xs">3d ago.</span>
-                              </div>
-                              <div className="ml-auto">
-                                <Button variant="ghost" size="icon">
-                                  <DotsHorizontalIcon className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                            <div className="flex items-center text-muted-foreground">
-                              <ResetIcon className="mr-1 h-3 w-3" />
-                              <div className="text-xs">Welcom to Plain...</div>
-                            </div>
-                          </div>
-                          <div className="rounded-lg p-4 text-left text-muted-foreground hover:bg-accent">
-                            {`Nice! 👀 You can see how these messages appear in Slack by pressing O. For more details you can check out our docs.✅ When you are done just hit "Mark as done" on the bottom right.
-                      ⌨️ If you want to do anything in Plain use ⌘ + K or CTRL + K on Windows.
-                      (edited)`}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <div className="m-4">
-                          <div className="flex items-center font-mono text-sm font-medium">
-                            <span className="mr-1 flex h-1 w-1 rounded-full bg-fuchsia-500" />
-                            Monday, 14 February 2024
-                          </div>
-                        </div>
-                        {/* message */}
-                        <div className="flex flex-col gap-2 rounded-lg border bg-background p-4">
-                          <div className="flex w-full flex-col gap-1">
-                            <div className="flex items-center">
-                              <div className="flex items-center gap-2">
-                                <Avatar size={28} name="name" variant="beam" />
-                                <div className="font-medium">Emily Davis</div>
-                                <span className="flex h-1 w-1 rounded-full bg-blue-600" />
-                                <span className="text-xs">3d ago.</span>
-                              </div>
-                              <div className="ml-auto">
-                                <Button variant="ghost" size="icon">
-                                  <DotsHorizontalIcon className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                            <div className="flex items-center text-muted-foreground">
-                              <ResetIcon className="mr-1 h-3 w-3" />
-                              <div className="text-xs">Welcom to Plain...</div>
-                            </div>
-                          </div>
-                          <div className="rounded-lg p-4 text-left text-muted-foreground hover:bg-accent">
-                            {`Nice! 👀 You can see how these messages appear in Slack by pressing O. For more details you can check out our docs.✅ When you are done just hit "Mark as done" on the bottom right.
-                      ⌨️ If you want to do anything in Plain use ⌘ + K or CTRL + K on Windows.
-                      (edited)`}
-                          </div>
-                        </div>
-                      </div>
+                    <ScrollArea className="flex h-[calc(100dvh-4rem)] flex-col p-1">
+                      {renderMessages(isPending, data)}
                     </ScrollArea>
                   </div>
                 </ResizablePanel>
@@ -304,7 +320,7 @@ function ThreadDetail() {
                 </ResizablePanel>
               </ResizablePanelGroup>
             </ResizablePanel>
-            <ResizableHandle withHandle={false} />
+            <ResizableHandle withHandle={true} />
             <ResizablePanel
               defaultSize={25}
               minSize={20}

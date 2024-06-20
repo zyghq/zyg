@@ -150,7 +150,6 @@ func NewServer(
 
 	mux.Handle("POST /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
 		NewEnsureAuth(th.handleCreateThChatMessage, authService))
-
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
 		NewEnsureAuth(th.handleGetThChatMesssages, authService))
 

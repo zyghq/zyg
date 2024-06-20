@@ -143,11 +143,11 @@ type ThChatRespPayload struct {
 	Messages     []ThChatMessageRespPayload
 }
 
-func (thresp ThChatRespPayload) MarshalJSON() ([]byte, error) {
+func (th ThChatRespPayload) MarshalJSON() ([]byte, error) {
 	var assignee *ThMemberRespPayload
 
-	if thresp.Assignee != nil {
-		assignee = thresp.Assignee
+	if th.Assignee != nil {
+		assignee = th.Assignee
 	}
 
 	aux := &struct {
@@ -162,16 +162,16 @@ func (thresp ThChatRespPayload) MarshalJSON() ([]byte, error) {
 		UpdatedAt    string                     `json:"updatedAt"`
 		Messages     []ThChatMessageRespPayload `json:"messages"`
 	}{
-		ThreadChatId: thresp.ThreadChatId,
-		Sequence:     thresp.Sequence,
-		Status:       thresp.Status,
-		Read:         thresp.Read,
-		Replied:      thresp.Replied,
-		Customer:     thresp.Customer,
+		ThreadChatId: th.ThreadChatId,
+		Sequence:     th.Sequence,
+		Status:       th.Status,
+		Read:         th.Read,
+		Replied:      th.Replied,
+		Customer:     th.Customer,
 		Assignee:     assignee,
-		CreatedAt:    thresp.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:    thresp.UpdatedAt.Format(time.RFC3339),
-		Messages:     thresp.Messages,
+		CreatedAt:    th.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:    th.UpdatedAt.Format(time.RFC3339),
+		Messages:     th.Messages,
 	}
 	return json.Marshal(aux)
 }

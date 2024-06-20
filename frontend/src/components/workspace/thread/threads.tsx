@@ -61,7 +61,9 @@ function ThreadItem({
         variant === "compress" && "gap-0 rounded-none py-5"
       )}
       activeOptions={{ exact: true }}
-      activeProps={{ className: "border-l-2 border-l-indigo-500 bg-indigo-50" }}
+      activeProps={{
+        className: "border-l-2 border-l-indigo-500 bg-indigo-50 dark:bg-accent",
+      }}
     >
       <div className="flex w-full flex-col gap-1">
         <div className="flex items-center">

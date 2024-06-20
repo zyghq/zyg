@@ -8,6 +8,7 @@ import {
   workspaceLabelResponseSchema,
   workspaceMemberResponseSchema,
   accountPatSchema,
+  threadChatMessageSchema,
 } from "./schema";
 import { AccountResponseType } from "./api";
 
@@ -29,6 +30,9 @@ export type WorkspaceMemberStoreType = z.infer<
 
 // inferred from schema
 export type AccountPatStoreType = z.infer<typeof accountPatSchema>;
+
+// inferred from schema
+export type ThreadChatMessageType = z.infer<typeof threadChatMessageSchema>;
 
 export type LabelMetricsStoreType = {
   labelId: string;
@@ -66,7 +70,7 @@ export type ThreadChatStoreType = {
     memberId: string | null;
     createdAt: string;
     updatedAt: string;
-  } | null;
+  };
 };
 
 export type WorkspaceCustomerStoreType = {
@@ -113,6 +117,12 @@ export type WorkspaceMemberMapStoreType = Dictionary<
 
 export type AccountPatMapStoreType = Dictionary<string, AccountPatStoreType>;
 
+export type CurrentThreadQueueType = {
+  status: string;
+  from: string;
+  threads: ThreadChatStoreType[];
+};
+
 export interface IWorkspaceEntities {
   hasData: boolean;
   isPending: boolean;
@@ -125,7 +135,7 @@ export interface IWorkspaceEntities {
   labels: WorkspaceLabelMapStoreType | null;
   members: WorkspaceMemberMapStoreType | null;
   pats: AccountPatMapStoreType | null;
-  currentViewableThreads: ThreadChatStoreType[] | [];
+  currentThreadQueue: CurrentThreadQueueType | null;
 }
 
 type ReplyStatus = "replied" | "unreplied";
@@ -171,9 +181,9 @@ interface IWorkspaceStoreActions {
     reasons: reasonsFiltersType,
     sortBy: sortByType
   ): ThreadChatStoreType[];
-  viewCurrentViewableThreads(
+  viewCurrentThreadQueue(
     state: WorkspaceStoreStateType
-  ): ThreadChatStoreType[];
+  ): CurrentThreadQueueType | null;
   viewCustomerName(state: WorkspaceStoreStateType, customerId: string): string;
   viewAssignees(state: WorkspaceStoreStateType): AssigneeType[];
   updateWorkspaceName(name: string): void;
@@ -283,7 +293,11 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
         const assigneesFiltered = filterByAssignees(todoThreads, assigness);
         const reasonsFiltered = filterByReasons(assigneesFiltered, reasons);
         const sortedThreads = sortThreads(reasonsFiltered, sortBy);
-        state.currentViewableThreads = [...sortedThreads];
+        state.currentThreadQueue = {
+          status: "todo",
+          from: "All Threads",
+          threads: [...sortedThreads],
+        };
         return sortedThreads;
       },
       viewMyTodoThreads: (
@@ -302,7 +316,11 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
         const assigneesFiltered = filterByAssignees(myThreads, assignees);
         const reasonsFiltered = filterByReasons(assigneesFiltered, reasons);
         const sortedThreads = sortThreads(reasonsFiltered, sortBy);
-        state.currentViewableThreads = [...sortedThreads];
+        state.currentThreadQueue = {
+          status: "todo",
+          from: "My Threads",
+          threads: [...sortedThreads],
+        };
         return sortedThreads;
       },
       viewUnassignedTodoThreads: (
@@ -323,13 +341,18 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
         );
         const reasonsFiltered = filterByReasons(assigneesFiltered, reasons);
         const sortedThreads = sortThreads(reasonsFiltered, sortBy);
-        state.currentViewableThreads = [...sortedThreads];
+        state.currentThreadQueue = {
+          status: "todo",
+          from: "Unassigned Threads",
+          threads: [...sortedThreads],
+        };
         return sortedThreads;
       },
-      viewCurrentViewableThreads: (
+      viewCurrentThreadQueue: (
         state: WorkspaceStoreStateType
-      ): ThreadChatStoreType[] => {
-        return state.currentViewableThreads;
+      ): CurrentThreadQueueType | null => {
+        if (state.currentThreadQueue) return state.currentThreadQueue;
+        return null;
       },
       viewCustomerName: (
         state: WorkspaceStoreStateType,

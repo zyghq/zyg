@@ -79,7 +79,7 @@ function initialWorkspaceData(): IWorkspaceEntities {
     labels: null,
     members: null,
     pats: null,
-    currentViewableThreads: [],
+    currentThreadQueue: null,
   };
 }
 
@@ -468,7 +468,16 @@ function makeThreadsStoreable(
       assigneeId: assignee ? assignee.memberId : null,
       createdAt,
       updatedAt,
-      recentMessage: null,
+      recentMessage: {
+        threadChatId: "",
+        threadChatMessageId: "",
+        body: "",
+        sequence: 0,
+        customerId: null,
+        memberId: null,
+        createdAt: "",
+        updatedAt: "",
+      },
     };
     const message = messages[0] || null;
     if (message) {
