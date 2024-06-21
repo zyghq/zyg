@@ -1,3 +1,4 @@
+import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
@@ -58,7 +59,7 @@ function ThreadItem({
       params={{ workspaceId, threadId: item.threadChatId }}
       className={cn(
         "flex flex-col items-start gap-2 rounded-lg px-3 py-3 text-left text-sm transition-all hover:bg-accent",
-        variant === "compress" && "gap-0 rounded-none py-5"
+        variant === "compress" && "gap-0 rounded-none py-5 border-b"
       )}
       activeOptions={{ exact: true }}
       activeProps={{
@@ -130,6 +131,13 @@ export function ThreadList({
   threads: ThreadChatStoreType[];
   variant?: string;
 }) {
+  const bottomRef = React.useRef<null | HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, []);
   return (
     <div
       className={cn("flex flex-col gap-2", variant === "compress" && "gap-0")}
@@ -142,6 +150,7 @@ export function ThreadList({
           variant={variant}
         />
       ))}
+      <div ref={bottomRef}></div>
     </div>
   );
 }

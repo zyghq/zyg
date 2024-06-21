@@ -3,11 +3,14 @@ import { cn } from "@/lib/utils";
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+
+import { Badge } from "@/components/ui/badge";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
   ChatBubbleIcon,
   ArrowLeftIcon,
+  ResetIcon,
 } from "@radix-ui/react-icons";
 import {
   ResizableHandle,
@@ -24,6 +27,7 @@ import { WorkspaceStoreStateType } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
 import { ThreadList } from "@/components/workspace/thread/threads";
 import { CurrentThreadQueueType, ThreadChatMessageType } from "@/db/store";
+import { formatDistanceToNow } from "date-fns";
 import {
   getWorkspaceThreadChatMessages,
   ThreadChatMessagesResponseType,
@@ -132,6 +136,7 @@ function ThreadDetail() {
   );
 
   const threadStatus = activeThread?.status || "";
+  const isAwaitingReply = activeThread?.replied === false;
 
   const { prevItem, nextItem } = getPrevNextFromCurrent(currentQueue, threadId);
 
@@ -302,9 +307,34 @@ function ThreadDetail() {
                         </span>
                         <Separator orientation="vertical" className="mx-2" />
                         <ChatBubbleIcon className="h-3 w-3" />
-                        {/* disabled for now, enable for something else perhaps? */}
-                        {/* <Separator orientation="vertical" className="mx-2" />
-                      <span className="font-mono text-xs">12/44</span> */}
+                        {isAwaitingReply && (
+                          <React.Fragment>
+                            <Separator
+                              orientation="vertical"
+                              className="mx-2"
+                            />
+                            <Badge
+                              variant="outline"
+                              className="bg-indigo-100 font-normal dark:bg-indigo-500"
+                            >
+                              <div className="flex items-center gap-1">
+                                <ResetIcon className="h-2 w-2" />
+                              </div>
+                            </Badge>
+                            <Separator
+                              orientation="vertical"
+                              className="mx-2"
+                            />
+                            <div className="text-xs">
+                              {formatDistanceToNow(
+                                new Date(activeThread.createdAt),
+                                {
+                                  addSuffix: true,
+                                }
+                              )}
+                            </div>
+                          </React.Fragment>
+                        )}
                       </div>
                     </div>
                     <ScrollArea className="flex h-[calc(100dvh-4rem)] flex-col p-1">
