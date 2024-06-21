@@ -15,6 +15,7 @@ func (tc *ThreadChatDB) CreateThreadChat(ctx context.Context, th domain.ThreadCh
 ) (domain.ThreadChat, domain.ThreadChatMessage, error) {
 	var message domain.ThreadChatMessage
 
+	// start transaction
 	tx, err := tc.db.Begin(ctx)
 	if err != nil {
 		slog.Error("failed to start db tx", "error", err)
@@ -24,18 +25,24 @@ func (tc *ThreadChatDB) CreateThreadChat(ctx context.Context, th domain.ThreadCh
 	defer tx.Rollback(ctx)
 
 	thId := th.GenId()
-	th.Status = domain.ThreadStatus{}.Todo() // set status
+	if th.Status == "" {
+		th.Status = domain.ThreadStatus{}.DefaultStatus() // set status
+	}
+
+	if th.Priority == "" {
+		th.Priority = domain.ThreadPriority{}.DefaultPriority() // set priority
+	}
 	err = tx.QueryRow(ctx, `INSERT INTO
 		thread_chat(workspace_id, customer_id, thread_chat_id,
-			title, summary, status, read, replied
+			title, summary, status, read, replied, priority
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING
 		workspace_id, customer_id, assignee_id,
 		thread_chat_id, title, summary, sequence, status, read,
 		created_at, updated_at`,
 		th.WorkspaceId, th.CustomerId, thId,
-		th.Title, th.Summary, th.Status, th.Read, th.Replied).Scan(
+		th.Title, th.Summary, th.Status, th.Read, th.Replied, th.Priority).Scan(
 		&th.WorkspaceId, &th.CustomerId, &th.AssigneeId,
 		&th.ThreadChatId, &th.Title, &th.Summary,
 		&th.Sequence, &th.Status, &th.Read, &th.Replied,
@@ -78,6 +85,7 @@ func (tc *ThreadChatDB) CreateThreadChat(ctx context.Context, th domain.ThreadCh
 
 	}
 
+	// commit transaction
 	err = tx.Commit(ctx)
 	if err != nil {
 		slog.Error("failed to commit query", "error", err)
@@ -87,8 +95,7 @@ func (tc *ThreadChatDB) CreateThreadChat(ctx context.Context, th domain.ThreadCh
 	return th, message, nil
 }
 
-// returns a thread chat for the workspace and thread chat id
-// a thread chat must exist in the workspace
+// returns thread chat for the workspace
 func (tc *ThreadChatDB) GetByWorkspaceThreadChatId(ctx context.Context, workspaceId string, threadChatId string,
 ) (domain.ThreadChat, error) {
 	var th domain.ThreadChat
@@ -105,6 +112,7 @@ func (tc *ThreadChatDB) GetByWorkspaceThreadChatId(ctx context.Context, workspac
 		th.status AS status,
 		th.read AS read,
 		th.replied AS replied,
+		th.priority AS priority,
 		th.created_at AS created_at,
 		th.updated_at AS updated_at
 		FROM thread_chat th
@@ -117,7 +125,7 @@ func (tc *ThreadChatDB) GetByWorkspaceThreadChatId(ctx context.Context, workspac
 		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
 		&th.AssigneeId, &th.AssigneeName,
 		&th.ThreadChatId, &th.Title, &th.Summary,
-		&th.Sequence, &th.Status, &th.Read, &th.Replied,
+		&th.Sequence, &th.Status, &th.Read, &th.Replied, &th.Priority,
 		&th.CreatedAt, &th.UpdatedAt,
 	)
 
@@ -135,8 +143,7 @@ func (tc *ThreadChatDB) GetByWorkspaceThreadChatId(ctx context.Context, workspac
 	return th, nil
 }
 
-// returns a list of thread chats with latest message for customer in workspace
-// a thread chat message cannot exist without thread chat
+// returns list of thread chats with latest message for the customer
 func (tc *ThreadChatDB) GetListByWorkspaceCustomerId(ctx context.Context, workspaceId string, customerId string,
 ) ([]domain.ThreadChatWithMessage, error) {
 	var th domain.ThreadChat
@@ -162,6 +169,7 @@ func (tc *ThreadChatDB) GetListByWorkspaceCustomerId(ctx context.Context, worksp
 			th.status AS status,
 			th.read AS read,
 			th.replied AS replied,
+			th.priority AS priority,
 			th.created_at AS created_at,
 			th.updated_at AS updated_at,
 			thm.thread_chat_id AS message_thread_chat_id,
@@ -198,7 +206,7 @@ func (tc *ThreadChatDB) GetListByWorkspaceCustomerId(ctx context.Context, worksp
 		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
 		&th.AssigneeId, &th.AssigneeName,
 		&th.ThreadChatId, &th.Title, &th.Summary,
-		&th.Sequence, &th.Status, &th.Read, &th.Replied,
+		&th.Sequence, &th.Status, &th.Read, &th.Replied, &th.Priority,
 		&th.CreatedAt, &th.UpdatedAt,
 		&message.ThreadChatId, &message.ThreadChatMessageId, &message.Body,
 		&message.Sequence, &message.CreatedAt, &message.UpdatedAt,
@@ -220,7 +228,7 @@ func (tc *ThreadChatDB) GetListByWorkspaceCustomerId(ctx context.Context, worksp
 	return ths, nil
 }
 
-// assigns a member to a thread chat
+// assign member to a existing thread chat
 // a member exist in the workspace
 func (tc *ThreadChatDB) SetAssignee(ctx context.Context, threadChatId string, assigneeId string,
 ) (domain.ThreadChat, error) {
@@ -231,7 +239,7 @@ func (tc *ThreadChatDB) SetAssignee(ctx context.Context, threadChatId string, as
 		WHERE thread_chat_id = $2
 		RETURNING
 		workspace_id, thread_chat_id, customer_id, assignee_id,
-		title, summary, sequence, status, read, replied,
+		title, summary, sequence, status, read, replied, priority,
 		created_at, updated_at
 	) SELECT
 		ups.workspace_id AS workspace_id,
@@ -246,6 +254,7 @@ func (tc *ThreadChatDB) SetAssignee(ctx context.Context, threadChatId string, as
 		ups.status AS status,
 		ups.read AS read,
 		ups.replied AS replied,
+		ups.priority AS priority,
 		ups.created_at AS created_at,
 		ups.updated_at AS updated_at
 	FROM ups
@@ -256,7 +265,7 @@ func (tc *ThreadChatDB) SetAssignee(ctx context.Context, threadChatId string, as
 		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
 		&th.AssigneeId, &th.AssigneeName,
 		&th.ThreadChatId, &th.Title, &th.Summary,
-		&th.Sequence, &th.Status, &th.Read, &th.Replied,
+		&th.Sequence, &th.Status, &th.Read, &th.Replied, &th.Priority,
 		&th.CreatedAt, &th.UpdatedAt,
 	)
 
@@ -274,7 +283,7 @@ func (tc *ThreadChatDB) SetAssignee(ctx context.Context, threadChatId string, as
 	return th, nil
 }
 
-// marks a thread chat as replied or not replied
+// marks a thread chat as replied or un-replied
 func (tc *ThreadChatDB) SetReplied(ctx context.Context, threadChatId string, replied bool,
 ) (domain.ThreadChat, error) {
 	var th domain.ThreadChat
@@ -284,7 +293,7 @@ func (tc *ThreadChatDB) SetReplied(ctx context.Context, threadChatId string, rep
 		WHERE thread_chat_id = $2
 		RETURNING
 		workspace_id, thread_chat_id, customer_id, assignee_id,
-		title, summary, sequence, status, read, replied,
+		title, summary, sequence, status, read, replied, priority,
 		created_at, updated_at
 	) SELECT
 		ups.workspace_id AS workspace_id,
@@ -299,6 +308,7 @@ func (tc *ThreadChatDB) SetReplied(ctx context.Context, threadChatId string, rep
 		ups.status AS status,
 		ups.read AS read,
 		ups.replied AS replied,
+		ups.priority AS priority,
 		ups.created_at AS created_at,
 		ups.updated_at AS updated_at
 	FROM ups
@@ -309,7 +319,7 @@ func (tc *ThreadChatDB) SetReplied(ctx context.Context, threadChatId string, rep
 		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
 		&th.AssigneeId, &th.AssigneeName,
 		&th.ThreadChatId, &th.Title, &th.Summary,
-		&th.Sequence, &th.Status, &th.Read, &th.Replied,
+		&th.Sequence, &th.Status, &th.Read, &th.Replied, &th.Priority,
 		&th.CreatedAt, &th.UpdatedAt,
 	)
 
@@ -327,6 +337,7 @@ func (tc *ThreadChatDB) SetReplied(ctx context.Context, threadChatId string, rep
 	return th, nil
 }
 
+// returns list of thread chats for the workspace
 func (tc *ThreadChatDB) GetListByWorkspaceId(
 	ctx context.Context, workspaceId string,
 ) ([]domain.ThreadChatWithMessage, error) {
@@ -347,6 +358,7 @@ func (tc *ThreadChatDB) GetListByWorkspaceId(
 			th.status AS status,
 			th.read AS read,
 			th.replied AS replied,
+			th.priority AS priority,
 			th.created_at AS created_at,
 			th.updated_at AS updated_at,
 			thm.thread_chat_id AS message_thread_chat_id,
@@ -383,7 +395,7 @@ func (tc *ThreadChatDB) GetListByWorkspaceId(
 		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
 		&th.AssigneeId, &th.AssigneeName,
 		&th.ThreadChatId, &th.Title, &th.Summary,
-		&th.Sequence, &th.Status, &th.Read, &th.Replied,
+		&th.Sequence, &th.Status, &th.Read, &th.Replied, &th.Priority,
 		&th.CreatedAt, &th.UpdatedAt,
 		&message.ThreadChatId, &message.ThreadChatMessageId, &message.Body,
 		&message.Sequence, &message.CreatedAt, &message.UpdatedAt,
@@ -517,7 +529,7 @@ func (tc *ThreadChatDB) GetListByWorkspaceId(
 // 	return ths, nil
 // }
 
-// returns a list of member assigned thread chats with latest message in workspace
+// returns a list of thread chats assigned to a member in the workspace
 func (tc *ThreadChatDB) GetMemberAssignedListByWorkspaceId(ctx context.Context, workspaceId string, memberId string,
 ) ([]domain.ThreadChatWithMessage, error) {
 	var th domain.ThreadChat
@@ -537,6 +549,7 @@ func (tc *ThreadChatDB) GetMemberAssignedListByWorkspaceId(ctx context.Context, 
 			th.status AS status,
 			th.read AS read,
 			th.replied AS replied,
+			th.priority AS priority,
 			th.created_at AS created_at,
 			th.updated_at AS updated_at,
 			thm.thread_chat_id AS message_thread_chat_id,
@@ -573,7 +586,7 @@ func (tc *ThreadChatDB) GetMemberAssignedListByWorkspaceId(ctx context.Context, 
 		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
 		&th.AssigneeId, &th.AssigneeName,
 		&th.ThreadChatId, &th.Title, &th.Summary,
-		&th.Sequence, &th.Status, &th.Read, &th.Replied,
+		&th.Sequence, &th.Status, &th.Read, &th.Replied, &th.Priority,
 		&th.CreatedAt, &th.UpdatedAt,
 		&message.ThreadChatId, &message.ThreadChatMessageId, &message.Body,
 		&message.Sequence, &message.CreatedAt, &message.UpdatedAt,
@@ -595,7 +608,7 @@ func (tc *ThreadChatDB) GetMemberAssignedListByWorkspaceId(ctx context.Context, 
 	return ths, nil
 }
 
-// returns a list of unassigned thread chats with latest message in workspace
+// returns a list of unassigned thread chats in the workspace
 func (tc *ThreadChatDB) GetUnassignedListByWorkspaceId(ctx context.Context, workspaceId string,
 ) ([]domain.ThreadChatWithMessage, error) {
 	var th domain.ThreadChat
@@ -615,6 +628,7 @@ func (tc *ThreadChatDB) GetUnassignedListByWorkspaceId(ctx context.Context, work
 			th.status AS status,
 			th.read AS read,
 			th.replied AS replied,
+			th.priority AS priority,
 			th.created_at AS created_at,
 			th.updated_at AS updated_at,
 			thm.thread_chat_id AS message_thread_chat_id,
@@ -651,7 +665,7 @@ func (tc *ThreadChatDB) GetUnassignedListByWorkspaceId(ctx context.Context, work
 		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
 		&th.AssigneeId, &th.AssigneeName,
 		&th.ThreadChatId, &th.Title, &th.Summary,
-		&th.Sequence, &th.Status, &th.Read, &th.Replied,
+		&th.Sequence, &th.Status, &th.Read, &th.Replied, &th.Priority,
 		&th.CreatedAt, &th.UpdatedAt,
 		&message.ThreadChatId, &message.ThreadChatMessageId, &message.Body,
 		&message.Sequence, &message.CreatedAt, &message.UpdatedAt,
@@ -673,7 +687,7 @@ func (tc *ThreadChatDB) GetUnassignedListByWorkspaceId(ctx context.Context, work
 	return ths, nil
 }
 
-// returns a list of labelled thread chats with latest message in workspace
+// returns a list of labelled thread chats in the workspace
 func (tc *ThreadChatDB) GetLabelledListByWorkspaceId(ctx context.Context, workspaceId string, labelId string) ([]domain.ThreadChatWithMessage, error) {
 	var th domain.ThreadChat
 	var message domain.ThreadChatMessage
@@ -692,6 +706,7 @@ func (tc *ThreadChatDB) GetLabelledListByWorkspaceId(ctx context.Context, worksp
 			th.status AS status,
 			th.read AS read,
 			th.replied AS replied,
+			th.priority AS priority,
 			th.created_at AS created_at,
 			th.updated_at AS updated_at,
 			thm.thread_chat_id AS message_thread_chat_id,
@@ -730,7 +745,7 @@ func (tc *ThreadChatDB) GetLabelledListByWorkspaceId(ctx context.Context, worksp
 		&th.AssigneeId,
 		&th.AssigneeName,
 		&th.ThreadChatId, &th.Title, &th.Summary,
-		&th.Sequence, &th.Status, &th.Read, &th.Replied,
+		&th.Sequence, &th.Status, &th.Read, &th.Replied, &th.Priority,
 		&th.CreatedAt, &th.UpdatedAt,
 		&message.ThreadChatId, &message.ThreadChatMessageId, &message.Body,
 		&message.Sequence, &message.CreatedAt, &message.UpdatedAt,
@@ -770,7 +785,7 @@ func (tc *ThreadChatDB) IsExistByWorkspaceThreadChatId(ctx context.Context, work
 	return isExist, nil
 }
 
-// adds a label to a thread chat
+// add a label to a thread chat
 func (tc *ThreadChatDB) AddLabel(ctx context.Context, thl domain.ThreadChatLabel) (domain.ThreadChatLabel, bool, error) {
 	var IsCreated bool
 	id := thl.GenId()
@@ -805,7 +820,7 @@ func (tc *ThreadChatDB) AddLabel(ctx context.Context, thl domain.ThreadChatLabel
 	return thl, IsCreated, nil
 }
 
-// returns a list of labels added for a thread chat item
+// returns list of labels added to a thread chat
 func (tc *ThreadChatDB) GetLabelListByThreadChatId(ctx context.Context, threadChatId string,
 ) ([]domain.ThreadChatLabelled, error) {
 	var l domain.ThreadChatLabelled
@@ -944,7 +959,7 @@ func (tc *ThreadChatDB) CreateMemberThChatMessage(
 	return thm, nil
 }
 
-// returns a list of thread chat messages for a thread chat
+// returns list of messages in desc order for the thread chat
 func (tc *ThreadChatDB) GetMessageListByThreadChatId(ctx context.Context, threadChatId string,
 ) ([]domain.ThreadChatMessage, error) {
 	var message domain.ThreadChatMessage
@@ -987,7 +1002,7 @@ func (tc *ThreadChatDB) GetMessageListByThreadChatId(ctx context.Context, thread
 	return messages, nil
 }
 
-// returns count of thread chats by status in workspace
+// returns stats of thread chats by status in workspace
 func (tc *ThreadChatDB) StatusMetricsByWorkspaceId(ctx context.Context, workspaceId string,
 ) (domain.ThreadMetrics, error) {
 	var metrics domain.ThreadMetrics
@@ -1018,7 +1033,7 @@ func (tc *ThreadChatDB) StatusMetricsByWorkspaceId(ctx context.Context, workspac
 	return metrics, nil
 }
 
-// returns count of thread chats assigned to a member in workspace
+// returns stats of thread chats assigned to a member in workspace
 func (tc *ThreadChatDB) MemberAssigneeMetricsByWorkspaceId(ctx context.Context, workspaceId string, memberId string,
 ) (domain.ThreadAssigneeMetrics, error) {
 	var metrics domain.ThreadAssigneeMetrics
@@ -1048,7 +1063,7 @@ func (tc *ThreadChatDB) MemberAssigneeMetricsByWorkspaceId(ctx context.Context, 
 	return metrics, nil
 }
 
-// returns count of thread chat for each label in workspace
+// returns stats for labelled thread chats with atmost 100 labels
 func (tc *ThreadChatDB) LabelMetricsByWorkspaceId(ctx context.Context, workspaceId string,
 ) ([]domain.ThreadLabelMetric, error) {
 	var metric domain.ThreadLabelMetric

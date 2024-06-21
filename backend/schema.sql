@@ -155,6 +155,7 @@ CREATE TABLE thread_chat (
     status VARCHAR(127) NOT NULL,
     read BOOLEAN NOT NULL DEFAULT FALSE,  -- read by the member
     replied BOOLEAN NOT NULL DEFAULT FALSE,  -- replied by the member
+    priority VARCHAR(255) NOT NULL, -- priority of the thread
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     

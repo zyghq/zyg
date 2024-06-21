@@ -69,6 +69,28 @@ func (s ThreadStatus) DefaultStatus() string {
 	return s.Todo()
 }
 
+type ThreadPriority struct{}
+
+func (p ThreadPriority) Urgent() string {
+	return "urgent"
+}
+
+func (p ThreadPriority) High() string {
+	return "high"
+}
+
+func (p ThreadPriority) Normal() string {
+	return "normal"
+}
+
+func (p ThreadPriority) Low() string {
+	return "low"
+}
+
+func (p ThreadPriority) DefaultPriority() string {
+	return p.Normal()
+}
+
 type LabelAddedBy struct{}
 
 func (a LabelAddedBy) User() string {
@@ -309,6 +331,7 @@ type ThreadChat struct {
 	Status       string
 	Read         bool
 	Replied      bool
+	Priority     string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }

@@ -57,6 +57,7 @@ export type ThreadChatStoreType = {
   status: string;
   read: boolean;
   replied: boolean;
+  priority: string;
   customerId: string;
   assigneeId: string | null;
   createdAt: string;
@@ -139,9 +140,11 @@ export interface IWorkspaceEntities {
 }
 
 type ReplyStatus = "replied" | "unreplied";
+type Priority = "urgent" | "high" | "normal" | "low";
 
 export type reasonsFiltersType = ReplyStatus | ReplyStatus[] | undefined;
 export type assigneesFiltersType = string | string[] | undefined;
+export type prioritiesFiltersType = Priority | Priority[] | undefined;
 
 export type sortByType = "last-message-dsc" | "created-asc" | "created-dsc";
 
@@ -166,6 +169,7 @@ interface IWorkspaceStoreActions {
     state: WorkspaceStoreStateType,
     assigness: assigneesFiltersType,
     reasons: reasonsFiltersType,
+    priorities: prioritiesFiltersType,
     sortBy: sortByType
   ): ThreadChatStoreType[];
   viewMyTodoThreads(
@@ -173,12 +177,14 @@ interface IWorkspaceStoreActions {
     memberId: string,
     assignees: assigneesFiltersType,
     reasons: reasonsFiltersType,
+    priorities: prioritiesFiltersType,
     sortBy: sortByType
   ): ThreadChatStoreType[];
   viewUnassignedTodoThreads(
     state: WorkspaceStoreStateType,
     assignees: assigneesFiltersType,
     reasons: reasonsFiltersType,
+    priorities: prioritiesFiltersType,
     sortBy: sortByType
   ): ThreadChatStoreType[];
   viewCurrentThreadQueue(
@@ -222,6 +228,26 @@ function filterByReasons(
     if (reasons === "unreplied") {
       return threads.filter((t) => !t.replied);
     }
+  }
+  // no change
+  return threads;
+}
+
+function filterByPriorities(
+  threads: ThreadChatStoreType[],
+  priorities: prioritiesFiltersType
+) {
+  if (priorities && Array.isArray(priorities)) {
+    const uniquePriorities = [...new Set(priorities)];
+    const filtered = [];
+    for (const priority of uniquePriorities) {
+      filtered.push(...threads.filter((t) => t.priority === priority));
+    }
+    return filtered;
+  }
+
+  if (priorities && typeof priorities === "string") {
+    return threads.filter((t) => t.priority === priorities);
   }
   // no change
   return threads;
@@ -284,6 +310,7 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
         state: WorkspaceStoreStateType,
         assigness: assigneesFiltersType,
         reasons: reasonsFiltersType,
+        priorities: prioritiesFiltersType,
         sortBy: sortByType = "last-message-dsc"
       ) => {
         const threads = state.threadChats
@@ -292,7 +319,11 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
         const todoThreads = threads.filter((t) => t.status === "todo");
         const assigneesFiltered = filterByAssignees(todoThreads, assigness);
         const reasonsFiltered = filterByReasons(assigneesFiltered, reasons);
-        const sortedThreads = sortThreads(reasonsFiltered, sortBy);
+        const prioritiesFiltered = filterByPriorities(
+          reasonsFiltered,
+          priorities
+        );
+        const sortedThreads = sortThreads(prioritiesFiltered, sortBy);
         state.currentThreadQueue = {
           status: "todo",
           from: "All Threads",
@@ -305,6 +336,7 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
         memberId: string,
         assignees: assigneesFiltersType,
         reasons: reasonsFiltersType,
+        priorities: prioritiesFiltersType,
         sortBy: sortByType = "last-message-dsc"
       ) => {
         const threads = state.threadChats
@@ -315,7 +347,11 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
         );
         const assigneesFiltered = filterByAssignees(myThreads, assignees);
         const reasonsFiltered = filterByReasons(assigneesFiltered, reasons);
-        const sortedThreads = sortThreads(reasonsFiltered, sortBy);
+        const prioritiesFiltered = filterByPriorities(
+          reasonsFiltered,
+          priorities
+        );
+        const sortedThreads = sortThreads(prioritiesFiltered, sortBy);
         state.currentThreadQueue = {
           status: "todo",
           from: "My Threads",
@@ -326,7 +362,8 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
       viewUnassignedTodoThreads: (
         state: WorkspaceStoreStateType,
         assignees: assigneesFiltersType,
-        reasons,
+        reasons: reasonsFiltersType,
+        priorities: prioritiesFiltersType,
         sortBy = "last-message-dsc"
       ) => {
         const threads = state.threadChats
@@ -340,7 +377,11 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
           assignees
         );
         const reasonsFiltered = filterByReasons(assigneesFiltered, reasons);
-        const sortedThreads = sortThreads(reasonsFiltered, sortBy);
+        const prioritiesFiltered = filterByPriorities(
+          reasonsFiltered,
+          priorities
+        );
+        const sortedThreads = sortThreads(prioritiesFiltered, sortBy);
         state.currentThreadQueue = {
           status: "todo",
           from: "Unassigned Threads",

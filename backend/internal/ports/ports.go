@@ -54,7 +54,7 @@ type CustomerServicer interface {
 type ThreadChatServicer interface {
 	CreateCustomerThread(ctx context.Context, th domain.ThreadChat, msg string) (domain.ThreadChat, domain.ThreadChatMessage, error)
 	WorkspaceThread(ctx context.Context, workspaceId string, threadChatId string) (domain.ThreadChat, error)
-	WorkspaceCustomers(ctx context.Context, workspaceId string, customerId string) ([]domain.ThreadChatWithMessage, error)
+	WorkspaceCustomerThreadChats(ctx context.Context, workspaceId string, customerId string) ([]domain.ThreadChatWithMessage, error)
 	AssignMember(ctx context.Context, threadChatId string, assigneeId string) (domain.ThreadChat, error)
 	MarkReplied(ctx context.Context, threadChatId string, replied bool) (domain.ThreadChat, error)
 	WorkspaceThreads(ctx context.Context, workspaceId string) ([]domain.ThreadChatWithMessage, error)

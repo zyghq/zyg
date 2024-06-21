@@ -51,7 +51,7 @@ func (s *ThreadChatService) WorkspaceThread(ctx context.Context, workspaceId str
 }
 
 // returns a list of thread chat for the customer in the workspace.
-func (s *ThreadChatService) WorkspaceCustomers(ctx context.Context, workspaceId string, customerId string,
+func (s *ThreadChatService) WorkspaceCustomerThreadChats(ctx context.Context, workspaceId string, customerId string,
 ) ([]domain.ThreadChatWithMessage, error) {
 	threads, err := s.repo.GetListByWorkspaceCustomerId(ctx, workspaceId, customerId)
 

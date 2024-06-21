@@ -272,7 +272,7 @@ function ThreadDetail() {
               className={cn("hidden", currentQueue ? "sm:block" : "")}
             >
               <div className="flex h-14 flex-col justify-center border-b px-4">
-                <div className="font-semibold">All Threads</div>
+                <div className="font-semibold">{currentQueue?.from}</div>
               </div>
               <ScrollArea className="h-[calc(100dvh-4rem)]">
                 {currentQueue && (

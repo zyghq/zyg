@@ -455,6 +455,7 @@ function makeThreadsStoreable(
       status,
       read,
       replied,
+      priority,
       createdAt,
       updatedAt,
     } = thread;
@@ -464,6 +465,7 @@ function makeThreadsStoreable(
       status,
       read,
       replied,
+      priority,
       customerId: customer.customerId,
       assigneeId: assignee ? assignee.memberId : null,
       createdAt,

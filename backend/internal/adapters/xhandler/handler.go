@@ -230,6 +230,7 @@ func (h *CustomerHandler) handleCreateCustomerThChat(
 		Status:       th.Status,
 		Read:         th.Read,
 		Replied:      th.Replied,
+		Priority:     th.Priority,
 		Customer:     threadCustomerRepr,
 		Assignee:     threadAssigneeRepr,
 		CreatedAt:    th.CreatedAt,
@@ -291,7 +292,7 @@ func (h *CustomerHandler) handleCreateThChatMessage(
 		return
 	}
 
-	th, err := h.ths.WorkspaceThread(ctx, workspace.WorkspaceId, threadId)
+	thread, err := h.ths.WorkspaceThread(ctx, workspace.WorkspaceId, threadId)
 
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		slog.Warn(
@@ -313,13 +314,13 @@ func (h *CustomerHandler) handleCreateThChatMessage(
 		return
 	}
 
-	thm, err := h.ths.CreateCustomerMessage(ctx, th, customer, message.Message)
+	thm, err := h.ths.CreateCustomerMessage(ctx, thread, customer, message.Message)
 
 	if err != nil {
 		slog.Error(
 			"failed to create thread chat message for customer "+
 				"something went wrong",
-			slog.String("threadChatId", th.ThreadChatId),
+			slog.String("threadChatId", thread.ThreadChatId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -331,15 +332,15 @@ func (h *CustomerHandler) handleCreateThChatMessage(
 
 	// for thread
 	threadCustomerRepr := ThCustomerRespPayload{
-		CustomerId: th.CustomerId,
-		Name:       th.CustomerName,
+		CustomerId: thread.CustomerId,
+		Name:       thread.CustomerName,
 	}
 
 	// for thread
-	if th.AssigneeId.Valid {
+	if thread.AssigneeId.Valid {
 		threadAssigneeRepr = &ThMemberRespPayload{
-			MemberId: th.AssigneeId.String,
-			Name:     th.AssigneeName,
+			MemberId: thread.AssigneeId.String,
+			Name:     thread.AssigneeName,
 		}
 	}
 
@@ -357,7 +358,7 @@ func (h *CustomerHandler) handleCreateThChatMessage(
 	}
 
 	threadMessage := ThChatMessageRespPayload{
-		ThreadChatId:        th.ThreadChatId,
+		ThreadChatId:        thread.ThreadChatId,
 		ThreadChatMessageId: thm.ThreadChatMessageId,
 		Body:                thm.Body,
 		Sequence:            thm.Sequence,
@@ -370,15 +371,16 @@ func (h *CustomerHandler) handleCreateThChatMessage(
 	messages := make([]ThChatMessageRespPayload, 0, 1)
 	messages = append(messages, threadMessage)
 	resp := ThChatRespPayload{
-		ThreadChatId: th.ThreadChatId,
-		Sequence:     th.Sequence,
-		Status:       th.Status,
-		Read:         th.Read,
-		Replied:      th.Replied,
+		ThreadChatId: thread.ThreadChatId,
+		Sequence:     thread.Sequence,
+		Status:       thread.Status,
+		Read:         thread.Read,
+		Replied:      thread.Replied,
+		Priority:     thread.Priority,
 		Customer:     threadCustomerRepr,
 		Assignee:     threadAssigneeRepr,
-		CreatedAt:    th.CreatedAt,
-		UpdatedAt:    th.UpdatedAt,
+		CreatedAt:    thread.CreatedAt,
+		UpdatedAt:    thread.UpdatedAt,
 		Messages:     messages,
 	}
 
@@ -388,7 +390,7 @@ func (h *CustomerHandler) handleCreateThChatMessage(
 		slog.Error(
 			"failed to encode thread chat message to json "+
 				"might need to check the json encoding defn",
-			slog.String("threadChatId", th.ThreadChatId),
+			slog.String("threadChatId", thread.ThreadChatId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -423,7 +425,7 @@ func (h *CustomerHandler) handleGetThChatMesssages(
 		return
 	}
 
-	th, err := h.ths.WorkspaceThread(ctx, workspace.WorkspaceId, threadId)
+	thread, err := h.ths.WorkspaceThread(ctx, workspace.WorkspaceId, threadId)
 
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		slog.Warn(
@@ -435,13 +437,13 @@ func (h *CustomerHandler) handleGetThChatMesssages(
 		return
 	}
 
-	results, err := h.ths.ThreadChatMessages(ctx, th.ThreadChatId)
+	results, err := h.ths.ThreadChatMessages(ctx, thread.ThreadChatId)
 
 	if err != nil {
 		slog.Error(
 			"failed to get list of thread chat messages for customer "+
 				"something went wrong",
-			slog.String("threadChatId", th.ThreadChatId),
+			slog.String("threadChatId", thread.ThreadChatId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -466,7 +468,7 @@ func (h *CustomerHandler) handleGetThChatMesssages(
 		}
 
 		threadMessage := ThChatMessageRespPayload{
-			ThreadChatId:        th.ThreadChatId,
+			ThreadChatId:        thread.ThreadChatId,
 			ThreadChatMessageId: thm.ThreadChatMessageId,
 			Body:                thm.Body,
 			Sequence:            thm.Sequence,
@@ -483,28 +485,29 @@ func (h *CustomerHandler) handleGetThChatMesssages(
 
 	// for thread
 	threadCustomerRepr := ThCustomerRespPayload{
-		CustomerId: th.CustomerId,
-		Name:       th.CustomerName,
+		CustomerId: thread.CustomerId,
+		Name:       thread.CustomerName,
 	}
 
 	// for thread
-	if th.AssigneeId.Valid {
+	if thread.AssigneeId.Valid {
 		threadAssigneeRepr = &ThMemberRespPayload{
-			MemberId: th.AssigneeId.String,
-			Name:     th.AssigneeName,
+			MemberId: thread.AssigneeId.String,
+			Name:     thread.AssigneeName,
 		}
 	}
 
 	resp := ThChatRespPayload{
-		ThreadChatId: th.ThreadChatId,
-		Sequence:     th.Sequence,
-		Status:       th.Status,
-		Read:         th.Read,
-		Replied:      th.Replied,
+		ThreadChatId: thread.ThreadChatId,
+		Sequence:     thread.Sequence,
+		Status:       thread.Status,
+		Read:         thread.Read,
+		Replied:      thread.Replied,
+		Priority:     thread.Priority,
 		Customer:     threadCustomerRepr,
 		Assignee:     threadAssigneeRepr,
-		CreatedAt:    th.CreatedAt,
-		UpdatedAt:    th.UpdatedAt,
+		CreatedAt:    thread.CreatedAt,
+		UpdatedAt:    thread.UpdatedAt,
 		Messages:     messages,
 	}
 
@@ -514,7 +517,7 @@ func (h *CustomerHandler) handleGetThChatMesssages(
 		slog.Error(
 			"failed to encode thread chat messages to json "+
 				"might need to check the json encoding defn",
-			slog.String("threadChatId", th.ThreadChatId),
+			slog.String("threadChatId", thread.ThreadChatId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -546,9 +549,7 @@ func (h *CustomerHandler) handleGetCustomerThChats(
 		return
 	}
 
-	// @sanchitrk: rename this method?
-	// something like Threads
-	ths, err := h.ths.WorkspaceCustomers(ctx, workspace.WorkspaceId, customer.CustomerId)
+	results, err := h.ths.WorkspaceCustomerThreadChats(ctx, workspace.WorkspaceId, customer.CustomerId)
 
 	if errors.Is(err, services.ErrThreadChat) {
 		slog.Error(
@@ -573,7 +574,7 @@ func (h *CustomerHandler) handleGetCustomerThChats(
 	}
 
 	threads := make([]ThChatRespPayload, 0, 100)
-	for _, th := range ths {
+	for _, th := range results {
 		messages := make([]ThChatMessageRespPayload, 0, 1)
 
 		var threadAssigneeRepr *ThMemberRespPayload
@@ -624,6 +625,7 @@ func (h *CustomerHandler) handleGetCustomerThChats(
 			Status:       th.ThreadChat.Status,
 			Read:         th.ThreadChat.Read,
 			Replied:      th.ThreadChat.Replied,
+			Priority:     th.ThreadChat.Priority,
 			Customer:     threadCustomerRepr,
 			Assignee:     threadAssigneeRepr,
 			CreatedAt:    th.ThreadChat.CreatedAt,

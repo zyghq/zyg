@@ -1,11 +1,9 @@
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { ThreadChatStoreType } from "@/db/store";
 import { ChatBubbleIcon, ResetIcon } from "@radix-ui/react-icons";
-import { ReloadIcon } from "@radix-ui/react-icons";
 import Avatar from "boring-avatars";
 import { useStore } from "zustand";
 import { useWorkspaceStore } from "@/providers";
@@ -137,17 +135,6 @@ export function ThreadList({
           variant={variant}
         />
       ))}
-      <div
-        className={cn(
-          "flex justify-start",
-          variant === "compress" && "m-1 justify-center"
-        )}
-      >
-        <Button variant="outline" size="sm">
-          <ReloadIcon className="mr-1 h-3 w-3" />
-          Load more
-        </Button>
-      </div>
     </div>
   );
 }

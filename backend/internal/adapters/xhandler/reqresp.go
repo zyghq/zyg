@@ -101,6 +101,7 @@ type ThChatRespPayload struct {
 	Status       string
 	Read         bool
 	Replied      bool
+	Priority     string
 	Customer     ThCustomerRespPayload
 	Assignee     *ThMemberRespPayload
 	CreatedAt    time.Time
@@ -121,6 +122,7 @@ func (thresp ThChatRespPayload) MarshalJSON() ([]byte, error) {
 		Status       string                     `json:"status"`
 		Read         bool                       `json:"read"`
 		Replied      bool                       `json:"replied"`
+		Priority     string                     `json:"priority"`
 		Customer     ThCustomerRespPayload      `json:"customer"`
 		Assignee     *ThMemberRespPayload       `json:"assignee"`
 		CreatedAt    string                     `json:"createdAt"`
@@ -132,6 +134,7 @@ func (thresp ThChatRespPayload) MarshalJSON() ([]byte, error) {
 		Status:       thresp.Status,
 		Read:         thresp.Read,
 		Replied:      thresp.Replied,
+		Priority:     thresp.Priority,
 		Customer:     thresp.Customer,
 		Assignee:     assignee,
 		CreatedAt:    thresp.CreatedAt.Format(time.RFC3339),

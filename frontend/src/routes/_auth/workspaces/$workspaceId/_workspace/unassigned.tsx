@@ -8,7 +8,11 @@ import { CheckCircle, CircleIcon, EclipseIcon } from "lucide-react";
 import { ThreadList } from "@/components/workspace/threads";
 import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
-import { reasonsFiltersType, assigneesFiltersType } from "@/db/store";
+import {
+  reasonsFiltersType,
+  assigneesFiltersType,
+  prioritiesFiltersType,
+} from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
 
 export const Route = createFileRoute(
@@ -19,7 +23,7 @@ export const Route = createFileRoute(
 
 function UnassignedThreads() {
   const workspaceStore = useWorkspaceStore();
-  const { status, reasons, sort, assignees } = Route.useSearch();
+  const { status, reasons, sort, assignees, priorities } = Route.useSearch();
   const navigate = useNavigate();
 
   const workspaceId = useStore(
@@ -31,6 +35,7 @@ function UnassignedThreads() {
       state,
       assignees as assigneesFiltersType,
       reasons as reasonsFiltersType,
+      priorities as prioritiesFiltersType,
       sort
     )
   );

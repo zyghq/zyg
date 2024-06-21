@@ -77,6 +77,7 @@ export const threadChatResponseSchema = z.object({
   status: z.string(),
   read: z.boolean(),
   replied: z.boolean(),
+  priority: z.string(),
   customer: z.object({
     customerId: z.string(),
     name: z.string(),
@@ -185,6 +186,7 @@ export const threadChatMessagesResponseSchema = z.object({
   status: z.string(),
   read: z.boolean(),
   replied: z.boolean(),
+  priority: z.string(),
   customer: z.object({
     customerId: z.string(),
     name: z.string(),

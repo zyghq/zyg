@@ -10,7 +10,11 @@ import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
 import { ThreadList } from "@/components/workspace/threads";
 
-import { reasonsFiltersType, assigneesFiltersType } from "@/db/store";
+import {
+  reasonsFiltersType,
+  assigneesFiltersType,
+  prioritiesFiltersType,
+} from "@/db/store";
 
 export const Route = createFileRoute(
   "/_auth/workspaces/$workspaceId/_workspace/"
@@ -21,7 +25,7 @@ export const Route = createFileRoute(
 function AllThreads() {
   const workspaceStore = useWorkspaceStore();
   const navigate = useNavigate();
-  const { status, reasons, sort, assignees } = Route.useSearch();
+  const { status, reasons, sort, assignees, priorities } = Route.useSearch();
 
   const workspaceId = useStore(
     workspaceStore,
@@ -32,6 +36,7 @@ function AllThreads() {
       state,
       assignees as assigneesFiltersType,
       reasons as reasonsFiltersType,
+      priorities as prioritiesFiltersType,
       sort
     )
   );
