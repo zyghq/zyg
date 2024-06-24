@@ -34,6 +34,7 @@ import {
 } from "@/db/api";
 import { NotFound } from "@/components/notfound";
 import { PropertiesForm } from "@/components/workspace/thread/properties-form";
+import { CheckCircleIcon, EclipseIcon } from "lucide-react";
 
 export const Route = createFileRoute(
   "/_auth/workspaces/$workspaceId/threads/$threadId/"
@@ -349,8 +350,18 @@ function ThreadDetail() {
                 </ResizablePanel>
                 <ResizableHandle withHandle />
                 <ResizablePanel defaultSize={25} maxSize={50} minSize={20}>
-                  <div className="flex h-full items-center justify-center p-6">
-                    <span className="font-semibold">Editor</span>
+                  <div className="flex flex-col h-full p-2">
+                    <div>...</div>
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="ghost">
+                        <EclipseIcon className="mr-1 h-4 w-4 text-fuchsia-500" />
+                        Snooze
+                      </Button>
+                      <Button size="sm" variant="outline">
+                        <CheckCircleIcon className="mr-1 h-4 w-4 text-green-500" />
+                        Mark as Done
+                      </Button>
+                    </div>
                   </div>
                 </ResizablePanel>
               </ResizablePanelGroup>

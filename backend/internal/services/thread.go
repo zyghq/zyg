@@ -33,8 +33,8 @@ func (s *ThreadChatService) CreateCustomerThread(ctx context.Context, th domain.
 	return thread, message, nil
 }
 
-func (s *ThreadChatService) UpdateThreadChat(ctx context.Context, th domain.ThreadChat) (domain.ThreadChat, error) {
-	thread, err := s.repo.UpdateThreadChatById(ctx, th)
+func (s *ThreadChatService) UpdateThreadChat(ctx context.Context, th domain.ThreadChat, fields []string) (domain.ThreadChat, error) {
+	thread, err := s.repo.UpdateThreadChatById(ctx, th, fields)
 
 	if err != nil {
 		return thread, ErrThreadChat

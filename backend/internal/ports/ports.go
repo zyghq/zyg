@@ -55,7 +55,7 @@ type CustomerServicer interface {
 type ThreadChatServicer interface {
 	CreateCustomerThread(ctx context.Context, th domain.ThreadChat, msg string) (domain.ThreadChat, domain.ThreadChatMessage, error)
 	WorkspaceThread(ctx context.Context, workspaceId string, threadChatId string) (domain.ThreadChat, error)
-	UpdateThreadChat(ctx context.Context, th domain.ThreadChat) (domain.ThreadChat, error)
+	UpdateThreadChat(ctx context.Context, th domain.ThreadChat, fields []string) (domain.ThreadChat, error)
 	WorkspaceCustomerThreadChats(ctx context.Context, workspaceId string, customerId string) ([]domain.ThreadChatWithMessage, error)
 	AssignMember(ctx context.Context, threadChatId string, assigneeId string) (domain.ThreadChat, error)
 	MarkReplied(ctx context.Context, threadChatId string, replied bool) (domain.ThreadChat, error)
@@ -114,7 +114,7 @@ type CustomerRepositorer interface {
 type ThreadChatRepositorer interface {
 	CreateThreadChat(ctx context.Context, th domain.ThreadChat, msg string) (domain.ThreadChat, domain.ThreadChatMessage, error)
 	GetByWorkspaceThreadChatId(ctx context.Context, workspaceId string, threadChatId string) (domain.ThreadChat, error)
-	UpdateThreadChatById(ctx context.Context, th domain.ThreadChat) (domain.ThreadChat, error)
+	UpdateThreadChatById(ctx context.Context, th domain.ThreadChat, fields []string) (domain.ThreadChat, error)
 	GetListByWorkspaceCustomerId(ctx context.Context, workspaceId string, customerId string) ([]domain.ThreadChatWithMessage, error)
 	SetAssignee(ctx context.Context, threadChatId string, assigneeId string) (domain.ThreadChat, error)
 	SetReplied(ctx context.Context, threadChatId string, replied bool) (domain.ThreadChat, error)

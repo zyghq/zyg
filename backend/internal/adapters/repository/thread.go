@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 
 	"github.com/jackc/pgx/v5"
@@ -97,13 +98,32 @@ func (tc *ThreadChatDB) CreateThreadChat(ctx context.Context, th domain.ThreadCh
 
 // update a thread chat
 // @sanchitrk!: fix
-func (tc *ThreadChatDB) UpdateThreadChatById(ctx context.Context, th domain.ThreadChat) (domain.ThreadChat, error) {
+func (tc *ThreadChatDB) UpdateThreadChatById(ctx context.Context, th domain.ThreadChat, fields []string,
+) (domain.ThreadChat, error) {
+
+	args := make([]interface{}, 0, len(fields))
+
+	ups := `UPDATE thread_chat SET`
+
+	for i, field := range fields {
+		if field == "priority" {
+			args = append(args, th.Priority)
+			ups += fmt.Sprintf(" %s = $%d,", "priority", i+1)
+		} else if field == "assignee" {
+			args = append(args, th.AssigneeId)
+			ups += fmt.Sprintf(" %s = $%d,", "assignee_id", i+1)
+		} else if field == "status" {
+			args = append(args, th.Status)
+			ups += fmt.Sprintf(" %s = $%d,", "status", i+1)
+		}
+	}
+
+	ups += " updated_at = NOW()"
+	ups += fmt.Sprintf(" WHERE thread_chat_id = $%d", len(fields)+1)
+	args = append(args, th.ThreadChatId)
+
 	stmt := `WITH ups AS (
-		UPDATE thread_chat
-		SET priority = $1,
-		assignee_id = $2,
-		updated_at = NOW()
-		WHERE thread_chat_id = $3
+		%s
 		RETURNING
 		workspace_id, thread_chat_id, customer_id, assignee_id,
 		title, summary, sequence, status, read, replied, priority,
@@ -128,7 +148,9 @@ func (tc *ThreadChatDB) UpdateThreadChatById(ctx context.Context, th domain.Thre
 	INNER JOIN customer c ON ups.customer_id = c.customer_id
 	LEFT OUTER JOIN member m ON ups.assignee_id = m.member_id`
 
-	err := tc.db.QueryRow(ctx, stmt, th.Priority, th.AssigneeId, th.ThreadChatId).Scan(
+	stmt = fmt.Sprintf(stmt, ups)
+
+	err := tc.db.QueryRow(ctx, stmt, args...).Scan(
 		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
 		&th.AssigneeId, &th.AssigneeName,
 		&th.ThreadChatId, &th.Title, &th.Summary,

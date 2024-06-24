@@ -53,10 +53,6 @@ func (s ThreadStatus) Done() string {
 	return "done"
 }
 
-func (s ThreadStatus) InProgress() string {
-	return "inprogress"
-}
-
 func (s ThreadStatus) Snoozed() string {
 	return "snoozed"
 }
@@ -67,6 +63,17 @@ func (s ThreadStatus) UnSnoozed() string {
 
 func (s ThreadStatus) DefaultStatus() string {
 	return s.Todo()
+}
+
+func (s ThreadStatus) IsValid(status string) bool {
+	switch status {
+	case s.Done():
+		return true
+	case s.Todo():
+		return true
+	default:
+		return false
+	}
 }
 
 type ThreadPriority struct{}

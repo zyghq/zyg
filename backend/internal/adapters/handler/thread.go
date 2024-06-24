@@ -176,6 +176,9 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 		return
 	}
 
+	// make a slice of the fields
+	fields := make([]string, 0, len(reqp))
+
 	if priority, found := reqp["priority"]; found {
 		if priority == nil {
 			slog.Error(
@@ -197,6 +200,25 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 			return
 		}
 		thread.Priority = ps
+		fields = append(fields, "priority")
+	}
+
+	if status, found := reqp["status"]; found {
+		if status != nil {
+			status := status.(string)
+			isValid := domain.ThreadStatus{}.IsValid(status)
+			if !isValid {
+				slog.Error(
+					"invalid status",
+					slog.String("threadChatId", threadId),
+					slog.String("status", status),
+				)
+				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+				return
+			}
+			thread.Status = status
+			fields = append(fields, "status")
+		}
 	}
 
 	if assignee, found := reqp["assignee"]; found {
@@ -227,9 +249,10 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 		if assignee == nil {
 			thread.AssigneeId = domain.NullString(nil)
 		}
+		fields = append(fields, "assignee")
 	}
 
-	thread, err = h.ths.UpdateThreadChat(ctx, thread)
+	thread, err = h.ths.UpdateThreadChat(ctx, thread, fields)
 	if err != nil {
 		slog.Error(
 			"failed to update thread chat "+
