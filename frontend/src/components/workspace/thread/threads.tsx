@@ -30,28 +30,13 @@ function ThreadItem({
       state.viewCustomerName(state, item.customerId)
   );
 
-  //   const message = item.messages[0];
-  //   const name = item?.customer?.name || "Customer";
-  //   const { assignee } = item;
+  // const bottomRef = React.useRef<null | HTMLDivElement>(null);
 
-  //   const renderLabels = () => {
-  //     if (result.isSuccess && result.data && result.data.length) {
-  //       return (
-  //         <div className="flex gap-1">
-  //           {result.data.map((label) => (
-  //             <Badge
-  //               key={label.labelId}
-  //               variant="outline"
-  //               className="font-normal"
-  //             >
-  //               {label.name}
-  //             </Badge>
-  //           ))}
-  //         </div>
-  //       );
-  //     }
-  //     return <div className="min-h-5"></div>;
-  //   };
+  // React.useEffect(() => {
+  //   if (bottomRef.current) {
+  //     bottomRef.current.scrollIntoView({ behavior: "smooth" });
+  //   }
+  // }, []);
 
   return (
     <Link
@@ -131,13 +116,6 @@ export function ThreadList({
   threads: ThreadChatStoreType[];
   variant?: string;
 }) {
-  const bottomRef = React.useRef<null | HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    if (bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, []);
   return (
     <div
       className={cn("flex flex-col gap-2", variant === "compress" && "gap-0")}
@@ -150,7 +128,6 @@ export function ThreadList({
           variant={variant}
         />
       ))}
-      <div ref={bottomRef}></div>
     </div>
   );
 }

@@ -33,6 +33,16 @@ func (s *ThreadChatService) CreateCustomerThread(ctx context.Context, th domain.
 	return thread, message, nil
 }
 
+func (s *ThreadChatService) UpdateThreadChat(ctx context.Context, th domain.ThreadChat) (domain.ThreadChat, error) {
+	thread, err := s.repo.UpdateThreadChatById(ctx, th)
+
+	if err != nil {
+		return thread, ErrThreadChat
+	}
+
+	return thread, nil
+}
+
 // returns a thread chat by workspace and thread chat.
 // a thread chat is unique in a workspace.
 func (s *ThreadChatService) WorkspaceThread(ctx context.Context, workspaceId string, threadChatId string,

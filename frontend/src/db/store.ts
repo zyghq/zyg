@@ -9,6 +9,7 @@ import {
   workspaceMemberResponseSchema,
   accountPatSchema,
   threadChatMessageSchema,
+  threadChatLeanResponseSchema,
 } from "./schema";
 import { AccountResponseType } from "./api";
 
@@ -73,6 +74,8 @@ export type ThreadChatStoreType = {
     updatedAt: string;
   };
 };
+
+export type ThreadChatLeanType = z.infer<typeof threadChatLeanResponseSchema>;
 
 export type WorkspaceCustomerStoreType = {
   workspaceId: string;
@@ -200,6 +203,12 @@ interface IWorkspaceStoreActions {
   deletePat(patId: string): void;
   addLabel(label: WorkspaceLabelStoreType): void;
   updateLabel(labelId: string, label: WorkspaceLabelStoreType): void;
+  viewMemberName(state: WorkspaceStoreStateType, memberId: string): string;
+  updateMainThreadChat(threadChat: ThreadChatLeanType): void;
+  viewThreadChatAssigneeId(
+    state: WorkspaceStoreStateType,
+    threadChatId: string
+  ): string | null;
 }
 
 export type WorkspaceStoreStateType = IWorkspaceEntities &
@@ -496,6 +505,35 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
           }
         });
       },
+      viewMemberName: (state: WorkspaceStoreStateType, memberId: string) => {
+        const member = state.members?.[memberId];
+        return member ? member.name || "" : "";
+      },
+      updateMainThreadChat: (threadChat) => {
+        set((state) => {
+          if (state.threadChats) {
+            if (state.threadChats?.[threadChat.threadChatId]) {
+              // existing record
+              const { recentMessage, ...rest } =
+                state.threadChats[threadChat.threadChatId];
+              // updates
+              const { assignee, customer, ...updates } = threadChat;
+              state.threadChats[threadChat.threadChatId] = {
+                recentMessage,
+                ...rest,
+                ...updates,
+                customerId: customer.customerId,
+                assigneeId: assignee?.memberId || null,
+              };
+            }
+          }
+          return state;
+        });
+      },
+      viewThreadChatAssigneeId: (
+        state: WorkspaceStoreStateType,
+        threadChatId: string
+      ) => state.threadChats?.[threadChatId]?.assigneeId || null,
     }))
   );
 };

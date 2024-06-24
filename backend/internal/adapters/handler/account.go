@@ -79,7 +79,7 @@ func (h *AccountHandler) handleGetOrCreateAccount(w http.ResponseWriter, r *http
 			if err := json.NewEncoder(w).Encode(account); err != nil {
 				slog.Error(
 					"failed to encode account to json "+
-						"might need to check the json encoding defn",
+						"check the json encoding defn",
 					slog.String("accountId", account.AccountId),
 				)
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -92,7 +92,7 @@ func (h *AccountHandler) handleGetOrCreateAccount(w http.ResponseWriter, r *http
 			if err := json.NewEncoder(w).Encode(account); err != nil {
 				slog.Error(
 					"failed to encode account to json "+
-						"might need to check the json encoding defn",
+						"check the json encoding defn",
 					slog.String("accountId", account.AccountId),
 				)
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -122,7 +122,7 @@ func (h *AccountHandler) handleGetPatList(w http.ResponseWriter, r *http.Request
 	if err := json.NewEncoder(w).Encode(aps); err != nil {
 		slog.Error(
 			"failed to encode pats to json "+
-				"might need to check the json encoding defn",
+				"check the json encoding defn",
 			slog.String("accountId", account.AccountId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -167,7 +167,7 @@ func (h *AccountHandler) handleCreatePat(w http.ResponseWriter, r *http.Request,
 	if err := json.NewEncoder(w).Encode(ap); err != nil {
 		slog.Error(
 			"failed to encode account pat to json "+
-				"might need to check the json encoding defn",
+				"check the json encoding defn",
 			slog.String("patId", ap.PatId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

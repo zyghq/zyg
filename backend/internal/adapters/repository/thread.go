@@ -95,6 +95,61 @@ func (tc *ThreadChatDB) CreateThreadChat(ctx context.Context, th domain.ThreadCh
 	return th, message, nil
 }
 
+// update a thread chat
+// @sanchitrk!: fix
+func (tc *ThreadChatDB) UpdateThreadChatById(ctx context.Context, th domain.ThreadChat) (domain.ThreadChat, error) {
+	stmt := `WITH ups AS (
+		UPDATE thread_chat
+		SET priority = $1,
+		assignee_id = $2,
+		updated_at = NOW()
+		WHERE thread_chat_id = $3
+		RETURNING
+		workspace_id, thread_chat_id, customer_id, assignee_id,
+		title, summary, sequence, status, read, replied, priority,
+		created_at, updated_at
+	) SELECT
+		ups.workspace_id AS workspace_id,
+		c.customer_id AS customer_id,
+		c.name AS customer_name,
+		m.member_id AS assignee_id,
+		m.name AS assignee_name,
+		ups.thread_chat_id AS thread_chat_id,
+		ups.title AS title,
+		ups.summary AS summary,
+		ups.sequence AS sequence,
+		ups.status AS status,
+		ups.read AS read,
+		ups.replied AS replied,
+		ups.priority AS priority,
+		ups.created_at AS created_at,
+		ups.updated_at AS updated_at
+	FROM ups
+	INNER JOIN customer c ON ups.customer_id = c.customer_id
+	LEFT OUTER JOIN member m ON ups.assignee_id = m.member_id`
+
+	err := tc.db.QueryRow(ctx, stmt, th.Priority, th.AssigneeId, th.ThreadChatId).Scan(
+		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
+		&th.AssigneeId, &th.AssigneeName,
+		&th.ThreadChatId, &th.Title, &th.Summary,
+		&th.Sequence, &th.Status, &th.Read, &th.Replied, &th.Priority,
+		&th.CreatedAt, &th.UpdatedAt,
+	)
+
+	// check if query returned a row
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.ThreadChat{}, ErrEmpty
+	}
+
+	// check if query returned an error
+	if err != nil {
+		slog.Error("failed to insert query", "error", err)
+		return domain.ThreadChat{}, ErrQuery
+	}
+
+	return th, nil
+}
+
 // returns thread chat for the workspace
 func (tc *ThreadChatDB) GetByWorkspaceThreadChatId(ctx context.Context, workspaceId string, threadChatId string,
 ) (domain.ThreadChat, error) {

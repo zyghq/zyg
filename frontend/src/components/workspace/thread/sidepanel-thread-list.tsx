@@ -26,18 +26,16 @@ export function SidePanelThreadList({
           <span className="sr-only">Toggle Thread Panel</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-full px-1">
-        <ScrollArea className="h-full px-2">
-          <div className="flex flex-col">
-            <div className="flex h-8 flex-col">
-              <div className="text-sm font-semibold">{title}</div>
-            </div>
-            <ThreadList
-              workspaceId={workspaceId}
-              threads={threads}
-              variant="compress"
-            />
-          </div>
+      <SheetContent side="left" className="w-full px-0">
+        <div className="flex h-14 flex-col justify-center border-b px-4">
+          <div className="font-semibold">{title}</div>
+        </div>
+        <ScrollArea className="h-[calc(100dvh-8rem)]">
+          <ThreadList
+            workspaceId={workspaceId}
+            threads={threads}
+            variant="compress"
+          />
         </ScrollArea>
       </SheetContent>
     </Sheet>

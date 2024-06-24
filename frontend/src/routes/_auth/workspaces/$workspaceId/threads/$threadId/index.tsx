@@ -33,6 +33,7 @@ import {
   ThreadChatMessagesResponseType,
 } from "@/db/api";
 import { NotFound } from "@/components/notfound";
+import { PropertiesForm } from "@/components/workspace/thread/properties-form";
 
 export const Route = createFileRoute(
   "/_auth/workspaces/$workspaceId/threads/$threadId/"
@@ -107,6 +108,7 @@ function Message({
 function ThreadDetail() {
   const { token } = Route.useRouteContext();
   const { workspaceId, threadId } = Route.useParams();
+
   const bottomRef = React.useRef<null | HTMLDivElement>(null);
 
   const workspaceStore = useWorkspaceStore();
@@ -153,6 +155,9 @@ function ThreadDetail() {
     },
     enabled: !!activeThread,
   });
+
+  const assigneeId = activeThread?.assigneeId || "unassigned";
+  const priority = activeThread?.priority || "normal";
 
   React.useEffect(() => {
     if (bottomRef.current) {
@@ -357,8 +362,19 @@ function ThreadDetail() {
               maxSize={30}
               className="hidden sm:block"
             >
-              <div className="flex h-full items-center justify-center p-6">
-                <span className="font-semibold">Sidebar</span>
+              <div className="flex flex-col p-4">
+                <div className="flex text-muted-foreground text-sm font-semibold">
+                  Properties
+                </div>
+                <div className="flex mt-4">
+                  <PropertiesForm
+                    token={token}
+                    workspaceId={workspaceId as string}
+                    threadId={threadId as string}
+                    priority={priority}
+                    assigneeId={assigneeId}
+                  />
+                </div>
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>

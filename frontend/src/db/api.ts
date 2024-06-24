@@ -13,6 +13,7 @@ import {
   workspaceMemberResponseSchema,
   accountPatSchema,
   threadChatMessagesResponseSchema,
+  threadChatLeanResponseSchema,
 } from "./schema";
 import {
   IWorkspaceEntities,
@@ -57,6 +58,10 @@ export type ThreadChatMessagesResponseType = z.infer<
 >;
 
 export type AccountPatResponseType = z.infer<typeof accountPatSchema>;
+
+export type ThreadChatLeanResponseType = z.infer<
+  typeof threadChatLeanResponseSchema
+>;
 
 function initialWorkspaceData(): IWorkspaceEntities {
   return {
@@ -1072,6 +1077,53 @@ export async function updateWorkspaceLabel(
     console.error(err);
     return {
       error: new Error("error workspace label - something went wrong"),
+      data: null,
+    };
+  }
+}
+
+export async function updateThreadChat(
+  token: string,
+  workspaceId: string,
+  threadChatId: string,
+  body: object
+): Promise<{ data: ThreadChatLeanResponseType | null; error: Error | null }> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadChatId}/`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ...body }),
+      }
+    );
+    if (!response.ok) {
+      const { status, statusText } = response;
+      const error = new Error(
+        `error updating thread chat with status: ${status} and statusText: ${statusText}`
+      );
+      return { error, data: null };
+    }
+    try {
+      const data = await response.json();
+      const parsed = threadChatLeanResponseSchema.parse({ ...data });
+      return { error: null, data: parsed };
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        console.error(err.message);
+      } else console.error(err);
+      return {
+        error: new Error("error parsing thread chat schema"),
+        data: null,
+      };
+    }
+  } catch (err) {
+    console.error(err);
+    return {
+      error: new Error("error thread chat - something went wrong"),
       data: null,
     };
   }

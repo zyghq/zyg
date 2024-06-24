@@ -107,7 +107,7 @@ func (s *WorkspaceService) UserWorkspaces(ctx context.Context, accountId string)
 	return workspaces, nil
 }
 
-func (s *WorkspaceService) WorkspaceMember(ctx context.Context, accountId string, workspaceId string) (domain.Member, error) {
+func (s *WorkspaceService) WorkspaceUserMember(ctx context.Context, accountId string, workspaceId string) (domain.Member, error) {
 	member, err := s.memberRepo.GetByAccountWorkspaceId(ctx, accountId, workspaceId)
 
 	if errors.Is(err, repository.ErrEmpty) {
@@ -126,6 +126,19 @@ func (s *WorkspaceService) WorkspaceMembers(ctx context.Context, workspaceId str
 		return members, ErrMember
 	}
 	return members, nil
+}
+
+func (s *WorkspaceService) WorkspaceMember(ctx context.Context, workspaceId string, memberId string) (domain.Member, error) {
+	member, err := s.memberRepo.GetByWorkspaceMemberId(ctx, workspaceId, memberId)
+
+	if errors.Is(err, repository.ErrEmpty) {
+		return member, ErrMemberNotFound
+	}
+
+	if err != nil {
+		return member, ErrMember
+	}
+	return member, nil
 }
 
 func (s *WorkspaceService) WorkspaceCustomers(ctx context.Context, workspaceId string) ([]domain.Customer, error) {

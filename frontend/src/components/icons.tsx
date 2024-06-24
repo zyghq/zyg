@@ -226,3 +226,65 @@ export const Icons = {
     </svg>
   ),
 };
+
+export const PriorityIcons = {
+  urgent: (props: IconProps) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="18"
+      height="18"
+      viewBox="0 0 18 18"
+      fill="none"
+      {...props}
+    >
+      <path
+        fill="#e33d3d"
+        fillRule="evenodd"
+        d="M2.674 3.778C2 4.787 2 6.19 2 9c0 2.809 0 4.213.674 5.222.292.437.667.812 1.104 1.104C4.787 16 6.19 16 9 16c2.809 0 4.213 0 5.222-.674a4.003 4.003 0 0 0 1.104-1.104C16 13.213 16 11.81 16 9c0-2.809 0-4.213-.674-5.222a4.002 4.002 0 0 0-1.104-1.104C13.213 2 11.81 2 9 2c-2.809 0-4.213 0-5.222.674a4 4 0 0 0-1.104 1.104ZM9 10c.283 0 .52-.096.713-.287A.968.968 0 0 0 10 9V6a.968.968 0 0 0-.287-.713A.968.968 0 0 0 9 5a.968.968 0 0 0-.713.287A.968.968 0 0 0 8 6v3c0 .283.096.52.287.713.192.191.43.287.713.287Zm0 3c.283 0 .52-.096.713-.287A.968.968 0 0 0 10 12a.968.968 0 0 0-.287-.713A.967.967 0 0 0 9 11a.967.967 0 0 0-.713.287A.968.968 0 0 0 8 12c0 .283.096.52.287.713.192.191.43.287.713.287Z"
+        clipRule="evenodd"
+      ></path>
+    </svg>
+  ),
+  high: (props: IconProps) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="18"
+      height="18"
+      viewBox="0 0 18 18"
+      fill="none"
+      {...props}
+    >
+      <rect width="12" height="2" x="3" y="4" fill="#f5b458" rx="0.5"></rect>
+      <rect width="12" height="2" x="3" y="8" fill="#f5b458" rx="0.5"></rect>
+      <rect width="12" height="2" x="3" y="12" fill="#f5b458" rx="0.5"></rect>
+    </svg>
+  ),
+  normal: (props: IconProps) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="18"
+      height="18"
+      viewBox="0 0 18 18"
+      fill="none"
+      {...props}
+    >
+      <rect width="12" height="2" x="3" y="4" fill="#e4e4ea" rx="0.5"></rect>
+      <rect width="12" height="2" x="3" y="8" fill="#9898a9" rx="0.5"></rect>
+      <rect width="12" height="2" x="3" y="12" fill="#9898a9" rx="0.5"></rect>
+    </svg>
+  ),
+  low: (props: IconProps) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="18"
+      height="18"
+      viewBox="0 0 18 18"
+      fill="none"
+      {...props}
+    >
+      <rect width="12" height="2" x="3" y="4" fill="#e4e4ea" rx="0.5"></rect>
+      <rect width="12" height="2" x="3" y="8" fill="#e4e4ea" rx="0.5"></rect>
+      <rect width="12" height="2" x="3" y="12" fill="#9898a9" rx="0.5"></rect>
+    </svg>
+  ),
+};

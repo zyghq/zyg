@@ -55,7 +55,7 @@ func (h *WorkspaceHandler) handleCreateWorkspace(w http.ResponseWriter, r *http.
 	if err := json.NewEncoder(w).Encode(workspace); err != nil {
 		slog.Error(
 			"failed to encode workspace to json "+
-				"might need to check the json encoding defn",
+				"check the json encoding defn",
 			slog.String("workspaceId", workspace.WorkspaceId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -83,7 +83,7 @@ func (h *WorkspaceHandler) handleGetWorkspaces(w http.ResponseWriter, r *http.Re
 	if err := json.NewEncoder(w).Encode(workspaces); err != nil {
 		slog.Error(
 			"failed to encode workspaces to json "+
-				"might need to check the json encoding defn",
+				"check the json encoding defn",
 			slog.String("accountId", account.AccountId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -121,7 +121,7 @@ func (h *WorkspaceHandler) handleGetWorkspace(w http.ResponseWriter, r *http.Req
 	if err := json.NewEncoder(w).Encode(workspace); err != nil {
 		slog.Error(
 			"failed to encode workspace to json "+
-				"might need to check the json encoding defn",
+				"check the json encoding defn",
 			slog.String("workspaceId", workspace.WorkspaceId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -184,7 +184,7 @@ func (h *WorkspaceHandler) handleUpdateWorkspace(w http.ResponseWriter, r *http.
 	if err := json.NewEncoder(w).Encode(workspace); err != nil {
 		slog.Error(
 			"failed to encode workspace to json "+
-				"might need to check the json encoding defn",
+				"check the json encoding defn",
 			slog.String("workspaceId", workspace.WorkspaceId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -262,7 +262,7 @@ func (h *WorkspaceHandler) handleGetOrCreateWorkspaceLabel(w http.ResponseWriter
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
 			slog.Error(
 				"failed to encode label to json "+
-					"might need to check the json encoding defn",
+					"check the json encoding defn",
 				"labelId", label.LabelId,
 			)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -275,7 +275,7 @@ func (h *WorkspaceHandler) handleGetOrCreateWorkspaceLabel(w http.ResponseWriter
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
 			slog.Error(
 				"failed to encode label to json "+
-					"might need to check the json encoding defn",
+					"check the json encoding defn",
 				"labelId", label.LabelId,
 			)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -353,7 +353,7 @@ func (h *WorkspaceHandler) handleUpdateWorkspaceLabel(w http.ResponseWriter, r *
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		slog.Error(
 			"failed to encode label to json "+
-				"might need to check the json encoding defn",
+				"check the json encoding defn",
 			slog.String("labelId", label.LabelId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -413,7 +413,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceLabels(w http.ResponseWriter, r *ht
 	if err := json.NewEncoder(w).Encode(labels); err != nil {
 		slog.Error(
 			"failed to encode workspace labels to json "+
-				"might need to check the json encoding defn",
+				"check the json encoding defn",
 			slog.String("workspaceId", workspaceId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -640,7 +640,7 @@ func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *ht
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		slog.Error(
 			"failed to encode response to json "+
-				"might need to check the json encoding defn",
+				"check the json encoding defn",
 			slog.String("customerId", customer.CustomerId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -673,7 +673,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceMembership(w http.ResponseWriter, r
 		return
 	}
 
-	member, err := h.ws.WorkspaceMember(ctx, account.AccountId, workspace.WorkspaceId)
+	member, err := h.ws.WorkspaceUserMember(ctx, account.AccountId, workspace.WorkspaceId)
 	if err != nil {
 		slog.Error(
 			"failed to get workspace membership "+
@@ -689,7 +689,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceMembership(w http.ResponseWriter, r
 	if err := json.NewEncoder(w).Encode(member); err != nil {
 		slog.Error(
 			"failed to encode workspace membership to json "+
-				"might need to check the json encoding defn",
+				"check the json encoding defn",
 			slog.String("workspaceId", workspaceId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -738,7 +738,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceCustomers(w http.ResponseWriter, r 
 	if err := json.NewEncoder(w).Encode(customers); err != nil {
 		slog.Error(
 			"failed to encode workspace customers to json "+
-				"might need to check the json encoding defn",
+				"check the json encoding defn",
 			slog.String("workspaceId", workspaceId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -787,7 +787,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceMembers(w http.ResponseWriter, r *h
 	if err := json.NewEncoder(w).Encode(members); err != nil {
 		slog.Error(
 			"failed to encode workspace members to json "+
-				"might need to check the json encoding defn",
+				"check the json encoding defn",
 			slog.String("workspaceId", workspaceId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

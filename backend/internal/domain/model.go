@@ -91,6 +91,15 @@ func (p ThreadPriority) DefaultPriority() string {
 	return p.Normal()
 }
 
+func (p ThreadPriority) IsValid(s string) bool {
+	switch s {
+	case p.Urgent(), p.High(), p.Normal(), p.Low():
+		return true
+	default:
+		return false
+	}
+}
+
 type LabelAddedBy struct{}
 
 func (a LabelAddedBy) User() string {

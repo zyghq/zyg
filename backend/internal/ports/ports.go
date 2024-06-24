@@ -35,8 +35,9 @@ type WorkspaceServicer interface {
 	InitWorkspaceLabel(ctx context.Context, label domain.Label) (domain.Label, bool, error)
 	WorkspaceLabel(ctx context.Context, workspaceId string, labelId string) (domain.Label, error)
 	WorkspaceLabels(ctx context.Context, workspaceId string) ([]domain.Label, error)
-	WorkspaceMember(ctx context.Context, accountId string, workspaceId string) (domain.Member, error)
+	WorkspaceUserMember(ctx context.Context, accountId string, workspaceId string) (domain.Member, error)
 	WorkspaceMembers(ctx context.Context, workspaceId string) ([]domain.Member, error)
+	WorkspaceMember(ctx context.Context, workspaceId string, memberId string) (domain.Member, error)
 	WorkspaceCustomers(ctx context.Context, workspaceId string) ([]domain.Customer, error)
 	InitWorkspaceCustomerWithExternalId(ctx context.Context, c domain.Customer) (domain.Customer, bool, error)
 	InitWorkspaceCustomerWithEmail(ctx context.Context, c domain.Customer) (domain.Customer, bool, error)
@@ -54,6 +55,7 @@ type CustomerServicer interface {
 type ThreadChatServicer interface {
 	CreateCustomerThread(ctx context.Context, th domain.ThreadChat, msg string) (domain.ThreadChat, domain.ThreadChatMessage, error)
 	WorkspaceThread(ctx context.Context, workspaceId string, threadChatId string) (domain.ThreadChat, error)
+	UpdateThreadChat(ctx context.Context, th domain.ThreadChat) (domain.ThreadChat, error)
 	WorkspaceCustomerThreadChats(ctx context.Context, workspaceId string, customerId string) ([]domain.ThreadChatWithMessage, error)
 	AssignMember(ctx context.Context, threadChatId string, assigneeId string) (domain.ThreadChat, error)
 	MarkReplied(ctx context.Context, threadChatId string, replied bool) (domain.ThreadChat, error)
@@ -95,6 +97,7 @@ type WorkspaceRepositorer interface {
 type MemberRepositorer interface {
 	GetByAccountWorkspaceId(ctx context.Context, accountId string, workspaceId string) (domain.Member, error)
 	GetListByWorkspaceId(ctx context.Context, workspaceId string) ([]domain.Member, error)
+	GetByWorkspaceMemberId(ctx context.Context, workspaceId string, memberId string) (domain.Member, error)
 }
 
 type CustomerRepositorer interface {
@@ -111,6 +114,7 @@ type CustomerRepositorer interface {
 type ThreadChatRepositorer interface {
 	CreateThreadChat(ctx context.Context, th domain.ThreadChat, msg string) (domain.ThreadChat, domain.ThreadChatMessage, error)
 	GetByWorkspaceThreadChatId(ctx context.Context, workspaceId string, threadChatId string) (domain.ThreadChat, error)
+	UpdateThreadChatById(ctx context.Context, th domain.ThreadChat) (domain.ThreadChat, error)
 	GetListByWorkspaceCustomerId(ctx context.Context, workspaceId string, customerId string) ([]domain.ThreadChatWithMessage, error)
 	SetAssignee(ctx context.Context, threadChatId string, assigneeId string) (domain.ThreadChat, error)
 	SetReplied(ctx context.Context, threadChatId string, replied bool) (domain.ThreadChat, error)

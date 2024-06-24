@@ -179,6 +179,52 @@ func (th ThChatRespPayload) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
+type ThChatUpdateRespPayload struct {
+	ThreadChatId string
+	Sequence     int
+	Status       string
+	Read         bool
+	Replied      bool
+	Priority     string
+	Customer     ThCustomerRespPayload
+	Assignee     *ThMemberRespPayload
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
+func (th ThChatUpdateRespPayload) MarshalJSON() ([]byte, error) {
+	var assignee *ThMemberRespPayload
+
+	if th.Assignee != nil {
+		assignee = th.Assignee
+	}
+
+	aux := &struct {
+		ThreadChatId string                `json:"threadChatId"`
+		Sequence     int                   `json:"sequence"`
+		Status       string                `json:"status"`
+		Read         bool                  `json:"read"`
+		Replied      bool                  `json:"replied"`
+		Priority     string                `json:"priority"`
+		Customer     ThCustomerRespPayload `json:"customer"`
+		Assignee     *ThMemberRespPayload  `json:"assignee"`
+		CreatedAt    string                `json:"createdAt"`
+		UpdatedAt    string                `json:"updatedAt"`
+	}{
+		ThreadChatId: th.ThreadChatId,
+		Sequence:     th.Sequence,
+		Status:       th.Status,
+		Read:         th.Read,
+		Replied:      th.Replied,
+		Priority:     th.Priority,
+		Customer:     th.Customer,
+		Assignee:     assignee,
+		CreatedAt:    th.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:    th.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
+}
+
 type ThChatReqPayload struct {
 	Message string `json:"message"`
 }

@@ -202,3 +202,25 @@ export const threadChatMessagesResponseSchema = z.object({
   updatedAt: z.string(),
   messages: z.array(threadChatMessageSchema).default([]),
 });
+
+export const threadChatLeanResponseSchema = z.object({
+  threadChatId: z.string(),
+  sequence: z.number(),
+  status: z.string(),
+  read: z.boolean(),
+  replied: z.boolean(),
+  priority: z.string(),
+  customer: z.object({
+    customerId: z.string(),
+    name: z.string(),
+  }),
+  assignee: z
+    .object({
+      memberId: z.string(),
+      name: z.string(),
+    })
+    .nullable()
+    .default(null),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});

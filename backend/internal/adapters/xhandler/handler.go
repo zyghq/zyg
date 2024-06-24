@@ -113,7 +113,7 @@ func (h *CustomerHandler) handleGetCustomer(w http.ResponseWriter, r *http.Reque
 	if err := json.NewEncoder(w).Encode(customer); err != nil {
 		slog.Error(
 			"failed to encode customer to json "+
-				"might need to check the json encoding defn",
+				"check the json encoding defn",
 			slog.String("customerId", customer.CustomerId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -243,7 +243,7 @@ func (h *CustomerHandler) handleCreateCustomerThChat(
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		slog.Error(
 			"failed to encode thread chat to json "+
-				"might need to check the json encoding defn",
+				"check the json encoding defn",
 			slog.String("threadChatId", th.ThreadChatId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -389,7 +389,7 @@ func (h *CustomerHandler) handleCreateThChatMessage(
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		slog.Error(
 			"failed to encode thread chat message to json "+
-				"might need to check the json encoding defn",
+				"check the json encoding defn",
 			slog.String("threadChatId", thread.ThreadChatId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -516,7 +516,7 @@ func (h *CustomerHandler) handleGetThChatMesssages(
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		slog.Error(
 			"failed to encode thread chat messages to json "+
-				"might need to check the json encoding defn",
+				"check the json encoding defn",
 			slog.String("threadChatId", thread.ThreadChatId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -639,7 +639,7 @@ func (h *CustomerHandler) handleGetCustomerThChats(
 	if err := json.NewEncoder(w).Encode(threads); err != nil {
 		slog.Error(
 			"failed to encode thread chats to json "+
-				"might need to check the json encoding defn",
+				"check the json encoding defn",
 			slog.String("customerId", customer.CustomerId),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
