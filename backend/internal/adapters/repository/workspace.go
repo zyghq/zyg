@@ -9,7 +9,8 @@ import (
 	"github.com/zyghq/zyg/internal/domain"
 )
 
-func (w *WorkspaceDB) CreateWorkspace(ctx context.Context, workspace domain.Workspace) (domain.Workspace, error) {
+func (w *WorkspaceDB) CreateWorkspaceByAccount(ctx context.Context, account domain.Account, workspace domain.Workspace,
+) (domain.Workspace, error) {
 	var member domain.Member
 	tx, err := w.db.Begin(ctx)
 
@@ -42,11 +43,11 @@ func (w *WorkspaceDB) CreateWorkspace(ctx context.Context, workspace domain.Work
 	}
 
 	mId := member.GenId()
-	err = tx.QueryRow(ctx, `INSERT INTO member(workspace_id, account_id, member_id, role)
-		VALUES ($1, $2, $3, $4)
+	err = tx.QueryRow(ctx, `INSERT INTO member(workspace_id, account_id, member_id, name, role)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING
 		workspace_id, account_id, member_id, name, role, created_at, updated_at`,
-		wId, workspace.AccountId, mId, "primary").Scan(
+		wId, workspace.AccountId, mId, account.Name, "primary").Scan(
 		&member.WorkspaceId, &member.AccountId,
 		&member.MemberId, &member.Name, &member.Role,
 		&member.CreatedAt, &member.UpdatedAt,

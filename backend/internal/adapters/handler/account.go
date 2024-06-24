@@ -61,8 +61,27 @@ func (h *AccountHandler) handleGetOrCreateAccount(w http.ResponseWriter, r *http
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
+
+		var reqp map[string]interface{}
+		err = json.NewDecoder(r.Body).Decode(&reqp)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
 		// initialize auth user account by subject.
 		account := domain.Account{AuthUserId: sub, Email: ac.Email, Provider: services.DefaultAuthProvider}
+
+		if name, found := reqp["name"]; found {
+			if name == nil {
+				slog.Error("name cannot be null", slog.String("subject", sub))
+				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+				return
+			}
+			ns := name.(string)
+			account.Name = ns
+		}
+
 		account, isCreated, err := h.as.InitiateAccount(ctx, account)
 		if err != nil {
 			slog.Error(

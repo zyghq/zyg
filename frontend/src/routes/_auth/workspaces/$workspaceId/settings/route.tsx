@@ -20,6 +20,7 @@ function SettingsLayout() {
   const accountId = useStore(accountStore, (state) =>
     state.getAccountId(state)
   );
+  const accountName = useStore(accountStore, (state) => state.getName(state));
 
   return (
     <React.Fragment>
@@ -35,13 +36,18 @@ function SettingsLayout() {
               Settings
             </Link>
           </div>
-          <SideNavMobile accountId={accountId} workspaceId={workspaceId} />
+          <SideNavMobile
+            accountId={accountId}
+            accountName={accountName}
+            workspaceId={workspaceId}
+          />
         </div>
       </header>
       <div className="flex min-h-screen">
         <aside className="hidden sticky top-14 h-[calc(100vh-theme(spacing.14))] w-80 overflow-y-auto md:block md:border-r">
           <SideNavLinks
             accountId={accountId}
+            accountName={accountName}
             maxHeight="h-[calc(100dvh-8rem)]"
           />
         </aside>

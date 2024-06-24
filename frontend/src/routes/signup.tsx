@@ -27,14 +27,16 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 
-import { ArrowLeftIcon, ExclamationTriangleIcon } from "@radix-ui/react-icons";
+import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { getOrCreateZygAccount } from "@/db/api";
 
 type FormInputs = {
+  name: string;
   email: string;
   password: string;
 };
@@ -52,6 +54,7 @@ export const Route = createFileRoute("/signup")({
 });
 
 const formSchema = z.object({
+  name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(6),
 });
@@ -66,6 +69,7 @@ function SignUpComponent() {
   const form = useForm<FormInputs>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: "",
       email: "",
       password: "",
     },
@@ -78,10 +82,15 @@ function SignUpComponent() {
 
   const onSubmit: SubmitHandler<FormInputs> = async (inputs) => {
     try {
-      const { email, password } = inputs;
+      const { name, email, password } = inputs;
       const { data, error: errSupa } = await supabaseClient.auth.signUp({
         email: email,
         password: password,
+        options: {
+          data: {
+            name: name,
+          },
+        },
       });
       if (errSupa) {
         console.error(errSupa);
@@ -116,8 +125,10 @@ function SignUpComponent() {
       }
       const { session } = data;
       const { access_token: token } = session;
-      const { error: errAccount, data: account } =
-        await getOrCreateZygAccount(token);
+      const { error: errAccount, data: account } = await getOrCreateZygAccount(
+        token,
+        { name }
+      );
       if (errAccount || !account) {
         console.error(errAccount);
         form.setError("root", {
@@ -171,6 +182,22 @@ function SignUpComponent() {
               )}
               <FormField
                 control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Name" {...field} required />
+                    </FormControl>
+                    <FormDescription>
+                      This is your first and last name.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
@@ -196,7 +223,7 @@ function SignUpComponent() {
                     <FormControl>
                       <Input
                         type="password"
-                        placeholder="VeryS3curE"
+                        placeholder="VeryS3Cure"
                         {...field}
                         required
                       />
@@ -210,7 +237,6 @@ function SignUpComponent() {
             <CardFooter className="flex justify-between">
               <Button variant="outline" aria-label="Log In" asChild>
                 <Link to="/signin" preload={false}>
-                  <ArrowLeftIcon className="mr-1 h-4 w-4 my-auto" />
                   Sign In
                 </Link>
               </Button>
@@ -218,9 +244,9 @@ function SignUpComponent() {
                 type="submit"
                 disabled={isSigningUp || isSubmitSuccessful}
                 aria-disabled={isSigningUp || isSubmitSuccessful}
-                aria-label="Sign Up"
+                aria-label="Submit"
               >
-                Sign Up
+                Submit
               </Button>
             </CardFooter>
           </Card>

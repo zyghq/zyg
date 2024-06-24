@@ -38,7 +38,7 @@ func (h *WorkspaceHandler) handleCreateWorkspace(w http.ResponseWriter, r *http.
 	}
 
 	workspace := domain.Workspace{AccountId: account.AccountId, Name: rb.Name}
-	workspace, err = h.ws.CreateWorkspace(ctx, workspace)
+	workspace, err = h.ws.CreateAccountWorkspace(ctx, *account, workspace)
 
 	if err != nil {
 		slog.Error(

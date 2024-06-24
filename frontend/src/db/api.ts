@@ -558,11 +558,15 @@ function makePatsStoreable(
   return mapped;
 }
 
-export async function getOrCreateZygAccount(token: string): Promise<{
+export async function getOrCreateZygAccount(
+  token: string,
+  body?: { name: string }
+): Promise<{
   data: AccountResponseType | null;
   error: Error | null;
 }> {
   try {
+    const reqBody = body ? JSON.stringify({ ...body }) : JSON.stringify({});
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/accounts/auth/`,
       {
@@ -571,7 +575,7 @@ export async function getOrCreateZygAccount(token: string): Promise<{
           // "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({}),
+        body: reqBody,
       }
     );
     if (!response.ok) {

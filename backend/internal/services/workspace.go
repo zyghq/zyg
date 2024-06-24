@@ -27,8 +27,8 @@ func NewWorkspaceService(
 	}
 }
 
-func (s *WorkspaceService) CreateWorkspace(ctx context.Context, w domain.Workspace) (domain.Workspace, error) {
-	workspace, err := s.workspaceRepo.CreateWorkspace(ctx, w)
+func (s *WorkspaceService) CreateAccountWorkspace(ctx context.Context, a domain.Account, w domain.Workspace) (domain.Workspace, error) {
+	workspace, err := s.workspaceRepo.CreateWorkspaceByAccount(ctx, a, w)
 
 	if errors.Is(err, repository.ErrQuery) || errors.Is(err, repository.ErrEmpty) {
 		return workspace, ErrWorkspace

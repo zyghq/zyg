@@ -26,7 +26,7 @@ type CustomerAuthServicer interface {
 }
 
 type WorkspaceServicer interface {
-	CreateWorkspace(ctx context.Context, w domain.Workspace) (domain.Workspace, error)
+	CreateAccountWorkspace(ctx context.Context, a domain.Account, w domain.Workspace) (domain.Workspace, error)
 	UpdateWorkspace(ctx context.Context, w domain.Workspace) (domain.Workspace, error)
 	UpdateWorkspaceLabel(ctx context.Context, workspaceId string, label domain.Label) (domain.Label, error)
 	GetWorkspace(ctx context.Context, workspaceId string) (domain.Workspace, error)
@@ -83,7 +83,7 @@ type AccountRepositorer interface {
 }
 
 type WorkspaceRepositorer interface {
-	CreateWorkspace(ctx context.Context, w domain.Workspace) (domain.Workspace, error)
+	CreateWorkspaceByAccount(ctx context.Context, a domain.Account, w domain.Workspace) (domain.Workspace, error)
 	UpdateWorkspaceById(ctx context.Context, w domain.Workspace) (domain.Workspace, error)
 	UpdateWorkspaceLabelById(ctx context.Context, workspaceId string, l domain.Label) (domain.Label, error)
 	GetWorkspaceById(ctx context.Context, workspaceId string) (domain.Workspace, error)

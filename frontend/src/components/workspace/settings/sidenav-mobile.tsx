@@ -9,9 +9,11 @@ import { SideNavLinks } from "@/components/workspace/settings/sidenav-links";
 export function SideNavMobile({
   workspaceId,
   accountId,
+  accountName,
 }: {
   workspaceId: string;
   accountId: string;
+  accountName: string;
 }) {
   const [open, setOpen] = React.useState(false);
   return (
@@ -38,7 +40,11 @@ export function SideNavMobile({
             </Link>
           </div>
         </div>
-        <SideNavLinks accountId={accountId} maxHeight="h-[calc(100dvh-8rem)]" />
+        <SideNavLinks
+          accountId={accountId}
+          accountName={accountName}
+          maxHeight="h-[calc(100dvh-8rem)]"
+        />
       </SheetContent>
     </Sheet>
   );

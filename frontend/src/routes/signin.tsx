@@ -32,7 +32,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 
-import { ArrowLeftIcon, ExclamationTriangleIcon } from "@radix-ui/react-icons";
+import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { getOrCreateZygAccount } from "@/db/api";
 
 const searchSearchSchema = z.object({
@@ -189,7 +189,7 @@ function SignInComponent() {
                     <FormControl>
                       <Input
                         type="password"
-                        placeholder="VeryS3curE"
+                        placeholder="VeryS3Cure"
                         {...field}
                         required
                       />
@@ -203,7 +203,6 @@ function SignInComponent() {
             <CardFooter className="flex justify-between">
               <Button variant="outline" aria-label="Sign Up" asChild>
                 <Link to="/signup" preload={false}>
-                  <ArrowLeftIcon className="mr-1 h-4 w-4 my-auto" />
                   Sign Up
                 </Link>
               </Button>
@@ -211,9 +210,9 @@ function SignInComponent() {
                 type="submit"
                 disabled={isLoggingIn || isSubmitSuccessful}
                 aria-disabled={isLoggingIn || isSubmitSuccessful}
-                aria-label="Sign In"
+                aria-label="Submit"
               >
-                Sign In
+                Submit
               </Button>
             </CardFooter>
             <CardFooter className="flex justify-center">

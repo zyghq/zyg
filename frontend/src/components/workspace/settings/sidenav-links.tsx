@@ -28,9 +28,11 @@ import {
 
 export function SideNavLinks({
   accountId,
+  accountName,
   maxHeight,
 }: {
   accountId: string;
+  accountName: string;
   maxHeight?: string;
 }) {
   const { workspaceId } = useParams({
@@ -44,7 +46,7 @@ export function SideNavLinks({
           <div className="mb-4 flex items-center gap-1">
             <Avatar name={accountId} size={32} variant="marble" />
             <div>
-              <div className="text-xs font-medium">Sanchit Rk</div>
+              <div className="text-xs font-medium">{accountName}</div>
               <div className="text-xs text-foreground">Account</div>
             </div>
           </div>
