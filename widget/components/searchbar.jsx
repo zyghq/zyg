@@ -18,7 +18,7 @@ export default function SearchBar() {
   const queryMutation = useMutation({
     mutationFn: (text) => {
       return axios.post(
-        "http://127.0.0.1:8080/-/threads/qa/",
+        "http://127.0.0.1:8000/threads/qa/",
         { query: text },
         {
           headers: {

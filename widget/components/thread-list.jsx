@@ -10,10 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Icons } from "@/components/icons";
 import Link from "next/link";
 
-// watch this video for scroll bottom
-// https://www.youtube.com/watch?v=yaIytT_Y0DA
 function ThreadChatItem({ customerId, thread }) {
-  const { threadId, messages } = thread;
+  const { threadChatId, messages } = thread;
   const message = messages[0];
 
   const isMe = message?.customer?.customerId === customerId;
@@ -26,7 +24,7 @@ function ThreadChatItem({ customerId, thread }) {
 
   return (
     <Link
-      href={`/threads/${threadId}/`}
+      href={`/threads/${threadChatId}/`}
       key={thread.threadId}
       className={cn(
         "w-full",
@@ -73,7 +71,7 @@ export default function ThreadList({ threads }) {
     queryKey: ["thchats", authUser?.authToken?.value],
     queryFn: async () => {
       const token = authUser?.authToken?.value || "";
-      const response = await fetch(`http://localhost:8080/-/threads/chat/`, {
+      const response = await fetch(`http://localhost:8000/threads/chat/`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -123,7 +121,7 @@ export default function ThreadList({ threads }) {
       <div className="space-y-2">
         {data.map((thread) => (
           <ThreadChatItem
-            key={thread.threadId}
+            key={thread.threadChatId}
             customerId={authUser?.customerId}
             thread={thread}
           />

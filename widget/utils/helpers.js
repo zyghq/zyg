@@ -8,7 +8,7 @@ export const isAuthenticated = async (cookies) => {
   }
   const { value = "" } = token;
   try {
-    const resp = await fetch(`${process.env.ZYG_API_URL}/-/me/`, {
+    const resp = await fetch(`${process.env.ZYG_XAPI_URL}/me/`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${value}`,

@@ -71,9 +71,9 @@ func (s *CustomerService) IssueCustomerJwt(c domain.Customer) (string, error) {
 
 	audience := []string{"customer"}
 
-	sk, err := zyg.GetEnv("SUPABASE_JWT_SECRET")
+	sk, err := zyg.GetEnv("ZYG_CUSTOMER_JWT_SECRET")
 	if err != nil {
-		return "", fmt.Errorf("failed to get env SUPABASE_JWT_SECRET got error: %v", err)
+		return "", fmt.Errorf("failed to get env ZYG_CUSTOMER_JWT_SECRET got error: %v", err)
 	}
 
 	if !c.ExternalId.Valid {

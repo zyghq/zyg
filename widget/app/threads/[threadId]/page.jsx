@@ -59,7 +59,7 @@ export default function ThreadChatMessageListPage({ params }) {
     queryFn: async () => {
       const token = authUser?.authToken?.value;
       const response = await fetch(
-        `http://localhost:8080/-/threads/chat/${threadId}/messages/`,
+        `http://localhost:8000/threads/chat/${threadId}/messages/`,
         {
           method: "GET",
           headers: {

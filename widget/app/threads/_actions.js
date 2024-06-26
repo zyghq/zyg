@@ -2,7 +2,7 @@
 
 async function createThreadChatAPI(accessToken, body = {}) {
   try {
-    const response = await fetch(`${process.env.ZYG_API_URL}/-/threads/chat/`, {
+    const response = await fetch(`${process.env.ZYG_XAPI_URL}/threads/chat/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -30,7 +30,7 @@ async function sendThreadChatMessageAPI(accessToken, threadId, body = {}) {
   try {
     const { message } = body;
     const response = await fetch(
-      `${process.env.ZYG_API_URL}/-/threads/chat/${threadId}/messages/`,
+      `${process.env.ZYG_XAPI_URL}/threads/chat/${threadId}/messages/`,
       {
         method: "POST",
         headers: {
