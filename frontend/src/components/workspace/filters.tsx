@@ -27,7 +27,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { MixerHorizontalIcon, CheckIcon } from "@radix-ui/react-icons";
 import Avatar from "boring-avatars";
-import { AssigneeType } from "@/db/store";
+import { Assignee } from "@/db/store";
 
 const routeApi = getRouteApi("/_auth/workspaces/$workspaceId/_workspace");
 
@@ -294,7 +294,7 @@ function AssigneeSubMenu({
   assignedMembers,
 }: {
   assignees: string[] | string | undefined;
-  assignedMembers: AssigneeType[];
+  assignedMembers: Assignee[];
 }) {
   const navigate = useNavigate();
   const [selectedMembers, setSelectedMembers] = React.useState<
@@ -438,7 +438,7 @@ export function Filters({
   assignedMembers,
   disableAssigneeFilter = false,
 }: {
-  assignedMembers: AssigneeType[];
+  assignedMembers: Assignee[];
   disableAssigneeFilter?: boolean;
 }) {
   const routeSearch = routeApi.useSearch();

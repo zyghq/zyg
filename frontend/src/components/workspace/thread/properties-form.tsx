@@ -52,7 +52,7 @@ import {
 } from "@radix-ui/react-icons";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { WorkspaceStoreStateType } from "@/db/store";
+import { WorkspaceStoreState } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
 import { useStore } from "zustand";
 import { useMutation } from "@tanstack/react-query";
@@ -76,12 +76,11 @@ function SetAssignee({
   const [open, setOpen] = React.useState(false);
   const [showNewTeamDialog, setShowNewTeamDialog] = React.useState(false);
 
-  const members = useStore(workspaceStore, (state: WorkspaceStoreStateType) =>
+  const members = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.viewMembers(state)
   );
-  const memberName = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreStateType) => state.viewMemberName(state, value || "")
+  const memberName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.viewMemberName(state, value || "")
   );
 
   const renderMemberName = () => {

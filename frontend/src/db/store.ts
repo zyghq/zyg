@@ -1,222 +1,165 @@
 import { createStore } from "zustand/vanilla";
-import { z } from "zod";
 import { immer } from "zustand/middleware/immer";
 import _ from "lodash";
+
 import {
-  workspaceResponseSchema,
-  membershipResponseSchema,
-  workspaceLabelResponseSchema,
-  workspaceMemberResponseSchema,
-  accountPatSchema,
-  threadChatMessageSchema,
-  threadChatLeanResponseSchema,
-} from "./schema";
-import { AccountResponseType } from "./api";
-
-// inferred from schema
-export type WorkspaceStoreType = z.infer<typeof workspaceResponseSchema>;
-
-// inferred from schema
-export type MembershipStoreType = z.infer<typeof membershipResponseSchema>;
-
-// inferred from schema
-export type WorkspaceLabelStoreType = z.infer<
-  typeof workspaceLabelResponseSchema
->;
-
-// inferred from schema
-export type WorkspaceMemberStoreType = z.infer<
-  typeof workspaceMemberResponseSchema
->;
-
-// inferred from schema
-export type AccountPatStoreType = z.infer<typeof accountPatSchema>;
-
-// inferred from schema
-export type ThreadChatMessageType = z.infer<typeof threadChatMessageSchema>;
-
-export type LabelMetricsStoreType = {
-  labelId: string;
-  name: string;
-  icon: string;
-  count: number;
-};
-
-export type WorkspaceMetricsStoreType = {
-  active: number;
-  done: number;
-  snoozed: number;
-  assignedToMe: number;
-  unassigned: number;
-  otherAssigned: number;
-  labels: LabelMetricsStoreType[] | [];
-};
-
-export type ThreadChatStoreType = {
-  threadChatId: string;
-  sequence: number;
-  status: string;
-  read: boolean;
-  replied: boolean;
-  priority: string;
-  customerId: string;
-  assigneeId: string | null;
-  createdAt: string;
-  updatedAt: string;
-  recentMessage: {
-    threadChatId: string;
-    threadChatMessageId: string;
-    body: string;
-    sequence: number;
-    customerId: string | null;
-    memberId: string | null;
-    createdAt: string;
-    updatedAt: string;
-  };
-};
-
-export type ThreadChatLeanType = z.infer<typeof threadChatLeanResponseSchema>;
-
-export type WorkspaceCustomerStoreType = {
-  workspaceId: string;
-  customerId: string;
-  externalId: string | null;
-  email: string | null;
-  phone: string | null;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-};
+  Account,
+  Workspace,
+  UserMember,
+  AccountPat,
+  WorkspaceMetrics,
+  ThreadChatWithRecentMessage,
+  ThreadChat,
+  Label,
+  Member,
+  Customer,
+} from "./entities";
 
 // add more entitites as supported by store
 // e.g: Workspace | User | etc.
 type AllowedEntities =
-  | WorkspaceStoreType
-  | ThreadChatStoreType
-  | WorkspaceCustomerStoreType
-  | WorkspaceLabelStoreType
-  | WorkspaceMemberStoreType
-  | AccountPatStoreType;
+  | Workspace
+  | ThreadChatWithRecentMessage
+  | Customer
+  | Label
+  | Member
+  | AccountPat;
 
 export type Dictionary<K extends string | number, V extends AllowedEntities> = {
   [key in K]: V;
 };
 
-export type ThreadChatMapStoreType = Dictionary<string, ThreadChatStoreType>;
+export type ThreadChatMap = Dictionary<string, ThreadChatWithRecentMessage>;
 
-export type WorkspaceCustomerMapStoreType = Dictionary<
-  string,
-  WorkspaceCustomerStoreType
->;
+export type WorkspaceCustomerMap = Dictionary<string, Customer>;
 
-export type WorkspaceLabelMapStoreType = Dictionary<
-  string,
-  WorkspaceLabelStoreType
->;
+export type WorkspaceLabelMap = Dictionary<string, Label>;
 
-export type WorkspaceMemberMapStoreType = Dictionary<
-  string,
-  WorkspaceMemberStoreType
->;
+export type WorkspaceMemberMap = Dictionary<string, Member>;
 
-export type AccountPatMapStoreType = Dictionary<string, AccountPatStoreType>;
+export type AccountPatMap = Dictionary<string, AccountPat>;
 
-export type CurrentThreadQueueType = {
-  status: string;
-  from: string;
-  threads: ThreadChatStoreType[];
-};
+// export type CurrentThreadQueueType = {
+//   status: string;
+//   from: string;
+//   threads: ThreadChatWithRecentMessage[];
+// };
 
 export interface IWorkspaceEntities {
-  hasData: boolean;
-  isPending: boolean;
-  error: Error | null;
-  workspace: WorkspaceStoreType | null;
-  member: MembershipStoreType | null;
-  metrics: WorkspaceMetricsStoreType;
-  threadChats: ThreadChatMapStoreType | null;
-  customers: WorkspaceCustomerMapStoreType | null;
-  labels: WorkspaceLabelMapStoreType | null;
-  members: WorkspaceMemberMapStoreType | null;
-  pats: AccountPatMapStoreType | null;
-  currentThreadQueue: CurrentThreadQueueType | null;
+  workspace: Workspace | null;
+  member: UserMember | null;
+  metrics: WorkspaceMetrics;
+  threadChats: ThreadChatMap | null;
+  customers: WorkspaceCustomerMap | null;
+  labels: WorkspaceLabelMap | null;
+  members: WorkspaceMemberMap | null;
+  pats: AccountPatMap | null;
 }
 
 type ReplyStatus = "replied" | "unreplied";
 type Priority = "urgent" | "high" | "normal" | "low";
 
-export type reasonsFiltersType = ReplyStatus | ReplyStatus[] | undefined;
-export type assigneesFiltersType = string | string[] | undefined;
-export type prioritiesFiltersType = Priority | Priority[] | undefined;
+export type StatusType = "todo" | "done" | "snoozed";
+export type ReasonsFiltersType = ReplyStatus | ReplyStatus[] | undefined;
+export type AssigneesFiltersType = string | string[] | undefined;
+export type PrioritiesFiltersType = Priority | Priority[] | undefined;
+
+export type ThreadAppliedFilters = {
+  status: StatusType;
+  assignees: AssigneesFiltersType;
+  reasons: ReasonsFiltersType;
+  priorities: PrioritiesFiltersType;
+  sortBy: sortByType;
+  memberId?: string | null;
+  isUnassigned?: boolean | null;
+};
 
 export type sortByType = "last-message-dsc" | "created-asc" | "created-dsc";
 
-export type AssigneeType = {
+export type Assignee = {
   assigneeId: string;
   name: string;
 };
 
 interface IWorkspaceStoreActions {
-  updateWorkspaceStore(): void;
-  getWorkspaceName(state: WorkspaceStoreStateType): string;
-  getWorkspaceId(state: WorkspaceStoreStateType): string;
-  getMemberId(state: WorkspaceStoreStateType): string;
-  getMemberName(state: WorkspaceStoreStateType): string;
-  getMemberRole(state: WorkspaceStoreStateType): string;
-  getMetrics(state: WorkspaceStoreStateType): WorkspaceMetricsStoreType;
+  getWorkspaceName(state: WorkspaceStoreState): string;
+  getWorkspaceId(state: WorkspaceStoreState): string;
+  getMemberId(state: WorkspaceStoreState): string;
+  getMemberName(state: WorkspaceStoreState): string;
+  getMetrics(state: WorkspaceStoreState): WorkspaceMetrics;
   getThreadChatItem(
-    state: WorkspaceStoreStateType,
+    state: WorkspaceStoreState,
     threadChatId: string
-  ): ThreadChatStoreType | null;
-  viewAllTodoThreads(
-    state: WorkspaceStoreStateType,
-    assigness: assigneesFiltersType,
-    reasons: reasonsFiltersType,
-    priorities: prioritiesFiltersType,
+  ): ThreadChatWithRecentMessage | null;
+  applyThreadFilters(
+    status: StatusType,
+    assignees: AssigneesFiltersType,
+    reasons: ReasonsFiltersType,
+    priorities: PrioritiesFiltersType,
+    sortBy: sortByType,
+    memberId: string | null,
+    isUnassigned: boolean | null
+  ): void;
+  viewThreads(
+    state: WorkspaceStoreState,
+    status: StatusType,
+    assignees: AssigneesFiltersType,
+    reasons: ReasonsFiltersType,
+    priorities: PrioritiesFiltersType,
     sortBy: sortByType
-  ): ThreadChatStoreType[];
-  viewMyTodoThreads(
-    state: WorkspaceStoreStateType,
+  ): ThreadChatWithRecentMessage[];
+  viewMyThreads(
+    state: WorkspaceStoreState,
+    status: StatusType,
     memberId: string,
-    assignees: assigneesFiltersType,
-    reasons: reasonsFiltersType,
-    priorities: prioritiesFiltersType,
+    assignees: AssigneesFiltersType,
+    reasons: ReasonsFiltersType,
+    priorities: PrioritiesFiltersType,
     sortBy: sortByType
-  ): ThreadChatStoreType[];
-  viewUnassignedTodoThreads(
-    state: WorkspaceStoreStateType,
-    assignees: assigneesFiltersType,
-    reasons: reasonsFiltersType,
-    priorities: prioritiesFiltersType,
+  ): ThreadChatWithRecentMessage[];
+  viewUnassignedThreads(
+    state: WorkspaceStoreState,
+    status: StatusType,
+    assignees: AssigneesFiltersType,
+    reasons: ReasonsFiltersType,
+    priorities: PrioritiesFiltersType,
     sortBy: sortByType
-  ): ThreadChatStoreType[];
+  ): ThreadChatWithRecentMessage[];
   viewCurrentThreadQueue(
-    state: WorkspaceStoreStateType
-  ): CurrentThreadQueueType | null;
-  viewCustomerName(state: WorkspaceStoreStateType, customerId: string): string;
-  viewAssignees(state: WorkspaceStoreStateType): AssigneeType[];
+    state: WorkspaceStoreState
+  ): ThreadChatWithRecentMessage[] | null;
+  viewCustomerName(state: WorkspaceStoreState, customerId: string): string;
+  viewAssignees(state: WorkspaceStoreState): Assignee[];
   updateWorkspaceName(name: string): void;
-  viewLabels(state: WorkspaceStoreStateType): WorkspaceLabelStoreType[];
-  viewMembers(state: WorkspaceStoreStateType): WorkspaceMemberStoreType[];
-  viewPats(state: WorkspaceStoreStateType): AccountPatStoreType[];
-  addPat(pat: AccountPatStoreType): void;
+  viewLabels(state: WorkspaceStoreState): Label[];
+  viewMembers(state: WorkspaceStoreState): Member[];
+  viewPats(state: WorkspaceStoreState): AccountPat[];
+  addPat(pat: AccountPat): void;
   deletePat(patId: string): void;
-  addLabel(label: WorkspaceLabelStoreType): void;
-  updateLabel(labelId: string, label: WorkspaceLabelStoreType): void;
-  viewMemberName(state: WorkspaceStoreStateType, memberId: string): string;
-  updateMainThreadChat(threadChat: ThreadChatLeanType): void;
+  addLabel(label: Label): void;
+  updateLabel(labelId: string, label: Label): void;
+  viewMemberName(state: WorkspaceStoreState, memberId: string): string;
+  updateMainThreadChat(threadChat: ThreadChat): void;
   viewThreadChatAssigneeId(
-    state: WorkspaceStoreStateType,
+    state: WorkspaceStoreState,
     threadChatId: string
   ): string | null;
 }
 
-export type WorkspaceStoreStateType = IWorkspaceEntities &
+export interface IWorkspaceValueObjects {
+  hasData: boolean;
+  isPending: boolean;
+  error: Error | null;
+  threadAppliedFilters: ThreadAppliedFilters | null;
+}
+
+export type WorkspaceStoreState = IWorkspaceEntities &
+  IWorkspaceValueObjects &
   IWorkspaceStoreActions;
 
 function filterByReasons(
-  threads: ThreadChatStoreType[],
-  reasons: reasonsFiltersType
+  threads: ThreadChatWithRecentMessage[],
+  reasons: ReasonsFiltersType
 ) {
   if (reasons && Array.isArray(reasons)) {
     const uniqueReasons = [...new Set(reasons)];
@@ -243,8 +186,8 @@ function filterByReasons(
 }
 
 function filterByPriorities(
-  threads: ThreadChatStoreType[],
-  priorities: prioritiesFiltersType
+  threads: ThreadChatWithRecentMessage[],
+  priorities: PrioritiesFiltersType
 ) {
   if (priorities && Array.isArray(priorities)) {
     const uniquePriorities = [...new Set(priorities)];
@@ -263,8 +206,8 @@ function filterByPriorities(
 }
 
 function filterByAssignees(
-  threads: ThreadChatStoreType[],
-  assignees: assigneesFiltersType
+  threads: ThreadChatWithRecentMessage[],
+  assignees: AssigneesFiltersType
 ) {
   if (assignees && Array.isArray(assignees)) {
     const uniqueAssignees = [...new Set(assignees)];
@@ -281,7 +224,10 @@ function filterByAssignees(
   return threads;
 }
 
-function sortThreads(threads: ThreadChatStoreType[], sortBy: sortByType) {
+function sortThreads(
+  threads: ThreadChatWithRecentMessage[],
+  sortBy: sortByType
+) {
   if (sortBy === "created-dsc") {
     return _.sortBy(threads, "createdAt").reverse();
   } else if (sortBy === "created-asc") {
@@ -295,64 +241,56 @@ function sortThreads(threads: ThreadChatStoreType[], sortBy: sortByType) {
 // https://tkdodo.eu/blog/working-with-zustand
 //
 // @sanchitrk: shall we rename it to `buildWorkspaceStore` ?
-export const buildStore = (initialState: IWorkspaceEntities) => {
-  return createStore<WorkspaceStoreStateType>()(
+export const buildStore = (
+  initialState: IWorkspaceEntities & IWorkspaceValueObjects
+) => {
+  return createStore<WorkspaceStoreState>()(
     immer((set) => ({
       ...initialState,
-      updateWorkspaceStore: () => set((state) => ({ ...state })),
-      getWorkspaceName: (state: WorkspaceStoreStateType) =>
+      getWorkspaceName: (state: WorkspaceStoreState) =>
         state.workspace?.name || "",
-      getWorkspaceId: (state: WorkspaceStoreStateType) =>
+      getWorkspaceId: (state: WorkspaceStoreState) =>
         state.workspace?.workspaceId || "",
-      getMemberId: (state: WorkspaceStoreStateType) =>
-        state.member?.memberId || "",
-      getMemberName: (state: WorkspaceStoreStateType) =>
-        state.member?.name || "",
-      getMemberRole: (state: WorkspaceStoreStateType) =>
-        state.member?.role || "",
-      getMetrics: (state: WorkspaceStoreStateType) => state.metrics,
-      getThreadChatItem: (
-        state: WorkspaceStoreStateType,
-        threadChatId: string
-      ) => state.threadChats?.[threadChatId] || null,
-      viewAllTodoThreads: (
-        state: WorkspaceStoreStateType,
-        assigness: assigneesFiltersType,
-        reasons: reasonsFiltersType,
-        priorities: prioritiesFiltersType,
+      getMemberId: (state: WorkspaceStoreState) => state.member?.memberId || "",
+      getMemberName: (state: WorkspaceStoreState) => state.member?.name || "",
+      getMetrics: (state: WorkspaceStoreState) => state.metrics,
+      getThreadChatItem: (state: WorkspaceStoreState, threadChatId: string) =>
+        state.threadChats?.[threadChatId] || null,
+      viewThreads: (
+        state: WorkspaceStoreState,
+        status: StatusType,
+        assignees: AssigneesFiltersType,
+        reasons: ReasonsFiltersType,
+        priorities: PrioritiesFiltersType,
         sortBy: sortByType = "last-message-dsc"
       ) => {
         const threads = state.threadChats
           ? Object.values(state.threadChats)
           : [];
-        const todoThreads = threads.filter((t) => t.status === "todo");
-        const assigneesFiltered = filterByAssignees(todoThreads, assigness);
+        const statusFiltered = threads.filter((t) => t.status === status);
+        const assigneesFiltered = filterByAssignees(statusFiltered, assignees);
         const reasonsFiltered = filterByReasons(assigneesFiltered, reasons);
         const prioritiesFiltered = filterByPriorities(
           reasonsFiltered,
           priorities
         );
         const sortedThreads = sortThreads(prioritiesFiltered, sortBy);
-        state.currentThreadQueue = {
-          status: "todo",
-          from: "All Threads",
-          threads: [...sortedThreads],
-        };
         return sortedThreads;
       },
-      viewMyTodoThreads: (
-        state: WorkspaceStoreStateType,
+      viewMyThreads: (
+        state: WorkspaceStoreState,
+        status: StatusType,
         memberId: string,
-        assignees: assigneesFiltersType,
-        reasons: reasonsFiltersType,
-        priorities: prioritiesFiltersType,
+        assignees: AssigneesFiltersType,
+        reasons: ReasonsFiltersType,
+        priorities: PrioritiesFiltersType,
         sortBy: sortByType = "last-message-dsc"
       ) => {
         const threads = state.threadChats
           ? Object.values(state.threadChats)
           : [];
         const myThreads = threads.filter(
-          (t) => t.status === "todo" && t.assigneeId === memberId
+          (t) => t.status === status && t.assigneeId === memberId
         );
         const assigneesFiltered = filterByAssignees(myThreads, assignees);
         const reasonsFiltered = filterByReasons(assigneesFiltered, reasons);
@@ -361,25 +299,26 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
           priorities
         );
         const sortedThreads = sortThreads(prioritiesFiltered, sortBy);
-        state.currentThreadQueue = {
-          status: "todo",
-          from: "My Threads",
-          threads: [...sortedThreads],
-        };
+        // state.currentThreadQueue = {
+        //   status: "todo",
+        //   from: "My Threads",
+        //   threads: [...sortedThreads],
+        // };
         return sortedThreads;
       },
-      viewUnassignedTodoThreads: (
-        state: WorkspaceStoreStateType,
-        assignees: assigneesFiltersType,
-        reasons: reasonsFiltersType,
-        priorities: prioritiesFiltersType,
+      viewUnassignedThreads: (
+        state: WorkspaceStoreState,
+        status: StatusType,
+        assignees: AssigneesFiltersType,
+        reasons: ReasonsFiltersType,
+        priorities: PrioritiesFiltersType,
         sortBy = "last-message-dsc"
       ) => {
         const threads = state.threadChats
           ? Object.values(state.threadChats)
           : [];
         const unassignedThreads = threads.filter(
-          (t) => t.status === "todo" && !t.assigneeId
+          (t) => t.status === status && !t.assigneeId
         );
         const assigneesFiltered = filterByAssignees(
           unassignedThreads,
@@ -391,27 +330,86 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
           priorities
         );
         const sortedThreads = sortThreads(prioritiesFiltered, sortBy);
-        state.currentThreadQueue = {
-          status: "todo",
-          from: "Unassigned Threads",
-          threads: [...sortedThreads],
-        };
         return sortedThreads;
       },
+      applyThreadFilters: (
+        status: StatusType,
+        assignees: AssigneesFiltersType,
+        reasons: ReasonsFiltersType,
+        priorities: PrioritiesFiltersType,
+        sortBy: sortByType,
+        memberId: string | null,
+        isUnassigned: boolean | null
+      ) => {
+        set((state) => {
+          if (state.threadAppliedFilters) {
+            state.threadAppliedFilters = {
+              ...state.threadAppliedFilters,
+              status,
+              assignees,
+              reasons,
+              priorities,
+              sortBy,
+              memberId,
+              isUnassigned,
+            };
+          } else {
+            state.threadAppliedFilters = {
+              status,
+              assignees,
+              reasons,
+              priorities,
+              sortBy,
+              memberId,
+              isUnassigned,
+            };
+          }
+        });
+      },
       viewCurrentThreadQueue: (
-        state: WorkspaceStoreStateType
-      ): CurrentThreadQueueType | null => {
-        if (state.currentThreadQueue) return state.currentThreadQueue;
+        state: WorkspaceStoreState
+      ): ThreadChatWithRecentMessage[] | null => {
+        if (state.threadAppliedFilters) {
+          const {
+            status,
+            assignees,
+            reasons,
+            priorities,
+            sortBy,
+            memberId,
+            isUnassigned,
+          } = state.threadAppliedFilters;
+
+          const threads = state.threadChats
+            ? Object.values(state.threadChats)
+            : [];
+
+          let results = [];
+          results = threads.filter((t) => t.status === status);
+
+          if (memberId) {
+            results = threads.filter(
+              (t) => t.status === status && t.assigneeId === memberId
+            );
+          } else if (isUnassigned) {
+            results = threads.filter(
+              (t) => t.status === status && !t.assigneeId
+            );
+          }
+
+          results = filterByAssignees(results, assignees);
+          results = filterByReasons(results, reasons);
+          results = filterByPriorities(results, priorities);
+          results = sortThreads(results, sortBy);
+          return results;
+        }
         return null;
       },
-      viewCustomerName: (
-        state: WorkspaceStoreStateType,
-        customerId: string
-      ) => {
+      viewCustomerName: (state: WorkspaceStoreState, customerId: string) => {
         const customer = state.customers?.[customerId];
         return customer ? customer.name : "";
       },
-      viewAssignees: (state: WorkspaceStoreStateType) => {
+      viewAssignees: (state: WorkspaceStoreState) => {
         // Get all threads
         const threads = state.threadChats
           ? Object.values(state.threadChats)
@@ -432,22 +430,22 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
               return {
                 assigneeId: member.memberId,
                 name: member.name || "n/a",
-              } as AssigneeType;
+              } as Assignee;
             }
           })
-          .filter((m): m is AssigneeType => m !== undefined);
+          .filter((m): m is Assignee => m !== undefined);
 
         return assignees;
       },
-      viewLabels: (state: WorkspaceStoreStateType) => {
+      viewLabels: (state: WorkspaceStoreState) => {
         const labels = state.labels ? Object.values(state.labels) : [];
         return _.sortBy(labels, "labelId").reverse();
       },
-      viewMembers: (state: WorkspaceStoreStateType) => {
+      viewMembers: (state: WorkspaceStoreState) => {
         const members = state.members ? Object.values(state.members) : [];
         return members;
       },
-      viewPats: (state: WorkspaceStoreStateType) => {
+      viewPats: (state: WorkspaceStoreState) => {
         const pats = state.pats ? Object.values(state.pats) : [];
         return _.sortBy(pats, "patId").reverse();
       },
@@ -461,7 +459,7 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
           }
         });
       },
-      addLabel: (label: WorkspaceLabelStoreType) => {
+      addLabel: (label: Label) => {
         const { labelId } = label;
         set((state) => {
           if (state.labels) {
@@ -473,7 +471,7 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
           }
         });
       },
-      updateLabel: (labelId: string, label: WorkspaceLabelStoreType) => {
+      updateLabel: (labelId: string, label: Label) => {
         set((state) => {
           if (state.labels) {
             state.labels[labelId] = { ...label };
@@ -483,7 +481,7 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
           }
         });
       },
-      addPat: (pat: AccountPatStoreType) => {
+      addPat: (pat: AccountPat) => {
         const { patId } = pat;
         set((state) => {
           if (state.pats) {
@@ -505,7 +503,7 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
           }
         });
       },
-      viewMemberName: (state: WorkspaceStoreStateType, memberId: string) => {
+      viewMemberName: (state: WorkspaceStoreState, memberId: string) => {
         const member = state.members?.[memberId];
         return member ? member.name || "" : "";
       },
@@ -531,7 +529,7 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
         });
       },
       viewThreadChatAssigneeId: (
-        state: WorkspaceStoreStateType,
+        state: WorkspaceStoreState,
         threadChatId: string
       ) => state.threadChats?.[threadChatId]?.assigneeId || null,
     }))
@@ -541,12 +539,12 @@ export const buildStore = (initialState: IWorkspaceEntities) => {
 export interface IAccount {
   hasData: boolean;
   error: Error | null;
-  account: AccountResponseType | null;
+  account: Account | null;
 }
 
 interface IAccountStoreActions {
   updateStore(): void;
-  getAccount(state: AccountStoreStateType): AccountResponseType | null;
+  getAccount(state: AccountStoreStateType): Account | null;
   getName(state: AccountStoreStateType): string;
   getAccountId(state: AccountStoreStateType): string;
   getEmail(state: AccountStoreStateType): string;

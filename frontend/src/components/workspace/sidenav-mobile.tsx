@@ -2,7 +2,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { HamburgerMenuIcon } from "@radix-ui/react-icons";
-import { WorkspaceMetricsStoreType } from "@/db/store";
+import { WorkspaceMetrics } from "@/db/store";
 import SideNavLinks from "@/components/workspace/sidenav-links";
 
 export default function SideNavMobile({
@@ -15,7 +15,7 @@ export default function SideNavMobile({
   email: string;
   workspaceId: string;
   workspaceName: string;
-  metrics: WorkspaceMetricsStoreType;
+  metrics: WorkspaceMetrics;
   memberId: string;
 }) {
   const [open, setOpen] = React.useState(false);

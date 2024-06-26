@@ -1,13 +1,12 @@
-import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
-import { ThreadChatStoreType } from "@/db/store";
+import { ThreadChatWithRecentMessage } from "@/db/store";
 import { ChatBubbleIcon, ResetIcon } from "@radix-ui/react-icons";
 import Avatar from "boring-avatars";
 import { useStore } from "zustand";
-import { WorkspaceStoreStateType } from "@/db/store";
+import { WorkspaceStoreState } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
 
 function ThreadItem({
@@ -16,7 +15,7 @@ function ThreadItem({
   variant = "default",
 }: {
   workspaceId: string;
-  item: ThreadChatStoreType;
+  item: ThreadChatWithRecentMessage;
   variant?: string;
 }) {
   // const WorkspaceStore = useRouteContext({
@@ -24,10 +23,8 @@ function ThreadItem({
   //   select: (context) => context.WorkspaceStore,
   // });
   const workspaceStore = useWorkspaceStore();
-  const customerName = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreStateType) =>
-      state.viewCustomerName(state, item.customerId)
+  const customerName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.viewCustomerName(state, item.customerId)
   );
 
   // const bottomRef = React.useRef<null | HTMLDivElement>(null);
@@ -81,7 +78,8 @@ function ThreadItem({
           <div className="flex">
             <Badge variant="outline" className="font-normal">
               <div className="flex items-center gap-1">
-                <ResetIcon className="h-3 w-3" /> replied to
+                <ResetIcon className="h-3 w-3" />
+                replied to
               </div>
             </Badge>
           </div>
@@ -113,14 +111,14 @@ export function ThreadList({
   variant = "default",
 }: {
   workspaceId: string;
-  threads: ThreadChatStoreType[];
+  threads: ThreadChatWithRecentMessage[];
   variant?: string;
 }) {
   return (
     <div
       className={cn("flex flex-col gap-2", variant === "compress" && "gap-0")}
     >
-      {threads.map((item: ThreadChatStoreType) => (
+      {threads.map((item: ThreadChatWithRecentMessage) => (
         <ThreadItem
           key={item.threadChatId}
           workspaceId={workspaceId}

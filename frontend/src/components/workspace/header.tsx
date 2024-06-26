@@ -9,7 +9,7 @@ import { ThemeToggler } from "@/components/theme-toggler";
 
 import { ArrowLeftRightIcon } from "lucide-react";
 
-import { WorkspaceMetricsStoreType } from "@/db/store";
+import { WorkspaceMetrics } from "@/db/store";
 import SideNavMobile from "@/components/workspace/sidenav-mobile";
 
 export function Header({
@@ -22,7 +22,7 @@ export function Header({
   email: string;
   workspaceId: string;
   workspaceName: string;
-  metrics: WorkspaceMetricsStoreType;
+  metrics: WorkspaceMetrics;
   memberId: string;
 }) {
   return (

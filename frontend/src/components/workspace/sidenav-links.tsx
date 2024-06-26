@@ -6,7 +6,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import Avatar from "boring-avatars";
 import { Link, getRouteApi } from "@tanstack/react-router";
 
-import { WorkspaceMetricsStoreType } from "@/db/store";
+import { WorkspaceMetrics } from "@/db/store";
 import { SideNavLabelLinks } from "@/components/workspace/sidenav-label-links";
 import {
   OpenInNewWindowIcon,
@@ -47,7 +47,7 @@ export default function SideNavLinks({
   maxHeight: string;
   workspaceId: string;
   workspaceName: string;
-  metrics: WorkspaceMetricsStoreType;
+  metrics: WorkspaceMetrics;
   memberId: string;
   email: string;
   openClose?: (isOpen: boolean) => void | undefined;

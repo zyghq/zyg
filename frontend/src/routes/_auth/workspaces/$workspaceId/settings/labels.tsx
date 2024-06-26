@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useMutation } from "@tanstack/react-query";
-import { WorkspaceStoreStateType, WorkspaceLabelStoreType } from "@/db/store";
+import { WorkspaceStoreState, Label } from "@/db/store";
 
 export const Route = createFileRoute(
   "/_auth/workspaces/$workspaceId/settings/labels"
@@ -38,9 +38,9 @@ function LabelSettings() {
   const { workspaceId } = Route.useParams();
   const { token } = Route.useRouteContext();
   const workspaceStore = useWorkspaceStore();
-  const labels = useStore(workspaceStore, (state: WorkspaceStoreStateType) =>
+  const labels = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.viewLabels(state)
-  ) as WorkspaceLabelStoreType[];
+  ) as Label[];
 
   const form = useForm({
     resolver: zodResolver(formSchema),

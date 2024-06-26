@@ -20,21 +20,23 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import Avatar from "boring-avatars";
-import { CircleIcon } from "lucide-react";
 import { SidePanelThreadList } from "@/components/workspace/thread/sidepanel-thread-list";
 import { useStore } from "zustand";
-import { WorkspaceStoreStateType } from "@/db/store";
+import { WorkspaceStoreState } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
 import { ThreadList } from "@/components/workspace/thread/threads";
-import { CurrentThreadQueueType, ThreadChatMessageType } from "@/db/store";
 import { formatDistanceToNow } from "date-fns";
-import {
-  getWorkspaceThreadChatMessages,
-  ThreadChatMessagesResponseType,
-} from "@/db/api";
+import { getWorkspaceThreadChatMessages } from "@/db/api";
 import { NotFound } from "@/components/notfound";
 import { PropertiesForm } from "@/components/workspace/thread/properties-form";
-import { CheckCircleIcon, EclipseIcon } from "lucide-react";
+import { CheckCircleIcon, EclipseIcon, CircleIcon } from "lucide-react";
+import { updateThreadChat } from "@/db/api";
+import { useMutation } from "@tanstack/react-query";
+import {
+  ThreadChatMessage,
+  ThreadChatWithMessages,
+  ThreadChatWithRecentMessage,
+} from "@/db/entities";
 
 export const Route = createFileRoute(
   "/_auth/workspaces/$workspaceId/threads/$threadId/"
@@ -43,12 +45,11 @@ export const Route = createFileRoute(
 });
 
 function getPrevNextFromCurrent(
-  currentQueue: CurrentThreadQueueType | null,
+  threads: ThreadChatWithRecentMessage[] | null,
   threadId: string
 ) {
-  if (!currentQueue) return { prevItem: null, nextItem: null };
+  if (!threads) return { prevItem: null, nextItem: null };
 
-  const { threads } = currentQueue;
   const currentIndex = threads.findIndex(
     (thread) => thread.threadChatId === threadId
   );
@@ -64,7 +65,7 @@ function Message({
   memberId,
   memberName,
 }: {
-  message: ThreadChatMessageType;
+  message: ThreadChatMessage;
   memberId: string;
   memberName: string;
 }) {
@@ -111,31 +112,44 @@ function ThreadDetail() {
   const { workspaceId, threadId } = Route.useParams();
 
   const bottomRef = React.useRef<null | HTMLDivElement>(null);
-
   const workspaceStore = useWorkspaceStore();
 
-  const currentQueue = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreStateType) => state.viewCurrentThreadQueue(state)
+  // const { search } = useRouteContext({
+  //   from: "/_auth/workspaces/$workspaceId/_workspace",
+  //   select: (context) => context.search,
+  // });
+
+  // const { status, reasons, sort, assignees, priorities } = search;
+
+  // const currentQueue = useStore(
+  //   workspaceStore,
+  //   (state: WorkspaceStoreStateType) =>
+  //     state.viewAllTodoThreads(
+  //       state,
+  //       assignees as assigneesFiltersType,
+  //       reasons as reasonsFiltersType,
+  //       priorities as prioritiesFiltersType,
+  //       sort
+  //     )
+  // );
+
+  const currentQueue = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.viewCurrentThreadQueue(state)
   );
 
-  const activeThread = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreStateType) => state.getThreadChatItem(state, threadId)
+  const activeThread = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.getThreadChatItem(state, threadId)
   );
 
-  const customerName = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreStateType) =>
-      state.viewCustomerName(state, activeThread?.customerId || "")
+  const customerName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.viewCustomerName(state, activeThread?.customerId || "")
   );
 
-  const memberId = useStore(workspaceStore, (state: WorkspaceStoreStateType) =>
+  const memberId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.getMemberId(state)
   );
-  const memberName = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreStateType) => state.getMemberName(state)
+  const memberName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.getMemberName(state)
   );
 
   const threadStatus = activeThread?.status || "";
@@ -152,7 +166,7 @@ function ThreadDetail() {
         threadId
       );
       if (error) throw new Error("failed to fetch thread messages");
-      return data as ThreadChatMessagesResponseType;
+      return data as ThreadChatWithMessages;
     },
     enabled: !!activeThread,
   });
@@ -166,10 +180,34 @@ function ThreadDetail() {
     }
   }, [data]);
 
-  function renderMessages(
-    isPending: boolean,
-    data?: ThreadChatMessagesResponseType
-  ) {
+  const statusMutation = useMutation({
+    mutationFn: async (values: { status: string }) => {
+      const { error, data } = await updateThreadChat(
+        token,
+        workspaceId,
+        threadId,
+        { ...values }
+      );
+      if (error) {
+        throw new Error(error.message);
+      }
+      if (!data) {
+        throw new Error("no data returned");
+      }
+      return data;
+    },
+    onError: (error) => {
+      console.error(error);
+    },
+    onSuccess: (data) => {
+      workspaceStore.getState().updateMainThreadChat(data);
+    },
+  });
+
+  const { isError: isStatusMutErr, isPending: isStatusMutPending } =
+    statusMutation;
+
+  function renderMessages(isPending: boolean, data?: ThreadChatWithMessages) {
     if (isPending) {
       return (
         <div className="flex justify-center mt-12">
@@ -225,7 +263,16 @@ function ThreadDetail() {
   }
 
   if (error) {
-    return <div>errror</div>;
+    return (
+      <div className="flex flex-col container h-screen">
+        <div className="my-auto mx-auto">
+          <h1 className="mb-1 text-3xl font-bold">Error</h1>
+          <p className="mb-4 text-red-500">
+            There was an error fetching thread details. Try again later.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -246,8 +293,8 @@ function ThreadDetail() {
               </Button>
               {currentQueue && (
                 <SidePanelThreadList
-                  threads={currentQueue.threads}
-                  title="All Threads"
+                  threads={currentQueue}
+                  title="Threads"
                   workspaceId={workspaceId}
                 />
               )}
@@ -283,13 +330,13 @@ function ThreadDetail() {
               className={cn("hidden", currentQueue ? "sm:block" : "")}
             >
               <div className="flex h-14 flex-col justify-center border-b px-4">
-                <div className="font-semibold">{currentQueue?.from}</div>
+                <div className="font-semibold">Threads</div>
               </div>
               <ScrollArea className="h-[calc(100dvh-4rem)]">
                 {currentQueue && (
                   <ThreadList
                     workspaceId={workspaceId}
-                    threads={currentQueue.threads}
+                    threads={currentQueue}
                     variant="compress"
                   />
                 )}
@@ -353,14 +400,47 @@ function ThreadDetail() {
                   <div className="flex flex-col h-full p-2">
                     <div>...</div>
                     <div className="flex justify-end gap-2">
-                      <Button size="sm" variant="ghost">
+                      <Button size="sm" variant="outline">
                         <EclipseIcon className="mr-1 h-4 w-4 text-fuchsia-500" />
                         Snooze
                       </Button>
-                      <Button size="sm" variant="outline">
-                        <CheckCircleIcon className="mr-1 h-4 w-4 text-green-500" />
-                        Mark as Done
-                      </Button>
+                      {threadStatus === "todo" && (
+                        <Button
+                          onClick={() => {
+                            statusMutation.mutate({
+                              status: "done",
+                            });
+                          }}
+                          disabled={isStatusMutPending}
+                          size="sm"
+                          variant="outline"
+                        >
+                          <CheckCircleIcon className="mr-1 h-4 w-4 text-green-500" />
+                          Mark as Done
+                        </Button>
+                      )}
+                      {threadStatus === "done" && (
+                        <Button
+                          onClick={() => {
+                            statusMutation.mutate({
+                              status: "todo",
+                            });
+                          }}
+                          disabled={isStatusMutPending}
+                          size="sm"
+                          variant="outline"
+                        >
+                          <CircleIcon className="mr-1 h-4 w-4 text-indigo-500" />
+                          Mark as Todo
+                        </Button>
+                      )}
+                    </div>
+                    <div className="flex justify-end">
+                      {isStatusMutErr && (
+                        <div className="text-xs text-red-500">
+                          Something went wrong.
+                        </div>
+                      )}
                     </div>
                   </div>
                 </ResizablePanel>

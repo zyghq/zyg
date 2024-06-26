@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { useStore } from "zustand";
-import { WorkspaceStoreStateType } from "@/db/store";
+import { WorkspaceStoreState } from "@/db/store";
 import { Header } from "@/components/workspace/header";
 import SideNavLinks from "@/components/workspace/sidenav-links";
 import { useAccountStore, useWorkspaceStore } from "@/providers";
@@ -99,20 +99,18 @@ function WorkspaceLayout() {
 
   const email = useStore(accountStore, (state) => state.getEmail(state));
 
-  const workspaceId = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreStateType) => state.getWorkspaceId(state)
+  const workspaceId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.getWorkspaceId(state)
   );
-  const workspaceName = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreStateType) => state.getWorkspaceName(state)
+  const workspaceName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.getWorkspaceName(state)
   );
 
-  const memberId = useStore(workspaceStore, (state: WorkspaceStoreStateType) =>
+  const memberId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.getMemberId(state)
   );
 
-  const metrics = useStore(workspaceStore, (state: WorkspaceStoreStateType) =>
+  const metrics = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.getMetrics(state)
   );
 

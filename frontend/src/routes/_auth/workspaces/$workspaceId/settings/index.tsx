@@ -21,7 +21,7 @@ import { ExclamationTriangleIcon, CheckIcon } from "@radix-ui/react-icons";
 import { ClipboardCopyIcon, CheckCircledIcon } from "@radix-ui/react-icons";
 import { useStore } from "zustand";
 import { useWorkspaceStore } from "@/providers";
-import { WorkspaceStoreStateType } from "@/db/store";
+import { WorkspaceStoreState } from "@/db/store";
 import { updateWorkspace } from "@/db/api";
 import { useCopyToClipboard } from "@uidotdev/usehooks";
 
@@ -45,9 +45,8 @@ function GeneralSettings() {
   const isLoading = useRouterState({ select: (s) => s.isLoading });
   const workspaceStore = useWorkspaceStore();
 
-  const workspaceName = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreStateType) => state.getWorkspaceName(state)
+  const workspaceName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.getWorkspaceName(state)
   );
 
   const [copiedText, copyToClipboard] = useCopyToClipboard();

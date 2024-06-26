@@ -1,19 +1,20 @@
+import * as React from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useStore } from "zustand";
-import { WorkspaceStoreStateType } from "@/db/store";
+import { WorkspaceStoreState } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, CircleIcon, EclipseIcon } from "lucide-react";
+import { CheckCircleIcon, CircleIcon, EclipseIcon } from "lucide-react";
 
 import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
 import { ThreadList } from "@/components/workspace/threads";
 
 import {
-  reasonsFiltersType,
-  assigneesFiltersType,
-  prioritiesFiltersType,
+  ReasonsFiltersType,
+  AssigneesFiltersType,
+  PrioritiesFiltersType,
 } from "@/db/store";
 
 export const Route = createFileRoute(
@@ -27,23 +28,48 @@ function AllThreads() {
   const navigate = useNavigate();
   const { status, reasons, sort, assignees, priorities } = Route.useSearch();
 
-  const workspaceId = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreStateType) => state.getWorkspaceId(state)
+  const workspaceId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.getWorkspaceId(state)
   );
-  const threads = useStore(workspaceStore, (state: WorkspaceStoreStateType) =>
-    state.viewAllTodoThreads(
+  const todoThreads = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.viewThreads(
       state,
-      assignees as assigneesFiltersType,
-      reasons as reasonsFiltersType,
-      priorities as prioritiesFiltersType,
+      "todo",
+      assignees as AssigneesFiltersType,
+      reasons as ReasonsFiltersType,
+      priorities as PrioritiesFiltersType,
       sort
     )
   );
+  const doneThreads = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.viewThreads(
+      state,
+      "done",
+      assignees as AssigneesFiltersType,
+      reasons as ReasonsFiltersType,
+      priorities as PrioritiesFiltersType,
+      sort
+    )
+  );
+
   const assignedMembers = useStore(
     workspaceStore,
-    (state: WorkspaceStoreStateType) => state.viewAssignees(state)
+    (state: WorkspaceStoreState) => state.viewAssignees(state)
   );
+
+  React.useEffect(() => {
+    workspaceStore
+      .getState()
+      .applyThreadFilters(
+        status,
+        assignees as AssigneesFiltersType,
+        reasons as ReasonsFiltersType,
+        priorities as PrioritiesFiltersType,
+        sort,
+        null,
+        null
+      );
+  }, [workspaceStore, status, assignees, reasons, priorities, sort]);
 
   return (
     <div className="container">
@@ -80,7 +106,7 @@ function AllThreads() {
               value="done"
             >
               <div className="flex items-center">
-                <CheckCircle className="mr-1 h-4 w-4 text-green-500" />
+                <CheckCircleIcon className="mr-1 h-4 w-4 text-green-500" />
                 Done
               </div>
             </TabsTrigger>
@@ -91,7 +117,7 @@ function AllThreads() {
           </div>
         </div>
         <TabsContent value="todo" className="m-0">
-          <ThreadList workspaceId={workspaceId} threads={threads} />
+          <ThreadList workspaceId={workspaceId} threads={todoThreads} />
         </TabsContent>
         <TabsContent value="snoozed" className="m-0">
           {/* <ThreadList
@@ -100,10 +126,7 @@ function AllThreads() {
         /> */}
         </TabsContent>
         <TabsContent value="done" className="m-0">
-          {/* <Threads items={threads} /> */}
-          {/* <ScrollArea className="h-[calc(100vh-14rem)] pr-1">
-          <div className="flex flex-col gap-2">...</div>
-        </ScrollArea> */}
+          <ThreadList workspaceId={workspaceId} threads={doneThreads} />
         </TabsContent>
       </Tabs>
     </div>

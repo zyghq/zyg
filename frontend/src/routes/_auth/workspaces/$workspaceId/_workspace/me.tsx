@@ -1,17 +1,18 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useStore } from "zustand";
-import { WorkspaceStoreStateType } from "@/db/store";
+import { WorkspaceStoreState } from "@/db/store";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, CircleIcon, EclipseIcon } from "lucide-react";
 import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
 import { ThreadList } from "@/components/workspace/threads";
 import {
-  reasonsFiltersType,
-  assigneesFiltersType,
-  prioritiesFiltersType,
+  ReasonsFiltersType,
+  AssigneesFiltersType,
+  PrioritiesFiltersType,
 } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
+import * as React from "react";
 
 export const Route = createFileRoute(
   "/_auth/workspaces/$workspaceId/_workspace/me"
@@ -25,31 +26,43 @@ function MyThreads() {
   const { status, reasons, sort, assignees, priorities } = Route.useSearch();
   const navigate = useNavigate();
 
-  const workspaceId = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreStateType) => state.getWorkspaceId(state)
+  const workspaceId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.getWorkspaceId(state)
   );
 
-  const memberId = useStore(workspaceStore, (state: WorkspaceStoreStateType) =>
+  const memberId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.getMemberId(state)
   );
-  const todoThreads = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreStateType) =>
-      state.viewMyTodoThreads(
-        state,
-        memberId,
-        assignees as assigneesFiltersType,
-        reasons as reasonsFiltersType,
-        priorities as prioritiesFiltersType,
-        sort
-      )
+  const todoThreads = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.viewMyThreads(
+      state,
+      "todo",
+      memberId,
+      assignees as AssigneesFiltersType,
+      reasons as ReasonsFiltersType,
+      priorities as PrioritiesFiltersType,
+      sort
+    )
   );
 
   const assignedMembers = useStore(
     workspaceStore,
-    (state: WorkspaceStoreStateType) => state.viewAssignees(state)
+    (state: WorkspaceStoreState) => state.viewAssignees(state)
   );
+
+  React.useEffect(() => {
+    workspaceStore
+      .getState()
+      .applyThreadFilters(
+        status,
+        assignees as AssigneesFiltersType,
+        reasons as ReasonsFiltersType,
+        priorities as PrioritiesFiltersType,
+        sort,
+        memberId,
+        null
+      );
+  }, [workspaceStore, status, assignees, reasons, priorities, sort, memberId]);
 
   return (
     <div className="container">

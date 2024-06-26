@@ -5,14 +5,14 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThreadList } from "@/components/workspace/thread/threads";
 import { PanelLeftIcon } from "lucide-react";
-import { ThreadChatStoreType } from "@/db/store";
+import { ThreadChatWithRecentMessage } from "@/db/store";
 
 export function SidePanelThreadList({
   threads,
   title,
   workspaceId,
 }: {
-  threads: ThreadChatStoreType[];
+  threads: ThreadChatWithRecentMessage[];
   title: string;
   workspaceId: string;
 }) {

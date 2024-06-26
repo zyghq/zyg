@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
-import { ThreadChatStoreType } from "@/db/store";
+import { ThreadChatWithRecentMessage } from "@/db/store";
 import { ChatBubbleIcon, ResetIcon } from "@radix-ui/react-icons";
 import Avatar from "boring-avatars";
 import { useStore } from "zustand";
@@ -14,7 +14,7 @@ function ThreadItem({
   variant = "default",
 }: {
   workspaceId: string;
-  item: ThreadChatStoreType;
+  item: ThreadChatWithRecentMessage;
   variant?: string;
 }) {
   // const WorkspaceStore = useRouteContext({
@@ -120,14 +120,14 @@ export function ThreadList({
   variant = "default",
 }: {
   workspaceId: string;
-  threads: ThreadChatStoreType[];
+  threads: ThreadChatWithRecentMessage[];
   variant?: string;
 }) {
   return (
     <div
       className={cn("flex flex-col gap-2", variant === "compress" && "gap-0")}
     >
-      {threads.map((item: ThreadChatStoreType) => (
+      {threads.map((item: ThreadChatWithRecentMessage) => (
         <ThreadItem
           key={item.threadChatId}
           workspaceId={workspaceId}
