@@ -22,6 +22,11 @@ export function useAuthProvider() {
   const [authUser, setAuthUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
+  console.log("*************** useAuthProvider *****************");
+  console.log("authUser", authUser);
+  console.log("isAuthLoading", isAuthLoading);
+  console.log("*************** useAuthProvider *****************");
+
   const postMessage = useCallback((data) => {
     let postable;
     if (typeof data === "object") {
@@ -131,8 +136,9 @@ export function useAuthProvider() {
         const { event = "", payload = {} } = data;
         if (event === "authenticate") {
           // message to authenticate
-          const accessToken = payload?.accessToken || "";
-          authenticate(accessToken); // not worried about awaiting
+          const authToken = payload?.authToken || "";
+          console.log("authToken", authToken);
+          authenticate(authToken); // not worried about awaiting
         }
       } catch (err) {
         console.log(e.data);

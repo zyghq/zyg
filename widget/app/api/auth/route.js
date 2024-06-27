@@ -20,15 +20,12 @@ export async function POST(request) {
       );
     }
     const data = await resp.json();
-    const accessToken = {
+    const authToken = {
       value: token,
       name: ZYG_AUTH_COOKIE_NAME,
     };
 
-    const response = NextResponse.json(
-      { ...data, accessToken },
-      { status: 200 }
-    );
+    const response = NextResponse.json({ ...data, authToken }, { status: 200 });
     response.cookies.set(ZYG_AUTH_COOKIE_NAME, token, {
       httpOnly: false, // make sure it is accessible by the browser (client)
       secure: process.env.NODE_ENV === "production",

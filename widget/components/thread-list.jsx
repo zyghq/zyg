@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import formatDistanceToNow from "date-fns/formatDistanceToNow";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Avatar from "boring-avatars";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Icons } from "@/components/icons";
@@ -13,53 +13,49 @@ import Link from "next/link";
 function ThreadChatItem({ customerId, thread }) {
   const { threadChatId, messages } = thread;
   const message = messages[0];
-
   const isMe = message?.customer?.customerId === customerId;
   const body = message?.body || "...";
   const updatedAt = message?.updatedAt || new Date();
+  const isRead = thread?.read || false;
+  const isReplied = thread?.replied || false;
 
-  const memberName = (member) => {
-    return member?.name || "Member";
-  };
+  const memberName = message?.member?.name || "Member";
+  const memberId = message?.member?.memberId || "";
 
   return (
     <Link
       href={`/threads/${threadChatId}/`}
       key={thread.threadId}
       className={cn(
-        "w-full",
         "flex flex-col items-start gap-2 rounded-lg border px-3 py-3 text-left text-sm transition-all hover:bg-accent"
       )}
     >
-      <div className="flex w-full flex-col gap-2">
+      <div className="flex w-full flex-col gap-1">
         <div className="flex items-center">
-          <div className="flex items-center gap-1">
-            <Avatar className="h-8 w-8 rounded-sm">
-              <AvatarImage src="https://github.com/shadcn.png" />
-              <AvatarFallback>CN</AvatarFallback>
-            </Avatar>
-            <div className="font-semibold">{`Zyg Team`}</div>
-            <span className="flex h-2 w-2 rounded-full bg-blue-600" />
+          <div className="flex items-center gap-2">
+            {isMe ? (
+              <Avatar name={customerId} size={24} variant="marble" />
+            ) : (
+              <Avatar name={memberId} size={24} variant="marble" />
+            )}
+            <div className="font-medium">{`${isMe ? "You" : memberName}`}</div>
+            {!isRead && (
+              <span className="flex h-2 w-2 rounded-full bg-blue-600" />
+            )}
           </div>
-          <div className={cn("ml-auto text-xs", "text-foreground")}>
+          <div
+            className={cn(
+              "ml-auto mr-2 text-xs",
+              !isReplied ? "text-foreground" : "text-muted-foreground"
+            )}
+          >
             {formatDistanceToNow(new Date(updatedAt), {
               addSuffix: true,
             })}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Avatar className="h-5 w-5">
-            <AvatarImage src="https://github.com/shadcn.png" />
-            <AvatarFallback>CN</AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col">
-            <div className="text-xs font-medium">{`${isMe ? "You" : memberName(message?.member)}`}</div>
-            <div className="text-xs">
-              {body.substring(0, 200) + (body.length > 220 ? " ..." : "")}
-            </div>
-          </div>
-        </div>
       </div>
+      <div className="line-clamp-2 text-muted-foreground text-xs">{body}</div>
     </Link>
   );
 }
@@ -86,7 +82,7 @@ export default function ThreadList({ threads }) {
     refetchOnWindowFocus: true,
     enabled: authUser?.authToken?.value ? true : false,
     initialData: threads,
-    refetchInterval: 10000,
+    refetchInterval: 1000,
     refetchOnMount: "always",
   });
 

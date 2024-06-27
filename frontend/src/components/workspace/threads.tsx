@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
-import { ThreadChatWithRecentMessage } from "@/db/store";
+import { ThreadChatWithRecentMessage } from "@/db/entities";
 import { ChatBubbleIcon, ResetIcon } from "@radix-ui/react-icons";
 import Avatar from "boring-avatars";
 import { useStore } from "zustand";
@@ -67,7 +67,6 @@ function ThreadItem({
               <span className="flex h-2 w-2 rounded-full bg-blue-600" />
             )}
           </div>
-
           {item.recentMessage && (
             <div
               className={cn(
@@ -88,7 +87,8 @@ function ThreadItem({
           <div className="flex">
             <Badge variant="outline" className="font-normal">
               <div className="flex items-center gap-1">
-                <ResetIcon className="h-3 w-3" /> replied to
+                <ResetIcon className="h-3 w-3" />
+                replied to
               </div>
             </Badge>
           </div>

@@ -12,7 +12,7 @@ export function Header({ label }) {
 
 export function ThreadHeader() {
   return (
-    <div className="flex items-center justify-start py-4 border-b px-1">
+    <div className="flex items-center justify-start py-4 border-b px-1 gap-1">
       <GoHomeButton />
       <div>
         <div className="flex flex-col">

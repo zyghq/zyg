@@ -82,7 +82,8 @@ function Message({
   const isCustomer = message.customer ? true : false;
   const isMember = message.member ? true : false;
 
-  const customerId = message.customer?.customerId || "C";
+  const customerId = message.customer?.customerId || "";
+  const customerName = message.customer?.name || "";
 
   const isMe = message.member?.memberId === memberId;
 
@@ -94,7 +95,7 @@ function Message({
             <Avatar name={customerId} size={32} variant="marble" />
           )}
           <div className="p-2 rounded-lg bg-gray-100 dark:bg-accent">
-            <div className="text-muted-foreground">{`${isMe ? "You" : memberName}`}</div>
+            <div className="text-muted-foreground">{`${isMe ? memberName : customerName}`}</div>
             <p className="text-sm">{message.body}</p>
             <div className="flex text-xs justify-end text-muted-foreground mt-1">
               {time}

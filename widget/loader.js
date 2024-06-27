@@ -108,7 +108,7 @@ function createZygWidget(config) {
     }
   }
 
-  var accessToken = config?.identity?.accessToken;
+  var authToken = config?.identity?.authToken;
 
   // create the iframe parent div container
   var frameContainer = document.createElement("div");
@@ -186,7 +186,7 @@ function createZygWidget(config) {
       const message = {
         event: "authenticate",
         payload: {
-          accessToken,
+          authToken,
         },
       };
       const messageStr = JSON.stringify(message);

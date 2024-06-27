@@ -2,14 +2,12 @@
 import * as React from "react";
 import { ThreadHeader } from "@/components/headers";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AvatarImage, AvatarFallback, Avatar } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-// import Room from "@/components/room";
 import MessageThreadForm from "@/components/message-thread-form";
 import { useQuery } from "@tanstack/react-query";
-// import Cookies from "js-cookie";
 import { useAuth } from "@/lib/auth";
 import { Icons } from "@/components/icons";
+import Avatar from "boring-avatars";
 
 function Message({ message }) {
   const { createdAt } = message;
@@ -23,21 +21,16 @@ function Message({ message }) {
   });
 
   const isMe = typeof message.customer === "object";
-  const memName = () => {
-    return message?.member?.name || "C";
-  };
+  const memberId = message?.member?.memberId || "";
+  const memberName = message?.member?.name || "";
+
   return (
     <div className="flex">
       <div className={`flex max-w-sm ${isMe ? "ml-auto" : "mr-auto"}`}>
         <div className="flex space-x-2">
-          {isMe ? null : (
-            <Avatar className="h-6 w-6">
-              <AvatarImage alt="User" src="/images/profile.jpg" />
-              <AvatarFallback>U</AvatarFallback>
-            </Avatar>
-          )}
+          {isMe ? null : <Avatar size={22} name={memberId} variant="marble" />}
           <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
-            <div className="text-xs text-muted-foreground">{`${isMe ? "Me" : memName()}`}</div>
+            <div className="text-xs text-muted-foreground">{`${isMe ? "Me" : memberName}`}</div>
             <p className="text-sm">{message.body}</p>
             <div className="flex text-xs justify-end text-muted-foreground mt-1">
               {time}
@@ -54,20 +47,18 @@ export default function ThreadChatMessageListPage({ params }) {
   const auth = useAuth();
   const { authUser, isAuthLoading } = auth;
   const bottomRef = React.useRef();
+
   const result = useQuery({
-    queryKey: ["thmchats", threadId, authUser?.authToken?.value],
+    queryKey: ["messages", threadId, authUser?.authToken?.value],
     queryFn: async () => {
       const token = authUser?.authToken?.value;
-      const response = await fetch(
-        `http://localhost:8000/threads/chat/${threadId}/messages/`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`/api/threads/chat/${threadId}/messages/`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (!response.ok) {
         console.log("response", response);
         throw new Error("Network response was not ok");
@@ -76,7 +67,7 @@ export default function ThreadChatMessageListPage({ params }) {
     },
     refetchOnWindowFocus: true,
     enabled: authUser?.authToken?.value ? true : false,
-    refetchInterval: 10000,
+    refetchInterval: 0,
     refetchOnMount: "always",
   });
 
@@ -84,7 +75,7 @@ export default function ThreadChatMessageListPage({ params }) {
     if (bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [result.data]); // TODO: experiment with this more values
+  }, [result.data]);
 
   const renderContent = () => {
     if (result.isPending || isAuthLoading || !authUser) {
@@ -130,7 +121,6 @@ export default function ThreadChatMessageListPage({ params }) {
     }
 
     if (result.isError) {
-      console.error(result.error);
       return (
         <div className="flex flex-col items-center mt-24">
           <Icons.oops className="h-8 w-8" />

@@ -68,8 +68,8 @@ export default function PostMessageEvent() {
   //       const data = JSON.parse(e.data);
   //       const { event = "", payload = {} } = data;
   //       if (event === "authenticate") {
-  //         const { accessToken } = payload;
-  //         authenticate(accessToken);
+  //         const { authToken } = payload;
+  //         authenticate(authToken);
   //       }
   //     } catch (err) {
   //       console.log(e.data);

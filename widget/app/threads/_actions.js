@@ -1,12 +1,12 @@
 "use server";
 
-async function createThreadChatAPI(accessToken, body = {}) {
+async function createThreadChatAPI(authToken, body = {}) {
   try {
     const response = await fetch(`${process.env.ZYG_XAPI_URL}/threads/chat/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${authToken}`,
       },
       body: JSON.stringify(body),
     });
@@ -26,7 +26,7 @@ async function createThreadChatAPI(accessToken, body = {}) {
   }
 }
 
-async function sendThreadChatMessageAPI(accessToken, threadId, body = {}) {
+async function sendThreadChatMessageAPI(authToken, threadId, body = {}) {
   try {
     const { message } = body;
     const response = await fetch(
@@ -35,7 +35,7 @@ async function sendThreadChatMessageAPI(accessToken, threadId, body = {}) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify({
           message,
