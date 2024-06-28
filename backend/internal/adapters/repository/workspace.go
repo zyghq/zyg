@@ -47,7 +47,7 @@ func (w *WorkspaceDB) CreateWorkspaceByAccount(ctx context.Context, account doma
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING
 		workspace_id, account_id, member_id, name, role, created_at, updated_at`,
-		wId, workspace.AccountId, mId, account.Name, "primary").Scan(
+		wId, workspace.AccountId, mId, account.Name, domain.MemberRole{}.Primary()).Scan(
 		&member.WorkspaceId, &member.AccountId,
 		&member.MemberId, &member.Name, &member.Role,
 		&member.CreatedAt, &member.UpdatedAt,
@@ -162,12 +162,26 @@ func (w *WorkspaceDB) GetByAccountWorkspaceId(
 	return workspace, nil
 }
 
-func (w *WorkspaceDB) GetListByAccountId(ctx context.Context, accountId string) ([]domain.Workspace, error) {
+func (w *WorkspaceDB) GetListByMemberAccountId(ctx context.Context, accountId string) ([]domain.Workspace, error) {
 	var workspace domain.Workspace
 	ws := make([]domain.Workspace, 0, 100)
-	stmt := `SELECT workspace_id, account_id, name, created_at, updated_at
-		FROM workspace WHERE account_id = $1
-		ORDER BY created_at DESC LIMIT 100`
+	// stmt := `SELECT workspace_id, account_id, name, created_at, updated_at
+	// 	FROM workspace WHERE account_id = $1
+	// 	ORDER BY created_at DESC LIMIT 100`
+
+	stmt := `SELECT
+		ws.workspace_id as workspace_id,
+		ws.account_id as account_id,
+		ws.name as name,
+		ws.created_at as created_at,
+		ws.updated_at as updated_at
+	FROM
+		workspace ws
+	INNER JOIN
+		member m ON ws.workspace_id = m.workspace_id
+	WHERE
+		m.account_id = $1
+	ORDER BY ws.created_at DESC LIMIT 100`
 
 	rows, _ := w.db.Query(ctx, stmt, accountId)
 

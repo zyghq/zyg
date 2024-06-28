@@ -95,7 +95,7 @@ func (s *WorkspaceService) UserWorkspace(
 }
 
 func (s *WorkspaceService) UserWorkspaces(ctx context.Context, accountId string) ([]domain.Workspace, error) {
-	workspaces, err := s.workspaceRepo.GetListByAccountId(ctx, accountId)
+	workspaces, err := s.workspaceRepo.GetListByMemberAccountId(ctx, accountId)
 
 	if errors.Is(err, repository.ErrQuery) {
 		return workspaces, ErrWorkspace

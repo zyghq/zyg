@@ -88,7 +88,7 @@ type WorkspaceRepositorer interface {
 	UpdateWorkspaceLabelById(ctx context.Context, workspaceId string, l domain.Label) (domain.Label, error)
 	GetWorkspaceById(ctx context.Context, workspaceId string) (domain.Workspace, error)
 	GetByAccountWorkspaceId(ctx context.Context, accountId string, workspaceId string) (domain.Workspace, error)
-	GetListByAccountId(ctx context.Context, accountId string) ([]domain.Workspace, error)
+	GetListByMemberAccountId(ctx context.Context, accountId string) ([]domain.Workspace, error)
 	GetOrCreateLabel(ctx context.Context, l domain.Label) (domain.Label, bool, error)
 	GetWorkspaceLabelById(ctx context.Context, workspaceId string, labelId string) (domain.Label, error)
 	GetLabelListByWorkspaceId(ctx context.Context, workspaceId string) ([]domain.Label, error)

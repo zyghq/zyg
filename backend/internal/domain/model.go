@@ -282,6 +282,37 @@ func (m Member) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
+type MemberRole struct{}
+
+func (mr MemberRole) Primary() string {
+	return "primary"
+}
+
+func (mr MemberRole) Owner() string {
+	return "owner"
+}
+
+func (mr MemberRole) Admin() string {
+	return "administrator"
+}
+
+func (mr MemberRole) Member() string {
+	return "member"
+}
+
+func (mr MemberRole) DefaultRole() string {
+	return mr.Member()
+}
+
+func (mr MemberRole) IsValid(s string) bool {
+	switch s {
+	case mr.Primary(), mr.Owner(), mr.Admin(), mr.Member():
+		return true
+	default:
+		return false
+	}
+}
+
 type Customer struct {
 	WorkspaceId string
 	CustomerId  string
