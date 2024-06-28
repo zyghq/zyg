@@ -366,7 +366,7 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 }
 
 func (c Customer) AnonName() string {
-	return "Anon Name"
+	return "Anon User"
 }
 
 type ThreadChat struct {

@@ -1110,3 +1110,58 @@ export async function updateThreadChat(
     };
   }
 }
+
+export async function sendThreadChatMessage(
+  token: string,
+  workspaceId: string,
+  threadChatId: string,
+  body: { message: string }
+): Promise<{
+  data: ThreadChatWithMessages | null;
+  error: Error | null;
+}> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadChatId}/messages/`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ...body }),
+      }
+    );
+
+    if (!response.ok) {
+      const { status, statusText } = response;
+      return {
+        error: new Error(
+          `error fetching workspace thread chat messages: ${status} ${statusText}`
+        ),
+        data: null,
+      };
+    }
+
+    try {
+      const data = await response.json();
+      const parsed = threadChatWithMessagesResponseSchema.parse({ ...data });
+      return { error: null, data: parsed };
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        console.error(err.message);
+      } else console.error(err);
+      return {
+        error: new Error("error parsing workspace thread chat messages schema"),
+        data: null,
+      };
+    }
+  } catch (err) {
+    console.error(err);
+    return {
+      error: new Error(
+        "error sending workspace thread chat messages - something went wrong"
+      ),
+      data: null,
+    };
+  }
+}

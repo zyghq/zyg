@@ -38,6 +38,8 @@ import {
   ThreadChatWithRecentMessage,
 } from "@/db/entities";
 
+import { MessageForm } from "@/components/workspace/thread/message-form";
+
 export const Route = createFileRoute(
   "/_auth/workspaces/$workspaceId/threads/$threadId/"
 )({
@@ -60,15 +62,7 @@ function getPrevNextFromCurrent(
   return { prevItem, nextItem };
 }
 
-function Message({
-  message,
-  memberId,
-  memberName,
-}: {
-  message: ThreadChatMessage;
-  memberId: string;
-  memberName: string;
-}) {
+function Message({ message }: { message: ThreadChatMessage }) {
   const { createdAt } = message;
   const date = new Date(createdAt);
   const time = date.toLocaleString("en-GB", {
@@ -85,17 +79,18 @@ function Message({
   const customerId = message.customer?.customerId || "";
   const customerName = message.customer?.name || "";
 
-  const isMe = message.member?.memberId === memberId;
+  const memberId = message.member?.memberId || "";
+  const memberName = message.member?.name || "";
 
   return (
     <div className="flex">
-      <div className={`flex ${isMe ? "ml-auto" : "mr-auto"}`}>
+      <div className={`flex ${isMember ? "ml-auto" : "mr-auto"}`}>
         <div className="flex space-x-2">
           {isCustomer && (
             <Avatar name={customerId} size={32} variant="marble" />
           )}
           <div className="p-2 rounded-lg bg-gray-100 dark:bg-accent">
-            <div className="text-muted-foreground">{`${isMe ? memberName : customerName}`}</div>
+            <div className="text-muted-foreground">{`${isMember ? memberName : customerName}`}</div>
             <p className="text-sm">{message.body}</p>
             <div className="flex text-xs justify-end text-muted-foreground mt-1">
               {time}
@@ -146,19 +141,19 @@ function ThreadDetail() {
     state.viewCustomerName(state, activeThread?.customerId || "")
   );
 
-  const memberId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-    state.getMemberId(state)
-  );
-  const memberName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-    state.getMemberName(state)
-  );
+  // const memberId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+  //   state.getMemberId(state)
+  // );
+  // const memberName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+  //   state.getMemberName(state)
+  // );
 
   const threadStatus = activeThread?.status || "";
   const isAwaitingReply = activeThread?.replied === false;
 
   const { prevItem, nextItem } = getPrevNextFromCurrent(currentQueue, threadId);
 
-  const { isPending, error, data } = useQuery({
+  const { isPending, error, data, refetch } = useQuery({
     queryKey: ["messages", threadId, workspaceId, token],
     queryFn: async () => {
       const { error, data } = await getWorkspaceThreadChatMessages(
@@ -241,12 +236,7 @@ function ThreadDetail() {
       return (
         <div className="p-4 space-y-2">
           {messagesReversed.map((message) => (
-            <Message
-              key={message.threadChatMessageId}
-              message={message}
-              memberId={memberId}
-              memberName={memberName}
-            />
+            <Message key={message.threadChatMessageId} message={message} />
           ))}
           <div ref={bottomRef}></div>
         </div>
@@ -398,50 +388,58 @@ function ThreadDetail() {
                 </ResizablePanel>
                 <ResizableHandle withHandle />
                 <ResizablePanel defaultSize={25} maxSize={50} minSize={20}>
-                  <div className="flex flex-col h-full p-2">
-                    <div>...</div>
-                    <div className="flex justify-end gap-2">
-                      <Button size="sm" variant="outline">
-                        <EclipseIcon className="mr-1 h-4 w-4 text-fuchsia-500" />
-                        Snooze
-                      </Button>
-                      {threadStatus === "todo" && (
-                        <Button
-                          onClick={() => {
-                            statusMutation.mutate({
-                              status: "done",
-                            });
-                          }}
-                          disabled={isStatusMutPending}
-                          size="sm"
-                          variant="outline"
-                        >
-                          <CheckCircleIcon className="mr-1 h-4 w-4 text-green-500" />
-                          Mark as Done
+                  <div className="flex flex-col h-full p-2 overflow-auto gap-2">
+                    <MessageForm
+                      token={token}
+                      workspaceId={workspaceId}
+                      threadId={threadId}
+                      customerName={customerName}
+                      refetch={refetch}
+                    />
+                    <div className="flex flex-col mt-auto">
+                      <div className="flex justify-end gap-2">
+                        <Button size="sm" variant="outline">
+                          <EclipseIcon className="mr-1 h-4 w-4 text-fuchsia-500" />
+                          Snooze
                         </Button>
-                      )}
-                      {threadStatus === "done" && (
-                        <Button
-                          onClick={() => {
-                            statusMutation.mutate({
-                              status: "todo",
-                            });
-                          }}
-                          disabled={isStatusMutPending}
-                          size="sm"
-                          variant="outline"
-                        >
-                          <CircleIcon className="mr-1 h-4 w-4 text-indigo-500" />
-                          Mark as Todo
-                        </Button>
-                      )}
-                    </div>
-                    <div className="flex justify-end">
-                      {isStatusMutErr && (
-                        <div className="text-xs text-red-500">
-                          Something went wrong.
-                        </div>
-                      )}
+                        {threadStatus === "todo" && (
+                          <Button
+                            onClick={() => {
+                              statusMutation.mutate({
+                                status: "done",
+                              });
+                            }}
+                            disabled={isStatusMutPending}
+                            size="sm"
+                            variant="outline"
+                          >
+                            <CheckCircleIcon className="mr-1 h-4 w-4 text-green-500" />
+                            Mark as Done
+                          </Button>
+                        )}
+                        {threadStatus === "done" && (
+                          <Button
+                            onClick={() => {
+                              statusMutation.mutate({
+                                status: "todo",
+                              });
+                            }}
+                            disabled={isStatusMutPending}
+                            size="sm"
+                            variant="outline"
+                          >
+                            <CircleIcon className="mr-1 h-4 w-4 text-indigo-500" />
+                            Mark as Todo
+                          </Button>
+                        )}
+                      </div>
+                      <div className="flex justify-end">
+                        {isStatusMutErr && (
+                          <div className="text-xs text-red-500">
+                            Something went wrong.
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </ResizablePanel>

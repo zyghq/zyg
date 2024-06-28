@@ -18,7 +18,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useMutation } from "@tanstack/react-query";
-import { WorkspaceStoreState, Label } from "@/db/store";
+import { WorkspaceStoreState } from "@/db/store";
+import { Label } from "@/db/entities";
 
 export const Route = createFileRoute(
   "/_auth/workspaces/$workspaceId/settings/labels"
