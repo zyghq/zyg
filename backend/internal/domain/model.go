@@ -365,6 +365,10 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
+func (c Customer) AnonName() string {
+	return "Anon Name"
+}
+
 type ThreadChat struct {
 	WorkspaceId  string
 	CustomerId   string

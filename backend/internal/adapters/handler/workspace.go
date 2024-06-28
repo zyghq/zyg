@@ -439,6 +439,7 @@ func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *ht
 	externalId := domain.NullString(rb.Customer.ExternalId)
 	email := domain.NullString(rb.Customer.Email)
 	phone := domain.NullString(rb.Customer.Phone)
+	name := domain.NullString(rb.Customer.Name)
 	if !externalId.Valid && !email.Valid && !phone.Valid {
 		slog.Error("at least one of `externalId`, `email` or `phone` is required")
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -473,6 +474,7 @@ func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *ht
 		ExternalId:  externalId,
 		Email:       email,
 		Phone:       phone,
+		Name:        name,
 	}
 
 	var isCreated bool

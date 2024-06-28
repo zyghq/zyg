@@ -184,6 +184,11 @@ func (s *WorkspaceService) WorkspaceLabels(ctx context.Context, workspaceId stri
 }
 
 func (s *WorkspaceService) InitWorkspaceCustomerWithExternalId(ctx context.Context, c domain.Customer) (domain.Customer, bool, error) {
+	defaultName := c.AnonName()
+	if !c.Name.Valid {
+		c.Name = domain.NullString(&defaultName)
+	}
+
 	customer, created, err := s.customerRepo.GetOrCreateCustomerByExtId(ctx, c)
 	if err != nil {
 		return customer, created, err
@@ -192,6 +197,11 @@ func (s *WorkspaceService) InitWorkspaceCustomerWithExternalId(ctx context.Conte
 }
 
 func (s *WorkspaceService) InitWorkspaceCustomerWithEmail(ctx context.Context, c domain.Customer) (domain.Customer, bool, error) {
+	defaultName := c.AnonName()
+	if !c.Name.Valid {
+		c.Name = domain.NullString(&defaultName)
+	}
+
 	customer, created, err := s.customerRepo.GetOrCreateCustomerByEmail(ctx, c)
 	if err != nil {
 		return customer, created, err
@@ -200,6 +210,11 @@ func (s *WorkspaceService) InitWorkspaceCustomerWithEmail(ctx context.Context, c
 }
 
 func (s *WorkspaceService) InitWorkspaceCustomerWithPhone(ctx context.Context, c domain.Customer) (domain.Customer, bool, error) {
+	defaultName := c.AnonName()
+	if !c.Name.Valid {
+		c.Name = domain.NullString(&defaultName)
+	}
+
 	customer, created, err := s.customerRepo.GetOrCreateCustomerByPhone(ctx, c)
 	if err != nil {
 		return customer, created, err

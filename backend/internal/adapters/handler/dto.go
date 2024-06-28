@@ -250,6 +250,7 @@ type CustomerTIReqPayload struct {
 		ExternalId *string `json:"externalId"` // optional
 		Email      *string `json:"email"`      // optional
 		Phone      *string `json:"phone"`      // optional
+		Name       *string `json:"name"`       // optional
 	} `json:"customer"`
 }
 

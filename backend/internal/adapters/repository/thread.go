@@ -33,20 +33,61 @@ func (tc *ThreadChatDB) CreateThreadChat(ctx context.Context, th domain.ThreadCh
 	if th.Priority == "" {
 		th.Priority = domain.ThreadPriority{}.DefaultPriority() // set priority
 	}
-	err = tx.QueryRow(ctx, `INSERT INTO
-		thread_chat(workspace_id, customer_id, thread_chat_id,
-			title, summary, status, read, replied, priority
+
+	stmt := `WITH ins AS (
+		INSERT INTO thread_chat (
+			workspace_id,
+			customer_id,
+			thread_chat_id,
+			title,
+			summary, 
+			status,
+			priority
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		VALUES 
+			(
+				$1, $2, $3, $4, $5, $6, $7
+			)
 		RETURNING
-		workspace_id, customer_id, assignee_id,
-		thread_chat_id, title, summary, sequence, status, read,
-		created_at, updated_at`,
+			workspace_id,
+			customer_id,
+			assignee_id,
+			thread_chat_id,
+			title,
+			summary,
+			sequence,
+			status,
+			read,
+			replied,
+			priority,
+			created_at,
+			updated_at
+		) SELECT ins.workspace_id as workspace_id,
+			c.customer_id AS customer_id,
+			c.name AS customer_name,
+			m.member_id AS assignee_id,
+			m.name AS assignee_name,
+			ins.thread_chat_id,
+			ins.title,
+			ins.summary,
+			ins.sequence,
+			ins.status,
+			ins.read,
+			ins.replied,
+			ins.priority,
+			ins.created_at,
+			ins.updated_at
+		FROM ins
+		INNER JOIN customer c ON ins.customer_id = c.customer_id
+		LEFT OUTER JOIN member m ON ins.assignee_id = m.member_id`
+
+	err = tx.QueryRow(ctx, stmt,
 		th.WorkspaceId, th.CustomerId, thId,
-		th.Title, th.Summary, th.Status, th.Read, th.Replied, th.Priority).Scan(
-		&th.WorkspaceId, &th.CustomerId, &th.AssigneeId,
+		th.Title, th.Summary, th.Status, th.Priority).Scan(
+		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
+		&th.AssigneeId, &th.AssigneeName,
 		&th.ThreadChatId, &th.Title, &th.Summary,
-		&th.Sequence, &th.Status, &th.Read, &th.Replied,
+		&th.Sequence, &th.Status, &th.Read, &th.Replied, &th.Priority,
 		&th.CreatedAt, &th.UpdatedAt,
 	)
 
@@ -493,118 +534,6 @@ func (tc *ThreadChatDB) GetListByWorkspaceId(
 
 	return ths, nil
 }
-
-// (sanchitrk): commented on purpose not to delete.
-//
-// func (tc *ThreadChatDB) GetListByWorkspaceId(
-// 	ctx context.Context, workspaceId string,
-// 	statusFilters *[]string,
-// 	reasonFilters *[]string,
-// ) ([]domain.ThreadChatWithMessage, error) {
-// 	var th domain.ThreadChat
-// 	var message domain.ThreadChatMessage
-
-// 	argsLen := len(*statusFilters) + len(*reasonFilters)
-// 	args := make([]interface{}, 0, argsLen)
-
-// 	args = append(args, workspaceId)
-
-// 	ths := make([]domain.ThreadChatWithMessage, 0, 100)
-// 	stmt := `SELECT
-// 			th.workspace_id AS workspace_id,
-// 			thc.customer_id AS thread_customer_id,
-// 			thc.name AS thread_customer_name,
-// 			tha.member_id AS thread_assignee_id,
-// 			tha.name AS thread_assignee_name,
-// 			th.thread_chat_id AS thread_chat_id,
-// 			th.title AS title,
-// 			th.summary AS summary,
-// 			th.sequence AS sequence,
-// 			th.status AS status,
-// 			th.read AS read,
-// 			th.replied AS replied,
-// 			th.created_at AS created_at,
-// 			th.updated_at AS updated_at,
-// 			thm.thread_chat_id AS message_thread_chat_id,
-// 			thm.thread_chat_message_id AS thread_chat_message_id,
-// 			thm.body AS message_body,
-// 			thm.sequence AS message_sequence,
-// 			thm.created_at AS message_created_at,
-// 			thm.updated_at AS message_updated_at,
-// 			thmc.customer_id AS message_customer_id,
-// 			thmc.name AS message_customer_name,
-// 			thmm.member_id AS message_member_id,
-// 			thmm.name AS message_member_name
-// 		FROM thread_chat th
-// 		INNER JOIN thread_chat_message thm ON th.thread_chat_id = thm.thread_chat_id
-// 		INNER JOIN customer thc ON th.customer_id = thc.customer_id
-// 		LEFT OUTER JOIN member tha ON th.assignee_id = tha.member_id
-// 		LEFT OUTER JOIN customer thmc ON thm.customer_id = thmc.customer_id
-// 		LEFT OUTER JOIN member thmm ON thm.member_id = thmm.member_id
-// 		INNER JOIN (
-// 			SELECT thread_chat_id, MAX(sequence) AS sequence
-// 			FROM thread_chat_message
-// 			GROUP BY
-// 			thread_chat_id
-// 		) latest ON thm.thread_chat_id = latest.thread_chat_id
-// 		AND thm.sequence = latest.sequence
-// 		WHERE th.workspace_id = $1`
-
-// 	ord := ` ORDER BY sequence DESC LIMIT 100`
-
-// 	for i, status := range *statusFilters {
-// 		if i == 0 {
-// 			stmt += ` AND th.status = $` + strconv.Itoa(len(args)+1)
-// 		} else {
-// 			stmt += ` OR th.status = $` + strconv.Itoa(len(args)+1)
-// 		}
-// 		args = append(args, status)
-// 	}
-
-// 	for i, reason := range *reasonFilters {
-// 		if i == 0 {
-// 			stmt += ` AND th.replied = $` + strconv.Itoa(len(args)+1)
-// 		} else {
-// 			stmt += ` OR th.replied = $` + strconv.Itoa(len(args)+1)
-// 		}
-// 		if reason == "replied" {
-// 			args = append(args, true)
-// 		} else if reason == "unreplied" {
-// 			args = append(args, false)
-// 		}
-// 	}
-
-// 	stmt += ord
-
-// 	rows, _ := tc.db.Query(ctx, stmt, args...)
-
-// 	defer rows.Close()
-
-// 	_, err := pgx.ForEachRow(rows, []any{
-// 		&th.WorkspaceId, &th.CustomerId, &th.CustomerName,
-// 		&th.AssigneeId, &th.AssigneeName,
-// 		&th.ThreadChatId, &th.Title, &th.Summary,
-// 		&th.Sequence, &th.Status, &th.Read, &th.Replied,
-// 		&th.CreatedAt, &th.UpdatedAt,
-// 		&message.ThreadChatId, &message.ThreadChatMessageId, &message.Body,
-// 		&message.Sequence, &message.CreatedAt, &message.UpdatedAt,
-// 		&message.CustomerId, &message.CustomerName, &message.MemberId, &message.MemberName,
-// 	}, func() error {
-// 		thm := domain.ThreadChatWithMessage{
-// 			ThreadChat: th,
-// 			Message:    message,
-// 		}
-// 		ths = append(ths, thm)
-// 		return nil
-// 	})
-
-// 	if err != nil {
-// 		slog.Error("failed to query", "error", err)
-// 		return []domain.ThreadChatWithMessage{}, ErrQuery
-// 	}
-
-// 	return ths, nil
-// }
 
 // returns a list of thread chats assigned to a member in the workspace
 func (tc *ThreadChatDB) GetMemberAssignedListByWorkspaceId(ctx context.Context, workspaceId string, memberId string,

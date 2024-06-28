@@ -72,8 +72,8 @@ export default function StartThreadForm() {
       });
       return;
     }
-    const { threadId } = data;
-    return router.push(`/threads/${threadId}/`);
+    const { threadChatId } = data;
+    return router.push(`/threads/${threadChatId}/`);
   }
 
   return (
