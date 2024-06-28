@@ -75,7 +75,7 @@ func (s *WorkspaceService) GetWorkspace(ctx context.Context, workspaceId string)
 	return workspace, nil
 }
 
-func (s *WorkspaceService) UserWorkspace(
+func (s *WorkspaceService) MemberWorkspace(
 	ctx context.Context, accountId string, workspaceId string,
 ) (domain.Workspace, error) {
 	workspace, err := s.workspaceRepo.GetByAccountWorkspaceId(ctx, accountId, workspaceId)
@@ -94,7 +94,7 @@ func (s *WorkspaceService) UserWorkspace(
 	return workspace, nil
 }
 
-func (s *WorkspaceService) UserWorkspaces(ctx context.Context, accountId string) ([]domain.Workspace, error) {
+func (s *WorkspaceService) MemberWorkspaces(ctx context.Context, accountId string) ([]domain.Workspace, error) {
 	workspaces, err := s.workspaceRepo.GetListByMemberAccountId(ctx, accountId)
 
 	if errors.Is(err, repository.ErrQuery) {

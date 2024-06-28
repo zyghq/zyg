@@ -141,9 +141,23 @@ func (w *WorkspaceDB) GetByAccountWorkspaceId(
 	ctx context.Context, accountId string, workspaceId string,
 ) (domain.Workspace, error) {
 	var workspace domain.Workspace
-	err := w.db.QueryRow(ctx, `SELECT
-		workspace_id, account_id, name, created_at, updated_at
-		FROM workspace WHERE account_id = $1 AND workspace_id = $2`, accountId, workspaceId).Scan(
+
+	stmt := `
+		SELECT
+			ws.workspace_id as workspace_id,
+			ws.account_id as account_id,
+			ws.name as name,
+			ws.created_at as created_at,
+			ws.updated_at as updated_at
+		FROM
+			workspace ws
+		INNER JOIN
+			member m ON ws.workspace_id = m.workspace_id
+		WHERE
+			m.account_id = $1
+			AND ws.workspace_id = $2`
+
+	err := w.db.QueryRow(ctx, stmt, accountId, workspaceId).Scan(
 		&workspace.WorkspaceId, &workspace.AccountId,
 		&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt,
 	)

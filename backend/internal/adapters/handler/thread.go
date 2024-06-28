@@ -29,7 +29,7 @@ func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.
 
 	ctx := r.Context()
 
-	workspace, err := h.ws.UserWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.MemberWorkspace(ctx, account.AccountId, workspaceId)
 
 	// workspace not found
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
@@ -308,7 +308,7 @@ func (h *ThreadChatHandler) handleGetMyThreadChats(w http.ResponseWriter, r *htt
 
 	ctx := r.Context()
 
-	workspace, err := h.ws.UserWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.MemberWorkspace(ctx, account.AccountId, workspaceId)
 
 	// not found workspace
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
@@ -434,7 +434,7 @@ func (h *ThreadChatHandler) handleGetUnassignedThreadChats(w http.ResponseWriter
 
 	ctx := r.Context()
 
-	workspace, err := h.ws.UserWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.MemberWorkspace(ctx, account.AccountId, workspaceId)
 
 	// not found workspace
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
@@ -548,7 +548,7 @@ func (h *ThreadChatHandler) handleGetLabelledThreadChats(w http.ResponseWriter, 
 
 	ctx := r.Context()
 
-	workspace, err := h.ws.UserWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.MemberWorkspace(ctx, account.AccountId, workspaceId)
 
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		slog.Warn(
@@ -1156,7 +1156,7 @@ func (h *ThreadChatHandler) handleGetThreadChatMetrics(w http.ResponseWriter, r 
 	workspaceId := r.PathValue("workspaceId")
 	ctx := r.Context()
 
-	workspace, err := h.ws.UserWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.MemberWorkspace(ctx, account.AccountId, workspaceId)
 
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		slog.Warn(
