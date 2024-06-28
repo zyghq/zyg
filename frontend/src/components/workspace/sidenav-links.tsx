@@ -6,7 +6,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import Avatar from "boring-avatars";
 import { Link, getRouteApi } from "@tanstack/react-router";
 
-import { WorkspaceMetrics } from "@/db/store";
+import { WorkspaceMetrics } from "@/db/entities";
 import { SideNavLabelLinks } from "@/components/workspace/sidenav-label-links";
 import {
   OpenInNewWindowIcon,

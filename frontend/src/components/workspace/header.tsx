@@ -9,7 +9,7 @@ import { ThemeToggler } from "@/components/theme-toggler";
 
 import { ArrowLeftRightIcon } from "lucide-react";
 
-import { WorkspaceMetrics } from "@/db/store";
+import { WorkspaceMetrics } from "@/db/entities";
 import SideNavMobile from "@/components/workspace/sidenav-mobile";
 
 export function Header({

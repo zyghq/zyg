@@ -11,7 +11,7 @@ import {
 
 import { TagIcon, TagsIcon } from "lucide-react";
 import { CaretSortIcon } from "@radix-ui/react-icons";
-import { LabelMetricsStoreType } from "@/db/store";
+import { LabelMetrics } from "@/db/entities";
 
 const routeApi = getRouteApi("/_auth/workspaces/$workspaceId/_workspace");
 
@@ -20,7 +20,7 @@ export function SideNavLabelLinks({
   labels,
 }: {
   workspaceId: string;
-  labels: LabelMetricsStoreType[];
+  labels: LabelMetrics[];
 }) {
   const routeSearch = routeApi.useSearch();
   const { status, sort } = routeSearch;

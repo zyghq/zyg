@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
-import { ThreadChatWithRecentMessage } from "@/db/store";
+import { ThreadChatWithRecentMessage } from "@/db/entities";
 import { ChatBubbleIcon, ResetIcon } from "@radix-ui/react-icons";
 import Avatar from "boring-avatars";
 import { useStore } from "zustand";
