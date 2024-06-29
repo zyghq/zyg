@@ -3,7 +3,7 @@
     <h1 align="center">Zyg</h1>
   </a>
   <p align="center">
-    Open source customer support for modern product focused SaaS companies.
+    Zyg is purpose-built customer support for your SaaS products.
     <br />
     <a href="https://www.zyg.ai">Website</a>
     ·
@@ -15,7 +15,7 @@
 
 ## About
 
-Zyg is an open source customer support platform for modern product focused SaaS companies with built in AI-native features.
+Meet SaaS support for modern products. Streamline customer conversations and gain product insights with AI-powered suggestions.
 
 ## Key Features
 
