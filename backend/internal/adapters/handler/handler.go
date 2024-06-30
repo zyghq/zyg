@@ -44,9 +44,12 @@ func NewServer(
 
 	mux.Handle("GET /workspaces/{workspaceId}/members/{$}",
 		NewEnsureAuth(wh.handleGetWorkspaceMembers, authService))
-
 	mux.Handle("GET /workspaces/{workspaceId}/members/me/{$}",
 		NewEnsureAuth(wh.handleGetWorkspaceMembership, authService))
+
+	// TODO: merge back to devel, then to main.
+	mux.Handle("GET /workspaces/{workspaceId}/members/{memberId}/{$}",
+		NewEnsureAuth(wh.handleGetWorkspaceMember, authService))
 
 	mux.Handle("GET /workspaces/{workspaceId}/customers/{$}",
 		NewEnsureAuth(wh.handleGetWorkspaceCustomers, authService))

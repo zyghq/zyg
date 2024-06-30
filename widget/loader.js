@@ -205,6 +205,7 @@ function createZygWidget(config) {
 
 async function loadDotLottiePlayer() {
   try {
+    // @sanchitrk: move this to self hosted cdn.
     await import(
       "https://unpkg.com/@dotlottie/player-component@2.3.0/dist/dotlottie-player.mjs"
     );
