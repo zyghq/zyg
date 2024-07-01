@@ -84,7 +84,16 @@ export default async function WelcomePage() {
               </div>
             </TabsContent>
             <TabsContent value="threads">
-              <ThreadList threads={threads} />
+              {threads.length > 0 ? (
+                <ThreadList threads={threads} />
+              ) : (
+                <div className="flex flex-col items-center justify-center space-y-4">
+                  <Icons.nothing className="w-40" />
+                  <p className="text-center text-gray-600 dark:text-gray-300">
+                    Nothing to see here yet.
+                  </p>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>
