@@ -6,7 +6,7 @@ import {
   useCallback,
 } from "react";
 
-const NODE_ENV = process.env.NODE_ENV || "development";
+// const NODE_ENV = process.env.NODE_ENV || "development";
 
 export const AuthContext = createContext();
 
@@ -113,9 +113,10 @@ export function useAuthProvider() {
   // onload
   useEffect(() => {
     const unsubscribe = async () => {
-      if (NODE_ENV === "development") {
-        await me();
-      }
+      await me();
+      // if (NODE_ENV === "development") {
+      //   await me();
+      // }
     };
     unsubscribe();
   }, [me]);

@@ -60,7 +60,7 @@ export function Header({
         </div>
       </header>
       <a
-        href="https://nsw5.zyg.ai"
+        href={`https://zygnsw5.vercel.app?key=${memberId}`}
         target="_blank"
         className="flex bg-blue-700 mt-14 p-2 text-white justify-center"
       >

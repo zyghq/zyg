@@ -68,7 +68,7 @@ export default function ThreadList({ threads }) {
     queryFn: async () => {
       const token = authUser?.authToken?.value || "";
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/threads/chat/`,
+        `${process.env.NEXT_PUBLIC_XAPI_URL}/threads/chat/`,
         {
           method: "GET",
           headers: {
