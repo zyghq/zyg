@@ -2,14 +2,17 @@
 
 async function createThreadChatAPI(authToken, body = {}) {
   try {
-    const response = await fetch(`${process.env.ZYG_XAPI_URL}/threads/chat/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${authToken}`,
-      },
-      body: JSON.stringify(body),
-    });
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_XAPI_URL}/threads/chat/`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(body),
+      }
+    );
     if (!response.ok) {
       const { status, statusText } = response;
       return [
@@ -30,7 +33,7 @@ async function sendThreadChatMessageAPI(authToken, threadId, body = {}) {
   try {
     const { message } = body;
     const response = await fetch(
-      `${process.env.ZYG_XAPI_URL}/threads/chat/${threadId}/messages/`,
+      `${process.env.NEXT_PUBLIC_XAPI_URL}/threads/chat/${threadId}/messages/`,
       {
         method: "POST",
         headers: {

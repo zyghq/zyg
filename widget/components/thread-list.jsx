@@ -67,13 +67,16 @@ export default function ThreadList({ threads }) {
     queryKey: ["thchats", authUser?.authToken?.value],
     queryFn: async () => {
       const token = authUser?.authToken?.value || "";
-      const response = await fetch(`http://localhost:8000/threads/chat/`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/threads/chat/`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       if (!response.ok) {
         throw new Error("Failed to fetch threads");
       }

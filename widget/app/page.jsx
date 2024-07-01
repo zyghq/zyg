@@ -21,7 +21,7 @@ async function GetThreadsAPI(cookies) {
   }
   const { value = "" } = token;
 
-  const url = `${process.env.ZYG_XAPI_URL}/threads/chat/`;
+  const url = `${process.env.NEXT_PUBLIC_XAPI_URL}/threads/chat/`;
 
   try {
     const response = await fetch(url, {

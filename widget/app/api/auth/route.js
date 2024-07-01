@@ -6,7 +6,7 @@ const ZYG_AUTH_COOKIE_NAME = "__zygtoken";
 export async function POST(request) {
   const { token } = await request.json();
   try {
-    const resp = await fetch(`${process.env.ZYG_XAPI_URL}/me/`, {
+    const resp = await fetch(`${process.env.NEXT_PUBLIC_XAPI_URL}/me/`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -53,7 +53,7 @@ export async function GET(request) {
 
   const { value } = token;
   try {
-    const resp = await fetch(`${process.env.ZYG_XAPI_URL}/me/`, {
+    const resp = await fetch(`${process.env.NEXT_PUBLIC_XAPI_URL}/me/`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${value}`,

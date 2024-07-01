@@ -1,16 +1,3 @@
-// Reference Docs:
-//
-// https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
-
-// TODO:
-/**
- * Allow the developer to set the ZygConfig to window object,
- * Export window.Zyg to the global scope - to allow for programatically control widget.
- * Also can allow Zyg object pass config, and other options to the widget.
- * Merge the configs = window.ZygConfig + API Config + Zyg Config
- *
- */
-
 const baseUrl = "http://localhost:3000";
 var config,
   isHidden = !0,

@@ -14,7 +14,7 @@ export async function GET(request, { params }) {
   const { value } = token;
   try {
     const resp = await fetch(
-      `${process.env.ZYG_XAPI_URL}/threads/chat/${threadId}/messages/`,
+      `${process.env.NEXT_PUBLIC_XAPI_URL}/threads/chat/${threadId}/messages/`,
       {
         method: "GET",
         headers: {
