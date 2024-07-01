@@ -76,3 +76,5 @@ scratch.txt
 secrets/
 db/
 redisdb/
+
+.env.yaml

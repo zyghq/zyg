@@ -17,7 +17,7 @@ import (
 	"github.com/zyghq/zyg/internal/services"
 )
 
-var addr = flag.String("addr", "127.0.0.1:8080", "listen address")
+var addr = flag.String("addr", "0.0.0.0:8080", "listen address")
 
 func run(ctx context.Context) error {
 	var err error
