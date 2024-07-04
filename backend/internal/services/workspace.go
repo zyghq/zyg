@@ -221,3 +221,11 @@ func (s *WorkspaceService) InitWorkspaceCustomerWithPhone(ctx context.Context, c
 	}
 	return customer, created, nil
 }
+
+func (s *WorkspaceService) AddMember(ctx context.Context, workspace domain.Workspace, member domain.Member) (domain.Member, error) {
+	member, err := s.workspaceRepo.AddMemberByWorkspaceId(ctx, workspace.WorkspaceId, member)
+	if err != nil {
+		return member, err
+	}
+	return member, nil
+}

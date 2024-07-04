@@ -25,7 +25,7 @@ func NewServer(
 	mux := http.NewServeMux()
 
 	// initialize service handlers
-	ah := NewAccountHandler(accountService)
+	ah := NewAccountHandler(accountService, workspaceService)
 	wh := NewWorkspaceHandler(workspaceService, customerService)
 	th := NewThreadChatHandler(workspaceService, threadChatService)
 

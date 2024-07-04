@@ -35,7 +35,8 @@ type WorkspaceServicer interface {
 	InitWorkspaceLabel(ctx context.Context, label domain.Label) (domain.Label, bool, error)
 	WorkspaceLabel(ctx context.Context, workspaceId string, labelId string) (domain.Label, error)
 	WorkspaceLabels(ctx context.Context, workspaceId string) ([]domain.Label, error)
-	WorkspaceUserMember(ctx context.Context, accountId string, workspaceId string) (domain.Member, error)
+	WorkspaceUserMember(ctx context.Context, accountId string, workspaceId string) (domain.Member, error) // TODO: perhaps rename to WorkspaceAccountMember?
+	AddMember(ctx context.Context, workspace domain.Workspace, member domain.Member) (domain.Member, error)
 	WorkspaceMembers(ctx context.Context, workspaceId string) ([]domain.Member, error)
 	WorkspaceMember(ctx context.Context, workspaceId string, memberId string) (domain.Member, error)
 	WorkspaceCustomers(ctx context.Context, workspaceId string) ([]domain.Customer, error)
@@ -92,6 +93,7 @@ type WorkspaceRepositorer interface {
 	GetOrCreateLabel(ctx context.Context, l domain.Label) (domain.Label, bool, error)
 	GetWorkspaceLabelById(ctx context.Context, workspaceId string, labelId string) (domain.Label, error)
 	GetLabelListByWorkspaceId(ctx context.Context, workspaceId string) ([]domain.Label, error)
+	AddMemberByWorkspaceId(ctx context.Context, workspaceId string, member domain.Member) (domain.Member, error)
 }
 
 type MemberRepositorer interface {

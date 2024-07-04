@@ -16,10 +16,11 @@ import (
 
 type AccountHandler struct {
 	as ports.AccountServicer
+	ws ports.WorkspaceServicer
 }
 
-func NewAccountHandler(as ports.AccountServicer) *AccountHandler {
-	return &AccountHandler{as: as}
+func NewAccountHandler(as ports.AccountServicer, ws ports.WorkspaceServicer) *AccountHandler {
+	return &AccountHandler{as: as, ws: ws}
 }
 
 func (h *AccountHandler) handleGetOrCreateAccount(w http.ResponseWriter, r *http.Request) {
@@ -92,6 +93,39 @@ func (h *AccountHandler) handleGetOrCreateAccount(w http.ResponseWriter, r *http
 			return
 		}
 		if isCreated {
+			// add to demo workspace
+			workspaceId := "wrkcq1c89i9io6g008he020"
+			memberName := domain.NullString(&account.Name)
+			member := domain.Member{
+				WorkspaceId: workspaceId,
+				AccountId:   account.AccountId,
+				MemberId:    account.AuthUserId,
+				Name:        memberName,
+				Role:        domain.MemberRole{}.Member(),
+			}
+			workspace, err := h.ws.GetWorkspace(ctx, workspaceId)
+			if err != nil {
+				slog.Error("failed to get demo workspace "+
+					"something went wrong",
+					slog.String("workspaceId", workspaceId),
+				)
+				slog.Info("skipping...")
+			} else {
+				member, err = h.ws.AddMember(ctx, workspace, member)
+				if err != nil {
+					slog.Error("failed to add member to demo workspace "+
+						"something went wrong",
+						slog.String("workspaceId", workspaceId),
+					)
+					slog.Info("skipping...")
+				} else {
+					slog.Info("added member to demo workspace",
+						slog.String("workspaceId", workspaceId),
+						slog.String("memberId", member.MemberId),
+					)
+				}
+			}
+
 			slog.Info("created auth account for subject", slog.String("accountId", account.AccountId))
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)

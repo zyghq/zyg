@@ -11,7 +11,7 @@ IMAGE_NAME=$LOCATION-docker.pkg.dev/$PROJECT_ID/$IMAGE_REPO/zyg-srv-image
 
 docker tag zyg-srv-image $LOCATION-docker.pkg.dev/$PROJECT_ID/$IMAGE_REPO/zyg-srv-image:latest
 
-# docker build -t $IMAGE_NAME -f srv.DockerFile .
+docker build -t $IMAGE_NAME -f srv.DockerFile .
 
 docker push $IMAGE_NAME
 

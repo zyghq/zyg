@@ -302,3 +302,30 @@ func (w *WorkspaceDB) GetLabelListByWorkspaceId(ctx context.Context, workspaceId
 
 	return labels, nil
 }
+
+func (w *WorkspaceDB) AddMemberByWorkspaceId(ctx context.Context, workspaceId string, member domain.Member) (domain.Member, error) {
+	var m domain.Member
+	memberId := member.GenId()
+	err := w.db.QueryRow(ctx, `INSERT INTO member(workspace_id, account_id, member_id, name, role)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING
+		workspace_id, account_id, member_id, name, role, created_at, updated_at`,
+		workspaceId, member.AccountId, memberId, member.Name, member.Role).Scan(
+		&m.WorkspaceId, &m.AccountId,
+		&m.MemberId, &m.Name, &m.Role,
+		&m.CreatedAt, &m.UpdatedAt,
+	)
+
+	// check if the query returned no rows
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Member{}, ErrEmpty
+	}
+
+	// check if the query returned an error
+	if err != nil {
+		slog.Error("failed to insert query", "error", err)
+		return domain.Member{}, ErrQuery
+	}
+
+	return m, nil
+}
