@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/zyghq/zyg/internal/domain"
+	"github.com/zyghq/zyg/domain"
 )
 
 func (w *WorkspaceDB) CreateWorkspaceByAccount(ctx context.Context, account domain.Account, workspace domain.Workspace,

@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/rs/cors"
-	"github.com/zyghq/zyg/internal/domain"
-	"github.com/zyghq/zyg/internal/ports"
-	"github.com/zyghq/zyg/internal/services"
+	"github.com/zyghq/zyg/domain"
+	"github.com/zyghq/zyg/ports"
+	"github.com/zyghq/zyg/services"
 )
 
 func handleGetIndex(w http.ResponseWriter, r *http.Request) {

@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/zyghq/zyg/internal/domain"
+	"github.com/zyghq/zyg/domain"
 )
 
 func (c *CustomerDB) GetByWorkspaceCustomerId(ctx context.Context, workspaceId string, customerId string,

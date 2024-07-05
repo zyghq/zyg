@@ -9,9 +9,9 @@ import (
 	"strings"
 
 	"github.com/zyghq/zyg"
-	"github.com/zyghq/zyg/internal/domain"
-	"github.com/zyghq/zyg/internal/ports"
-	"github.com/zyghq/zyg/internal/services"
+	"github.com/zyghq/zyg/domain"
+	"github.com/zyghq/zyg/ports"
+	"github.com/zyghq/zyg/services"
 )
 
 func CheckAuthCredentials(r *http.Request) (string, string, error) {

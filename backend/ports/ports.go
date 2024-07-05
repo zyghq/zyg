@@ -3,7 +3,7 @@ package ports
 import (
 	"context"
 
-	"github.com/zyghq/zyg/internal/domain"
+	"github.com/zyghq/zyg/domain"
 )
 
 type AccountServicer interface {

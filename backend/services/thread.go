@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/zyghq/zyg/internal/adapters/repository"
-	"github.com/zyghq/zyg/internal/domain"
-	"github.com/zyghq/zyg/internal/ports"
+	"github.com/zyghq/zyg/adapters/repository"
+	"github.com/zyghq/zyg/domain"
+	"github.com/zyghq/zyg/ports"
 )
 
 type ThreadChatService struct {

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/zyghq/zyg/internal/ports"
+	"github.com/zyghq/zyg/ports"
 )
 
 type wrappedWriter struct {

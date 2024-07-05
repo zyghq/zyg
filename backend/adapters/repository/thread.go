@@ -7,7 +7,7 @@ import (
 	"log/slog"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/zyghq/zyg/internal/domain"
+	"github.com/zyghq/zyg/domain"
 )
 
 // creates and returns a new thread chat for customer

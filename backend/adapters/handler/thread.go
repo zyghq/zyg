@@ -7,9 +7,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/zyghq/zyg/internal/domain"
-	"github.com/zyghq/zyg/internal/ports"
-	"github.com/zyghq/zyg/internal/services"
+	"github.com/zyghq/zyg/domain"
+	"github.com/zyghq/zyg/ports"
+	"github.com/zyghq/zyg/services"
 )
 
 type ThreadChatHandler struct {

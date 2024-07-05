@@ -23,7 +23,7 @@ import (
 
 // 	"github.com/jackc/pgx/v5/pgxpool"
 
-// 	"github.com/zyghq/zyg/internal/model"
+// 	"github.com/zyghq/zyg/model"
 // )
 
 // func TestHandleGetIndexRR(t *testing.T) {

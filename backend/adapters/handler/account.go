@@ -8,10 +8,10 @@ import (
 	"net/http"
 
 	"github.com/zyghq/zyg"
-	"github.com/zyghq/zyg/internal/adapters/repository"
-	"github.com/zyghq/zyg/internal/domain"
-	"github.com/zyghq/zyg/internal/ports"
-	"github.com/zyghq/zyg/internal/services"
+	"github.com/zyghq/zyg/adapters/repository"
+	"github.com/zyghq/zyg/domain"
+	"github.com/zyghq/zyg/ports"
+	"github.com/zyghq/zyg/services"
 )
 
 type AccountHandler struct {

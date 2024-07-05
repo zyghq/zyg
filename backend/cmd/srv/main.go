@@ -12,9 +12,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/zyghq/zyg"
-	"github.com/zyghq/zyg/internal/adapters/handler"
-	"github.com/zyghq/zyg/internal/adapters/repository"
-	"github.com/zyghq/zyg/internal/services"
+	"github.com/zyghq/zyg/adapters/handler"
+	"github.com/zyghq/zyg/adapters/repository"
+	"github.com/zyghq/zyg/services"
 )
 
 var addr = flag.String("addr", "0.0.0.0:8080", "listen address")

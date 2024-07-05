@@ -6,9 +6,9 @@ import (
 	"fmt"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/zyghq/zyg/internal/adapters/repository"
-	"github.com/zyghq/zyg/internal/domain"
-	"github.com/zyghq/zyg/internal/ports"
+	"github.com/zyghq/zyg/adapters/repository"
+	"github.com/zyghq/zyg/domain"
+	"github.com/zyghq/zyg/ports"
 )
 
 const DefaultAuthProvider string = "supabase"
