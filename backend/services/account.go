@@ -34,7 +34,7 @@ func (s *AccountService) InitiateAccount(ctx context.Context, a models.Account) 
 	return account, created, nil
 }
 
-func (s *AccountService) AuthUser(ctx context.Context, authUserId string) (models.Account, error) {
+func (s *AccountService) AuthenticateUser(ctx context.Context, authUserId string) (models.Account, error) {
 	account, err := s.repo.GetByAuthUserId(ctx, authUserId)
 
 	if errors.Is(err, repository.ErrQuery) {
@@ -52,7 +52,7 @@ func (s *AccountService) AuthUser(ctx context.Context, authUserId string) (model
 	return account, nil
 }
 
-func (s *AccountService) IssuePersonalAccessToken(ctx context.Context, ap models.AccountPAT) (models.AccountPAT, error) {
+func (s *AccountService) GeneratePersonalAccessToken(ctx context.Context, ap models.AccountPAT) (models.AccountPAT, error) {
 	ap, err := s.repo.CreatePersonalAccessToken(ctx, ap)
 
 	if errors.Is(err, repository.ErrQuery) || errors.Is(err, repository.ErrEmpty) {
@@ -67,7 +67,7 @@ func (s *AccountService) IssuePersonalAccessToken(ctx context.Context, ap models
 	return ap, nil
 }
 
-func (s *AccountService) UserPats(ctx context.Context, accountId string) ([]models.AccountPAT, error) {
+func (s *AccountService) GetPersonalAccessTokens(ctx context.Context, accountId string) ([]models.AccountPAT, error) {
 	pats, err := s.repo.GetPatListByAccountId(ctx, accountId)
 
 	if errors.Is(err, repository.ErrQuery) {
@@ -81,7 +81,7 @@ func (s *AccountService) UserPats(ctx context.Context, accountId string) ([]mode
 	return pats, nil
 }
 
-func (s *AccountService) UserPat(ctx context.Context, patId string) (models.AccountPAT, error) {
+func (s *AccountService) GetPersonalAccessToken(ctx context.Context, patId string) (models.AccountPAT, error) {
 	pat, err := s.repo.GetPatByPatId(ctx, patId)
 
 	if errors.Is(err, repository.ErrEmpty) {
@@ -99,7 +99,7 @@ func (s *AccountService) UserPat(ctx context.Context, patId string) (models.Acco
 	return pat, nil
 }
 
-func (s *AccountService) HardDeletePat(ctx context.Context, patId string) error {
+func (s *AccountService) DeletePersonalAccessToken(ctx context.Context, patId string) error {
 	err := s.repo.HardDeletePatByPatId(ctx, patId)
 	if err != nil {
 		return err
@@ -107,21 +107,4 @@ func (s *AccountService) HardDeletePat(ctx context.Context, patId string) error 
 	// probably send a mail that the token was deleted
 	// send via background job
 	return nil
-}
-
-func (s *AccountService) PatAccount(ctx context.Context, token string) (models.Account, error) {
-	account, err := s.repo.GetAccountByToken(ctx, token)
-
-	if errors.Is(err, repository.ErrQuery) {
-		return account, ErrAccount
-	}
-
-	if errors.Is(err, repository.ErrEmpty) {
-		return account, ErrAccountNotFound
-	}
-
-	if err != nil {
-		return account, err
-	}
-	return account, nil
 }

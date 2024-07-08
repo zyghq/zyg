@@ -31,7 +31,7 @@ func AuthenticateAccount(
 	ctx context.Context, authz ports.AuthServicer, scheme string, cred string,
 ) (models.Account, error) {
 	if scheme == "token" {
-		account, err := authz.CheckPatAccount(ctx, cred)
+		account, err := authz.ValidatePersonalAccessToken(ctx, cred)
 		if err != nil {
 			return account, fmt.Errorf("failed to authenticate got error: %v", err)
 		}
@@ -52,7 +52,7 @@ func AuthenticateAccount(
 		}
 
 		slog.Info("authenticated account with jwt", slog.String("authUserId", sub))
-		account, err := authz.CheckAuthUser(ctx, sub)
+		account, err := authz.AuthenticateUser(ctx, sub)
 
 		if errors.Is(err, services.ErrAccountNotFound) {
 			slog.Warn(

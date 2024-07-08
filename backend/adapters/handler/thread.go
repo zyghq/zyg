@@ -29,7 +29,7 @@ func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.
 
 	ctx := r.Context()
 
-	workspace, err := h.ws.MemberWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
 
 	// workspace not found
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
@@ -224,7 +224,7 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 	if assignee, found := reqp["assignee"]; found {
 		if assignee != nil {
 			assigneeId := assignee.(string)
-			member, err := h.ws.WorkspaceMember(ctx, workspaceId, assigneeId)
+			member, err := h.ws.GetWorkspaceMemberById(ctx, workspaceId, assigneeId)
 			if errors.Is(err, services.ErrMemberNotFound) {
 				slog.Warn(
 					"no member found in workspace",
@@ -308,7 +308,7 @@ func (h *ThreadChatHandler) handleGetMyThreadChats(w http.ResponseWriter, r *htt
 
 	ctx := r.Context()
 
-	workspace, err := h.ws.MemberWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
 
 	// not found workspace
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
@@ -331,7 +331,7 @@ func (h *ThreadChatHandler) handleGetMyThreadChats(w http.ResponseWriter, r *htt
 		return
 	}
 
-	member, err := h.ws.WorkspaceUserMember(ctx, account.AccountId, workspace.WorkspaceId)
+	member, err := h.ws.GetWorkspaceMember(ctx, account.AccountId, workspace.WorkspaceId)
 	// error workspace member
 	if err != nil {
 		slog.Error(
@@ -434,7 +434,7 @@ func (h *ThreadChatHandler) handleGetUnassignedThreadChats(w http.ResponseWriter
 
 	ctx := r.Context()
 
-	workspace, err := h.ws.MemberWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
 
 	// not found workspace
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
@@ -548,7 +548,7 @@ func (h *ThreadChatHandler) handleGetLabelledThreadChats(w http.ResponseWriter, 
 
 	ctx := r.Context()
 
-	workspace, err := h.ws.MemberWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
 
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		slog.Warn(
@@ -570,7 +570,7 @@ func (h *ThreadChatHandler) handleGetLabelledThreadChats(w http.ResponseWriter, 
 		return
 	}
 
-	label, err := h.ws.WorkspaceLabel(ctx, workspace.WorkspaceId, labelId)
+	label, err := h.ws.GetWorkspaceLabel(ctx, workspace.WorkspaceId, labelId)
 	if errors.Is(err, services.ErrLabelNotFound) {
 		slog.Warn(
 			"label not found or does not exist",
@@ -696,7 +696,7 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 	ctx := r.Context()
 
 	// check member against workspace
-	member, err := h.ws.WorkspaceUserMember(ctx, account.AccountId, workspaceId)
+	member, err := h.ws.GetWorkspaceMember(ctx, account.AccountId, workspaceId)
 
 	if errors.Is(err, services.ErrMemberNotFound) {
 		slog.Warn(
@@ -1012,7 +1012,7 @@ func (h *ThreadChatHandler) handleSetThChatLabel(w http.ResponseWriter, r *http.
 		Icon:        reqp.Icon,
 	}
 
-	label, isCreated, err := h.ws.InitWorkspaceLabel(ctx, label)
+	label, isCreated, err := h.ws.CreateLabel(ctx, label)
 	if err != nil {
 		slog.Error(
 			"failed to get or create label something went wrong",
@@ -1156,7 +1156,7 @@ func (h *ThreadChatHandler) handleGetThreadChatMetrics(w http.ResponseWriter, r 
 	workspaceId := r.PathValue("workspaceId")
 	ctx := r.Context()
 
-	workspace, err := h.ws.MemberWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
 
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		slog.Warn(
@@ -1177,7 +1177,7 @@ func (h *ThreadChatHandler) handleGetThreadChatMetrics(w http.ResponseWriter, r 
 		return
 	}
 
-	member, err := h.ws.WorkspaceUserMember(ctx, account.AccountId, workspace.WorkspaceId)
+	member, err := h.ws.GetWorkspaceMember(ctx, account.AccountId, workspace.WorkspaceId)
 	if err != nil {
 		slog.Error(
 			"failed to get member "+

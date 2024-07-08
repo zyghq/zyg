@@ -8,17 +8,15 @@ import (
 
 type AccountServicer interface {
 	InitiateAccount(ctx context.Context, a models.Account) (models.Account, bool, error)
-	AuthUser(ctx context.Context, authUserId string) (models.Account, error)
-	IssuePersonalAccessToken(ctx context.Context, ap models.AccountPAT) (models.AccountPAT, error)
-	UserPats(ctx context.Context, accountId string) ([]models.AccountPAT, error)
-	PatAccount(ctx context.Context, token string) (models.Account, error)
-	UserPat(ctx context.Context, patId string) (models.AccountPAT, error)
-	HardDeletePat(ctx context.Context, patId string) error
+	GeneratePersonalAccessToken(ctx context.Context, ap models.AccountPAT) (models.AccountPAT, error)
+	GetPersonalAccessTokens(ctx context.Context, accountId string) ([]models.AccountPAT, error)
+	GetPersonalAccessToken(ctx context.Context, patId string) (models.AccountPAT, error)
+	DeletePersonalAccessToken(ctx context.Context, patId string) error
 }
 
 type AuthServicer interface {
-	CheckAuthUser(ctx context.Context, authUserId string) (models.Account, error)
-	CheckPatAccount(ctx context.Context, token string) (models.Account, error)
+	AuthenticateUser(ctx context.Context, authUserId string) (models.Account, error)
+	ValidatePersonalAccessToken(ctx context.Context, token string) (models.Account, error)
 }
 
 type CustomerAuthServicer interface {
@@ -26,23 +24,23 @@ type CustomerAuthServicer interface {
 }
 
 type WorkspaceServicer interface {
-	CreateAccountWorkspace(ctx context.Context, a models.Account, w models.Workspace) (models.Workspace, error)
+	CreateWorkspace(ctx context.Context, a models.Account, w models.Workspace) (models.Workspace, error)
 	UpdateWorkspace(ctx context.Context, w models.Workspace) (models.Workspace, error)
-	UpdateWorkspaceLabel(ctx context.Context, workspaceId string, label models.Label) (models.Label, error)
+	SetWorkspaceLabel(ctx context.Context, workspaceId string, label models.Label) (models.Label, error)
 	GetWorkspace(ctx context.Context, workspaceId string) (models.Workspace, error)
-	MemberWorkspace(ctx context.Context, accountId string, workspaceId string) (models.Workspace, error)
-	MemberWorkspaces(ctx context.Context, accountId string) ([]models.Workspace, error)
-	InitWorkspaceLabel(ctx context.Context, label models.Label) (models.Label, bool, error)
-	WorkspaceLabel(ctx context.Context, workspaceId string, labelId string) (models.Label, error)
-	WorkspaceLabels(ctx context.Context, workspaceId string) ([]models.Label, error)
-	WorkspaceUserMember(ctx context.Context, accountId string, workspaceId string) (models.Member, error) // TODO: perhaps rename to WorkspaceAccountMember?
+	GetMemberWorkspace(ctx context.Context, accountId string, workspaceId string) (models.Workspace, error)
+	ListMemberWorkspaces(ctx context.Context, accountId string) ([]models.Workspace, error)
+	CreateLabel(ctx context.Context, label models.Label) (models.Label, bool, error)
+	GetWorkspaceLabel(ctx context.Context, workspaceId string, labelId string) (models.Label, error)
+	ListWorkspaceLabels(ctx context.Context, workspaceId string) ([]models.Label, error)
+	GetWorkspaceMember(ctx context.Context, accountId string, workspaceId string) (models.Member, error) // TODO: perhaps rename to WorkspaceAccountMember?
 	AddMember(ctx context.Context, workspace models.Workspace, member models.Member) (models.Member, error)
-	WorkspaceMembers(ctx context.Context, workspaceId string) ([]models.Member, error)
-	WorkspaceMember(ctx context.Context, workspaceId string, memberId string) (models.Member, error)
-	WorkspaceCustomers(ctx context.Context, workspaceId string) ([]models.Customer, error)
-	InitWorkspaceCustomerWithExternalId(ctx context.Context, c models.Customer) (models.Customer, bool, error)
-	InitWorkspaceCustomerWithEmail(ctx context.Context, c models.Customer) (models.Customer, bool, error)
-	InitWorkspaceCustomerWithPhone(ctx context.Context, c models.Customer) (models.Customer, bool, error)
+	ListWorkspaceMembers(ctx context.Context, workspaceId string) ([]models.Member, error)
+	GetWorkspaceMemberById(ctx context.Context, workspaceId string, memberId string) (models.Member, error)
+	ListWorkspaceCustomers(ctx context.Context, workspaceId string) ([]models.Customer, error)
+	CreateCustomerByExternalId(ctx context.Context, c models.Customer) (models.Customer, bool, error)
+	CreateWorkspaceCustomerWithEmail(ctx context.Context, c models.Customer) (models.Customer, bool, error)
+	CreateWorkspaceCustomerWithPhone(ctx context.Context, c models.Customer) (models.Customer, bool, error)
 }
 
 type CustomerServicer interface {

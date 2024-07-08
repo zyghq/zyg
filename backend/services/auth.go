@@ -56,7 +56,7 @@ func NewAuthService(repo ports.AccountRepositorer) *AuthService {
 	}
 }
 
-func (s *AuthService) CheckAuthUser(ctx context.Context, authUserId string) (models.Account, error) {
+func (s *AuthService) AuthenticateUser(ctx context.Context, authUserId string) (models.Account, error) {
 	account, err := s.repo.GetByAuthUserId(ctx, authUserId)
 
 	if errors.Is(err, repository.ErrQuery) {
@@ -74,7 +74,7 @@ func (s *AuthService) CheckAuthUser(ctx context.Context, authUserId string) (mod
 	return account, nil
 }
 
-func (s *AuthService) CheckPatAccount(ctx context.Context, token string) (models.Account, error) {
+func (s *AuthService) ValidatePersonalAccessToken(ctx context.Context, token string) (models.Account, error) {
 	account, err := s.repo.GetAccountByToken(ctx, token)
 
 	if errors.Is(err, repository.ErrQuery) {

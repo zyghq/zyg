@@ -160,7 +160,7 @@ func (h *AccountHandler) handleGetOrCreateAccount(w http.ResponseWriter, r *http
 
 func (h *AccountHandler) handleGetPatList(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	ctx := r.Context()
-	aps, err := h.as.UserPats(ctx, account.AccountId)
+	aps, err := h.as.GetPersonalAccessTokens(ctx, account.AccountId)
 	if err != nil {
 		slog.Error("failed to pat list "+
 			"something went wrong",
@@ -205,7 +205,7 @@ func (h *AccountHandler) handleCreatePat(w http.ResponseWriter, r *http.Request,
 		Description: models.NullString(rb.Description),
 	}
 
-	ap, err = h.as.IssuePersonalAccessToken(ctx, ap)
+	ap, err = h.as.GeneratePersonalAccessToken(ctx, ap)
 	if err != nil {
 		slog.Error(
 			"failed to create account PAT "+
@@ -232,7 +232,7 @@ func (h *AccountHandler) handleDeletePat(w http.ResponseWriter, r *http.Request,
 	ctx := r.Context()
 	patId := r.PathValue("patId")
 
-	pat, err := h.as.UserPat(ctx, patId)
+	pat, err := h.as.GetPersonalAccessToken(ctx, patId)
 	if errors.Is(err, repository.ErrEmpty) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -246,7 +246,7 @@ func (h *AccountHandler) handleDeletePat(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	err = h.as.HardDeletePat(ctx, pat.PatId)
+	err = h.as.DeletePersonalAccessToken(ctx, pat.PatId)
 	if err != nil {
 		slog.Error("failed to delete pat "+
 			"something went wrong",

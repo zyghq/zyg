@@ -38,7 +38,7 @@ func (h *WorkspaceHandler) handleCreateWorkspace(w http.ResponseWriter, r *http.
 	}
 
 	workspace := models.Workspace{AccountId: account.AccountId, Name: rb.Name}
-	workspace, err = h.ws.CreateAccountWorkspace(ctx, *account, workspace)
+	workspace, err = h.ws.CreateWorkspace(ctx, *account, workspace)
 
 	if err != nil {
 		slog.Error(
@@ -66,7 +66,7 @@ func (h *WorkspaceHandler) handleCreateWorkspace(w http.ResponseWriter, r *http.
 func (h *WorkspaceHandler) handleGetWorkspaces(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	ctx := r.Context()
 
-	workspaces, err := h.ws.MemberWorkspaces(ctx, account.AccountId)
+	workspaces, err := h.ws.ListMemberWorkspaces(ctx, account.AccountId)
 
 	if err != nil {
 		slog.Error(
@@ -96,7 +96,7 @@ func (h *WorkspaceHandler) handleGetWorkspace(w http.ResponseWriter, r *http.Req
 	ctx := r.Context()
 	workspaceId := r.PathValue("workspaceId")
 
-	workspace, err := h.ws.MemberWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		slog.Warn(
 			"workspace not found or does not exist",
@@ -145,7 +145,7 @@ func (h *WorkspaceHandler) handleUpdateWorkspace(w http.ResponseWriter, r *http.
 	ctx := r.Context()
 	workspaceId := r.PathValue("workspaceId")
 
-	workspace, err := h.ws.MemberWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		slog.Warn(
 			"workspace not found or does not exist",
@@ -209,7 +209,7 @@ func (h *WorkspaceHandler) handleGetOrCreateWorkspaceLabel(w http.ResponseWriter
 
 	ctx := r.Context()
 
-	workspace, err := h.ws.MemberWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
 
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		slog.Warn(
@@ -236,7 +236,7 @@ func (h *WorkspaceHandler) handleGetOrCreateWorkspaceLabel(w http.ResponseWriter
 		Icon:        reqp.Icon,
 	}
 
-	label, isCreated, err := h.ws.InitWorkspaceLabel(ctx, label)
+	label, isCreated, err := h.ws.CreateLabel(ctx, label)
 
 	if err != nil {
 		slog.Error(
@@ -302,7 +302,7 @@ func (h *WorkspaceHandler) handleUpdateWorkspaceLabel(w http.ResponseWriter, r *
 
 	ctx := r.Context()
 
-	label, err := h.ws.WorkspaceLabel(ctx, workspaceId, labelId)
+	label, err := h.ws.GetWorkspaceLabel(ctx, workspaceId, labelId)
 	if errors.Is(err, services.ErrLabelNotFound) {
 		slog.Warn(
 			"label not found or does not exist",
@@ -328,7 +328,7 @@ func (h *WorkspaceHandler) handleUpdateWorkspaceLabel(w http.ResponseWriter, r *
 	label.Name = reqp.Name
 	label.Icon = reqp.Icon
 
-	label, err = h.ws.UpdateWorkspaceLabel(ctx, label.WorkspaceId, label)
+	label, err = h.ws.SetWorkspaceLabel(ctx, label.WorkspaceId, label)
 	if err != nil {
 		slog.Error(
 			"failed to update label "+
@@ -366,7 +366,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceLabels(w http.ResponseWriter, r *ht
 
 	workspaceId := r.PathValue("workspaceId")
 
-	workspace, err := h.ws.MemberWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		slog.Warn(
 			"workspace not found or does not exist",
@@ -386,7 +386,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceLabels(w http.ResponseWriter, r *ht
 		return
 	}
 
-	results, err := h.ws.WorkspaceLabels(ctx, workspace.WorkspaceId)
+	results, err := h.ws.ListWorkspaceLabels(ctx, workspace.WorkspaceId)
 	if err != nil {
 		slog.Error(
 			"failed to get workspace labels "+
@@ -448,7 +448,7 @@ func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *ht
 
 	workspaceId := r.PathValue("workspaceId")
 
-	workspace, err := h.ws.MemberWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
 
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		slog.Warn(
@@ -497,7 +497,7 @@ func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *ht
 			}
 
 			slog.Info("create Customer by email")
-			customer, isCreated, err = h.ws.InitWorkspaceCustomerWithEmail(ctx, customer)
+			customer, isCreated, err = h.ws.CreateWorkspaceCustomerWithEmail(ctx, customer)
 
 			if err != nil {
 				slog.Error(
@@ -515,7 +515,7 @@ func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *ht
 			}
 
 			slog.Info("create Customer by phone")
-			customer, isCreated, err = h.ws.InitWorkspaceCustomerWithPhone(ctx, customer)
+			customer, isCreated, err = h.ws.CreateWorkspaceCustomerWithPhone(ctx, customer)
 
 			if err != nil {
 				slog.Error(
@@ -533,7 +533,7 @@ func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *ht
 			}
 
 			slog.Info("create Customer by externalId")
-			customer, isCreated, err = h.ws.InitWorkspaceCustomerWithExternalId(ctx, customer)
+			customer, isCreated, err = h.ws.CreateCustomerByExternalId(ctx, customer)
 
 			if err != nil {
 				slog.Error(
@@ -655,7 +655,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceMembership(w http.ResponseWriter, r
 
 	workspaceId := r.PathValue("workspaceId")
 
-	workspace, err := h.ws.MemberWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		slog.Warn(
 			"workspace not found or does not exist",
@@ -675,7 +675,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceMembership(w http.ResponseWriter, r
 		return
 	}
 
-	member, err := h.ws.WorkspaceUserMember(ctx, account.AccountId, workspace.WorkspaceId)
+	member, err := h.ws.GetWorkspaceMember(ctx, account.AccountId, workspace.WorkspaceId)
 	if err != nil {
 		slog.Error(
 			"failed to get workspace membership "+
@@ -705,7 +705,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceMember(w http.ResponseWriter, r *ht
 	workspaceId := r.PathValue("workspaceId")
 	memberId := r.PathValue("memberId")
 
-	workspace, err := h.ws.MemberWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		slog.Warn(
 			"workspace not found or does not exist",
@@ -725,7 +725,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceMember(w http.ResponseWriter, r *ht
 		return
 	}
 
-	member, err := h.ws.WorkspaceMember(ctx, workspace.WorkspaceId, memberId)
+	member, err := h.ws.GetWorkspaceMemberById(ctx, workspace.WorkspaceId, memberId)
 	if errors.Is(err, services.ErrMemberNotFound) {
 		slog.Warn(
 			"workspace member not found or does not exist",
@@ -766,7 +766,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceCustomers(w http.ResponseWriter, r 
 
 	workspaceId := r.PathValue("workspaceId")
 
-	workspace, err := h.ws.MemberWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		slog.Warn(
 			"workspace not found or does not exist",
@@ -786,7 +786,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceCustomers(w http.ResponseWriter, r 
 		return
 	}
 
-	customers, err := h.ws.WorkspaceCustomers(ctx, workspace.WorkspaceId)
+	customers, err := h.ws.ListWorkspaceCustomers(ctx, workspace.WorkspaceId)
 	if err != nil {
 		slog.Error(
 			"failed to get workspace customers "+
@@ -815,7 +815,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceMembers(w http.ResponseWriter, r *h
 
 	workspaceId := r.PathValue("workspaceId")
 
-	workspace, err := h.ws.MemberWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		slog.Warn(
 			"workspace not found or does not exist",
@@ -835,7 +835,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceMembers(w http.ResponseWriter, r *h
 		return
 	}
 
-	members, err := h.ws.WorkspaceMembers(ctx, workspace.WorkspaceId)
+	members, err := h.ws.ListWorkspaceMembers(ctx, workspace.WorkspaceId)
 	if err != nil {
 		slog.Error(
 			"failed to get workspace members "+
