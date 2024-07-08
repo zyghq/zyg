@@ -7,14 +7,14 @@ import (
 	"log/slog"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/zyghq/zyg/domain"
+	"github.com/zyghq/zyg/models"
 )
 
 // creates and returns a new thread chat for customer
 // a customer must exist to create a thread chat
-func (tc *ThreadChatDB) CreateThreadChat(ctx context.Context, th domain.ThreadChat, msg string,
-) (domain.ThreadChat, domain.ThreadChatMessage, error) {
-	var message domain.ThreadChatMessage
+func (tc *ThreadChatDB) CreateThreadChat(ctx context.Context, th models.ThreadChat, msg string,
+) (models.ThreadChat, models.ThreadChatMessage, error) {
+	var message models.ThreadChatMessage
 
 	// start transaction
 	tx, err := tc.db.Begin(ctx)
@@ -27,11 +27,11 @@ func (tc *ThreadChatDB) CreateThreadChat(ctx context.Context, th domain.ThreadCh
 
 	thId := th.GenId()
 	if th.Status == "" {
-		th.Status = domain.ThreadStatus{}.DefaultStatus() // set status
+		th.Status = models.ThreadStatus{}.DefaultStatus() // set status
 	}
 
 	if th.Priority == "" {
-		th.Priority = domain.ThreadPriority{}.DefaultPriority() // set priority
+		th.Priority = models.ThreadPriority{}.DefaultPriority() // set priority
 	}
 
 	stmt := `WITH ins AS (
@@ -93,13 +93,13 @@ func (tc *ThreadChatDB) CreateThreadChat(ctx context.Context, th domain.ThreadCh
 
 	// check if query returned a row
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.ThreadChat{}, domain.ThreadChatMessage{}, ErrEmpty
+		return models.ThreadChat{}, models.ThreadChatMessage{}, ErrEmpty
 	}
 
 	// check if query returned an error
 	if err != nil {
 		slog.Error("failed to insert query", "error", err)
-		return domain.ThreadChat{}, domain.ThreadChatMessage{}, ErrQuery
+		return models.ThreadChat{}, models.ThreadChatMessage{}, ErrQuery
 	}
 
 	thmId := message.GenId()
@@ -117,13 +117,13 @@ func (tc *ThreadChatDB) CreateThreadChat(ctx context.Context, th domain.ThreadCh
 
 	// check if query returned a row
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.ThreadChat{}, domain.ThreadChatMessage{}, ErrEmpty
+		return models.ThreadChat{}, models.ThreadChatMessage{}, ErrEmpty
 	}
 
 	// check if query returned an error
 	if err != nil {
 		slog.Error("failed to insert query", "error", err)
-		return domain.ThreadChat{}, domain.ThreadChatMessage{}, ErrQuery
+		return models.ThreadChat{}, models.ThreadChatMessage{}, ErrQuery
 
 	}
 
@@ -131,7 +131,7 @@ func (tc *ThreadChatDB) CreateThreadChat(ctx context.Context, th domain.ThreadCh
 	err = tx.Commit(ctx)
 	if err != nil {
 		slog.Error("failed to commit query", "error", err)
-		return domain.ThreadChat{}, domain.ThreadChatMessage{}, ErrTxQuery
+		return models.ThreadChat{}, models.ThreadChatMessage{}, ErrTxQuery
 	}
 
 	return th, message, nil
@@ -139,8 +139,8 @@ func (tc *ThreadChatDB) CreateThreadChat(ctx context.Context, th domain.ThreadCh
 
 // update a thread chat
 // @sanchitrk!: fix
-func (tc *ThreadChatDB) UpdateThreadChatById(ctx context.Context, th domain.ThreadChat, fields []string,
-) (domain.ThreadChat, error) {
+func (tc *ThreadChatDB) UpdateThreadChatById(ctx context.Context, th models.ThreadChat, fields []string,
+) (models.ThreadChat, error) {
 
 	args := make([]interface{}, 0, len(fields))
 
@@ -201,13 +201,13 @@ func (tc *ThreadChatDB) UpdateThreadChatById(ctx context.Context, th domain.Thre
 
 	// check if query returned a row
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.ThreadChat{}, ErrEmpty
+		return models.ThreadChat{}, ErrEmpty
 	}
 
 	// check if query returned an error
 	if err != nil {
 		slog.Error("failed to insert query", "error", err)
-		return domain.ThreadChat{}, ErrQuery
+		return models.ThreadChat{}, ErrQuery
 	}
 
 	return th, nil
@@ -215,8 +215,8 @@ func (tc *ThreadChatDB) UpdateThreadChatById(ctx context.Context, th domain.Thre
 
 // returns thread chat for the workspace
 func (tc *ThreadChatDB) GetByWorkspaceThreadChatId(ctx context.Context, workspaceId string, threadChatId string,
-) (domain.ThreadChat, error) {
-	var th domain.ThreadChat
+) (models.ThreadChat, error) {
+	var th models.ThreadChat
 
 	stmt := `SELECT th.workspace_id AS workspace_id,
 		c.customer_id AS customer_id,
@@ -249,13 +249,13 @@ func (tc *ThreadChatDB) GetByWorkspaceThreadChatId(ctx context.Context, workspac
 
 	// check if query returned a row
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.ThreadChat{}, ErrEmpty
+		return models.ThreadChat{}, ErrEmpty
 	}
 
 	// check if query returned an error
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return domain.ThreadChat{}, ErrQuery
+		return models.ThreadChat{}, ErrQuery
 	}
 
 	return th, nil
@@ -263,11 +263,11 @@ func (tc *ThreadChatDB) GetByWorkspaceThreadChatId(ctx context.Context, workspac
 
 // returns list of thread chats with latest message for the customer
 func (tc *ThreadChatDB) GetListByWorkspaceCustomerId(ctx context.Context, workspaceId string, customerId string,
-) ([]domain.ThreadChatWithMessage, error) {
-	var th domain.ThreadChat
-	var message domain.ThreadChatMessage
+) ([]models.ThreadChatWithMessage, error) {
+	var th models.ThreadChat
+	var message models.ThreadChatMessage
 
-	ths := make([]domain.ThreadChatWithMessage, 0, 100)
+	ths := make([]models.ThreadChatWithMessage, 0, 100)
 	// (@sanchitrk)
 	//
 	// shall we try this, for rendering list of labels.
@@ -330,7 +330,7 @@ func (tc *ThreadChatDB) GetListByWorkspaceCustomerId(ctx context.Context, worksp
 		&message.Sequence, &message.CreatedAt, &message.UpdatedAt,
 		&message.CustomerId, &message.CustomerName, &message.MemberId, &message.MemberName,
 	}, func() error {
-		thm := domain.ThreadChatWithMessage{
+		thm := models.ThreadChatWithMessage{
 			ThreadChat: th,
 			Message:    message,
 		}
@@ -340,7 +340,7 @@ func (tc *ThreadChatDB) GetListByWorkspaceCustomerId(ctx context.Context, worksp
 
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return []domain.ThreadChatWithMessage{}, ErrQuery
+		return []models.ThreadChatWithMessage{}, ErrQuery
 	}
 
 	return ths, nil
@@ -349,8 +349,8 @@ func (tc *ThreadChatDB) GetListByWorkspaceCustomerId(ctx context.Context, worksp
 // assign member to a existing thread chat
 // a member exist in the workspace
 func (tc *ThreadChatDB) SetAssignee(ctx context.Context, threadChatId string, assigneeId string,
-) (domain.ThreadChat, error) {
-	var th domain.ThreadChat
+) (models.ThreadChat, error) {
+	var th models.ThreadChat
 	stmt := `WITH ups AS (
 		UPDATE thread_chat
 		SET assignee_id = $1, updated_at = NOW()
@@ -403,8 +403,8 @@ func (tc *ThreadChatDB) SetAssignee(ctx context.Context, threadChatId string, as
 
 // marks a thread chat as replied or un-replied
 func (tc *ThreadChatDB) SetReplied(ctx context.Context, threadChatId string, replied bool,
-) (domain.ThreadChat, error) {
-	var th domain.ThreadChat
+) (models.ThreadChat, error) {
+	var th models.ThreadChat
 	stmt := `WITH ups AS (
 		UPDATE thread_chat
 		SET replied = $1, updated_at = NOW()
@@ -458,11 +458,11 @@ func (tc *ThreadChatDB) SetReplied(ctx context.Context, threadChatId string, rep
 // returns list of thread chats for the workspace
 func (tc *ThreadChatDB) GetListByWorkspaceId(
 	ctx context.Context, workspaceId string,
-) ([]domain.ThreadChatWithMessage, error) {
-	var th domain.ThreadChat
-	var message domain.ThreadChatMessage
+) ([]models.ThreadChatWithMessage, error) {
+	var th models.ThreadChat
+	var message models.ThreadChatMessage
 
-	ths := make([]domain.ThreadChatWithMessage, 0, 100)
+	ths := make([]models.ThreadChatWithMessage, 0, 100)
 	stmt := `SELECT
 			th.workspace_id AS workspace_id,	
 			thc.customer_id AS thread_customer_id,
@@ -519,7 +519,7 @@ func (tc *ThreadChatDB) GetListByWorkspaceId(
 		&message.Sequence, &message.CreatedAt, &message.UpdatedAt,
 		&message.CustomerId, &message.CustomerName, &message.MemberId, &message.MemberName,
 	}, func() error {
-		thm := domain.ThreadChatWithMessage{
+		thm := models.ThreadChatWithMessage{
 			ThreadChat: th,
 			Message:    message,
 		}
@@ -529,7 +529,7 @@ func (tc *ThreadChatDB) GetListByWorkspaceId(
 
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return []domain.ThreadChatWithMessage{}, ErrQuery
+		return []models.ThreadChatWithMessage{}, ErrQuery
 	}
 
 	return ths, nil
@@ -537,11 +537,11 @@ func (tc *ThreadChatDB) GetListByWorkspaceId(
 
 // returns a list of thread chats assigned to a member in the workspace
 func (tc *ThreadChatDB) GetMemberAssignedListByWorkspaceId(ctx context.Context, workspaceId string, memberId string,
-) ([]domain.ThreadChatWithMessage, error) {
-	var th domain.ThreadChat
-	var message domain.ThreadChatMessage
+) ([]models.ThreadChatWithMessage, error) {
+	var th models.ThreadChat
+	var message models.ThreadChatMessage
 
-	ths := make([]domain.ThreadChatWithMessage, 0, 100)
+	ths := make([]models.ThreadChatWithMessage, 0, 100)
 	stmt := `SELECT
 			th.workspace_id AS workspace_id,	
 			thc.customer_id AS thread_customer_id,
@@ -598,7 +598,7 @@ func (tc *ThreadChatDB) GetMemberAssignedListByWorkspaceId(ctx context.Context, 
 		&message.Sequence, &message.CreatedAt, &message.UpdatedAt,
 		&message.CustomerId, &message.CustomerName, &message.MemberId, &message.MemberName,
 	}, func() error {
-		thm := domain.ThreadChatWithMessage{
+		thm := models.ThreadChatWithMessage{
 			ThreadChat: th,
 			Message:    message,
 		}
@@ -608,7 +608,7 @@ func (tc *ThreadChatDB) GetMemberAssignedListByWorkspaceId(ctx context.Context, 
 
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return []domain.ThreadChatWithMessage{}, ErrQuery
+		return []models.ThreadChatWithMessage{}, ErrQuery
 	}
 
 	return ths, nil
@@ -616,11 +616,11 @@ func (tc *ThreadChatDB) GetMemberAssignedListByWorkspaceId(ctx context.Context, 
 
 // returns a list of unassigned thread chats in the workspace
 func (tc *ThreadChatDB) GetUnassignedListByWorkspaceId(ctx context.Context, workspaceId string,
-) ([]domain.ThreadChatWithMessage, error) {
-	var th domain.ThreadChat
-	var message domain.ThreadChatMessage
+) ([]models.ThreadChatWithMessage, error) {
+	var th models.ThreadChat
+	var message models.ThreadChatMessage
 
-	ths := make([]domain.ThreadChatWithMessage, 0, 100)
+	ths := make([]models.ThreadChatWithMessage, 0, 100)
 	stmt := `SELECT
 			th.workspace_id AS workspace_id,	
 			thc.customer_id AS thread_customer_id,
@@ -677,7 +677,7 @@ func (tc *ThreadChatDB) GetUnassignedListByWorkspaceId(ctx context.Context, work
 		&message.Sequence, &message.CreatedAt, &message.UpdatedAt,
 		&message.CustomerId, &message.CustomerName, &message.MemberId, &message.MemberName,
 	}, func() error {
-		thm := domain.ThreadChatWithMessage{
+		thm := models.ThreadChatWithMessage{
 			ThreadChat: th,
 			Message:    message,
 		}
@@ -687,18 +687,18 @@ func (tc *ThreadChatDB) GetUnassignedListByWorkspaceId(ctx context.Context, work
 
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return []domain.ThreadChatWithMessage{}, ErrQuery
+		return []models.ThreadChatWithMessage{}, ErrQuery
 	}
 
 	return ths, nil
 }
 
 // returns a list of labelled thread chats in the workspace
-func (tc *ThreadChatDB) GetLabelledListByWorkspaceId(ctx context.Context, workspaceId string, labelId string) ([]domain.ThreadChatWithMessage, error) {
-	var th domain.ThreadChat
-	var message domain.ThreadChatMessage
+func (tc *ThreadChatDB) GetLabelledListByWorkspaceId(ctx context.Context, workspaceId string, labelId string) ([]models.ThreadChatWithMessage, error) {
+	var th models.ThreadChat
+	var message models.ThreadChatMessage
 
-	ths := make([]domain.ThreadChatWithMessage, 0, 100)
+	ths := make([]models.ThreadChatWithMessage, 0, 100)
 	stmt := `SELECT
 			th.workspace_id AS workspace_id,	
 			thc.customer_id AS thread_customer_id,
@@ -757,7 +757,7 @@ func (tc *ThreadChatDB) GetLabelledListByWorkspaceId(ctx context.Context, worksp
 		&message.Sequence, &message.CreatedAt, &message.UpdatedAt,
 		&message.CustomerId, &message.CustomerName, &message.MemberId, &message.MemberName,
 	}, func() error {
-		thm := domain.ThreadChatWithMessage{
+		thm := models.ThreadChatWithMessage{
 			ThreadChat: th,
 			Message:    message,
 		}
@@ -767,7 +767,7 @@ func (tc *ThreadChatDB) GetLabelledListByWorkspaceId(ctx context.Context, worksp
 
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return []domain.ThreadChatWithMessage{}, ErrQuery
+		return []models.ThreadChatWithMessage{}, ErrQuery
 	}
 
 	return ths, nil
@@ -792,7 +792,7 @@ func (tc *ThreadChatDB) IsExistByWorkspaceThreadChatId(ctx context.Context, work
 }
 
 // add a label to a thread chat
-func (tc *ThreadChatDB) AddLabel(ctx context.Context, thl domain.ThreadChatLabel) (domain.ThreadChatLabel, bool, error) {
+func (tc *ThreadChatDB) AddLabel(ctx context.Context, thl models.ThreadChatLabel) (models.ThreadChatLabel, bool, error) {
 	var IsCreated bool
 	id := thl.GenId()
 
@@ -816,21 +816,21 @@ func (tc *ThreadChatDB) AddLabel(ctx context.Context, thl domain.ThreadChatLabel
 
 	// no rows returned
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.ThreadChatLabel{}, IsCreated, ErrEmpty
+		return models.ThreadChatLabel{}, IsCreated, ErrEmpty
 	}
 
 	if err != nil {
 		slog.Error("failed to insert query", "error", err)
-		return domain.ThreadChatLabel{}, IsCreated, ErrQuery
+		return models.ThreadChatLabel{}, IsCreated, ErrQuery
 	}
 	return thl, IsCreated, nil
 }
 
 // returns list of labels added to a thread chat
 func (tc *ThreadChatDB) GetLabelListByThreadChatId(ctx context.Context, threadChatId string,
-) ([]domain.ThreadChatLabelled, error) {
-	var l domain.ThreadChatLabelled
-	labels := make([]domain.ThreadChatLabelled, 0, 100)
+) ([]models.ThreadChatLabelled, error) {
+	var l models.ThreadChatLabelled
+	labels := make([]models.ThreadChatLabelled, 0, 100)
 	stmt := `SELECT tcl.thread_chat_label_id AS thread_chat_label_id,
 		tcl.thread_chat_id AS thread_chat_id,
 		tcl.label_id AS label_id,
@@ -861,7 +861,7 @@ func (tc *ThreadChatDB) GetLabelListByThreadChatId(ctx context.Context, threadCh
 
 	if err != nil {
 		slog.Error("failed to scan", "error", err)
-		return []domain.ThreadChatLabelled{}, ErrQuery
+		return []models.ThreadChatLabelled{}, ErrQuery
 	}
 
 	return labels, nil
@@ -872,8 +872,8 @@ func (tc *ThreadChatDB) GetLabelListByThreadChatId(ctx context.Context, threadCh
 func (tc *ThreadChatDB) CreateCustomerThChatMessage(
 	ctx context.Context, threadChatId string, customerId string,
 	msg string,
-) (domain.ThreadChatMessage, error) {
-	var thm domain.ThreadChatMessage
+) (models.ThreadChatMessage, error) {
+	var thm models.ThreadChatMessage
 	id := thm.GenId()
 	stmt := `WITH ins AS (
 		INSERT INTO thread_chat_message (thread_chat_id, thread_chat_message_id, body, customer_id)
@@ -904,13 +904,13 @@ func (tc *ThreadChatDB) CreateCustomerThChatMessage(
 
 	// check if query returned a row
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.ThreadChatMessage{}, ErrEmpty
+		return models.ThreadChatMessage{}, ErrEmpty
 	}
 
 	// check if query returned an error
 	if err != nil {
 		slog.Error("failed to insert query", "error", err)
-		return domain.ThreadChatMessage{}, ErrQuery
+		return models.ThreadChatMessage{}, ErrQuery
 	}
 
 	return thm, nil
@@ -921,8 +921,8 @@ func (tc *ThreadChatDB) CreateCustomerThChatMessage(
 func (tc *ThreadChatDB) CreateMemberThChatMessage(
 	ctx context.Context, threadChatId string, memberId string,
 	msg string,
-) (domain.ThreadChatMessage, error) {
-	var thm domain.ThreadChatMessage
+) (models.ThreadChatMessage, error) {
+	var thm models.ThreadChatMessage
 	id := thm.GenId()
 	stmt := `WITH ins AS (
 		INSERT INTO thread_chat_message (thread_chat_id, thread_chat_message_id, body, member_id)
@@ -953,13 +953,13 @@ func (tc *ThreadChatDB) CreateMemberThChatMessage(
 
 	// check if query returned a row
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.ThreadChatMessage{}, ErrEmpty
+		return models.ThreadChatMessage{}, ErrEmpty
 	}
 
 	// check if query returned an error
 	if err != nil {
 		slog.Error("failed to insert query", "error", err)
-		return domain.ThreadChatMessage{}, ErrQuery
+		return models.ThreadChatMessage{}, ErrQuery
 	}
 
 	return thm, nil
@@ -967,9 +967,9 @@ func (tc *ThreadChatDB) CreateMemberThChatMessage(
 
 // returns list of messages in desc order for the thread chat
 func (tc *ThreadChatDB) GetMessageListByThreadChatId(ctx context.Context, threadChatId string,
-) ([]domain.ThreadChatMessage, error) {
-	var message domain.ThreadChatMessage
-	messages := make([]domain.ThreadChatMessage, 0, 100)
+) ([]models.ThreadChatMessage, error) {
+	var message models.ThreadChatMessage
+	messages := make([]models.ThreadChatMessage, 0, 100)
 	stmt := `SELECT
 			thm.thread_chat_id AS thread_chat_id,
 			thm.thread_chat_message_id AS thread_chat_message_id,
@@ -1002,7 +1002,7 @@ func (tc *ThreadChatDB) GetMessageListByThreadChatId(ctx context.Context, thread
 
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return []domain.ThreadChatMessage{}, ErrQuery
+		return []models.ThreadChatMessage{}, ErrQuery
 	}
 
 	return messages, nil
@@ -1010,8 +1010,8 @@ func (tc *ThreadChatDB) GetMessageListByThreadChatId(ctx context.Context, thread
 
 // returns stats of thread chats by status in workspace
 func (tc *ThreadChatDB) StatusMetricsByWorkspaceId(ctx context.Context, workspaceId string,
-) (domain.ThreadMetrics, error) {
-	var metrics domain.ThreadMetrics
+) (models.ThreadMetrics, error) {
+	var metrics models.ThreadMetrics
 
 	stmt := `SELECT
 		COALESCE(SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END), 0) AS done,
@@ -1029,11 +1029,11 @@ func (tc *ThreadChatDB) StatusMetricsByWorkspaceId(ctx context.Context, workspac
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.ThreadMetrics{}, ErrEmpty
+		return models.ThreadMetrics{}, ErrEmpty
 	}
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return domain.ThreadMetrics{}, ErrQuery
+		return models.ThreadMetrics{}, ErrQuery
 	}
 
 	return metrics, nil
@@ -1041,8 +1041,8 @@ func (tc *ThreadChatDB) StatusMetricsByWorkspaceId(ctx context.Context, workspac
 
 // returns stats of thread chats assigned to a member in workspace
 func (tc *ThreadChatDB) MemberAssigneeMetricsByWorkspaceId(ctx context.Context, workspaceId string, memberId string,
-) (domain.ThreadAssigneeMetrics, error) {
-	var metrics domain.ThreadAssigneeMetrics
+) (models.ThreadAssigneeMetrics, error) {
+	var metrics models.ThreadAssigneeMetrics
 
 	stmt := `SELECT
 			COALESCE(SUM(CASE WHEN assignee_id = $2 THEN 1 ELSE 0 END), 0) AS member_assigned_count,
@@ -1058,12 +1058,12 @@ func (tc *ThreadChatDB) MemberAssigneeMetricsByWorkspaceId(ctx context.Context, 
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.ThreadAssigneeMetrics{}, ErrEmpty
+		return models.ThreadAssigneeMetrics{}, ErrEmpty
 	}
 
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return domain.ThreadAssigneeMetrics{}, ErrQuery
+		return models.ThreadAssigneeMetrics{}, ErrQuery
 	}
 
 	return metrics, nil
@@ -1071,9 +1071,9 @@ func (tc *ThreadChatDB) MemberAssigneeMetricsByWorkspaceId(ctx context.Context, 
 
 // returns stats for labelled thread chats with atmost 100 labels
 func (tc *ThreadChatDB) LabelMetricsByWorkspaceId(ctx context.Context, workspaceId string,
-) ([]domain.ThreadLabelMetric, error) {
-	var metric domain.ThreadLabelMetric
-	metrics := make([]domain.ThreadLabelMetric, 0, 100)
+) ([]models.ThreadLabelMetric, error) {
+	var metric models.ThreadLabelMetric
+	metrics := make([]models.ThreadLabelMetric, 0, 100)
 
 	stmt := `SELECT
 		l.label_id,
@@ -1104,7 +1104,7 @@ func (tc *ThreadChatDB) LabelMetricsByWorkspaceId(ctx context.Context, workspace
 
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return []domain.ThreadLabelMetric{}, ErrQuery
+		return []models.ThreadLabelMetric{}, ErrQuery
 	}
 
 	return metrics, nil

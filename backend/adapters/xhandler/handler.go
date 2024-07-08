@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/rs/cors"
-	"github.com/zyghq/zyg/domain"
+	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
 	"github.com/zyghq/zyg/services"
 )
@@ -39,7 +39,7 @@ func NewCustomerHandler(
 	}
 }
 
-func (h *CustomerHandler) handleGetCustomer(w http.ResponseWriter, r *http.Request, customer *domain.Customer) {
+func (h *CustomerHandler) handleGetCustomer(w http.ResponseWriter, r *http.Request, customer *models.Customer) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(customer); err != nil {
@@ -54,7 +54,7 @@ func (h *CustomerHandler) handleGetCustomer(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *CustomerHandler) handleCreateCustomerThChat(
-	w http.ResponseWriter, r *http.Request, customer *domain.Customer,
+	w http.ResponseWriter, r *http.Request, customer *models.Customer,
 ) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
@@ -92,7 +92,7 @@ func (h *CustomerHandler) handleCreateCustomerThChat(
 		return
 	}
 
-	th := domain.ThreadChat{
+	th := models.ThreadChat{
 		WorkspaceId:  workspace.WorkspaceId,
 		CustomerId:   customer.CustomerId,
 		CustomerName: customer.Name,
@@ -184,7 +184,7 @@ func (h *CustomerHandler) handleCreateCustomerThChat(
 }
 
 func (h *CustomerHandler) handleCreateThChatMessage(
-	w http.ResponseWriter, r *http.Request, customer *domain.Customer,
+	w http.ResponseWriter, r *http.Request, customer *models.Customer,
 ) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
@@ -330,7 +330,7 @@ func (h *CustomerHandler) handleCreateThChatMessage(
 }
 
 func (h *CustomerHandler) handleGetThChatMesssages(
-	w http.ResponseWriter, r *http.Request, customer *domain.Customer,
+	w http.ResponseWriter, r *http.Request, customer *models.Customer,
 ) {
 	threadId := r.PathValue("threadId")
 
@@ -457,7 +457,7 @@ func (h *CustomerHandler) handleGetThChatMesssages(
 }
 
 func (h *CustomerHandler) handleGetCustomerThChats(
-	w http.ResponseWriter, r *http.Request, customer *domain.Customer,
+	w http.ResponseWriter, r *http.Request, customer *models.Customer,
 ) {
 	ctx := r.Context()
 	workspace, err := h.ws.GetWorkspace(ctx, customer.WorkspaceId)

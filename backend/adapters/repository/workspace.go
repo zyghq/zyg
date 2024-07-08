@@ -6,18 +6,18 @@ import (
 	"log/slog"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/zyghq/zyg/domain"
+	"github.com/zyghq/zyg/models"
 )
 
-func (w *WorkspaceDB) CreateWorkspaceByAccount(ctx context.Context, account domain.Account, workspace domain.Workspace,
-) (domain.Workspace, error) {
-	var member domain.Member
+func (w *WorkspaceDB) CreateWorkspaceByAccount(ctx context.Context, account models.Account, workspace models.Workspace,
+) (models.Workspace, error) {
+	var member models.Member
 	tx, err := w.db.Begin(ctx)
 
 	// check if tx was started
 	if err != nil {
 		slog.Error("failed to start db tx", "error", err)
-		return domain.Workspace{}, ErrQuery
+		return models.Workspace{}, ErrQuery
 	}
 
 	defer tx.Rollback(ctx)
@@ -33,13 +33,13 @@ func (w *WorkspaceDB) CreateWorkspaceByAccount(ctx context.Context, account doma
 
 	// check if the query returned no rows
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Workspace{}, ErrEmpty
+		return models.Workspace{}, ErrEmpty
 	}
 
 	// check if the query returned an error
 	if err != nil {
 		slog.Error("failed to insert query", "error", err)
-		return domain.Workspace{}, ErrQuery
+		return models.Workspace{}, ErrQuery
 	}
 
 	mId := member.GenId()
@@ -47,7 +47,7 @@ func (w *WorkspaceDB) CreateWorkspaceByAccount(ctx context.Context, account doma
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING
 		workspace_id, account_id, member_id, name, role, created_at, updated_at`,
-		wId, workspace.AccountId, mId, account.Name, domain.MemberRole{}.Primary()).Scan(
+		wId, workspace.AccountId, mId, account.Name, models.MemberRole{}.Primary()).Scan(
 		&member.WorkspaceId, &member.AccountId,
 		&member.MemberId, &member.Name, &member.Role,
 		&member.CreatedAt, &member.UpdatedAt,
@@ -55,28 +55,28 @@ func (w *WorkspaceDB) CreateWorkspaceByAccount(ctx context.Context, account doma
 
 	// check if the query returned no rows
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Workspace{}, ErrEmpty
+		return models.Workspace{}, ErrEmpty
 	}
 
 	// check if the query returned an error
 	if err != nil {
 		slog.Error("failed to insert query", "error", err)
-		return domain.Workspace{}, ErrQuery
+		return models.Workspace{}, ErrQuery
 	}
 
 	err = tx.Commit(ctx)
 	// check if the tx was committed
 	if err != nil {
 		slog.Error("failed to commit db tx", "error", err)
-		return domain.Workspace{}, ErrQuery
+		return models.Workspace{}, ErrQuery
 	}
 
 	return workspace, nil
 }
 
 func (w *WorkspaceDB) UpdateWorkspaceById(
-	ctx context.Context, workspace domain.Workspace,
-) (domain.Workspace, error) {
+	ctx context.Context, workspace models.Workspace,
+) (models.Workspace, error) {
 	err := w.db.QueryRow(ctx, `UPDATE workspace SET
 		name = $1, updated_at = NOW()
 		WHERE workspace_id = $2
@@ -88,15 +88,15 @@ func (w *WorkspaceDB) UpdateWorkspaceById(
 	// check if the query returned an error
 	if err != nil {
 		slog.Error("failed to update query", "error", err)
-		return domain.Workspace{}, ErrQuery
+		return models.Workspace{}, ErrQuery
 	}
 
 	return workspace, nil
 }
 
 func (w *WorkspaceDB) UpdateWorkspaceLabelById(
-	ctx context.Context, workspaceId string, label domain.Label,
-) (domain.Label, error) {
+	ctx context.Context, workspaceId string, label models.Label,
+) (models.Label, error) {
 	err := w.db.QueryRow(ctx, `UPDATE label SET
 		name = $1, icon = $2, updated_at = NOW()
 		WHERE workspace_id = $3 AND label_id = $4
@@ -108,14 +108,14 @@ func (w *WorkspaceDB) UpdateWorkspaceLabelById(
 	// check if the query returned an error
 	if err != nil {
 		slog.Error("failed to update query", "error", err)
-		return domain.Label{}, ErrQuery
+		return models.Label{}, ErrQuery
 	}
 
 	return label, nil
 }
 
-func (w *WorkspaceDB) GetWorkspaceById(ctx context.Context, workspaceId string) (domain.Workspace, error) {
-	var workspace domain.Workspace
+func (w *WorkspaceDB) GetWorkspaceById(ctx context.Context, workspaceId string) (models.Workspace, error) {
+	var workspace models.Workspace
 	err := w.db.QueryRow(ctx, `SELECT 
 		workspace_id, account_id, name, created_at, updated_at
 		FROM workspace WHERE workspace_id = $1`, workspaceId).Scan(
@@ -125,13 +125,13 @@ func (w *WorkspaceDB) GetWorkspaceById(ctx context.Context, workspaceId string) 
 
 	// check if the query returned no rows
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Workspace{}, ErrEmpty
+		return models.Workspace{}, ErrEmpty
 	}
 
 	// check if the query returned an error
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return domain.Workspace{}, ErrQuery
+		return models.Workspace{}, ErrQuery
 	}
 
 	return workspace, nil
@@ -139,8 +139,8 @@ func (w *WorkspaceDB) GetWorkspaceById(ctx context.Context, workspaceId string) 
 
 func (w *WorkspaceDB) GetByAccountWorkspaceId(
 	ctx context.Context, accountId string, workspaceId string,
-) (domain.Workspace, error) {
-	var workspace domain.Workspace
+) (models.Workspace, error) {
+	var workspace models.Workspace
 
 	stmt := `
 		SELECT
@@ -164,21 +164,21 @@ func (w *WorkspaceDB) GetByAccountWorkspaceId(
 
 	// check if the query returned no rows
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Workspace{}, ErrEmpty
+		return models.Workspace{}, ErrEmpty
 	}
 
 	// check if the query returned an error
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return domain.Workspace{}, ErrQuery
+		return models.Workspace{}, ErrQuery
 	}
 
 	return workspace, nil
 }
 
-func (w *WorkspaceDB) GetListByMemberAccountId(ctx context.Context, accountId string) ([]domain.Workspace, error) {
-	var workspace domain.Workspace
-	ws := make([]domain.Workspace, 0, 100)
+func (w *WorkspaceDB) GetListByMemberAccountId(ctx context.Context, accountId string) ([]models.Workspace, error) {
+	var workspace models.Workspace
+	ws := make([]models.Workspace, 0, 100)
 	// stmt := `SELECT workspace_id, account_id, name, created_at, updated_at
 	// 	FROM workspace WHERE account_id = $1
 	// 	ORDER BY created_at DESC LIMIT 100`
@@ -211,13 +211,13 @@ func (w *WorkspaceDB) GetListByMemberAccountId(ctx context.Context, accountId st
 
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return []domain.Workspace{}, ErrQuery
+		return []models.Workspace{}, ErrQuery
 	}
 
 	return ws, nil
 }
 
-func (w *WorkspaceDB) GetOrCreateLabel(ctx context.Context, label domain.Label) (domain.Label, bool, error) {
+func (w *WorkspaceDB) GetOrCreateLabel(ctx context.Context, label models.Label) (models.Label, bool, error) {
 	var isCreated bool
 	lId := label.GenId()
 	stmt := `WITH ins AS (
@@ -240,13 +240,13 @@ func (w *WorkspaceDB) GetOrCreateLabel(ctx context.Context, label domain.Label) 
 
 	// no rows returned
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Label{}, isCreated, ErrEmpty
+		return models.Label{}, isCreated, ErrEmpty
 	}
 
 	// query error
 	if err != nil {
 		slog.Error("failed to insert query", "error", err)
-		return domain.Label{}, isCreated, ErrQuery
+		return models.Label{}, isCreated, ErrQuery
 	}
 
 	return label, isCreated, nil
@@ -254,8 +254,8 @@ func (w *WorkspaceDB) GetOrCreateLabel(ctx context.Context, label domain.Label) 
 
 func (w *WorkspaceDB) GetWorkspaceLabelById(
 	ctx context.Context, workspaceId string, labelId string,
-) (domain.Label, error) {
-	var label domain.Label
+) (models.Label, error) {
+	var label models.Label
 	err := w.db.QueryRow(ctx, `SELECT
 		label_id, workspace_id, name, icon, created_at, updated_at
 		FROM label WHERE workspace_id = $1 AND label_id = $2`, workspaceId, labelId).Scan(
@@ -265,21 +265,21 @@ func (w *WorkspaceDB) GetWorkspaceLabelById(
 
 	// no rows returned
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Label{}, ErrEmpty
+		return models.Label{}, ErrEmpty
 	}
 
 	// query error
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return domain.Label{}, ErrQuery
+		return models.Label{}, ErrQuery
 	}
 
 	return label, nil
 }
 
-func (w *WorkspaceDB) GetLabelListByWorkspaceId(ctx context.Context, workspaceId string) ([]domain.Label, error) {
-	var label domain.Label
-	labels := make([]domain.Label, 0, 100)
+func (w *WorkspaceDB) GetLabelListByWorkspaceId(ctx context.Context, workspaceId string) ([]models.Label, error) {
+	var label models.Label
+	labels := make([]models.Label, 0, 100)
 	stmt := `SELECT label_id, workspace_id, name, icon, created_at, updated_at
 		FROM label WHERE workspace_id = $1`
 
@@ -297,14 +297,14 @@ func (w *WorkspaceDB) GetLabelListByWorkspaceId(ctx context.Context, workspaceId
 
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return []domain.Label{}, ErrQuery
+		return []models.Label{}, ErrQuery
 	}
 
 	return labels, nil
 }
 
-func (w *WorkspaceDB) AddMemberByWorkspaceId(ctx context.Context, workspaceId string, member domain.Member) (domain.Member, error) {
-	var m domain.Member
+func (w *WorkspaceDB) AddMemberByWorkspaceId(ctx context.Context, workspaceId string, member models.Member) (models.Member, error) {
+	var m models.Member
 	memberId := member.GenId()
 	err := w.db.QueryRow(ctx, `INSERT INTO member(workspace_id, account_id, member_id, name, role)
 		VALUES ($1, $2, $3, $4, $5)
@@ -318,13 +318,13 @@ func (w *WorkspaceDB) AddMemberByWorkspaceId(ctx context.Context, workspaceId st
 
 	// check if the query returned no rows
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Member{}, ErrEmpty
+		return models.Member{}, ErrEmpty
 	}
 
 	// check if the query returned an error
 	if err != nil {
 		slog.Error("failed to insert query", "error", err)
-		return domain.Member{}, ErrQuery
+		return models.Member{}, ErrQuery
 	}
 
 	return m, nil

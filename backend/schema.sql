@@ -94,6 +94,8 @@ CREATE TABLE customer (
     email VARCHAR(255) NULL, -- email of the customer
     phone VARCHAR(255) NULL, -- phone of the customer
     name VARCHAR(255)  NULL, -- name of the customer
+    anonymous_id UUID DEFAULT gen_random_uuid(), -- anonymous id of the customer
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE, -- verified status of the customer
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -101,7 +103,8 @@ CREATE TABLE customer (
     CONSTRAINT customer_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
     CONSTRAINT customer_workspace_id_external_id_key UNIQUE (workspace_id, external_id),
     CONSTRAINT customer_workspace_id_email_key UNIQUE (workspace_id, email),
-    CONSTRAINT customer_workspace_id_phone_key UNIQUE (workspace_id, phone)
+    CONSTRAINT customer_workspace_id_phone_key UNIQUE (workspace_id, phone),
+    CONSTRAINT customer_anonymous_id_key UNIQUE (anonymous_id)
 );
 
 -- @sanchitrk: changed usage?

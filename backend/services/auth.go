@@ -7,14 +7,14 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/zyghq/zyg/adapters/repository"
-	"github.com/zyghq/zyg/domain"
+	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
 )
 
 const DefaultAuthProvider string = "supabase"
 
-func ParseJWTToken(token string, hmacSecret []byte) (ac domain.AuthJWTClaims, err error) {
-	t, err := jwt.ParseWithClaims(token, &domain.AuthJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+func ParseJWTToken(token string, hmacSecret []byte) (ac models.AuthJWTClaims, err error) {
+	t, err := jwt.ParseWithClaims(token, &models.AuthJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -23,15 +23,15 @@ func ParseJWTToken(token string, hmacSecret []byte) (ac domain.AuthJWTClaims, er
 
 	if err != nil {
 		return ac, fmt.Errorf("error validating jwt token with error: %v", err)
-	} else if claims, ok := t.Claims.(*domain.AuthJWTClaims); ok {
+	} else if claims, ok := t.Claims.(*models.AuthJWTClaims); ok {
 		return *claims, nil
 	}
 
 	return ac, fmt.Errorf("error parsing jwt token: %v", token)
 }
 
-func ParseCustomerJWTToken(token string, hmacSecret []byte) (cc domain.CustomerJWTClaims, err error) {
-	t, err := jwt.ParseWithClaims(token, &domain.CustomerJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+func ParseCustomerJWTToken(token string, hmacSecret []byte) (cc models.CustomerJWTClaims, err error) {
+	t, err := jwt.ParseWithClaims(token, &models.CustomerJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -40,7 +40,7 @@ func ParseCustomerJWTToken(token string, hmacSecret []byte) (cc domain.CustomerJ
 
 	if err != nil {
 		return cc, fmt.Errorf("error validating jwt token with error: %v", err)
-	} else if claims, ok := t.Claims.(*domain.CustomerJWTClaims); ok {
+	} else if claims, ok := t.Claims.(*models.CustomerJWTClaims); ok {
 		return *claims, nil
 	}
 	return cc, fmt.Errorf("error parsing jwt token: %v", token)
@@ -56,7 +56,7 @@ func NewAuthService(repo ports.AccountRepositorer) *AuthService {
 	}
 }
 
-func (s *AuthService) CheckAuthUser(ctx context.Context, authUserId string) (domain.Account, error) {
+func (s *AuthService) CheckAuthUser(ctx context.Context, authUserId string) (models.Account, error) {
 	account, err := s.repo.GetByAuthUserId(ctx, authUserId)
 
 	if errors.Is(err, repository.ErrQuery) {
@@ -74,7 +74,7 @@ func (s *AuthService) CheckAuthUser(ctx context.Context, authUserId string) (dom
 	return account, nil
 }
 
-func (s *AuthService) CheckPatAccount(ctx context.Context, token string) (domain.Account, error) {
+func (s *AuthService) CheckPatAccount(ctx context.Context, token string) (models.Account, error) {
 	account, err := s.repo.GetAccountByToken(ctx, token)
 
 	if errors.Is(err, repository.ErrQuery) {

@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/zyghq/zyg/domain"
+	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
 	"github.com/zyghq/zyg/services"
 )
@@ -24,7 +24,7 @@ func NewThreadChatHandler(
 	return &ThreadChatHandler{ws: ws, ths: ths}
 }
 
-func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	workspaceId := r.PathValue("workspaceId")
 
 	ctx := r.Context()
@@ -137,7 +137,7 @@ func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.
 	}
 }
 
-func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
@@ -189,7 +189,7 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 			return
 		}
 		ps := priority.(string)
-		isValid := domain.ThreadPriority{}.IsValid(ps)
+		isValid := models.ThreadPriority{}.IsValid(ps)
 		if !isValid {
 			slog.Error(
 				"invalid priority",
@@ -206,7 +206,7 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 	if status, found := reqp["status"]; found {
 		if status != nil {
 			status := status.(string)
-			isValid := domain.ThreadStatus{}.IsValid(status)
+			isValid := models.ThreadStatus{}.IsValid(status)
 			if !isValid {
 				slog.Error(
 					"invalid status",
@@ -244,10 +244,10 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
-			thread.AssigneeId = domain.NullString(&member.MemberId)
+			thread.AssigneeId = models.NullString(&member.MemberId)
 		}
 		if assignee == nil {
-			thread.AssigneeId = domain.NullString(nil)
+			thread.AssigneeId = models.NullString(nil)
 		}
 		fields = append(fields, "assignee")
 	}
@@ -303,7 +303,7 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 	}
 }
 
-func (h *ThreadChatHandler) handleGetMyThreadChats(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *ThreadChatHandler) handleGetMyThreadChats(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	workspaceId := r.PathValue("workspaceId")
 
 	ctx := r.Context()
@@ -429,7 +429,7 @@ func (h *ThreadChatHandler) handleGetMyThreadChats(w http.ResponseWriter, r *htt
 	}
 }
 
-func (h *ThreadChatHandler) handleGetUnassignedThreadChats(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *ThreadChatHandler) handleGetUnassignedThreadChats(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	workspaceId := r.PathValue("workspaceId")
 
 	ctx := r.Context()
@@ -542,7 +542,7 @@ func (h *ThreadChatHandler) handleGetUnassignedThreadChats(w http.ResponseWriter
 	}
 }
 
-func (h *ThreadChatHandler) handleGetLabelledThreadChats(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *ThreadChatHandler) handleGetLabelledThreadChats(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	workspaceId := r.PathValue("workspaceId")
 	labelId := r.PathValue("labelId")
 
@@ -676,7 +676,7 @@ func (h *ThreadChatHandler) handleGetLabelledThreadChats(w http.ResponseWriter, 
 	}
 }
 
-func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
@@ -856,7 +856,7 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 	}
 }
 
-func (h *ThreadChatHandler) handleGetThChatMesssages(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *ThreadChatHandler) handleGetThChatMesssages(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	workspaceId := r.PathValue("workspaceId")
 	threadId := r.PathValue("threadId")
 
@@ -969,7 +969,7 @@ func (h *ThreadChatHandler) handleGetThChatMesssages(w http.ResponseWriter, r *h
 	}
 }
 
-func (h *ThreadChatHandler) handleSetThChatLabel(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *ThreadChatHandler) handleSetThChatLabel(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
@@ -1006,7 +1006,7 @@ func (h *ThreadChatHandler) handleSetThChatLabel(w http.ResponseWriter, r *http.
 		return
 	}
 
-	label := domain.Label{
+	label := models.Label{
 		WorkspaceId: workspaceId,
 		Name:        reqp.Name,
 		Icon:        reqp.Icon,
@@ -1022,10 +1022,10 @@ func (h *ThreadChatHandler) handleSetThChatLabel(w http.ResponseWriter, r *http.
 		return
 	}
 
-	thChatLabel := domain.ThreadChatLabel{
+	thChatLabel := models.ThreadChatLabel{
 		ThreadChatId: threadId,
 		LabelId:      label.LabelId,
-		AddedBy:      domain.LabelAddedBy{}.User(),
+		AddedBy:      models.LabelAddedBy{}.User(),
 	}
 
 	thChatLabel, isAdded, err := h.ths.AddLabel(ctx, thChatLabel)
@@ -1082,7 +1082,7 @@ func (h *ThreadChatHandler) handleSetThChatLabel(w http.ResponseWriter, r *http.
 	}
 }
 
-func (h *ThreadChatHandler) handleGetThreadChatLabels(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *ThreadChatHandler) handleGetThreadChatLabels(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	workspaceId := r.PathValue("workspaceId")
 	threadId := r.PathValue("threadId")
 
@@ -1152,7 +1152,7 @@ func (h *ThreadChatHandler) handleGetThreadChatLabels(w http.ResponseWriter, r *
 	}
 }
 
-func (h *ThreadChatHandler) handleGetThreadChatMetrics(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *ThreadChatHandler) handleGetThreadChatMetrics(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	workspaceId := r.PathValue("workspaceId")
 	ctx := r.Context()
 

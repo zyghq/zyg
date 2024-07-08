@@ -9,7 +9,7 @@ import (
 
 	"github.com/zyghq/zyg"
 	"github.com/zyghq/zyg/adapters/repository"
-	"github.com/zyghq/zyg/domain"
+	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
 	"github.com/zyghq/zyg/services"
 )
@@ -71,7 +71,7 @@ func (h *AccountHandler) handleGetOrCreateAccount(w http.ResponseWriter, r *http
 		}
 
 		// initialize auth user account by subject.
-		account := domain.Account{AuthUserId: sub, Email: ac.Email, Provider: services.DefaultAuthProvider}
+		account := models.Account{AuthUserId: sub, Email: ac.Email, Provider: services.DefaultAuthProvider}
 
 		if name, found := reqp["name"]; found {
 			if name == nil {
@@ -95,13 +95,13 @@ func (h *AccountHandler) handleGetOrCreateAccount(w http.ResponseWriter, r *http
 		if isCreated {
 			// add to demo workspace
 			workspaceId := "wrkcq1c89i9io6g008he020"
-			memberName := domain.NullString(&account.Name)
-			member := domain.Member{
+			memberName := models.NullString(&account.Name)
+			member := models.Member{
 				WorkspaceId: workspaceId,
 				AccountId:   account.AccountId,
 				MemberId:    account.AuthUserId,
 				Name:        memberName,
-				Role:        domain.MemberRole{}.Member(),
+				Role:        models.MemberRole{}.Member(),
 			}
 			workspace, err := h.ws.GetWorkspace(ctx, workspaceId)
 			if err != nil {
@@ -158,7 +158,7 @@ func (h *AccountHandler) handleGetOrCreateAccount(w http.ResponseWriter, r *http
 	}
 }
 
-func (h *AccountHandler) handleGetPatList(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *AccountHandler) handleGetPatList(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	ctx := r.Context()
 	aps, err := h.as.UserPats(ctx, account.AccountId)
 	if err != nil {
@@ -183,7 +183,7 @@ func (h *AccountHandler) handleGetPatList(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (h *AccountHandler) handleCreatePat(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *AccountHandler) handleCreatePat(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
@@ -198,11 +198,11 @@ func (h *AccountHandler) handleCreatePat(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	ap := domain.AccountPAT{
+	ap := models.AccountPAT{
 		AccountId:   account.AccountId,
 		Name:        rb.Name,
 		UnMask:      true, // unmask only once created
-		Description: domain.NullString(rb.Description),
+		Description: models.NullString(rb.Description),
 	}
 
 	ap, err = h.as.IssuePersonalAccessToken(ctx, ap)
@@ -228,7 +228,7 @@ func (h *AccountHandler) handleCreatePat(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-func (h *AccountHandler) handleDeletePat(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *AccountHandler) handleDeletePat(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	ctx := r.Context()
 	patId := r.PathValue("patId")
 

@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/zyghq/zyg"
-	"github.com/zyghq/zyg/domain"
+	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
 	"github.com/zyghq/zyg/services"
 )
@@ -30,8 +30,8 @@ func CheckAuthCredentials(r *http.Request) (string, string, error) {
 func AuthenticateCustomer(
 	ctx context.Context, authz ports.CustomerAuthServicer,
 	scheme string, cred string,
-) (domain.Customer, error) {
-	var customer domain.Customer
+) (models.Customer, error) {
+	var customer models.Customer
 	if scheme == "bearer" {
 		slog.Info("authenticate with customer JWT")
 		hmacSecret, err := zyg.GetEnv("ZYG_CUSTOMER_JWT_SECRET")
@@ -76,4 +76,4 @@ func AuthenticateCustomer(
 	}
 }
 
-type AuthenticatedHandler func(http.ResponseWriter, *http.Request, *domain.Customer)
+type AuthenticatedHandler func(http.ResponseWriter, *http.Request, *models.Customer)

@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/zyghq/zyg"
-	"github.com/zyghq/zyg/domain"
+	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
 	"github.com/zyghq/zyg/services"
 )
@@ -29,7 +29,7 @@ func CheckAuthCredentials(r *http.Request) (string, string, error) {
 
 func AuthenticateAccount(
 	ctx context.Context, authz ports.AuthServicer, scheme string, cred string,
-) (domain.Account, error) {
+) (models.Account, error) {
 	if scheme == "token" {
 		account, err := authz.CheckPatAccount(ctx, cred)
 		if err != nil {
@@ -40,15 +40,15 @@ func AuthenticateAccount(
 	} else if scheme == "bearer" {
 		hmacSecret, err := zyg.GetEnv("SUPABASE_JWT_SECRET")
 		if err != nil {
-			return domain.Account{}, fmt.Errorf("failed to get env SUPABASE_JWT_SECRET got error: %v", err)
+			return models.Account{}, fmt.Errorf("failed to get env SUPABASE_JWT_SECRET got error: %v", err)
 		}
 		ac, err := services.ParseJWTToken(cred, []byte(hmacSecret))
 		if err != nil {
-			return domain.Account{}, fmt.Errorf("failed to parse JWT token got error: %v", err)
+			return models.Account{}, fmt.Errorf("failed to parse JWT token got error: %v", err)
 		}
 		sub, err := ac.RegisteredClaims.GetSubject()
 		if err != nil {
-			return domain.Account{}, fmt.Errorf("cannot get subject from parsed token: %v", err)
+			return models.Account{}, fmt.Errorf("cannot get subject from parsed token: %v", err)
 		}
 
 		slog.Info("authenticated account with jwt", slog.String("authUserId", sub))
@@ -79,8 +79,8 @@ func AuthenticateAccount(
 		}
 		return account, nil
 	} else {
-		return domain.Account{}, fmt.Errorf("unsupported scheme `%s` cannot authenticate", scheme)
+		return models.Account{}, fmt.Errorf("unsupported scheme `%s` cannot authenticate", scheme)
 	}
 }
 
-type AuthenticatedHandler func(http.ResponseWriter, *http.Request, *domain.Account)
+type AuthenticatedHandler func(http.ResponseWriter, *http.Request, *models.Account)

@@ -6,12 +6,12 @@ import (
 	"log/slog"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/zyghq/zyg/domain"
+	"github.com/zyghq/zyg/models"
 )
 
 func (c *CustomerDB) GetByWorkspaceCustomerId(ctx context.Context, workspaceId string, customerId string,
-) (domain.Customer, error) {
-	var customer domain.Customer
+) (models.Customer, error) {
+	var customer models.Customer
 	err := c.db.QueryRow(ctx, `SELECT
 		workspace_id, customer_id, external_id, email, phone, name, created_at, updated_at
 		FROM customer WHERE workspace_id = $1 AND customer_id = $2`, workspaceId, customerId).Scan(
@@ -22,21 +22,21 @@ func (c *CustomerDB) GetByWorkspaceCustomerId(ctx context.Context, workspaceId s
 
 	// check if the query returned no rows
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Customer{}, ErrEmpty
+		return models.Customer{}, ErrEmpty
 	}
 
 	// check if the query returned an error
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return domain.Customer{}, ErrQuery
+		return models.Customer{}, ErrQuery
 	}
 
 	return customer, nil
 }
 
 func (c *CustomerDB) GetWorkspaceCustomerByExtId(ctx context.Context, workspaceId string, externalId string,
-) (domain.Customer, error) {
-	var customer domain.Customer
+) (models.Customer, error) {
+	var customer models.Customer
 	err := c.db.QueryRow(ctx, `SELECT
 		workspace_id, customer_id, external_id, email, phone, name, created_at, updated_at
 		FROM customer WHERE workspace_id = $1 AND external_id = $2`, workspaceId, externalId).Scan(
@@ -47,21 +47,21 @@ func (c *CustomerDB) GetWorkspaceCustomerByExtId(ctx context.Context, workspaceI
 
 	// check if the query returned no rows
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Customer{}, ErrEmpty
+		return models.Customer{}, ErrEmpty
 	}
 
 	// check if the query returned an error
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return domain.Customer{}, ErrQuery
+		return models.Customer{}, ErrQuery
 	}
 
 	return customer, nil
 }
 
 func (c *CustomerDB) GetWorkspaceCustomerByEmail(ctx context.Context, workspaceId string, email string,
-) (domain.Customer, error) {
-	var customer domain.Customer
+) (models.Customer, error) {
+	var customer models.Customer
 	err := c.db.QueryRow(ctx, `SELECT
 		workspace_id, customer_id, external_id, email, phone, name, created_at, updated_at
 		FROM customer WHERE workspace_id = $1 AND email = $2`, workspaceId, email).Scan(
@@ -72,21 +72,21 @@ func (c *CustomerDB) GetWorkspaceCustomerByEmail(ctx context.Context, workspaceI
 
 	// check if the query returned no rows
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Customer{}, ErrEmpty
+		return models.Customer{}, ErrEmpty
 	}
 
 	// check if the query returned an error
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return domain.Customer{}, ErrQuery
+		return models.Customer{}, ErrQuery
 	}
 
 	return customer, nil
 }
 
 func (c *CustomerDB) GetWorkspaceCustomerByPhone(ctx context.Context, workspaceId string, phone string,
-) (domain.Customer, error) {
-	var customer domain.Customer
+) (models.Customer, error) {
+	var customer models.Customer
 	err := c.db.QueryRow(ctx, `SELECT
 		workspace_id, customer_id, external_id, email, phone, name, created_at, updated_at
 		FROM customer WHERE workspace_id = $1 AND phone = $2`, workspaceId, phone).Scan(
@@ -97,19 +97,19 @@ func (c *CustomerDB) GetWorkspaceCustomerByPhone(ctx context.Context, workspaceI
 
 	// check if the query returned no rows
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Customer{}, ErrEmpty
+		return models.Customer{}, ErrEmpty
 	}
 
 	// check if the query returned an error
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return domain.Customer{}, ErrQuery
+		return models.Customer{}, ErrQuery
 	}
 
 	return customer, nil
 }
 
-func (c *CustomerDB) GetOrCreateCustomerByExtId(ctx context.Context, customer domain.Customer) (domain.Customer, bool, error) {
+func (c *CustomerDB) GetOrCreateCustomerByExtId(ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
 	cId := customer.GenId()
 	st := `WITH ins AS (
 		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name)
@@ -140,19 +140,19 @@ func (c *CustomerDB) GetOrCreateCustomerByExtId(ctx context.Context, customer do
 
 	// check if query returned a row
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Customer{}, isCreated, ErrEmpty
+		return models.Customer{}, isCreated, ErrEmpty
 	}
 
 	// check if query returned an error
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return domain.Customer{}, isCreated, ErrQuery
+		return models.Customer{}, isCreated, ErrQuery
 	}
 
 	return customer, isCreated, nil
 }
 
-func (c *CustomerDB) GetOrCreateCustomerByEmail(ctx context.Context, customer domain.Customer) (domain.Customer, bool, error) {
+func (c *CustomerDB) GetOrCreateCustomerByEmail(ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
 	cId := customer.GenId()
 	st := `WITH ins AS (
 		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name)
@@ -183,19 +183,19 @@ func (c *CustomerDB) GetOrCreateCustomerByEmail(ctx context.Context, customer do
 
 	// check if query returned a row
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Customer{}, isCreated, ErrEmpty
+		return models.Customer{}, isCreated, ErrEmpty
 	}
 
 	// check if query returned an error
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return domain.Customer{}, isCreated, ErrQuery
+		return models.Customer{}, isCreated, ErrQuery
 	}
 
 	return customer, isCreated, nil
 }
 
-func (c *CustomerDB) GetOrCreateCustomerByPhone(ctx context.Context, customer domain.Customer) (domain.Customer, bool, error) {
+func (c *CustomerDB) GetOrCreateCustomerByPhone(ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
 	cId := customer.GenId()
 	st := `WITH ins AS (
 		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name)
@@ -226,21 +226,21 @@ func (c *CustomerDB) GetOrCreateCustomerByPhone(ctx context.Context, customer do
 
 	// check if query returned a row
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Customer{}, isCreated, ErrEmpty
+		return models.Customer{}, isCreated, ErrEmpty
 	}
 
 	// check if query returned an error
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return domain.Customer{}, isCreated, ErrQuery
+		return models.Customer{}, isCreated, ErrQuery
 	}
 
 	return customer, isCreated, nil
 }
 
-func (c *CustomerDB) GetListByWorkspaceId(ctx context.Context, workspaceId string) ([]domain.Customer, error) {
-	var customer domain.Customer
-	customers := make([]domain.Customer, 0, 100)
+func (c *CustomerDB) GetListByWorkspaceId(ctx context.Context, workspaceId string) ([]models.Customer, error) {
+	var customer models.Customer
+	customers := make([]models.Customer, 0, 100)
 	stmt := `SELECT workspace_id, customer_id, external_id, email, phone, name, created_at, updated_at
 		FROM customer WHERE workspace_id = $1
 		ORDER BY created_at DESC LIMIT 100`
@@ -260,7 +260,7 @@ func (c *CustomerDB) GetListByWorkspaceId(ctx context.Context, workspaceId strin
 
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return []domain.Customer{}, ErrQuery
+		return []models.Customer{}, ErrQuery
 	}
 
 	return customers, nil

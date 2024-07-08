@@ -6,11 +6,11 @@ import (
 	"log/slog"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/zyghq/zyg/domain"
+	"github.com/zyghq/zyg/models"
 )
 
-func (a *AccountDB) GetOrCreateByAuthUserId(ctx context.Context, account domain.Account,
-) (domain.Account, bool, error) {
+func (a *AccountDB) GetOrCreateByAuthUserId(ctx context.Context, account models.Account,
+) (models.Account, bool, error) {
 	var isCreated bool
 
 	aId := account.GenId()
@@ -40,20 +40,20 @@ func (a *AccountDB) GetOrCreateByAuthUserId(ctx context.Context, account domain.
 
 	// no rows returned error
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Account{}, isCreated, ErrEmpty
+		return models.Account{}, isCreated, ErrEmpty
 	}
 
 	// query error
 	if err != nil {
 		slog.Error("failed to insert query", "error", err)
-		return domain.Account{}, isCreated, ErrQuery
+		return models.Account{}, isCreated, ErrQuery
 	}
 	return account, isCreated, nil
 }
 
 func (a *AccountDB) GetByAuthUserId(ctx context.Context, authUserId string,
-) (domain.Account, error) {
-	var account domain.Account
+) (models.Account, error) {
+	var account models.Account
 
 	err := a.db.QueryRow(ctx, `SELECT 
 		account_id, auth_user_id, email,
@@ -65,23 +65,23 @@ func (a *AccountDB) GetByAuthUserId(ctx context.Context, authUserId string,
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Account{}, ErrEmpty
+		return models.Account{}, ErrEmpty
 	}
 
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return domain.Account{}, ErrQuery
+		return models.Account{}, ErrQuery
 	}
 	return account, nil
 }
 
-func (a *AccountDB) CreatePersonalAccessToken(ctx context.Context, ap domain.AccountPAT,
-) (domain.AccountPAT, error) {
+func (a *AccountDB) CreatePersonalAccessToken(ctx context.Context, ap models.AccountPAT,
+) (models.AccountPAT, error) {
 	apId := ap.GenId()
-	token, err := domain.GenToken(32, "pt_")
+	token, err := models.GenToken(32, "pt_")
 	if err != nil {
 		slog.Error("failed to generate token got error", "error", err)
-		return domain.AccountPAT{}, err
+		return models.AccountPAT{}, err
 	}
 
 	stmt := `INSERT INTO account_pat(account_id, pat_id, token, name, description)
@@ -95,20 +95,20 @@ func (a *AccountDB) CreatePersonalAccessToken(ctx context.Context, ap domain.Acc
 
 	// no rows returned
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.AccountPAT{}, ErrEmpty
+		return models.AccountPAT{}, ErrEmpty
 	}
 
 	if err != nil {
 		slog.Error("failed to query got error", "error", err)
-		return domain.AccountPAT{}, ErrQuery
+		return models.AccountPAT{}, ErrQuery
 	}
 
 	return ap, nil
 }
 
-func (a *AccountDB) GetPatListByAccountId(ctx context.Context, accountId string) ([]domain.AccountPAT, error) {
-	var pat domain.AccountPAT
-	aps := make([]domain.AccountPAT, 0, 100)
+func (a *AccountDB) GetPatListByAccountId(ctx context.Context, accountId string) ([]models.AccountPAT, error) {
+	var pat models.AccountPAT
+	aps := make([]models.AccountPAT, 0, 100)
 
 	stmt := `SELECT account_id, pat_id, token, name, description,
 		created_at, updated_at
@@ -132,14 +132,14 @@ func (a *AccountDB) GetPatListByAccountId(ctx context.Context, accountId string)
 
 	if err != nil {
 		slog.Error("failed to query got error", "error", err)
-		return []domain.AccountPAT{}, ErrQuery
+		return []models.AccountPAT{}, ErrQuery
 	}
 
 	return aps, nil
 }
 
-func (a *AccountDB) GetPatByPatId(ctx context.Context, patId string) (domain.AccountPAT, error) {
-	var pat domain.AccountPAT
+func (a *AccountDB) GetPatByPatId(ctx context.Context, patId string) (models.AccountPAT, error) {
+	var pat models.AccountPAT
 
 	stmt := `SELECT
 		account_id, pat_id, token, name, description,
@@ -153,12 +153,12 @@ func (a *AccountDB) GetPatByPatId(ctx context.Context, patId string) (domain.Acc
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.AccountPAT{}, ErrEmpty
+		return models.AccountPAT{}, ErrEmpty
 	}
 
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return domain.AccountPAT{}, ErrQuery
+		return models.AccountPAT{}, ErrQuery
 	}
 
 	return pat, nil
@@ -174,8 +174,8 @@ func (a *AccountDB) HardDeletePatByPatId(ctx context.Context, patId string) erro
 	return nil
 }
 
-func (a *AccountDB) GetAccountByToken(ctx context.Context, token string) (domain.Account, error) {
-	var account domain.Account
+func (a *AccountDB) GetAccountByToken(ctx context.Context, token string) (models.Account, error) {
+	var account models.Account
 
 	stmt := `SELECT
 		a.account_id, a.email,
@@ -192,12 +192,12 @@ func (a *AccountDB) GetAccountByToken(ctx context.Context, token string) (domain
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Account{}, ErrEmpty
+		return models.Account{}, ErrEmpty
 	}
 
 	if err != nil {
 		slog.Error("failed to query", "error", err)
-		return domain.Account{}, ErrQuery
+		return models.Account{}, ErrQuery
 	}
 
 	return account, nil

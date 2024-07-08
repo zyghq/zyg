@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/zyghq/zyg/domain"
+	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
 	"github.com/zyghq/zyg/services"
 )
@@ -22,7 +22,7 @@ func NewWorkspaceHandler(ws ports.WorkspaceServicer, cs ports.CustomerServicer) 
 	return &WorkspaceHandler{ws: ws, cs: cs}
 }
 
-func (h *WorkspaceHandler) handleCreateWorkspace(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *WorkspaceHandler) handleCreateWorkspace(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
@@ -37,7 +37,7 @@ func (h *WorkspaceHandler) handleCreateWorkspace(w http.ResponseWriter, r *http.
 		return
 	}
 
-	workspace := domain.Workspace{AccountId: account.AccountId, Name: rb.Name}
+	workspace := models.Workspace{AccountId: account.AccountId, Name: rb.Name}
 	workspace, err = h.ws.CreateAccountWorkspace(ctx, *account, workspace)
 
 	if err != nil {
@@ -63,7 +63,7 @@ func (h *WorkspaceHandler) handleCreateWorkspace(w http.ResponseWriter, r *http.
 	}
 }
 
-func (h *WorkspaceHandler) handleGetWorkspaces(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *WorkspaceHandler) handleGetWorkspaces(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	ctx := r.Context()
 
 	workspaces, err := h.ws.MemberWorkspaces(ctx, account.AccountId)
@@ -91,7 +91,7 @@ func (h *WorkspaceHandler) handleGetWorkspaces(w http.ResponseWriter, r *http.Re
 	}
 }
 
-func (h *WorkspaceHandler) handleGetWorkspace(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *WorkspaceHandler) handleGetWorkspace(w http.ResponseWriter, r *http.Request, account *models.Account) {
 
 	ctx := r.Context()
 	workspaceId := r.PathValue("workspaceId")
@@ -129,7 +129,7 @@ func (h *WorkspaceHandler) handleGetWorkspace(w http.ResponseWriter, r *http.Req
 	}
 }
 
-func (h *WorkspaceHandler) handleUpdateWorkspace(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *WorkspaceHandler) handleUpdateWorkspace(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
@@ -192,7 +192,7 @@ func (h *WorkspaceHandler) handleUpdateWorkspace(w http.ResponseWriter, r *http.
 	}
 }
 
-func (h *WorkspaceHandler) handleGetOrCreateWorkspaceLabel(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *WorkspaceHandler) handleGetOrCreateWorkspaceLabel(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
@@ -230,7 +230,7 @@ func (h *WorkspaceHandler) handleGetOrCreateWorkspaceLabel(w http.ResponseWriter
 		return
 	}
 
-	label := domain.Label{
+	label := models.Label{
 		WorkspaceId: workspace.WorkspaceId,
 		Name:        reqp.Name,
 		Icon:        reqp.Icon,
@@ -284,7 +284,7 @@ func (h *WorkspaceHandler) handleGetOrCreateWorkspaceLabel(w http.ResponseWriter
 	}
 }
 
-func (h *WorkspaceHandler) handleUpdateWorkspaceLabel(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *WorkspaceHandler) handleUpdateWorkspaceLabel(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
@@ -361,7 +361,7 @@ func (h *WorkspaceHandler) handleUpdateWorkspaceLabel(w http.ResponseWriter, r *
 	}
 }
 
-func (h *WorkspaceHandler) handleGetWorkspaceLabels(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *WorkspaceHandler) handleGetWorkspaceLabels(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	ctx := r.Context()
 
 	workspaceId := r.PathValue("workspaceId")
@@ -421,7 +421,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceLabels(w http.ResponseWriter, r *ht
 	}
 }
 
-func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
@@ -436,10 +436,10 @@ func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *ht
 		return
 	}
 
-	externalId := domain.NullString(rb.Customer.ExternalId)
-	email := domain.NullString(rb.Customer.Email)
-	phone := domain.NullString(rb.Customer.Phone)
-	name := domain.NullString(rb.Customer.Name)
+	externalId := models.NullString(rb.Customer.ExternalId)
+	email := models.NullString(rb.Customer.Email)
+	phone := models.NullString(rb.Customer.Phone)
+	name := models.NullString(rb.Customer.Name)
 	if !externalId.Valid && !email.Valid && !phone.Valid {
 		slog.Error("at least one of `externalId`, `email` or `phone` is required")
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -469,7 +469,7 @@ func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *ht
 		return
 	}
 
-	customer := domain.Customer{
+	customer := models.Customer{
 		WorkspaceId: workspace.WorkspaceId,
 		ExternalId:  externalId,
 		Email:       email,
@@ -650,7 +650,7 @@ func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *ht
 	}
 }
 
-func (h *WorkspaceHandler) handleGetWorkspaceMembership(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *WorkspaceHandler) handleGetWorkspaceMembership(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	ctx := r.Context()
 
 	workspaceId := r.PathValue("workspaceId")
@@ -699,7 +699,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceMembership(w http.ResponseWriter, r
 	}
 }
 
-func (h *WorkspaceHandler) handleGetWorkspaceMember(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *WorkspaceHandler) handleGetWorkspaceMember(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	ctx := r.Context()
 
 	workspaceId := r.PathValue("workspaceId")
@@ -761,7 +761,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceMember(w http.ResponseWriter, r *ht
 	}
 }
 
-func (h *WorkspaceHandler) handleGetWorkspaceCustomers(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *WorkspaceHandler) handleGetWorkspaceCustomers(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	ctx := r.Context()
 
 	workspaceId := r.PathValue("workspaceId")
@@ -810,7 +810,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceCustomers(w http.ResponseWriter, r 
 	}
 }
 
-func (h *WorkspaceHandler) handleGetWorkspaceMembers(w http.ResponseWriter, r *http.Request, account *domain.Account) {
+func (h *WorkspaceHandler) handleGetWorkspaceMembers(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	ctx := r.Context()
 
 	workspaceId := r.PathValue("workspaceId")

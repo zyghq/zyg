@@ -9,7 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/zyghq/zyg"
 	"github.com/zyghq/zyg/adapters/repository"
-	"github.com/zyghq/zyg/domain"
+	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
 )
 
@@ -24,7 +24,7 @@ func NewCustomerService(repo ports.CustomerRepositorer) *CustomerService {
 }
 
 func (s *CustomerService) WorkspaceCustomer(ctx context.Context, workspaceId string, customerId string,
-) (domain.Customer, error) {
+) (models.Customer, error) {
 	customer, err := s.repo.GetByWorkspaceCustomerId(ctx, workspaceId, customerId)
 	if err != nil {
 		return customer, err
@@ -33,7 +33,7 @@ func (s *CustomerService) WorkspaceCustomer(ctx context.Context, workspaceId str
 }
 
 func (s *CustomerService) WorkspaceCustomerWithExternalId(ctx context.Context, workspaceId string, externalId string,
-) (domain.Customer, error) {
+) (models.Customer, error) {
 	customer, err := s.repo.GetWorkspaceCustomerByExtId(ctx, workspaceId, externalId)
 
 	if errors.Is(err, repository.ErrEmpty) {
@@ -47,7 +47,7 @@ func (s *CustomerService) WorkspaceCustomerWithExternalId(ctx context.Context, w
 }
 
 func (s *CustomerService) WorkspaceCustomerWithEmail(ctx context.Context, workspaceId string, email string,
-) (domain.Customer, error) {
+) (models.Customer, error) {
 	customer, err := s.repo.GetWorkspaceCustomerByEmail(ctx, workspaceId, email)
 	if err != nil {
 		return customer, err
@@ -56,7 +56,7 @@ func (s *CustomerService) WorkspaceCustomerWithEmail(ctx context.Context, worksp
 }
 
 func (s *CustomerService) WorkspaceCustomerWithPhone(ctx context.Context, workspaceId string, email string,
-) (domain.Customer, error) {
+) (models.Customer, error) {
 	customer, err := s.repo.GetWorkspaceCustomerByPhone(ctx, workspaceId, email)
 	if err != nil {
 		return customer, err
@@ -64,7 +64,7 @@ func (s *CustomerService) WorkspaceCustomerWithPhone(ctx context.Context, worksp
 	return customer, nil
 }
 
-func (s *CustomerService) IssueCustomerJwt(c domain.Customer) (string, error) {
+func (s *CustomerService) IssueCustomerJwt(c models.Customer) (string, error) {
 	var externalId string
 	var email string
 	var phone string
@@ -94,7 +94,7 @@ func (s *CustomerService) IssueCustomerJwt(c domain.Customer) (string, error) {
 		phone = c.Phone.String
 	}
 
-	claims := domain.CustomerJWTClaims{
+	claims := models.CustomerJWTClaims{
 		WorkspaceId: c.WorkspaceId,
 		ExternalId:  externalId,
 		Email:       email,
