@@ -9,7 +9,7 @@ import (
 	"github.com/zyghq/zyg/models"
 )
 
-func (w *WorkspaceDB) CreateWorkspaceByAccount(ctx context.Context, account models.Account, workspace models.Workspace,
+func (w *WorkspaceDB) InsertWorkspaceForAccount(ctx context.Context, account models.Account, workspace models.Workspace,
 ) (models.Workspace, error) {
 	var member models.Member
 	tx, err := w.db.Begin(ctx)
@@ -74,7 +74,7 @@ func (w *WorkspaceDB) CreateWorkspaceByAccount(ctx context.Context, account mode
 	return workspace, nil
 }
 
-func (w *WorkspaceDB) UpdateWorkspaceById(
+func (w *WorkspaceDB) ModifyWorkspaceById(
 	ctx context.Context, workspace models.Workspace,
 ) (models.Workspace, error) {
 	err := w.db.QueryRow(ctx, `UPDATE workspace SET
@@ -94,7 +94,7 @@ func (w *WorkspaceDB) UpdateWorkspaceById(
 	return workspace, nil
 }
 
-func (w *WorkspaceDB) UpdateWorkspaceLabelById(
+func (w *WorkspaceDB) AlterWorkspaceLabelById(
 	ctx context.Context, workspaceId string, label models.Label,
 ) (models.Label, error) {
 	err := w.db.QueryRow(ctx, `UPDATE label SET
@@ -114,7 +114,7 @@ func (w *WorkspaceDB) UpdateWorkspaceLabelById(
 	return label, nil
 }
 
-func (w *WorkspaceDB) GetWorkspaceById(ctx context.Context, workspaceId string) (models.Workspace, error) {
+func (w *WorkspaceDB) FetchWorkspaceById(ctx context.Context, workspaceId string) (models.Workspace, error) {
 	var workspace models.Workspace
 	err := w.db.QueryRow(ctx, `SELECT 
 		workspace_id, account_id, name, created_at, updated_at
@@ -137,7 +137,7 @@ func (w *WorkspaceDB) GetWorkspaceById(ctx context.Context, workspaceId string) 
 	return workspace, nil
 }
 
-func (w *WorkspaceDB) GetByAccountWorkspaceId(
+func (w *WorkspaceDB) RetrieveByAccountWorkspaceId(
 	ctx context.Context, accountId string, workspaceId string,
 ) (models.Workspace, error) {
 	var workspace models.Workspace
@@ -176,7 +176,7 @@ func (w *WorkspaceDB) GetByAccountWorkspaceId(
 	return workspace, nil
 }
 
-func (w *WorkspaceDB) GetListByMemberAccountId(ctx context.Context, accountId string) ([]models.Workspace, error) {
+func (w *WorkspaceDB) FetchWorkspacesByMemberAccountId(ctx context.Context, accountId string) ([]models.Workspace, error) {
 	var workspace models.Workspace
 	ws := make([]models.Workspace, 0, 100)
 	// stmt := `SELECT workspace_id, account_id, name, created_at, updated_at
@@ -217,7 +217,7 @@ func (w *WorkspaceDB) GetListByMemberAccountId(ctx context.Context, accountId st
 	return ws, nil
 }
 
-func (w *WorkspaceDB) GetOrCreateLabel(ctx context.Context, label models.Label) (models.Label, bool, error) {
+func (w *WorkspaceDB) UpsertLabel(ctx context.Context, label models.Label) (models.Label, bool, error) {
 	var isCreated bool
 	lId := label.GenId()
 	stmt := `WITH ins AS (
@@ -252,7 +252,7 @@ func (w *WorkspaceDB) GetOrCreateLabel(ctx context.Context, label models.Label) 
 	return label, isCreated, nil
 }
 
-func (w *WorkspaceDB) GetWorkspaceLabelById(
+func (w *WorkspaceDB) LookupWorkspaceLabelById(
 	ctx context.Context, workspaceId string, labelId string,
 ) (models.Label, error) {
 	var label models.Label
@@ -277,7 +277,7 @@ func (w *WorkspaceDB) GetWorkspaceLabelById(
 	return label, nil
 }
 
-func (w *WorkspaceDB) GetLabelListByWorkspaceId(ctx context.Context, workspaceId string) ([]models.Label, error) {
+func (w *WorkspaceDB) RetrieveLabelsByWorkspaceId(ctx context.Context, workspaceId string) ([]models.Label, error) {
 	var label models.Label
 	labels := make([]models.Label, 0, 100)
 	stmt := `SELECT label_id, workspace_id, name, icon, created_at, updated_at
@@ -303,7 +303,7 @@ func (w *WorkspaceDB) GetLabelListByWorkspaceId(ctx context.Context, workspaceId
 	return labels, nil
 }
 
-func (w *WorkspaceDB) AddMemberByWorkspaceId(ctx context.Context, workspaceId string, member models.Member) (models.Member, error) {
+func (w *WorkspaceDB) InsertMemberIntoWorkspace(ctx context.Context, workspaceId string, member models.Member) (models.Member, error) {
 	var m models.Member
 	memberId := member.GenId()
 	err := w.db.QueryRow(ctx, `INSERT INTO member(workspace_id, account_id, member_id, name, role)

@@ -57,7 +57,7 @@ func NewAuthService(repo ports.AccountRepositorer) *AuthService {
 }
 
 func (s *AuthService) AuthenticateUser(ctx context.Context, authUserId string) (models.Account, error) {
-	account, err := s.repo.GetByAuthUserId(ctx, authUserId)
+	account, err := s.repo.FetchAccountByAuthId(ctx, authUserId)
 
 	if errors.Is(err, repository.ErrQuery) {
 		return account, ErrAccount
@@ -75,7 +75,7 @@ func (s *AuthService) AuthenticateUser(ctx context.Context, authUserId string) (
 }
 
 func (s *AuthService) ValidatePersonalAccessToken(ctx context.Context, token string) (models.Account, error) {
-	account, err := s.repo.GetAccountByToken(ctx, token)
+	account, err := s.repo.LookupAccountByToken(ctx, token)
 
 	if errors.Is(err, repository.ErrQuery) {
 		return account, ErrAccount
@@ -102,7 +102,7 @@ func NewCustomerAuthService(repo ports.CustomerRepositorer) *CustomerAuthService
 }
 
 func (s *CustomerAuthService) ValidateWorkspaceCustomer(ctx context.Context, workspaceId string, customerId string) (models.Customer, error) {
-	customer, err := s.repo.GetByWorkspaceCustomerId(ctx, workspaceId, customerId)
+	customer, err := s.repo.LookupByWorkspaceCustomerId(ctx, workspaceId, customerId)
 
 	if errors.Is(err, repository.ErrQuery) {
 		return customer, ErrCustomer

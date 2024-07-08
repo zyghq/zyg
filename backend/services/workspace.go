@@ -28,7 +28,7 @@ func NewWorkspaceService(
 }
 
 func (s *WorkspaceService) CreateWorkspace(ctx context.Context, a models.Account, w models.Workspace) (models.Workspace, error) {
-	workspace, err := s.workspaceRepo.CreateWorkspaceByAccount(ctx, a, w)
+	workspace, err := s.workspaceRepo.InsertWorkspaceForAccount(ctx, a, w)
 
 	if errors.Is(err, repository.ErrQuery) || errors.Is(err, repository.ErrEmpty) {
 		return workspace, ErrWorkspace
@@ -42,7 +42,7 @@ func (s *WorkspaceService) CreateWorkspace(ctx context.Context, a models.Account
 }
 
 func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, w models.Workspace) (models.Workspace, error) {
-	workspace, err := s.workspaceRepo.UpdateWorkspaceById(ctx, w)
+	workspace, err := s.workspaceRepo.ModifyWorkspaceById(ctx, w)
 	if err != nil {
 		return workspace, err
 	}
@@ -50,7 +50,7 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, w models.Workspa
 }
 
 func (s *WorkspaceService) SetWorkspaceLabel(ctx context.Context, workspaceId string, label models.Label) (models.Label, error) {
-	label, err := s.workspaceRepo.UpdateWorkspaceLabelById(ctx, workspaceId, label)
+	label, err := s.workspaceRepo.AlterWorkspaceLabelById(ctx, workspaceId, label)
 	if err != nil {
 		return label, err
 	}
@@ -59,7 +59,7 @@ func (s *WorkspaceService) SetWorkspaceLabel(ctx context.Context, workspaceId st
 }
 
 func (s *WorkspaceService) GetWorkspace(ctx context.Context, workspaceId string) (models.Workspace, error) {
-	workspace, err := s.workspaceRepo.GetWorkspaceById(ctx, workspaceId)
+	workspace, err := s.workspaceRepo.FetchWorkspaceById(ctx, workspaceId)
 
 	if errors.Is(err, repository.ErrQuery) {
 		return workspace, ErrWorkspace
@@ -78,7 +78,7 @@ func (s *WorkspaceService) GetWorkspace(ctx context.Context, workspaceId string)
 func (s *WorkspaceService) GetMemberWorkspace(
 	ctx context.Context, accountId string, workspaceId string,
 ) (models.Workspace, error) {
-	workspace, err := s.workspaceRepo.GetByAccountWorkspaceId(ctx, accountId, workspaceId)
+	workspace, err := s.workspaceRepo.RetrieveByAccountWorkspaceId(ctx, accountId, workspaceId)
 
 	if errors.Is(err, repository.ErrQuery) {
 		return workspace, ErrWorkspace
@@ -95,7 +95,7 @@ func (s *WorkspaceService) GetMemberWorkspace(
 }
 
 func (s *WorkspaceService) ListMemberWorkspaces(ctx context.Context, accountId string) ([]models.Workspace, error) {
-	workspaces, err := s.workspaceRepo.GetListByMemberAccountId(ctx, accountId)
+	workspaces, err := s.workspaceRepo.FetchWorkspacesByMemberAccountId(ctx, accountId)
 
 	if errors.Is(err, repository.ErrQuery) {
 		return workspaces, ErrWorkspace
@@ -108,7 +108,7 @@ func (s *WorkspaceService) ListMemberWorkspaces(ctx context.Context, accountId s
 }
 
 func (s *WorkspaceService) GetWorkspaceMember(ctx context.Context, accountId string, workspaceId string) (models.Member, error) {
-	member, err := s.memberRepo.GetByAccountWorkspaceId(ctx, accountId, workspaceId)
+	member, err := s.memberRepo.LookupByAccountWorkspaceId(ctx, accountId, workspaceId)
 
 	if errors.Is(err, repository.ErrEmpty) {
 		return member, ErrMemberNotFound
@@ -121,7 +121,7 @@ func (s *WorkspaceService) GetWorkspaceMember(ctx context.Context, accountId str
 }
 
 func (s *WorkspaceService) ListWorkspaceMembers(ctx context.Context, workspaceId string) ([]models.Member, error) {
-	members, err := s.memberRepo.GetListByWorkspaceId(ctx, workspaceId)
+	members, err := s.memberRepo.RetrieveMembersByWorkspaceId(ctx, workspaceId)
 	if err != nil {
 		return members, ErrMember
 	}
@@ -129,7 +129,7 @@ func (s *WorkspaceService) ListWorkspaceMembers(ctx context.Context, workspaceId
 }
 
 func (s *WorkspaceService) GetWorkspaceMemberById(ctx context.Context, workspaceId string, memberId string) (models.Member, error) {
-	member, err := s.memberRepo.GetByWorkspaceMemberId(ctx, workspaceId, memberId)
+	member, err := s.memberRepo.FetchByWorkspaceMemberId(ctx, workspaceId, memberId)
 
 	if errors.Is(err, repository.ErrEmpty) {
 		return member, ErrMemberNotFound
@@ -142,7 +142,7 @@ func (s *WorkspaceService) GetWorkspaceMemberById(ctx context.Context, workspace
 }
 
 func (s *WorkspaceService) ListWorkspaceCustomers(ctx context.Context, workspaceId string) ([]models.Customer, error) {
-	customers, err := s.customerRepo.GetListByWorkspaceId(ctx, workspaceId)
+	customers, err := s.customerRepo.FetchCustomersByWorkspaceId(ctx, workspaceId)
 	if err != nil {
 		return customers, ErrCustomer
 	}
@@ -150,7 +150,7 @@ func (s *WorkspaceService) ListWorkspaceCustomers(ctx context.Context, workspace
 }
 
 func (s *WorkspaceService) CreateLabel(ctx context.Context, label models.Label) (models.Label, bool, error) {
-	label, created, err := s.workspaceRepo.GetOrCreateLabel(ctx, label)
+	label, created, err := s.workspaceRepo.UpsertLabel(ctx, label)
 	if errors.Is(err, repository.ErrQuery) || errors.Is(err, repository.ErrEmpty) {
 		return models.Label{}, false, ErrLabel
 	}
@@ -163,7 +163,7 @@ func (s *WorkspaceService) CreateLabel(ctx context.Context, label models.Label) 
 }
 
 func (s *WorkspaceService) GetWorkspaceLabel(ctx context.Context, workspaceId string, labelId string) (models.Label, error) {
-	label, err := s.workspaceRepo.GetWorkspaceLabelById(ctx, workspaceId, labelId)
+	label, err := s.workspaceRepo.LookupWorkspaceLabelById(ctx, workspaceId, labelId)
 
 	if errors.Is(err, repository.ErrQuery) {
 		return label, ErrLabel
@@ -176,7 +176,7 @@ func (s *WorkspaceService) GetWorkspaceLabel(ctx context.Context, workspaceId st
 }
 
 func (s *WorkspaceService) ListWorkspaceLabels(ctx context.Context, workspaceId string) ([]models.Label, error) {
-	labels, err := s.workspaceRepo.GetLabelListByWorkspaceId(ctx, workspaceId)
+	labels, err := s.workspaceRepo.RetrieveLabelsByWorkspaceId(ctx, workspaceId)
 	if err != nil {
 		return labels, ErrLabel
 	}
@@ -189,7 +189,7 @@ func (s *WorkspaceService) CreateCustomerByExternalId(ctx context.Context, c mod
 		c.Name = models.NullString(&defaultName)
 	}
 
-	customer, created, err := s.customerRepo.GetOrCreateCustomerByExtId(ctx, c)
+	customer, created, err := s.customerRepo.UpsertCustomerByExtId(ctx, c)
 	if err != nil {
 		return customer, created, err
 	}
@@ -202,7 +202,7 @@ func (s *WorkspaceService) CreateWorkspaceCustomerWithEmail(ctx context.Context,
 		c.Name = models.NullString(&defaultName)
 	}
 
-	customer, created, err := s.customerRepo.GetOrCreateCustomerByEmail(ctx, c)
+	customer, created, err := s.customerRepo.UpsertCustomerByEmail(ctx, c)
 	if err != nil {
 		return customer, created, err
 	}
@@ -215,7 +215,7 @@ func (s *WorkspaceService) CreateWorkspaceCustomerWithPhone(ctx context.Context,
 		c.Name = models.NullString(&defaultName)
 	}
 
-	customer, created, err := s.customerRepo.GetOrCreateCustomerByPhone(ctx, c)
+	customer, created, err := s.customerRepo.UpsertCustomerByPhone(ctx, c)
 	if err != nil {
 		return customer, created, err
 	}
@@ -223,7 +223,7 @@ func (s *WorkspaceService) CreateWorkspaceCustomerWithPhone(ctx context.Context,
 }
 
 func (s *WorkspaceService) AddMember(ctx context.Context, workspace models.Workspace, member models.Member) (models.Member, error) {
-	member, err := s.workspaceRepo.AddMemberByWorkspaceId(ctx, workspace.WorkspaceId, member)
+	member, err := s.workspaceRepo.InsertMemberIntoWorkspace(ctx, workspace.WorkspaceId, member)
 	if err != nil {
 		return member, err
 	}

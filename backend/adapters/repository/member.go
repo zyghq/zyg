@@ -9,7 +9,7 @@ import (
 	"github.com/zyghq/zyg/models"
 )
 
-func (m *MemberDB) GetByAccountWorkspaceId(ctx context.Context, accountId string, workspaceId string) (models.Member, error) {
+func (m *MemberDB) LookupByAccountWorkspaceId(ctx context.Context, accountId string, workspaceId string) (models.Member, error) {
 	var member models.Member
 	err := m.db.QueryRow(ctx, `SELECT
 		workspace_id, account_id, member_id, name, role, created_at, updated_at
@@ -33,7 +33,7 @@ func (m *MemberDB) GetByAccountWorkspaceId(ctx context.Context, accountId string
 	return member, nil
 }
 
-func (m *MemberDB) GetListByWorkspaceId(ctx context.Context, workspaceId string) ([]models.Member, error) {
+func (m *MemberDB) RetrieveMembersByWorkspaceId(ctx context.Context, workspaceId string) ([]models.Member, error) {
 	var member models.Member
 	members := make([]models.Member, 0, 100)
 	stmt := `SELECT workspace_id, account_id, member_id, name, role,
@@ -60,7 +60,7 @@ func (m *MemberDB) GetListByWorkspaceId(ctx context.Context, workspaceId string)
 	return members, nil
 }
 
-func (m *MemberDB) GetByWorkspaceMemberId(ctx context.Context, workspaceId string, memberId string) (models.Member, error) {
+func (m *MemberDB) FetchByWorkspaceMemberId(ctx context.Context, workspaceId string, memberId string) (models.Member, error) {
 	var member models.Member
 	err := m.db.QueryRow(ctx, `SELECT
 		workspace_id, account_id, member_id, name, role, created_at, updated_at

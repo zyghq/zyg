@@ -9,7 +9,7 @@ import (
 	"github.com/zyghq/zyg/models"
 )
 
-func (c *CustomerDB) GetByWorkspaceCustomerId(ctx context.Context, workspaceId string, customerId string,
+func (c *CustomerDB) LookupByWorkspaceCustomerId(ctx context.Context, workspaceId string, customerId string,
 ) (models.Customer, error) {
 	var customer models.Customer
 	err := c.db.QueryRow(ctx, `SELECT
@@ -34,7 +34,7 @@ func (c *CustomerDB) GetByWorkspaceCustomerId(ctx context.Context, workspaceId s
 	return customer, nil
 }
 
-func (c *CustomerDB) GetWorkspaceCustomerByExtId(ctx context.Context, workspaceId string, externalId string,
+func (c *CustomerDB) FetchWorkspaceCustomerByExtId(ctx context.Context, workspaceId string, externalId string,
 ) (models.Customer, error) {
 	var customer models.Customer
 	err := c.db.QueryRow(ctx, `SELECT
@@ -59,7 +59,7 @@ func (c *CustomerDB) GetWorkspaceCustomerByExtId(ctx context.Context, workspaceI
 	return customer, nil
 }
 
-func (c *CustomerDB) GetWorkspaceCustomerByEmail(ctx context.Context, workspaceId string, email string,
+func (c *CustomerDB) RetrieveWorkspaceCustomerByEmail(ctx context.Context, workspaceId string, email string,
 ) (models.Customer, error) {
 	var customer models.Customer
 	err := c.db.QueryRow(ctx, `SELECT
@@ -84,7 +84,7 @@ func (c *CustomerDB) GetWorkspaceCustomerByEmail(ctx context.Context, workspaceI
 	return customer, nil
 }
 
-func (c *CustomerDB) GetWorkspaceCustomerByPhone(ctx context.Context, workspaceId string, phone string,
+func (c *CustomerDB) LookupWorkspaceCustomerByPhone(ctx context.Context, workspaceId string, phone string,
 ) (models.Customer, error) {
 	var customer models.Customer
 	err := c.db.QueryRow(ctx, `SELECT
@@ -109,7 +109,7 @@ func (c *CustomerDB) GetWorkspaceCustomerByPhone(ctx context.Context, workspaceI
 	return customer, nil
 }
 
-func (c *CustomerDB) GetOrCreateCustomerByExtId(ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
+func (c *CustomerDB) UpsertCustomerByExtId(ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
 	cId := customer.GenId()
 	st := `WITH ins AS (
 		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name)
@@ -152,7 +152,7 @@ func (c *CustomerDB) GetOrCreateCustomerByExtId(ctx context.Context, customer mo
 	return customer, isCreated, nil
 }
 
-func (c *CustomerDB) GetOrCreateCustomerByEmail(ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
+func (c *CustomerDB) UpsertCustomerByEmail(ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
 	cId := customer.GenId()
 	st := `WITH ins AS (
 		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name)
@@ -195,7 +195,7 @@ func (c *CustomerDB) GetOrCreateCustomerByEmail(ctx context.Context, customer mo
 	return customer, isCreated, nil
 }
 
-func (c *CustomerDB) GetOrCreateCustomerByPhone(ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
+func (c *CustomerDB) UpsertCustomerByPhone(ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
 	cId := customer.GenId()
 	st := `WITH ins AS (
 		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name)
@@ -238,7 +238,7 @@ func (c *CustomerDB) GetOrCreateCustomerByPhone(ctx context.Context, customer mo
 	return customer, isCreated, nil
 }
 
-func (c *CustomerDB) GetListByWorkspaceId(ctx context.Context, workspaceId string) ([]models.Customer, error) {
+func (c *CustomerDB) FetchCustomersByWorkspaceId(ctx context.Context, workspaceId string) ([]models.Customer, error) {
 	var customer models.Customer
 	customers := make([]models.Customer, 0, 100)
 	stmt := `SELECT workspace_id, customer_id, external_id, email, phone, name, created_at, updated_at

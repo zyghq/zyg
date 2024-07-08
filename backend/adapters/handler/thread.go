@@ -1028,7 +1028,7 @@ func (h *ThreadChatHandler) handleSetThChatLabel(w http.ResponseWriter, r *http.
 		AddedBy:      models.LabelAddedBy{}.User(),
 	}
 
-	thChatLabel, isAdded, err := h.ths.AddLabelToThread(ctx, thChatLabel)
+	thChatLabel, isAdded, err := h.ths.AttachLabelToThread(ctx, thChatLabel)
 	if err != nil {
 		slog.Error(
 			"failed to add label to thread chat something went wrong",

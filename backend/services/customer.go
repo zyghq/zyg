@@ -25,7 +25,7 @@ func NewCustomerService(repo ports.CustomerRepositorer) *CustomerService {
 
 func (s *CustomerService) GetCustomerByExternalId(ctx context.Context, workspaceId string, externalId string,
 ) (models.Customer, error) {
-	customer, err := s.repo.GetWorkspaceCustomerByExtId(ctx, workspaceId, externalId)
+	customer, err := s.repo.FetchWorkspaceCustomerByExtId(ctx, workspaceId, externalId)
 
 	if errors.Is(err, repository.ErrEmpty) {
 		return customer, ErrCustomerNotFound
@@ -39,7 +39,7 @@ func (s *CustomerService) GetCustomerByExternalId(ctx context.Context, workspace
 
 func (s *CustomerService) GetCustomerByEmail(ctx context.Context, workspaceId string, email string,
 ) (models.Customer, error) {
-	customer, err := s.repo.GetWorkspaceCustomerByEmail(ctx, workspaceId, email)
+	customer, err := s.repo.RetrieveWorkspaceCustomerByEmail(ctx, workspaceId, email)
 	if err != nil {
 		return customer, err
 	}
@@ -48,7 +48,7 @@ func (s *CustomerService) GetCustomerByEmail(ctx context.Context, workspaceId st
 
 func (s *CustomerService) GetCustomerByPhone(ctx context.Context, workspaceId string, email string,
 ) (models.Customer, error) {
-	customer, err := s.repo.GetWorkspaceCustomerByPhone(ctx, workspaceId, email)
+	customer, err := s.repo.LookupWorkspaceCustomerByPhone(ctx, workspaceId, email)
 	if err != nil {
 		return customer, err
 	}

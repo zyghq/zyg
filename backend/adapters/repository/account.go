@@ -9,7 +9,7 @@ import (
 	"github.com/zyghq/zyg/models"
 )
 
-func (a *AccountDB) GetOrCreateByAuthUserId(ctx context.Context, account models.Account,
+func (a *AccountDB) UpsertAccountByAuthId(ctx context.Context, account models.Account,
 ) (models.Account, bool, error) {
 	var isCreated bool
 
@@ -51,7 +51,7 @@ func (a *AccountDB) GetOrCreateByAuthUserId(ctx context.Context, account models.
 	return account, isCreated, nil
 }
 
-func (a *AccountDB) GetByAuthUserId(ctx context.Context, authUserId string,
+func (a *AccountDB) FetchAccountByAuthId(ctx context.Context, authUserId string,
 ) (models.Account, error) {
 	var account models.Account
 
@@ -75,7 +75,7 @@ func (a *AccountDB) GetByAuthUserId(ctx context.Context, authUserId string,
 	return account, nil
 }
 
-func (a *AccountDB) CreatePersonalAccessToken(ctx context.Context, ap models.AccountPAT,
+func (a *AccountDB) InsertPersonalAccessToken(ctx context.Context, ap models.AccountPAT,
 ) (models.AccountPAT, error) {
 	apId := ap.GenId()
 	token, err := models.GenToken(32, "pt_")
@@ -106,7 +106,7 @@ func (a *AccountDB) CreatePersonalAccessToken(ctx context.Context, ap models.Acc
 	return ap, nil
 }
 
-func (a *AccountDB) GetPatListByAccountId(ctx context.Context, accountId string) ([]models.AccountPAT, error) {
+func (a *AccountDB) RetrievePatsByAccountId(ctx context.Context, accountId string) ([]models.AccountPAT, error) {
 	var pat models.AccountPAT
 	aps := make([]models.AccountPAT, 0, 100)
 
@@ -138,7 +138,7 @@ func (a *AccountDB) GetPatListByAccountId(ctx context.Context, accountId string)
 	return aps, nil
 }
 
-func (a *AccountDB) GetPatByPatId(ctx context.Context, patId string) (models.AccountPAT, error) {
+func (a *AccountDB) FetchPatByPatId(ctx context.Context, patId string) (models.AccountPAT, error) {
 	var pat models.AccountPAT
 
 	stmt := `SELECT
@@ -164,7 +164,7 @@ func (a *AccountDB) GetPatByPatId(ctx context.Context, patId string) (models.Acc
 	return pat, nil
 }
 
-func (a *AccountDB) HardDeletePatByPatId(ctx context.Context, patId string) error {
+func (a *AccountDB) PermanentlyRemovePatByPatId(ctx context.Context, patId string) error {
 	stmt := `DELETE FROM account_pat WHERE pat_id = $1`
 	_, err := a.db.Exec(ctx, stmt, patId)
 	if err != nil {
@@ -174,7 +174,7 @@ func (a *AccountDB) HardDeletePatByPatId(ctx context.Context, patId string) erro
 	return nil
 }
 
-func (a *AccountDB) GetAccountByToken(ctx context.Context, token string) (models.Account, error) {
+func (a *AccountDB) LookupAccountByToken(ctx context.Context, token string) (models.Account, error) {
 	var account models.Account
 
 	stmt := `SELECT

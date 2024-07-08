@@ -12,7 +12,7 @@ import (
 
 // creates and returns a new thread chat for customer
 // a customer must exist to create a thread chat
-func (tc *ThreadChatDB) CreateThreadChat(ctx context.Context, th models.ThreadChat, msg string,
+func (tc *ThreadChatDB) InsertThreadChat(ctx context.Context, th models.ThreadChat, msg string,
 ) (models.ThreadChat, models.ThreadChatMessage, error) {
 	var message models.ThreadChatMessage
 
@@ -139,7 +139,7 @@ func (tc *ThreadChatDB) CreateThreadChat(ctx context.Context, th models.ThreadCh
 
 // update a thread chat
 // @sanchitrk!: fix
-func (tc *ThreadChatDB) UpdateThreadChatById(ctx context.Context, th models.ThreadChat, fields []string,
+func (tc *ThreadChatDB) ModifyThreadChatById(ctx context.Context, th models.ThreadChat, fields []string,
 ) (models.ThreadChat, error) {
 
 	args := make([]interface{}, 0, len(fields))
@@ -214,7 +214,7 @@ func (tc *ThreadChatDB) UpdateThreadChatById(ctx context.Context, th models.Thre
 }
 
 // returns thread chat for the workspace
-func (tc *ThreadChatDB) GetByWorkspaceThreadChatId(ctx context.Context, workspaceId string, threadChatId string,
+func (tc *ThreadChatDB) LookupByWorkspaceThreadChatId(ctx context.Context, workspaceId string, threadChatId string,
 ) (models.ThreadChat, error) {
 	var th models.ThreadChat
 
@@ -262,7 +262,7 @@ func (tc *ThreadChatDB) GetByWorkspaceThreadChatId(ctx context.Context, workspac
 }
 
 // returns list of thread chats with latest message for the customer
-func (tc *ThreadChatDB) GetListByWorkspaceCustomerId(ctx context.Context, workspaceId string, customerId string,
+func (tc *ThreadChatDB) FetchByWorkspaceCustomerId(ctx context.Context, workspaceId string, customerId string,
 ) ([]models.ThreadChatWithMessage, error) {
 	var th models.ThreadChat
 	var message models.ThreadChatMessage
@@ -348,7 +348,7 @@ func (tc *ThreadChatDB) GetListByWorkspaceCustomerId(ctx context.Context, worksp
 
 // assign member to a existing thread chat
 // a member exist in the workspace
-func (tc *ThreadChatDB) SetAssignee(ctx context.Context, threadChatId string, assigneeId string,
+func (tc *ThreadChatDB) UpdateAssignee(ctx context.Context, threadChatId string, assigneeId string,
 ) (models.ThreadChat, error) {
 	var th models.ThreadChat
 	stmt := `WITH ups AS (
@@ -402,7 +402,7 @@ func (tc *ThreadChatDB) SetAssignee(ctx context.Context, threadChatId string, as
 }
 
 // marks a thread chat as replied or un-replied
-func (tc *ThreadChatDB) SetReplied(ctx context.Context, threadChatId string, replied bool,
+func (tc *ThreadChatDB) UpdateRepliedStatus(ctx context.Context, threadChatId string, replied bool,
 ) (models.ThreadChat, error) {
 	var th models.ThreadChat
 	stmt := `WITH ups AS (
@@ -456,7 +456,7 @@ func (tc *ThreadChatDB) SetReplied(ctx context.Context, threadChatId string, rep
 }
 
 // returns list of thread chats for the workspace
-func (tc *ThreadChatDB) GetListByWorkspaceId(
+func (tc *ThreadChatDB) RetrieveByWorkspaceId(
 	ctx context.Context, workspaceId string,
 ) ([]models.ThreadChatWithMessage, error) {
 	var th models.ThreadChat
@@ -536,7 +536,7 @@ func (tc *ThreadChatDB) GetListByWorkspaceId(
 }
 
 // returns a list of thread chats assigned to a member in the workspace
-func (tc *ThreadChatDB) GetMemberAssignedListByWorkspaceId(ctx context.Context, workspaceId string, memberId string,
+func (tc *ThreadChatDB) FetchAssignedThreadsByMember(ctx context.Context, workspaceId string, memberId string,
 ) ([]models.ThreadChatWithMessage, error) {
 	var th models.ThreadChat
 	var message models.ThreadChatMessage
@@ -615,7 +615,7 @@ func (tc *ThreadChatDB) GetMemberAssignedListByWorkspaceId(ctx context.Context, 
 }
 
 // returns a list of unassigned thread chats in the workspace
-func (tc *ThreadChatDB) GetUnassignedListByWorkspaceId(ctx context.Context, workspaceId string,
+func (tc *ThreadChatDB) RetrieveUnassignedThreads(ctx context.Context, workspaceId string,
 ) ([]models.ThreadChatWithMessage, error) {
 	var th models.ThreadChat
 	var message models.ThreadChatMessage
@@ -694,7 +694,7 @@ func (tc *ThreadChatDB) GetUnassignedListByWorkspaceId(ctx context.Context, work
 }
 
 // returns a list of labelled thread chats in the workspace
-func (tc *ThreadChatDB) GetLabelledListByWorkspaceId(ctx context.Context, workspaceId string, labelId string) ([]models.ThreadChatWithMessage, error) {
+func (tc *ThreadChatDB) FetchThreadsByLabel(ctx context.Context, workspaceId string, labelId string) ([]models.ThreadChatWithMessage, error) {
 	var th models.ThreadChat
 	var message models.ThreadChatMessage
 
@@ -774,7 +774,7 @@ func (tc *ThreadChatDB) GetLabelledListByWorkspaceId(ctx context.Context, worksp
 }
 
 // checks if a thread chat exists in the workspace
-func (tc *ThreadChatDB) IsExistByWorkspaceThreadChatId(ctx context.Context, workspaceId string, threadChatId string,
+func (tc *ThreadChatDB) CheckExistenceByWorkspaceThreadChatId(ctx context.Context, workspaceId string, threadChatId string,
 ) (bool, error) {
 	var isExist bool
 	stmt := `SELECT EXISTS(
@@ -792,7 +792,7 @@ func (tc *ThreadChatDB) IsExistByWorkspaceThreadChatId(ctx context.Context, work
 }
 
 // add a label to a thread chat
-func (tc *ThreadChatDB) AddLabelToThread(ctx context.Context, thl models.ThreadChatLabel) (models.ThreadChatLabel, bool, error) {
+func (tc *ThreadChatDB) AttachLabelToThread(ctx context.Context, thl models.ThreadChatLabel) (models.ThreadChatLabel, bool, error) {
 	var IsCreated bool
 	id := thl.GenId()
 
@@ -827,7 +827,7 @@ func (tc *ThreadChatDB) AddLabelToThread(ctx context.Context, thl models.ThreadC
 }
 
 // returns list of labels added to a thread chat
-func (tc *ThreadChatDB) GetLabelListByThreadChatId(ctx context.Context, threadChatId string,
+func (tc *ThreadChatDB) RetrieveLabelsByThreadChatId(ctx context.Context, threadChatId string,
 ) ([]models.ThreadChatLabelled, error) {
 	var l models.ThreadChatLabelled
 	labels := make([]models.ThreadChatLabelled, 0, 100)
@@ -869,7 +869,7 @@ func (tc *ThreadChatDB) GetLabelListByThreadChatId(ctx context.Context, threadCh
 
 // creates a thread chat message for a customer
 // a thread chat message must belong to either a customer or a member not both
-func (tc *ThreadChatDB) CreateCustomerThChatMessage(
+func (tc *ThreadChatDB) InsertCustomerMessage(
 	ctx context.Context, threadChatId string, customerId string,
 	msg string,
 ) (models.ThreadChatMessage, error) {
@@ -918,7 +918,7 @@ func (tc *ThreadChatDB) CreateCustomerThChatMessage(
 
 // creates a thread chat message for a member
 // a thread chat message must belong to either a customer or a member not both
-func (tc *ThreadChatDB) CreateMemberThChatMessage(
+func (tc *ThreadChatDB) InsertMemberMessage(
 	ctx context.Context, threadChatId string, memberId string,
 	msg string,
 ) (models.ThreadChatMessage, error) {
@@ -966,7 +966,7 @@ func (tc *ThreadChatDB) CreateMemberThChatMessage(
 }
 
 // returns list of messages in desc order for the thread chat
-func (tc *ThreadChatDB) GetMessageListByThreadChatId(ctx context.Context, threadChatId string,
+func (tc *ThreadChatDB) FetchMessagesByThreadChatId(ctx context.Context, threadChatId string,
 ) ([]models.ThreadChatMessage, error) {
 	var message models.ThreadChatMessage
 	messages := make([]models.ThreadChatMessage, 0, 100)
@@ -1009,7 +1009,7 @@ func (tc *ThreadChatDB) GetMessageListByThreadChatId(ctx context.Context, thread
 }
 
 // returns stats of thread chats by status in workspace
-func (tc *ThreadChatDB) StatusMetricsByWorkspaceId(ctx context.Context, workspaceId string,
+func (tc *ThreadChatDB) ComputeStatusMetricsByWorkspaceId(ctx context.Context, workspaceId string,
 ) (models.ThreadMetrics, error) {
 	var metrics models.ThreadMetrics
 
@@ -1040,7 +1040,7 @@ func (tc *ThreadChatDB) StatusMetricsByWorkspaceId(ctx context.Context, workspac
 }
 
 // returns stats of thread chats assigned to a member in workspace
-func (tc *ThreadChatDB) MemberAssigneeMetricsByWorkspaceId(ctx context.Context, workspaceId string, memberId string,
+func (tc *ThreadChatDB) CalculateAssigneeMetricsByMember(ctx context.Context, workspaceId string, memberId string,
 ) (models.ThreadAssigneeMetrics, error) {
 	var metrics models.ThreadAssigneeMetrics
 
@@ -1070,7 +1070,7 @@ func (tc *ThreadChatDB) MemberAssigneeMetricsByWorkspaceId(ctx context.Context, 
 }
 
 // returns stats for labelled thread chats with atmost 100 labels
-func (tc *ThreadChatDB) LabelMetricsByWorkspaceId(ctx context.Context, workspaceId string,
+func (tc *ThreadChatDB) ComputeLabelMetricsByWorkspaceId(ctx context.Context, workspaceId string,
 ) ([]models.ThreadLabelMetric, error) {
 	var metric models.ThreadLabelMetric
 	metrics := make([]models.ThreadLabelMetric, 0, 100)
