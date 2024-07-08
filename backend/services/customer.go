@@ -23,16 +23,7 @@ func NewCustomerService(repo ports.CustomerRepositorer) *CustomerService {
 	}
 }
 
-func (s *CustomerService) WorkspaceCustomer(ctx context.Context, workspaceId string, customerId string,
-) (models.Customer, error) {
-	customer, err := s.repo.GetByWorkspaceCustomerId(ctx, workspaceId, customerId)
-	if err != nil {
-		return customer, err
-	}
-	return customer, nil
-}
-
-func (s *CustomerService) WorkspaceCustomerWithExternalId(ctx context.Context, workspaceId string, externalId string,
+func (s *CustomerService) GetCustomerByExternalId(ctx context.Context, workspaceId string, externalId string,
 ) (models.Customer, error) {
 	customer, err := s.repo.GetWorkspaceCustomerByExtId(ctx, workspaceId, externalId)
 
@@ -46,7 +37,7 @@ func (s *CustomerService) WorkspaceCustomerWithExternalId(ctx context.Context, w
 	return customer, nil
 }
 
-func (s *CustomerService) WorkspaceCustomerWithEmail(ctx context.Context, workspaceId string, email string,
+func (s *CustomerService) GetCustomerByEmail(ctx context.Context, workspaceId string, email string,
 ) (models.Customer, error) {
 	customer, err := s.repo.GetWorkspaceCustomerByEmail(ctx, workspaceId, email)
 	if err != nil {
@@ -55,7 +46,7 @@ func (s *CustomerService) WorkspaceCustomerWithEmail(ctx context.Context, worksp
 	return customer, nil
 }
 
-func (s *CustomerService) WorkspaceCustomerWithPhone(ctx context.Context, workspaceId string, email string,
+func (s *CustomerService) GetCustomerByPhone(ctx context.Context, workspaceId string, email string,
 ) (models.Customer, error) {
 	customer, err := s.repo.GetWorkspaceCustomerByPhone(ctx, workspaceId, email)
 	if err != nil {
@@ -64,7 +55,7 @@ func (s *CustomerService) WorkspaceCustomerWithPhone(ctx context.Context, worksp
 	return customer, nil
 }
 
-func (s *CustomerService) IssueCustomerJwt(c models.Customer) (string, error) {
+func (s *CustomerService) GenerateCustomerToken(c models.Customer) (string, error) {
 	var externalId string
 	var email string
 	var phone string

@@ -97,7 +97,7 @@ func (h *CustomerHandler) handleCreateCustomerThChat(
 		CustomerId:   customer.CustomerId,
 		CustomerName: customer.Name,
 	}
-	th, thm, err := h.ths.CreateCustomerThread(ctx, th, message.Message)
+	th, thm, err := h.ths.CreateThreadWithMessage(ctx, th, message.Message)
 	if err != nil {
 		slog.Error(
 			"failed to create thread chat for customer "+
@@ -224,7 +224,7 @@ func (h *CustomerHandler) handleCreateThChatMessage(
 		return
 	}
 
-	thread, err := h.ths.WorkspaceThread(ctx, workspace.WorkspaceId, threadId)
+	thread, err := h.ths.GetThread(ctx, workspace.WorkspaceId, threadId)
 
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		slog.Warn(
@@ -246,7 +246,7 @@ func (h *CustomerHandler) handleCreateThChatMessage(
 		return
 	}
 
-	thm, err := h.ths.CreateCustomerMessage(ctx, thread, customer, message.Message)
+	thm, err := h.ths.AddCustomerMessageToThread(ctx, thread, customer, message.Message)
 
 	if err != nil {
 		slog.Error(
@@ -357,7 +357,7 @@ func (h *CustomerHandler) handleGetThChatMesssages(
 		return
 	}
 
-	thread, err := h.ths.WorkspaceThread(ctx, workspace.WorkspaceId, threadId)
+	thread, err := h.ths.GetThread(ctx, workspace.WorkspaceId, threadId)
 
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		slog.Warn(
@@ -369,7 +369,7 @@ func (h *CustomerHandler) handleGetThChatMesssages(
 		return
 	}
 
-	results, err := h.ths.ThreadChatMessages(ctx, thread.ThreadChatId)
+	results, err := h.ths.ListThreadMessages(ctx, thread.ThreadChatId)
 
 	if err != nil {
 		slog.Error(
@@ -481,7 +481,7 @@ func (h *CustomerHandler) handleGetCustomerThChats(
 		return
 	}
 
-	results, err := h.ths.WorkspaceCustomerThreadChats(ctx, workspace.WorkspaceId, customer.CustomerId)
+	results, err := h.ths.ListCustomerThreads(ctx, workspace.WorkspaceId, customer.CustomerId)
 
 	if errors.Is(err, services.ErrThreadChat) {
 		slog.Error(
@@ -580,6 +580,7 @@ func (h *CustomerHandler) handleGetCustomerThChats(
 }
 
 func NewServer(
+	authService ports.CustomerAuthServicer,
 	workspaceService ports.WorkspaceServicer,
 	customerService ports.CustomerServicer,
 	threadChatService ports.ThreadChatServicer,
@@ -590,15 +591,15 @@ func NewServer(
 	ch := NewCustomerHandler(workspaceService, customerService, threadChatService)
 
 	mux.HandleFunc("GET /{$}", handleGetIndex)
-	mux.Handle("GET /me/{$}", NewEnsureAuth(ch.handleGetCustomer, customerService))
+	mux.Handle("GET /me/{$}", NewEnsureAuth(ch.handleGetCustomer, authService))
 
-	mux.Handle("POST /threads/chat/{$}", NewEnsureAuth(ch.handleCreateCustomerThChat, customerService))
-	mux.Handle("GET /threads/chat/{$}", NewEnsureAuth(ch.handleGetCustomerThChats, customerService))
+	mux.Handle("POST /threads/chat/{$}", NewEnsureAuth(ch.handleCreateCustomerThChat, authService))
+	mux.Handle("GET /threads/chat/{$}", NewEnsureAuth(ch.handleGetCustomerThChats, authService))
 
 	mux.Handle("POST /threads/chat/{threadId}/messages/{$}",
-		NewEnsureAuth(ch.handleCreateThChatMessage, customerService))
+		NewEnsureAuth(ch.handleCreateThChatMessage, authService))
 	mux.Handle("GET /threads/chat/{threadId}/messages/{$}",
-		NewEnsureAuth(ch.handleGetThChatMesssages, customerService))
+		NewEnsureAuth(ch.handleGetThChatMesssages, authService))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},

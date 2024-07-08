@@ -552,7 +552,7 @@ func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *ht
 		slog.Info("based on identifiers check for Customer in Workspace", slog.String("workspaceId", workspaceId))
 		if customer.ExternalId.Valid {
 			slog.Info("get customer by externalId")
-			customer, err = h.cs.WorkspaceCustomerWithExternalId(ctx, workspace.WorkspaceId, customer.ExternalId.String)
+			customer, err = h.cs.GetCustomerByExternalId(ctx, workspace.WorkspaceId, customer.ExternalId.String)
 			if errors.Is(err, services.ErrCustomerNotFound) {
 				slog.Warn(
 					"Customer not found by externalId" +
@@ -572,7 +572,7 @@ func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *ht
 			}
 		} else if customer.Email.Valid {
 			slog.Info("get customer by email")
-			customer, err = h.cs.WorkspaceCustomerWithEmail(ctx, workspace.WorkspaceId, customer.Email.String)
+			customer, err = h.cs.GetCustomerByEmail(ctx, workspace.WorkspaceId, customer.Email.String)
 
 			if errors.Is(err, services.ErrCustomerNotFound) {
 				slog.Warn(
@@ -593,7 +593,7 @@ func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *ht
 			}
 		} else if customer.Phone.Valid {
 			slog.Info("get customer by phone")
-			customer, err = h.cs.WorkspaceCustomerWithPhone(ctx, workspace.WorkspaceId, customer.Phone.String)
+			customer, err = h.cs.GetCustomerByPhone(ctx, workspace.WorkspaceId, customer.Phone.String)
 
 			if errors.Is(err, services.ErrCustomerNotFound) {
 				slog.Warn(
@@ -624,7 +624,7 @@ func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *ht
 		slog.Bool("isCreated", isCreated),
 	)
 	slog.Info("issue Customer JWT token")
-	jwt, err := h.cs.IssueCustomerJwt(customer)
+	jwt, err := h.cs.GenerateCustomerToken(customer)
 	if err != nil {
 		slog.Error("failed to make jwt token with error", slog.Any("error", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

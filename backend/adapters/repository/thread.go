@@ -792,7 +792,7 @@ func (tc *ThreadChatDB) IsExistByWorkspaceThreadChatId(ctx context.Context, work
 }
 
 // add a label to a thread chat
-func (tc *ThreadChatDB) AddLabel(ctx context.Context, thl models.ThreadChatLabel) (models.ThreadChatLabel, bool, error) {
+func (tc *ThreadChatDB) AddLabelToThread(ctx context.Context, thl models.ThreadChatLabel) (models.ThreadChatLabel, bool, error) {
 	var IsCreated bool
 	id := thl.GenId()
 

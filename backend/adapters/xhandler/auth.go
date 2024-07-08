@@ -51,7 +51,7 @@ func AuthenticateCustomer(
 
 		slog.Info("authenticated customer with customer id", slog.String("customerId", sub))
 
-		customer, err = authz.WorkspaceCustomer(ctx, cc.WorkspaceId, sub)
+		customer, err = authz.ValidateWorkspaceCustomer(ctx, cc.WorkspaceId, sub)
 
 		if errors.Is(err, services.ErrCustomerNotFound) {
 			slog.Warn(

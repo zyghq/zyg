@@ -52,7 +52,7 @@ func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.
 		return
 	}
 
-	threads, err := h.ths.WorkspaceThreads(ctx, workspace.WorkspaceId)
+	threads, err := h.ths.ListWorkspaceThreads(ctx, workspace.WorkspaceId)
 	if err != nil {
 		slog.Error(
 			"failed to get list of thread chats for workspace "+
@@ -155,7 +155,7 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 		return
 	}
 
-	thread, err := h.ths.WorkspaceThread(ctx, workspaceId, threadId)
+	thread, err := h.ths.GetThread(ctx, workspaceId, threadId)
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		slog.Warn(
 			"no thread chat found",
@@ -252,7 +252,7 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 		fields = append(fields, "assignee")
 	}
 
-	thread, err = h.ths.UpdateThreadChat(ctx, thread, fields)
+	thread, err = h.ths.UpdateThread(ctx, thread, fields)
 	if err != nil {
 		slog.Error(
 			"failed to update thread chat "+
@@ -344,7 +344,7 @@ func (h *ThreadChatHandler) handleGetMyThreadChats(w http.ResponseWriter, r *htt
 
 	}
 
-	threads, err := h.ths.WorkspaceMemberAssignedThreadList(ctx, workspace.WorkspaceId, member.MemberId)
+	threads, err := h.ths.ListMemberAssignedThreads(ctx, workspace.WorkspaceId, member.MemberId)
 	if err != nil {
 		slog.Error(
 			"failed to get list of thread chats for workspace "+
@@ -457,7 +457,7 @@ func (h *ThreadChatHandler) handleGetUnassignedThreadChats(w http.ResponseWriter
 		return
 	}
 
-	threads, err := h.ths.WorkspaceUnassignedThreadList(ctx, workspace.WorkspaceId)
+	threads, err := h.ths.ListUnassignedThreads(ctx, workspace.WorkspaceId)
 	if err != nil {
 		slog.Error(
 			"failed to get list of thread chats for workspace "+
@@ -591,7 +591,7 @@ func (h *ThreadChatHandler) handleGetLabelledThreadChats(w http.ResponseWriter, 
 		return
 	}
 
-	threads, err := h.ths.WorkspaceLabelledThreadList(ctx, workspace.WorkspaceId, label.LabelId)
+	threads, err := h.ths.ListLabelledThreads(ctx, workspace.WorkspaceId, label.LabelId)
 	if err != nil {
 		slog.Error(
 			"failed to get list of thread chats for workspace "+
@@ -720,7 +720,7 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 	}
 
 	// check thread chat against workspace
-	thread, err := h.ths.WorkspaceThread(ctx, workspaceId, threadId)
+	thread, err := h.ths.GetThread(ctx, workspaceId, threadId)
 
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		slog.Warn(
@@ -743,7 +743,7 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 	}
 
 	// create thread chat message
-	thm, err := h.ths.CreateMemberMessage(ctx, thread, &member, message.Message)
+	thm, err := h.ths.AddMemberMessageToThread(ctx, thread, &member, message.Message)
 
 	if err != nil {
 		slog.Error(
@@ -767,7 +767,7 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 	if !thread.AssigneeId.Valid {
 		slog.Info("thread chat not yet assigned", "threadChatId", thread.ThreadChatId, "memberId", member.MemberId)
 		t := thread // make a temp copy before assigning
-		thread, err = h.ths.AssignMember(ctx, thread.ThreadChatId, member.MemberId)
+		thread, err = h.ths.AssignMemberToThread(ctx, thread.ThreadChatId, member.MemberId)
 		// if error when assigning - revert back
 		if err != nil {
 			slog.Error("(silent) failed to assign member to Thread Chat", slog.Any("error", err))
@@ -778,7 +778,7 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 	if !thread.Replied {
 		slog.Info("thread chat not yet replied", "threadChatId", thread.ThreadChatId, "memberId", member.MemberId)
 		t := thread // make a temp copy before marking replied
-		thread, err = h.ths.MarkReplied(ctx, thread.ThreadChatId, true)
+		thread, err = h.ths.SetThreadReplyStatus(ctx, thread.ThreadChatId, true)
 		if err != nil {
 			slog.Error("(silent) failed to mark thread chat as replied", slog.Any("error", err))
 			thread = t
@@ -862,7 +862,7 @@ func (h *ThreadChatHandler) handleGetThChatMesssages(w http.ResponseWriter, r *h
 
 	ctx := r.Context()
 
-	thread, err := h.ths.WorkspaceThread(ctx, workspaceId, threadId)
+	thread, err := h.ths.GetThread(ctx, workspaceId, threadId)
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		slog.Warn(
 			"no thread chat found",
@@ -884,7 +884,7 @@ func (h *ThreadChatHandler) handleGetThChatMesssages(w http.ResponseWriter, r *h
 		return
 	}
 
-	messages, err := h.ths.ThreadChatMessages(ctx, thread.ThreadChatId)
+	messages, err := h.ths.ListThreadMessages(ctx, thread.ThreadChatId)
 	if err != nil {
 		slog.Error(
 			"failed to get list of thread chat messages for thread chat "+
@@ -986,7 +986,7 @@ func (h *ThreadChatHandler) handleSetThChatLabel(w http.ResponseWriter, r *http.
 	}
 
 	ctx := r.Context()
-	isThExist, err := h.ths.ExistInWorkspace(ctx, workspaceId, threadId)
+	isThExist, err := h.ths.ThreadExistsInWorkspace(ctx, workspaceId, threadId)
 
 	if err != nil {
 		slog.Error(
@@ -1028,7 +1028,7 @@ func (h *ThreadChatHandler) handleSetThChatLabel(w http.ResponseWriter, r *http.
 		AddedBy:      models.LabelAddedBy{}.User(),
 	}
 
-	thChatLabel, isAdded, err := h.ths.AddLabel(ctx, thChatLabel)
+	thChatLabel, isAdded, err := h.ths.AddLabelToThread(ctx, thChatLabel)
 	if err != nil {
 		slog.Error(
 			"failed to add label to thread chat something went wrong",
@@ -1088,7 +1088,7 @@ func (h *ThreadChatHandler) handleGetThreadChatLabels(w http.ResponseWriter, r *
 
 	ctx := r.Context()
 
-	thExist, err := h.ths.ExistInWorkspace(ctx, workspaceId, threadId)
+	thExist, err := h.ths.ThreadExistsInWorkspace(ctx, workspaceId, threadId)
 	if err != nil {
 		slog.Error(
 			"failed to check if thread chat exists in workspace "+
@@ -1110,7 +1110,7 @@ func (h *ThreadChatHandler) handleGetThreadChatLabels(w http.ResponseWriter, r *
 
 	resp := make([]SetThChatLabelRespPayload, 0, 100)
 
-	labels, err := h.ths.ThreadLabels(ctx, threadId)
+	labels, err := h.ths.ListThreadLabels(ctx, threadId)
 	if err != nil {
 		slog.Error(
 			"failed to get list of labels for thread chat "+

@@ -90,3 +90,30 @@ func (s *AuthService) ValidatePersonalAccessToken(ctx context.Context, token str
 	}
 	return account, nil
 }
+
+type CustomerAuthService struct {
+	repo ports.CustomerRepositorer
+}
+
+func NewCustomerAuthService(repo ports.CustomerRepositorer) *CustomerAuthService {
+	return &CustomerAuthService{
+		repo: repo,
+	}
+}
+
+func (s *CustomerAuthService) ValidateWorkspaceCustomer(ctx context.Context, workspaceId string, customerId string) (models.Customer, error) {
+	customer, err := s.repo.GetByWorkspaceCustomerId(ctx, workspaceId, customerId)
+
+	if errors.Is(err, repository.ErrQuery) {
+		return customer, ErrCustomer
+	}
+
+	if errors.Is(err, repository.ErrEmpty) {
+		return customer, ErrCustomerNotFound
+	}
+
+	if err != nil {
+		return customer, err
+	}
+	return customer, nil
+}

@@ -20,7 +20,7 @@ type AuthServicer interface {
 }
 
 type CustomerAuthServicer interface {
-	WorkspaceCustomer(ctx context.Context, workspaceId string, customerId string) (models.Customer, error)
+	ValidateWorkspaceCustomer(ctx context.Context, workspaceId string, customerId string) (models.Customer, error)
 }
 
 type WorkspaceServicer interface {
@@ -33,7 +33,7 @@ type WorkspaceServicer interface {
 	CreateLabel(ctx context.Context, label models.Label) (models.Label, bool, error)
 	GetWorkspaceLabel(ctx context.Context, workspaceId string, labelId string) (models.Label, error)
 	ListWorkspaceLabels(ctx context.Context, workspaceId string) ([]models.Label, error)
-	GetWorkspaceMember(ctx context.Context, accountId string, workspaceId string) (models.Member, error) // TODO: perhaps rename to WorkspaceAccountMember?
+	GetWorkspaceMember(ctx context.Context, accountId string, workspaceId string) (models.Member, error)
 	AddMember(ctx context.Context, workspace models.Workspace, member models.Member) (models.Member, error)
 	ListWorkspaceMembers(ctx context.Context, workspaceId string) ([]models.Member, error)
 	GetWorkspaceMemberById(ctx context.Context, workspaceId string, memberId string) (models.Member, error)
@@ -44,30 +44,29 @@ type WorkspaceServicer interface {
 }
 
 type CustomerServicer interface {
-	WorkspaceCustomer(ctx context.Context, workspaceId string, customerId string) (models.Customer, error)
-	WorkspaceCustomerWithExternalId(ctx context.Context, workspaceId string, externalId string) (models.Customer, error)
-	WorkspaceCustomerWithEmail(ctx context.Context, workspaceId string, email string) (models.Customer, error)
-	WorkspaceCustomerWithPhone(ctx context.Context, workspaceId string, phone string) (models.Customer, error)
-	IssueCustomerJwt(c models.Customer) (string, error)
+	GetCustomerByExternalId(ctx context.Context, workspaceId string, externalId string) (models.Customer, error)
+	GetCustomerByEmail(ctx context.Context, workspaceId string, email string) (models.Customer, error)
+	GetCustomerByPhone(ctx context.Context, workspaceId string, phone string) (models.Customer, error)
+	GenerateCustomerToken(c models.Customer) (string, error)
 }
 
 type ThreadChatServicer interface {
-	CreateCustomerThread(ctx context.Context, th models.ThreadChat, msg string) (models.ThreadChat, models.ThreadChatMessage, error)
-	WorkspaceThread(ctx context.Context, workspaceId string, threadChatId string) (models.ThreadChat, error)
-	UpdateThreadChat(ctx context.Context, th models.ThreadChat, fields []string) (models.ThreadChat, error)
-	WorkspaceCustomerThreadChats(ctx context.Context, workspaceId string, customerId string) ([]models.ThreadChatWithMessage, error)
-	AssignMember(ctx context.Context, threadChatId string, assigneeId string) (models.ThreadChat, error)
-	MarkReplied(ctx context.Context, threadChatId string, replied bool) (models.ThreadChat, error)
-	WorkspaceThreads(ctx context.Context, workspaceId string) ([]models.ThreadChatWithMessage, error)
-	WorkspaceMemberAssignedThreadList(ctx context.Context, workspaceId string, memberId string) ([]models.ThreadChatWithMessage, error)
-	WorkspaceUnassignedThreadList(ctx context.Context, workspaceId string) ([]models.ThreadChatWithMessage, error)
-	WorkspaceLabelledThreadList(ctx context.Context, workspaceId string, labelId string) ([]models.ThreadChatWithMessage, error)
-	ExistInWorkspace(ctx context.Context, workspaceId string, threadChatId string) (bool, error)
-	AddLabel(ctx context.Context, thl models.ThreadChatLabel) (models.ThreadChatLabel, bool, error)
-	ThreadLabels(ctx context.Context, threadChatId string) ([]models.ThreadChatLabelled, error)
-	CreateCustomerMessage(ctx context.Context, th models.ThreadChat, c *models.Customer, msg string) (models.ThreadChatMessage, error)
-	CreateMemberMessage(ctx context.Context, th models.ThreadChat, m *models.Member, msg string) (models.ThreadChatMessage, error)
-	ThreadChatMessages(ctx context.Context, threadChatId string) ([]models.ThreadChatMessage, error)
+	CreateThreadWithMessage(ctx context.Context, th models.ThreadChat, msg string) (models.ThreadChat, models.ThreadChatMessage, error)
+	GetThread(ctx context.Context, workspaceId string, threadChatId string) (models.ThreadChat, error)
+	UpdateThread(ctx context.Context, th models.ThreadChat, fields []string) (models.ThreadChat, error)
+	ListCustomerThreads(ctx context.Context, workspaceId string, customerId string) ([]models.ThreadChatWithMessage, error)
+	AssignMemberToThread(ctx context.Context, threadChatId string, assigneeId string) (models.ThreadChat, error)
+	SetThreadReplyStatus(ctx context.Context, threadChatId string, replied bool) (models.ThreadChat, error)
+	ListWorkspaceThreads(ctx context.Context, workspaceId string) ([]models.ThreadChatWithMessage, error)
+	ListMemberAssignedThreads(ctx context.Context, workspaceId string, memberId string) ([]models.ThreadChatWithMessage, error)
+	ListUnassignedThreads(ctx context.Context, workspaceId string) ([]models.ThreadChatWithMessage, error)
+	ListLabelledThreads(ctx context.Context, workspaceId string, labelId string) ([]models.ThreadChatWithMessage, error)
+	ThreadExistsInWorkspace(ctx context.Context, workspaceId string, threadChatId string) (bool, error)
+	AddLabelToThread(ctx context.Context, thl models.ThreadChatLabel) (models.ThreadChatLabel, bool, error)
+	ListThreadLabels(ctx context.Context, threadChatId string) ([]models.ThreadChatLabelled, error)
+	AddCustomerMessageToThread(ctx context.Context, th models.ThreadChat, c *models.Customer, msg string) (models.ThreadChatMessage, error)
+	AddMemberMessageToThread(ctx context.Context, th models.ThreadChat, m *models.Member, msg string) (models.ThreadChatMessage, error)
+	ListThreadMessages(ctx context.Context, threadChatId string) ([]models.ThreadChatMessage, error)
 	GenerateMemberThreadMetrics(ctx context.Context, workspaceId string, memberId string) (models.ThreadMemberMetrics, error)
 }
 
@@ -123,7 +122,7 @@ type ThreadChatRepositorer interface {
 	GetUnassignedListByWorkspaceId(ctx context.Context, workspaceId string) ([]models.ThreadChatWithMessage, error)
 	GetLabelledListByWorkspaceId(ctx context.Context, worskapceId string, labelId string) ([]models.ThreadChatWithMessage, error)
 	IsExistByWorkspaceThreadChatId(ctx context.Context, workspaceId string, threadChatId string) (bool, error)
-	AddLabel(ctx context.Context, thl models.ThreadChatLabel) (models.ThreadChatLabel, bool, error)
+	AddLabelToThread(ctx context.Context, thl models.ThreadChatLabel) (models.ThreadChatLabel, bool, error)
 	GetLabelListByThreadChatId(ctx context.Context, threadChatId string) ([]models.ThreadChatLabelled, error)
 	CreateCustomerThChatMessage(ctx context.Context, threadChatId string, customerId string, msg string) (models.ThreadChatMessage, error)
 	CreateMemberThChatMessage(ctx context.Context, threadChatId string, memberId string, msg string) (models.ThreadChatMessage, error)
