@@ -320,6 +320,8 @@ type Customer struct {
 	Email       sql.NullString
 	Phone       sql.NullString
 	Name        sql.NullString
+	AnonId      string
+	IsVerified  bool
 	UpdatedAt   time.Time
 	CreatedAt   time.Time
 }
@@ -350,6 +352,8 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 		Email       *string `json:"email"`
 		Phone       *string `json:"phone"`
 		Name        *string `json:"name"`
+		AnonId      string  `json:"anonId"`
+		IsVerified  bool    `json:"isVerified"`
 		CreatedAt   string  `json:"createdAt"`
 		UpdatedAt   string  `json:"updatedAt"`
 	}{
@@ -359,6 +363,8 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 		Email:       email,
 		Phone:       phone,
 		Name:        name,
+		AnonId:      c.AnonId,
+		IsVerified:  c.IsVerified,
 		CreatedAt:   c.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:   c.UpdatedAt.Format(time.RFC3339),
 	}

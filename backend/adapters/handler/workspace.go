@@ -475,6 +475,7 @@ func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *ht
 		Email:       email,
 		Phone:       phone,
 		Name:        name,
+		IsVerified:  true,
 	}
 
 	var isCreated bool

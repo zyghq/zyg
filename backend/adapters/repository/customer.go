@@ -13,10 +13,13 @@ func (c *CustomerDB) LookupByWorkspaceCustomerId(ctx context.Context, workspaceI
 ) (models.Customer, error) {
 	var customer models.Customer
 	err := c.db.QueryRow(ctx, `SELECT
-		workspace_id, customer_id, external_id, email, phone, name, created_at, updated_at
+		workspace_id, customer_id, external_id, email, phone,
+		name, anonymous_id, is_verified,
+		created_at, updated_at
 		FROM customer WHERE workspace_id = $1 AND customer_id = $2`, workspaceId, customerId).Scan(
 		&customer.WorkspaceId, &customer.CustomerId,
-		&customer.ExternalId, &customer.Email, &customer.Phone, &customer.Name,
+		&customer.ExternalId, &customer.Email, &customer.Phone,
+		&customer.Name, &customer.AnonId, &customer.IsVerified,
 		&customer.CreatedAt, &customer.UpdatedAt,
 	)
 
@@ -38,10 +41,13 @@ func (c *CustomerDB) FetchWorkspaceCustomerByExtId(ctx context.Context, workspac
 ) (models.Customer, error) {
 	var customer models.Customer
 	err := c.db.QueryRow(ctx, `SELECT
-		workspace_id, customer_id, external_id, email, phone, name, created_at, updated_at
+		workspace_id, customer_id, external_id, email, phone,
+		name, anonymous_id, is_verified,
+		created_at, updated_at
 		FROM customer WHERE workspace_id = $1 AND external_id = $2`, workspaceId, externalId).Scan(
 		&customer.WorkspaceId, &customer.CustomerId,
-		&customer.ExternalId, &customer.Email, &customer.Phone, &customer.Name,
+		&customer.ExternalId, &customer.Email, &customer.Phone,
+		&customer.Name, &customer.AnonId, &customer.IsVerified,
 		&customer.CreatedAt, &customer.UpdatedAt,
 	)
 
@@ -63,10 +69,13 @@ func (c *CustomerDB) RetrieveWorkspaceCustomerByEmail(ctx context.Context, works
 ) (models.Customer, error) {
 	var customer models.Customer
 	err := c.db.QueryRow(ctx, `SELECT
-		workspace_id, customer_id, external_id, email, phone, name, created_at, updated_at
+		workspace_id, customer_id, external_id, email, phone,
+		name, anonymous_id, is_verified,
+		created_at, updated_at
 		FROM customer WHERE workspace_id = $1 AND email = $2`, workspaceId, email).Scan(
 		&customer.WorkspaceId, &customer.CustomerId,
-		&customer.ExternalId, &customer.Email, &customer.Phone, &customer.Name,
+		&customer.ExternalId, &customer.Email, &customer.Phone,
+		&customer.Name, &customer.AnonId, &customer.IsVerified,
 		&customer.CreatedAt, &customer.UpdatedAt,
 	)
 
@@ -88,10 +97,13 @@ func (c *CustomerDB) LookupWorkspaceCustomerByPhone(ctx context.Context, workspa
 ) (models.Customer, error) {
 	var customer models.Customer
 	err := c.db.QueryRow(ctx, `SELECT
-		workspace_id, customer_id, external_id, email, phone, name, created_at, updated_at
+		workspace_id, customer_id, external_id, email, phone,
+		name, anonymous_id, is_verified,
+		created_at, updated_at
 		FROM customer WHERE workspace_id = $1 AND phone = $2`, workspaceId, phone).Scan(
 		&customer.WorkspaceId, &customer.CustomerId,
-		&customer.ExternalId, &customer.Email, &customer.Phone, &customer.Name,
+		&customer.ExternalId, &customer.Email, &customer.Phone,
+		&customer.Name, &customer.AnonId, &customer.IsVerified,
 		&customer.CreatedAt, &customer.UpdatedAt,
 	)
 
@@ -112,28 +124,30 @@ func (c *CustomerDB) LookupWorkspaceCustomerByPhone(ctx context.Context, workspa
 func (c *CustomerDB) UpsertCustomerByExtId(ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
 	cId := customer.GenId()
 	st := `WITH ins AS (
-		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name, is_verified)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		ON CONFLICT (workspace_id, external_id) DO NOTHING
 		RETURNING
 		customer_id, workspace_id,
-		external_id, email, phone, name,
-		created_at, updated_at,
+		external_id, email, phone, name, anonymous_id,
+		is_verified, created_at, updated_at,
 		TRUE AS is_created
 	)
 	SELECT * FROM ins
 	UNION ALL
 	SELECT customer_id, workspace_id, external_id, email, phone, name,
-	created_at, updated_at, FALSE AS is_created FROM customer
+	anonymous_id, is_verified, created_at, updated_at, FALSE AS is_created FROM customer
 	WHERE (workspace_id, external_id) = ($2, $3) AND NOT EXISTS (SELECT 1 FROM ins)`
 
 	var isCreated bool
 	err := c.db.QueryRow(
-		ctx, st, cId, customer.WorkspaceId, customer.ExternalId, customer.Email, customer.Phone, customer.Name,
+		ctx, st, cId, customer.WorkspaceId, customer.ExternalId, customer.Email, customer.Phone,
+		customer.Name, customer.IsVerified,
 	).Scan(
 		&customer.CustomerId, &customer.WorkspaceId,
 		&customer.ExternalId, &customer.Email,
-		&customer.Phone, &customer.Name,
+		&customer.Phone, &customer.Name, &customer.AnonId,
+		&customer.IsVerified,
 		&customer.CreatedAt,
 		&customer.UpdatedAt, &isCreated,
 	)
@@ -155,28 +169,30 @@ func (c *CustomerDB) UpsertCustomerByExtId(ctx context.Context, customer models.
 func (c *CustomerDB) UpsertCustomerByEmail(ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
 	cId := customer.GenId()
 	st := `WITH ins AS (
-		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name, is_verified)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		ON CONFLICT (workspace_id, email) DO NOTHING
 		RETURNING
 		customer_id, workspace_id,
-		external_id, email, phone, name,
-		created_at, updated_at,
+		external_id, email, phone, name, anonymous_id,
+		is_verified, created_at, updated_at,
 		TRUE AS is_created
 	)
 	SELECT * FROM ins
 	UNION ALL
 	SELECT customer_id, workspace_id, external_id, email, phone, name,
-	created_at, updated_at, FALSE AS is_created FROM customer
+	anonymous_id, is_verified, created_at, updated_at, FALSE AS is_created FROM customer
 	WHERE (workspace_id, email) = ($2, $4) AND NOT EXISTS (SELECT 1 FROM ins)`
 
 	var isCreated bool
 	err := c.db.QueryRow(
-		ctx, st, cId, customer.WorkspaceId, customer.ExternalId, customer.Email, customer.Phone, customer.Name,
+		ctx, st, cId, customer.WorkspaceId, customer.ExternalId, customer.Email, customer.Phone,
+		customer.Name, customer.IsVerified,
 	).Scan(
 		&customer.CustomerId, &customer.WorkspaceId,
 		&customer.ExternalId, &customer.Email,
-		&customer.Phone, &customer.Name,
+		&customer.Phone, &customer.Name, &customer.AnonId,
+		&customer.IsVerified,
 		&customer.CreatedAt,
 		&customer.UpdatedAt, &isCreated,
 	)
@@ -198,28 +214,30 @@ func (c *CustomerDB) UpsertCustomerByEmail(ctx context.Context, customer models.
 func (c *CustomerDB) UpsertCustomerByPhone(ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
 	cId := customer.GenId()
 	st := `WITH ins AS (
-		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name, is_verified)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		ON CONFLICT (workspace_id, phone) DO NOTHING
 		RETURNING
 		customer_id, workspace_id,
-		external_id, email, phone, name,
-		created_at, updated_at,
+		external_id, email, phone, name, anonymous_id,
+		is_verified, created_at, updated_at,
 		TRUE AS is_created
 	)
 	SELECT * FROM ins
 	UNION ALL
 	SELECT customer_id, workspace_id, external_id, email, phone, name,
-	created_at, updated_at, FALSE AS is_created FROM customer
+	anonymous_id, is_verified, created_at, updated_at, FALSE AS is_created FROM customer
 	WHERE (workspace_id, phone) = ($2, $5) AND NOT EXISTS (SELECT 1 FROM ins)`
 
 	var isCreated bool
 	err := c.db.QueryRow(
-		ctx, st, cId, customer.WorkspaceId, customer.ExternalId, customer.Email, customer.Phone, customer.Name,
+		ctx, st, cId, customer.WorkspaceId, customer.ExternalId, customer.Email, customer.Phone,
+		customer.Name, customer.IsVerified,
 	).Scan(
 		&customer.CustomerId, &customer.WorkspaceId,
 		&customer.ExternalId, &customer.Email,
-		&customer.Phone, &customer.Name,
+		&customer.Phone, &customer.Name, &customer.AnonId,
+		&customer.IsVerified,
 		&customer.CreatedAt,
 		&customer.UpdatedAt, &isCreated,
 	)
@@ -241,7 +259,9 @@ func (c *CustomerDB) UpsertCustomerByPhone(ctx context.Context, customer models.
 func (c *CustomerDB) FetchCustomersByWorkspaceId(ctx context.Context, workspaceId string) ([]models.Customer, error) {
 	var customer models.Customer
 	customers := make([]models.Customer, 0, 100)
-	stmt := `SELECT workspace_id, customer_id, external_id, email, phone, name, created_at, updated_at
+	stmt := `SELECT workspace_id, customer_id, external_id, email, phone,
+		name, anonymous_id, is_verified,
+		created_at, updated_at
 		FROM customer WHERE workspace_id = $1
 		ORDER BY created_at DESC LIMIT 100`
 
@@ -251,7 +271,8 @@ func (c *CustomerDB) FetchCustomersByWorkspaceId(ctx context.Context, workspaceI
 
 	_, err := pgx.ForEachRow(rows, []any{
 		&customer.WorkspaceId, &customer.CustomerId,
-		&customer.ExternalId, &customer.Email, &customer.Phone, &customer.Name,
+		&customer.ExternalId, &customer.Email, &customer.Phone,
+		&customer.Name, &customer.AnonId, &customer.IsVerified,
 		&customer.CreatedAt, &customer.UpdatedAt,
 	}, func() error {
 		customers = append(customers, customer)
