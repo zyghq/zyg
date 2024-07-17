@@ -524,3 +524,16 @@ type ThreadMemberMetrics struct {
 	ThreadAssigneeMetrics
 	ThreadLabelMetrics []ThreadLabelMetric
 }
+
+type Widget struct {
+	WorkspaceId   string
+	WidgetId      string
+	Name          string
+	Configuration map[string]interface{}
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+}
+
+func (w Widget) GenId() string {
+	return "wg_" + xid.New().String()
+}

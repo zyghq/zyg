@@ -329,3 +329,28 @@ func (w *WorkspaceDB) InsertMemberIntoWorkspace(ctx context.Context, workspaceId
 
 	return m, nil
 }
+
+func (w *WorkspaceDB) InsertWidgetIntoWorkspace(ctx context.Context, workspaceId string, widget models.Widget) (models.Widget, error) {
+	widgetId := widget.GenId()
+	err := w.db.QueryRow(ctx, `INSERT INTO widget(workspace_id, widget_id, name, configuration)
+		VALUES ($1, $2, $3, $4)
+		RETURNING
+		workspace_id, widget_id, name, configuration, created_at, updated_at`, workspaceId, widgetId, widget.Name, widget.Configuration).Scan(
+		&widget.WorkspaceId, &widget.WidgetId,
+		&widget.Name, &widget.Configuration,
+		&widget.CreatedAt, &widget.UpdatedAt,
+	)
+
+	// check if the query returned no rows
+	if errors.Is(err, pgx.ErrNoRows) {
+		return models.Widget{}, ErrEmpty
+	}
+
+	// check if the query returned an error
+	if err != nil {
+		slog.Error("failed to insert query", "error", err)
+		return models.Widget{}, ErrQuery
+	}
+
+	return widget, nil
+}

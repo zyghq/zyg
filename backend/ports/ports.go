@@ -41,6 +41,7 @@ type WorkspaceServicer interface {
 	CreateCustomerByExternalId(ctx context.Context, c models.Customer) (models.Customer, bool, error)
 	CreateWorkspaceCustomerWithEmail(ctx context.Context, c models.Customer) (models.Customer, bool, error)
 	CreateWorkspaceCustomerWithPhone(ctx context.Context, c models.Customer) (models.Customer, bool, error)
+	CreateWidget(ctx context.Context, workspaceId string, widget models.Widget) (models.Widget, error)
 }
 
 type CustomerServicer interface {
@@ -48,6 +49,9 @@ type CustomerServicer interface {
 	GetCustomerByEmail(ctx context.Context, workspaceId string, email string) (models.Customer, error)
 	GetCustomerByPhone(ctx context.Context, workspaceId string, phone string) (models.Customer, error)
 	GenerateCustomerToken(c models.Customer) (string, error)
+	VerifyExternalId(hash string, externalId string) bool
+	VerifyEmail(hash string, email string) bool
+	VerifyPhone(hash string, phone string) bool
 }
 
 type ThreadChatServicer interface {
@@ -91,6 +95,7 @@ type WorkspaceRepositorer interface {
 	LookupWorkspaceLabelById(ctx context.Context, workspaceId string, labelId string) (models.Label, error)
 	RetrieveLabelsByWorkspaceId(ctx context.Context, workspaceId string) ([]models.Label, error)
 	InsertMemberIntoWorkspace(ctx context.Context, workspaceId string, member models.Member) (models.Member, error)
+	InsertWidgetIntoWorkspace(ctx context.Context, workspaceId string, widget models.Widget) (models.Widget, error)
 }
 
 type MemberRepositorer interface {

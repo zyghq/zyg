@@ -108,3 +108,18 @@ func (s *CustomerService) GenerateCustomerToken(c models.Customer) (string, erro
 	}
 	return jwt, nil
 }
+
+func (s *CustomerService) VerifyExternalId(hash string, externalId string) bool {
+	fmt.Println("TODO: verify externalId", hash, externalId)
+	return true
+}
+
+func (s *CustomerService) VerifyEmail(hash string, email string) bool {
+	fmt.Println("TODO: verify email", hash, email)
+	return true
+}
+
+func (s *CustomerService) VerifyPhone(hash string, phone string) bool {
+	fmt.Println("TODO: verify phone", hash, phone)
+	return true
+}

@@ -219,6 +219,20 @@ CREATE TABLE thread_chat_label (
     CONSTRAINT th_chat_label_id_th_chat_id_label_id_key UNIQUE (thread_chat_id, label_id)
 );
 
+
+CREATE TABLE widget (
+    workspace_id VARCHAR(255) NOT NULL,
+    widget_id VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    configuration JSONB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT widget_widget_id_pkey PRIMARY KEY (widget_id),
+    CONSTRAINT widget_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
+    CONSTRAINT widget_workspace_id_name_key UNIQUE (workspace_id, name)
+);
+
 -- ************************************ --
 -- tables below have been changed or deprecated.
 -- ************************************ --

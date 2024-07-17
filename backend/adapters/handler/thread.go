@@ -1239,3 +1239,84 @@ func (h *ThreadChatHandler) handleGetThreadChatMetrics(w http.ResponseWriter, r 
 		return
 	}
 }
+
+func (h *WorkspaceHandler) handleCreateWidget(w http.ResponseWriter, r *http.Request, account *models.Account) {
+	defer func(r io.ReadCloser) {
+		_, _ = io.Copy(io.Discard, r)
+		_ = r.Close()
+	}(r.Body)
+
+	var payload WidgetCreateReqPayload
+
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+
+	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, r.PathValue("workspaceId"))
+	if errors.Is(err, services.ErrWorkspaceNotFound) {
+		slog.Warn(
+			"workspace not found or does not exist for account",
+			"accountId", account.AccountId, "workspaceId", r.PathValue("workspaceId"),
+		)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		slog.Error(
+			"failed to get workspace by id "+
+				"something went wrong",
+			"accountId", account.AccountId, "workspaceId", r.PathValue("workspaceId"),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	configuration := map[string]interface{}{}
+	if payload.Configuration != nil {
+		cf := *payload.Configuration
+		for k, v := range cf {
+			configuration[k] = v
+		}
+	}
+
+	widget := models.Widget{
+		WorkspaceId:   workspace.WorkspaceId,
+		WidgetId:      payload.Name,
+		Name:          payload.Name,
+		Configuration: configuration,
+	}
+
+	widget, err = h.ws.CreateWidget(ctx, workspace.WorkspaceId, widget)
+	if err != nil {
+		slog.Error(
+			"failed to create widget "+
+				"something went wrong",
+			"accountId", account.AccountId, "workspaceId", r.PathValue("workspaceId"),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	resp := WidgetCreateRespPayload{
+		WidgetId:      widget.WidgetId,
+		Name:          widget.Name,
+		Configuration: widget.Configuration,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error(
+			"failed to encode widget to json "+
+				"check the json encoding defn",
+			"accountId", account.AccountId, "workspaceId", r.PathValue("workspaceId"),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+}

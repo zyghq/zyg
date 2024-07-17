@@ -229,3 +229,11 @@ func (s *WorkspaceService) AddMember(ctx context.Context, workspace models.Works
 	}
 	return member, nil
 }
+
+func (s *WorkspaceService) CreateWidget(ctx context.Context, workspaceId string, widget models.Widget) (models.Widget, error) {
+	widget, err := s.workspaceRepo.InsertWidgetIntoWorkspace(ctx, workspaceId, widget)
+	if err != nil {
+		return widget, err
+	}
+	return widget, nil
+}

@@ -421,6 +421,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceLabels(w http.ResponseWriter, r *ht
 	}
 }
 
+// TODO: deprecate this.
 func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)

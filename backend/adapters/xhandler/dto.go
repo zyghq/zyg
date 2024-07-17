@@ -6,6 +6,27 @@ import (
 	"time"
 )
 
+type CustomerTraits struct {
+	FirstName *string `json:"firstName"`
+	LastName  *string `json:"lastName"`
+	Name      *string `json:"name"`
+}
+
+type WidgetCreateCustomerReqPayload struct {
+	AnonymousId        *string         `json:"anonymousId"`
+	CustomerHash       *string         `json:"customerHash"`
+	CustomerExternalId *string         `json:"customerExternalId"`
+	CustomerEmail      *string         `json:"customerEmail"`
+	CustomerPhone      *string         `json:"customerPhone"`
+	Traits             *CustomerTraits `json:"traits"`
+}
+
+type WidgetCreateCustomerRespPayload struct {
+	Jwt        string `json:"jwt"`
+	Create     bool   `json:"create"`
+	IsVerified bool   `json:"isVerified"`
+}
+
 type ThChatReqPayload struct {
 	Message string `json:"message"`
 }

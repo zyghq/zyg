@@ -90,6 +90,9 @@ func NewServer(
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/metrics/{$}",
 		NewEnsureAuth(th.handleGetThreadChatMetrics, authService))
 
+	mux.Handle("POST /workspaces/{workspaceId}/widgets/{$}",
+		NewEnsureAuth(wh.handleCreateWidget, authService))
+
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"},
