@@ -37,6 +37,7 @@ CREATE TABLE account (
 -- Represents the account PAT table - Personal Access Token
 -- This table is used to store the account PAT information of the account pertaining to auth.
 -- PAT is used to authenticate the account similar to API key.
+-- TODO: rename to PAT
 CREATE TABLE account_pat (
     account_id VARCHAR(255) NOT NULL, -- fk to account
     pat_id VARCHAR(255) NOT NULL, -- primary key
@@ -219,7 +220,8 @@ CREATE TABLE thread_chat_label (
     CONSTRAINT th_chat_label_id_th_chat_id_label_id_key UNIQUE (thread_chat_id, label_id)
 );
 
-
+-- Represents the widget table
+-- This table is used to store the widgets linked to the workspace.
 CREATE TABLE widget (
     workspace_id VARCHAR(255) NOT NULL,
     widget_id VARCHAR(255) NOT NULL,
@@ -232,6 +234,20 @@ CREATE TABLE widget (
     CONSTRAINT widget_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
     CONSTRAINT widget_workspace_id_name_key UNIQUE (workspace_id, name)
 );
+
+-- Represents the secret key table
+-- This table is used to store the secret key linked to the workspace.
+CREATE TABLE secret_key (
+    workspace_id VARCHAR(255) NOT NULL,
+    secret_key VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT secret_key_workspace_id_pkey PRIMARY KEY (workspace_id),
+    CONSTRAINT secret_key_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
+    CONSTRAINT secret_key_secret_key_key UNIQUE (secret_key)
+);
+
 
 -- ************************************ --
 -- tables below have been changed or deprecated.

@@ -2,7 +2,13 @@ package services
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/sha512"
+	"encoding/base64"
 	"errors"
+	"fmt"
+	"os"
+	"time"
 
 	"github.com/zyghq/zyg/adapters/repository"
 	"github.com/zyghq/zyg/models"
@@ -29,15 +35,10 @@ func NewWorkspaceService(
 
 func (s *WorkspaceService) CreateWorkspace(ctx context.Context, a models.Account, w models.Workspace) (models.Workspace, error) {
 	workspace, err := s.workspaceRepo.InsertWorkspaceForAccount(ctx, a, w)
-
-	if errors.Is(err, repository.ErrQuery) || errors.Is(err, repository.ErrEmpty) {
-		return workspace, ErrWorkspace
-	}
-
 	if err != nil {
 		return workspace, err
 	}
-	// TODO: probably send a mail to notify that a new workspace was created
+	// TODO: do some engagement here, once the workspace is created.
 	return workspace, nil
 }
 
@@ -244,4 +245,48 @@ func (s *WorkspaceService) ListWidgets(ctx context.Context, workspaceId string) 
 		return widgets, err
 	}
 	return widgets, nil
+}
+
+func (s *WorkspaceService) GenerateSecretKey(ctx context.Context, workspaceId string, length int) (models.SecretKey, error) {
+	// Create a buffer to store our entropy sources
+	entropy := make([]byte, 0, 1024)
+	// Add current timestamp
+	entropy = append(entropy, []byte(time.Now().String())...)
+	// Add process ID
+	entropy = append(entropy, []byte(fmt.Sprintf("%d", os.Getpid()))...)
+	// Add random bytes
+	randomBytes := make([]byte, length)
+	_, err := rand.Read(randomBytes)
+
+	if err != nil {
+		return models.SecretKey{}, err
+	}
+
+	entropy = append(entropy, randomBytes...)
+
+	// Hash the entropy using SHA-512
+	hash := sha512.Sum512(entropy)
+	// Encode the hash using base64
+	encodedHash := base64.URLEncoding.EncodeToString(hash[:])
+	// Return the first 'length' characters of the encoded hash
+	slicedHash := encodedHash[:length]
+
+	sk, err := s.workspaceRepo.InsertSecretKeyIntoWorkspace(ctx, workspaceId, slicedHash)
+	if err != nil {
+		return sk, err
+	}
+	return sk, nil
+}
+
+func (s *WorkspaceService) GetWorkspaceSecretKey(ctx context.Context, workspaceId string) (models.SecretKey, error) {
+	sk, err := s.workspaceRepo.FetchSecretKeyByWorkspaceId(ctx, workspaceId)
+
+	if errors.Is(err, repository.ErrEmpty) {
+		return sk, ErrSecretKeyNotFound
+	}
+
+	if err != nil {
+		return sk, ErrSecretKey
+	}
+	return sk, nil
 }

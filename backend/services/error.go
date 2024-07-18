@@ -28,4 +28,6 @@ const (
 	ErrThChatLabel           = serviceErr("thread chat label error")
 	ErrCustomer              = serviceErr("customer error")
 	ErrCustomerNotFound      = serviceErr("customer not found")
+	ErrSecretKeyNotFound     = serviceErr("secret key not found")
+	ErrSecretKey             = serviceErr("secret key error")
 )

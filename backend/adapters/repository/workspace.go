@@ -382,3 +382,51 @@ func (w *WorkspaceDB) RetrieveWidgetsByWorkspaceId(ctx context.Context, workspac
 
 	return widgets, nil
 }
+
+func (w *WorkspaceDB) InsertSecretKeyIntoWorkspace(ctx context.Context, workspaceId string, sk string) (models.SecretKey, error) {
+	var secretKey models.SecretKey
+	err := w.db.QueryRow(ctx, `INSERT INTO secret_key(workspace_id, secret_key)
+		VALUES ($1, $2)
+		ON CONFLICT (workspace_id) DO UPDATE SET secret_key = $2
+		RETURNING
+		workspace_id, secret_key, created_at, updated_at`, workspaceId, sk).Scan(
+		&secretKey.WorkspaceId, &secretKey.SecretKey,
+		&secretKey.CreatedAt, &secretKey.UpdatedAt,
+	)
+
+	// check if the query returned no rows
+	if errors.Is(err, pgx.ErrNoRows) {
+		return models.SecretKey{}, ErrEmpty
+	}
+
+	// check if the query returned an error
+	if err != nil {
+		slog.Error("failed to insert query", "error", err)
+		return models.SecretKey{}, ErrQuery
+	}
+
+	return secretKey, nil
+}
+
+func (r *WorkspaceDB) FetchSecretKeyByWorkspaceId(ctx context.Context, workspaceId string) (models.SecretKey, error) {
+	var secretKey models.SecretKey
+	err := r.db.QueryRow(ctx, `SELECT
+		workspace_id,secret_key, created_at, updated_at
+		FROM secret_key WHERE workspace_id = $1`, workspaceId).Scan(
+		&secretKey.WorkspaceId, &secretKey.SecretKey,
+		&secretKey.CreatedAt, &secretKey.UpdatedAt,
+	)
+
+	// check if the query returned no rows
+	if errors.Is(err, pgx.ErrNoRows) {
+		return models.SecretKey{}, ErrEmpty
+	}
+
+	// check if the query returned an error
+	if err != nil {
+		slog.Error("failed to query", "error", err)
+		return models.SecretKey{}, ErrQuery
+	}
+
+	return secretKey, nil
+}

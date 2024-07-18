@@ -537,3 +537,25 @@ type Widget struct {
 func (w Widget) GenId() string {
 	return "wg_" + xid.New().String()
 }
+
+type SecretKey struct {
+	WorkspaceId string
+	SecretKey   string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+func (sk SecretKey) MarshalJSON() ([]byte, error) {
+	aux := &struct {
+		WorkspaceId string `json:"workspaceId"`
+		SecretKey   string `json:"secretKey"`
+		CreatedAt   string `json:"createdAt"`
+		UpdatedAt   string `json:"updatedAt"`
+	}{
+		WorkspaceId: sk.WorkspaceId,
+		SecretKey:   sk.SecretKey,
+		CreatedAt:   sk.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   sk.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
+}

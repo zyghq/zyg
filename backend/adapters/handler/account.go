@@ -92,6 +92,8 @@ func (h *AccountHandler) handleGetOrCreateAccount(w http.ResponseWriter, r *http
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
+
+		// TODO: fix this asap.
 		if isCreated {
 			// add to demo workspace
 			workspaceId := "wrkcq1c89i9io6g008he020"

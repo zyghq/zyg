@@ -8,7 +8,7 @@ import (
 
 type PATReqPayload struct {
 	Name        string  `json:"name"`
-	Description *string `json:"description"`
+	Description *string `json:"description"` // TODO: ?use empty string
 }
 
 type WorkspaceReqPayload struct {
@@ -333,6 +333,25 @@ func (w WidgetRespPayload) MarshalJSON() ([]byte, error) {
 		Configuration: w.Configuration,
 		CreatedAt:     w.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:     w.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
+}
+
+type SKRespPayload struct {
+	SecretKey string `json:"secretKey"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func (sk SKRespPayload) MarshalJSON() ([]byte, error) {
+	aux := &struct {
+		SecretKey string `json:"secretKey"`
+		CreatedAt string `json:"createdAt"`
+		UpdatedAt string `json:"updatedAt"`
+	}{
+		SecretKey: sk.SecretKey,
+		CreatedAt: sk.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: sk.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
 }
