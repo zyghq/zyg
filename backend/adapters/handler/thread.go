@@ -1320,3 +1320,56 @@ func (h *WorkspaceHandler) handleCreateWidget(w http.ResponseWriter, r *http.Req
 		return
 	}
 }
+
+func (h *WorkspaceHandler) handleGetWidgets(w http.ResponseWriter, r *http.Request, account *models.Account) {
+	workspaceId := r.PathValue("workspaceId")
+	ctx := r.Context()
+
+	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
+	if errors.Is(err, services.ErrWorkspaceNotFound) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		slog.Error("failed to get workspace by id "+
+			"something went wrong", "accountId", account.AccountId, "workspaceId", workspaceId)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	widgets, err := h.ws.ListWidgets(ctx, workspace.WorkspaceId)
+	if err != nil {
+		slog.Error(
+			"failed to get list of widgets for workspace "+
+				"something went wrong",
+			"workspaceId", workspace.WorkspaceId,
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	response := make([]WidgetRespPayload, 0, 100)
+	for _, widget := range widgets {
+		resp := WidgetRespPayload{
+			WidgetId:      widget.WidgetId,
+			Name:          widget.Name,
+			Configuration: widget.Configuration,
+			CreatedAt:     widget.CreatedAt,
+			UpdatedAt:     widget.UpdatedAt,
+		}
+		response = append(response, resp)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		slog.Error(
+			"failed to encode widgets to json "+
+				"check the json encoding defn",
+			"workspaceId", workspace.WorkspaceId,
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+}

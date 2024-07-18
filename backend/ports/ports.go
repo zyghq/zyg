@@ -42,6 +42,7 @@ type WorkspaceServicer interface {
 	CreateWorkspaceCustomerWithEmail(ctx context.Context, c models.Customer) (models.Customer, bool, error)
 	CreateWorkspaceCustomerWithPhone(ctx context.Context, c models.Customer) (models.Customer, bool, error)
 	CreateWidget(ctx context.Context, workspaceId string, widget models.Widget) (models.Widget, error)
+	ListWidgets(ctx context.Context, workspaceId string) ([]models.Widget, error)
 }
 
 type CustomerServicer interface {
@@ -96,6 +97,7 @@ type WorkspaceRepositorer interface {
 	RetrieveLabelsByWorkspaceId(ctx context.Context, workspaceId string) ([]models.Label, error)
 	InsertMemberIntoWorkspace(ctx context.Context, workspaceId string, member models.Member) (models.Member, error)
 	InsertWidgetIntoWorkspace(ctx context.Context, workspaceId string, widget models.Widget) (models.Widget, error)
+	RetrieveWidgetsByWorkspaceId(ctx context.Context, workspaceId string) ([]models.Widget, error)
 }
 
 type MemberRepositorer interface {

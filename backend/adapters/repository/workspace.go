@@ -354,3 +354,31 @@ func (w *WorkspaceDB) InsertWidgetIntoWorkspace(ctx context.Context, workspaceId
 
 	return widget, nil
 }
+
+func (w *WorkspaceDB) RetrieveWidgetsByWorkspaceId(ctx context.Context, workspaceId string) ([]models.Widget, error) {
+	var widget models.Widget
+	widgets := make([]models.Widget, 0, 100)
+	stmt := `SELECT widget_id, workspace_id, name, configuration,
+		created_at, updated_at
+		FROM widget WHERE workspace_id = $1
+		ORDER BY created_at DESC LIMIT 100`
+
+	rows, _ := w.db.Query(ctx, stmt, workspaceId)
+
+	defer rows.Close()
+
+	_, err := pgx.ForEachRow(rows, []any{
+		&widget.WidgetId, &widget.WorkspaceId, &widget.Name, &widget.Configuration,
+		&widget.CreatedAt, &widget.UpdatedAt,
+	}, func() error {
+		widgets = append(widgets, widget)
+		return nil
+	})
+
+	if err != nil {
+		slog.Error("failed to query", "error", err)
+		return []models.Widget{}, ErrQuery
+	}
+
+	return widgets, nil
+}

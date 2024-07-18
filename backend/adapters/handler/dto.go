@@ -311,3 +311,28 @@ func (w WidgetCreateRespPayload) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(aux)
 }
+
+type WidgetRespPayload struct {
+	WidgetId      string                 `json:"widgetId"`
+	Name          string                 `json:"name"`
+	Configuration map[string]interface{} `json:"configuration"`
+	CreatedAt     time.Time              `json:"createdAt"`
+	UpdatedAt     time.Time              `json:"updatedAt"`
+}
+
+func (w WidgetRespPayload) MarshalJSON() ([]byte, error) {
+	aux := &struct {
+		WidgetId      string                 `json:"widgetId"`
+		Name          string                 `json:"name"`
+		Configuration map[string]interface{} `json:"configuration"`
+		CreatedAt     string                 `json:"createdAt"`
+		UpdatedAt     string                 `json:"updatedAt"`
+	}{
+		WidgetId:      w.WidgetId,
+		Name:          w.Name,
+		Configuration: w.Configuration,
+		CreatedAt:     w.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:     w.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
+}

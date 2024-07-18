@@ -47,7 +47,6 @@ func NewServer(
 	mux.Handle("GET /workspaces/{workspaceId}/members/me/{$}",
 		NewEnsureAuth(wh.handleGetWorkspaceMembership, authService))
 
-	// TODO: merge back to devel, then to main.
 	mux.Handle("GET /workspaces/{workspaceId}/members/{memberId}/{$}",
 		NewEnsureAuth(wh.handleGetWorkspaceMember, authService))
 
@@ -90,8 +89,11 @@ func NewServer(
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/metrics/{$}",
 		NewEnsureAuth(th.handleGetThreadChatMetrics, authService))
 
+	// creates a new workspace widget
 	mux.Handle("POST /workspaces/{workspaceId}/widgets/{$}",
 		NewEnsureAuth(wh.handleCreateWidget, authService))
+	mux.Handle("GET /workspaces/{workspaceId}/widgets/{$}",
+		NewEnsureAuth(wh.handleGetWidgets, authService))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},

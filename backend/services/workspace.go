@@ -237,3 +237,11 @@ func (s *WorkspaceService) CreateWidget(ctx context.Context, workspaceId string,
 	}
 	return widget, nil
 }
+
+func (s *WorkspaceService) ListWidgets(ctx context.Context, workspaceId string) ([]models.Widget, error) {
+	widgets, err := s.workspaceRepo.RetrieveWidgetsByWorkspaceId(ctx, workspaceId)
+	if err != nil {
+		return widgets, err
+	}
+	return widgets, nil
+}
