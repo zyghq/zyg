@@ -2,6 +2,9 @@ package services
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"time"
@@ -109,17 +112,23 @@ func (s *CustomerService) GenerateCustomerToken(c models.Customer) (string, erro
 	return jwt, nil
 }
 
-func (s *CustomerService) VerifyExternalId(hash string, externalId string) bool {
-	fmt.Println("TODO: verify externalId", hash, externalId)
-	return true
+func (s *CustomerService) VerifyExternalId(sk string, hash string, externalId string) bool {
+	h := hmac.New(sha256.New, []byte(sk))
+	h.Write([]byte(externalId))
+	hashHex := hex.EncodeToString(h.Sum(nil))
+	return hashHex == hash
 }
 
-func (s *CustomerService) VerifyEmail(hash string, email string) bool {
-	fmt.Println("TODO: verify email", hash, email)
-	return true
+func (s *CustomerService) VerifyEmail(sk string, hash string, email string) bool {
+	h := hmac.New(sha256.New, []byte(sk))
+	h.Write([]byte(email))
+	hashHex := hex.EncodeToString(h.Sum(nil))
+	return hashHex == hash
 }
 
-func (s *CustomerService) VerifyPhone(hash string, phone string) bool {
-	fmt.Println("TODO: verify phone", hash, phone)
-	return true
+func (s *CustomerService) VerifyPhone(sk string, hash string, phone string) bool {
+	h := hmac.New(sha256.New, []byte(sk))
+	h.Write([]byte(phone))
+	hashHex := hex.EncodeToString(h.Sum(nil))
+	return hashHex == hash
 }

@@ -232,7 +232,7 @@ CREATE TABLE widget (
     
     CONSTRAINT widget_widget_id_pkey PRIMARY KEY (widget_id),
     CONSTRAINT widget_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
-    CONSTRAINT widget_workspace_id_name_key UNIQUE (workspace_id, name)
+    CONSTRAINT widget_workspace_id_key UNIQUE (workspace_id)
 );
 
 -- Represents the secret key table

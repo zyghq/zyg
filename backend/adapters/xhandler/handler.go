@@ -3,7 +3,6 @@ package xhandler
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -40,13 +39,14 @@ func NewCustomerHandler(
 	}
 }
 
+// TODO: add support for `anonymousId`
 func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *http.Request) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
 	}(r.Body)
 
-	var payload WidgetCreateCustomerReqPayload
+	var payload WidgetInitReqPayload
 
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
@@ -56,11 +56,22 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 
 	ctx := r.Context()
 	widgetId := r.PathValue("widgetId")
-	fmt.Println("TODO: handle the widget Id", widgetId)
 
-	// TODO: fetch this information for the provided widgetId
-	// otherwise, return 404
-	workspaceId := "wrkcpv7ts4tiduau9n48uf0"
+	widget, err := h.ws.GetWorkspaceWidget(ctx, widgetId)
+	if errors.Is(err, services.ErrWidgetNotFound) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		slog.Error(
+			"failed to get workspace widget "+
+				"something went wrong",
+			slog.String("widgetId", widgetId),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 
 	var isCreated bool
 	var isVerified bool
@@ -74,31 +85,35 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 	anonName := models.Customer{}.AnonName()
 	customerName := models.NullString(&anonName)
 
-	name := payload.Traits.Name
-	firstName := payload.Traits.FirstName
-	lastName := payload.Traits.LastName
-
-	if firstName != nil || lastName != nil {
-		n := ""
-		if firstName != nil {
-			n += *firstName
+	if payload.Traits != nil {
+		if payload.Traits.Name != nil {
+			customerName = models.NullString(payload.Traits.Name)
+		} else {
+			if payload.Traits.FirstName != nil || payload.Traits.LastName != nil {
+				n := ""
+				if payload.Traits.FirstName != nil {
+					n += *payload.Traits.FirstName
+				}
+				if payload.Traits.LastName != nil {
+					n += " " + *payload.Traits.LastName
+				}
+				customerName = models.NullString(&n)
+			}
 		}
-		if lastName != nil {
-			n += " " + *lastName
-		}
-		customerName = models.NullString(&n)
-	}
-
-	if name != nil {
-		customerName = models.NullString(name)
 	}
 
 	if customerHash.Valid {
+		sk, err := h.ws.GetWorkspaceSecretKey(ctx, widget.WorkspaceId)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
 		if customerExternalId.Valid {
-			if h.cs.VerifyExternalId(customerHash.String, customerExternalId.String) {
+			if h.cs.VerifyExternalId(sk.SecretKey, customerHash.String, customerExternalId.String) {
 				isVerified = true
 				customer = models.Customer{
-					WorkspaceId: workspaceId,
+					WorkspaceId: widget.WorkspaceId,
 					ExternalId:  customerExternalId,
 					IsVerified:  true,
 					Name:        customerName,
@@ -117,10 +132,10 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 				return
 			}
 		} else if customerEmail.Valid {
-			if h.cs.VerifyEmail(customerHash.String, customerEmail.String) {
+			if h.cs.VerifyEmail(sk.SecretKey, customerHash.String, customerEmail.String) {
 				isVerified = true
 				customer = models.Customer{
-					WorkspaceId: workspaceId,
+					WorkspaceId: widget.WorkspaceId,
 					Email:       customerEmail,
 					IsVerified:  true,
 					Name:        customerName,
@@ -139,10 +154,10 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 				return
 			}
 		} else if customerPhone.Valid {
-			if h.cs.VerifyPhone(customerHash.String, customerPhone.String) {
+			if h.cs.VerifyPhone(sk.SecretKey, customerHash.String, customerPhone.String) {
 				isVerified = true
 				customer = models.Customer{
-					WorkspaceId: workspaceId,
+					WorkspaceId: widget.WorkspaceId,
 					Phone:       customerPhone,
 					IsVerified:  true,
 					Name:        customerName,
@@ -170,14 +185,14 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		return
 	}
 
-	resp := WidgetCreateCustomerRespPayload{
+	resp := WidgetInitRespPayload{
 		Jwt:        jwt,
 		Create:     isCreated,
 		IsVerified: isVerified,
+		Name:       customer.Name,
 	}
 
 	if isCreated {
-		slog.Info("created customer by externalId")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
@@ -189,7 +204,6 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 			return
 		}
 	} else {
-		slog.Info("customer already exists by externalId")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
@@ -767,7 +781,7 @@ func NewServer(
 		NewEnsureAuth(ch.handleGetThChatMesssages, authService))
 
 	// new handlers
-	mux.HandleFunc("POST /widgets/{widgetId}/customers/{$}", ch.handleGetOrCreateCustomer)
+	mux.HandleFunc("POST /widgets/{widgetId}/init/{$}", ch.handleGetOrCreateCustomer)
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},

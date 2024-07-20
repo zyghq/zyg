@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 
@@ -429,4 +430,35 @@ func (r *WorkspaceDB) FetchSecretKeyByWorkspaceId(ctx context.Context, workspace
 	}
 
 	return secretKey, nil
+}
+
+func (r *WorkspaceDB) LookupWorkspaceWidget(ctx context.Context, widgetId string) (models.Widget, error) {
+	var widget models.Widget
+
+	stmt := `SELECT
+		workspace_id, widget_id, name, configuration,
+		created_at, updated_at
+		FROM widget WHERE widget_id = $1`
+
+	err := r.db.QueryRow(ctx, stmt, widgetId).Scan(
+		&widget.WorkspaceId,
+		&widget.WidgetId,
+		&widget.Name,
+		&widget.Configuration,
+		&widget.CreatedAt,
+		&widget.UpdatedAt,
+	)
+
+	// check if the query returned no rows
+	if errors.Is(err, sql.ErrNoRows) {
+		return models.Widget{}, ErrEmpty
+	}
+
+	// check if the query returned an error
+	if err != nil {
+		slog.Error("failed to query", "error", err)
+		return models.Widget{}, ErrQuery
+	}
+
+	return widget, nil
 }

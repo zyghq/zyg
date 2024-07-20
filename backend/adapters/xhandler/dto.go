@@ -12,7 +12,7 @@ type CustomerTraits struct {
 	Name      *string `json:"name"`
 }
 
-type WidgetCreateCustomerReqPayload struct {
+type WidgetInitReqPayload struct {
 	AnonymousId        *string         `json:"anonymousId"`
 	CustomerHash       *string         `json:"customerHash"`
 	CustomerExternalId *string         `json:"customerExternalId"`
@@ -21,10 +21,30 @@ type WidgetCreateCustomerReqPayload struct {
 	Traits             *CustomerTraits `json:"traits"`
 }
 
-type WidgetCreateCustomerRespPayload struct {
-	Jwt        string `json:"jwt"`
-	Create     bool   `json:"create"`
-	IsVerified bool   `json:"isVerified"`
+type WidgetInitRespPayload struct {
+	Jwt        string         `json:"jwt"`
+	Create     bool           `json:"create"`
+	IsVerified bool           `json:"isVerified"`
+	Name       sql.NullString `json:"name"`
+}
+
+func (w WidgetInitRespPayload) MarshalJSON() ([]byte, error) {
+	var name *string
+	if w.Name.Valid {
+		name = &w.Name.String
+	}
+	aux := &struct {
+		Jwt        string  `json:"jwt"`
+		Create     bool    `json:"create"`
+		IsVerified bool    `json:"isVerified"`
+		Name       *string `json:"name"`
+	}{
+		Jwt:        w.Jwt,
+		Create:     w.Create,
+		IsVerified: w.IsVerified,
+		Name:       name,
+	}
+	return json.Marshal(aux)
 }
 
 type ThChatReqPayload struct {

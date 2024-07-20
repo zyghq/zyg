@@ -45,6 +45,7 @@ type WorkspaceServicer interface {
 	ListWidgets(ctx context.Context, workspaceId string) ([]models.Widget, error)
 	GenerateSecretKey(ctx context.Context, workspaceId string, length int) (models.SecretKey, error)
 	GetWorkspaceSecretKey(ctx context.Context, workspaceId string) (models.SecretKey, error)
+	GetWorkspaceWidget(ctx context.Context, widgetId string) (models.Widget, error)
 }
 
 type CustomerServicer interface {
@@ -52,9 +53,9 @@ type CustomerServicer interface {
 	GetCustomerByEmail(ctx context.Context, workspaceId string, email string) (models.Customer, error)
 	GetCustomerByPhone(ctx context.Context, workspaceId string, phone string) (models.Customer, error)
 	GenerateCustomerToken(c models.Customer) (string, error)
-	VerifyExternalId(hash string, externalId string) bool
-	VerifyEmail(hash string, email string) bool
-	VerifyPhone(hash string, phone string) bool
+	VerifyExternalId(sk string, hash string, externalId string) bool
+	VerifyEmail(sk string, hash string, email string) bool
+	VerifyPhone(sk string, hash string, phone string) bool
 }
 
 type ThreadChatServicer interface {
@@ -102,6 +103,7 @@ type WorkspaceRepositorer interface {
 	RetrieveWidgetsByWorkspaceId(ctx context.Context, workspaceId string) ([]models.Widget, error)
 	InsertSecretKeyIntoWorkspace(ctx context.Context, workspaceId string, sk string) (models.SecretKey, error)
 	FetchSecretKeyByWorkspaceId(ctx context.Context, workspaceId string) (models.SecretKey, error)
+	LookupWorkspaceWidget(ctx context.Context, widgetId string) (models.Widget, error)
 }
 
 type MemberRepositorer interface {

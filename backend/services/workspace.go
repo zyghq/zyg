@@ -185,10 +185,10 @@ func (s *WorkspaceService) ListWorkspaceLabels(ctx context.Context, workspaceId 
 }
 
 func (s *WorkspaceService) CreateCustomerByExternalId(ctx context.Context, c models.Customer) (models.Customer, bool, error) {
-	defaultName := c.AnonName()
-	if !c.Name.Valid {
-		c.Name = models.NullString(&defaultName)
-	}
+	// defaultName := c.AnonName()
+	// if !c.Name.Valid {
+	// 	c.Name = models.NullString(&defaultName)
+	// }
 
 	customer, created, err := s.customerRepo.UpsertCustomerByExtId(ctx, c)
 	if err != nil {
@@ -198,10 +198,10 @@ func (s *WorkspaceService) CreateCustomerByExternalId(ctx context.Context, c mod
 }
 
 func (s *WorkspaceService) CreateWorkspaceCustomerWithEmail(ctx context.Context, c models.Customer) (models.Customer, bool, error) {
-	defaultName := c.AnonName()
-	if !c.Name.Valid {
-		c.Name = models.NullString(&defaultName)
-	}
+	// defaultName := c.AnonName()
+	// if !c.Name.Valid {
+	// 	c.Name = models.NullString(&defaultName)
+	// }
 
 	customer, created, err := s.customerRepo.UpsertCustomerByEmail(ctx, c)
 	if err != nil {
@@ -211,10 +211,10 @@ func (s *WorkspaceService) CreateWorkspaceCustomerWithEmail(ctx context.Context,
 }
 
 func (s *WorkspaceService) CreateWorkspaceCustomerWithPhone(ctx context.Context, c models.Customer) (models.Customer, bool, error) {
-	defaultName := c.AnonName()
-	if !c.Name.Valid {
-		c.Name = models.NullString(&defaultName)
-	}
+	// defaultName := c.AnonName()
+	// if !c.Name.Valid {
+	// 	c.Name = models.NullString(&defaultName)
+	// }
 
 	customer, created, err := s.customerRepo.UpsertCustomerByPhone(ctx, c)
 	if err != nil {
@@ -289,4 +289,21 @@ func (s *WorkspaceService) GetWorkspaceSecretKey(ctx context.Context, workspaceI
 		return sk, ErrSecretKey
 	}
 	return sk, nil
+}
+
+func (s *WorkspaceService) GetWorkspaceWidget(ctx context.Context, widgetId string) (models.Widget, error) {
+	widget, err := s.workspaceRepo.LookupWorkspaceWidget(ctx, widgetId)
+
+	if errors.Is(err, repository.ErrQuery) {
+		return widget, ErrWidget
+	}
+
+	if errors.Is(err, repository.ErrEmpty) {
+		return widget, ErrWidgetNotFound
+	}
+
+	if err != nil {
+		return widget, err
+	}
+	return widget, nil
 }

@@ -30,4 +30,6 @@ const (
 	ErrCustomerNotFound      = serviceErr("customer not found")
 	ErrSecretKeyNotFound     = serviceErr("secret key not found")
 	ErrSecretKey             = serviceErr("secret key error")
+	ErrWidget                = serviceErr("widget error")
+	ErrWidgetNotFound        = serviceErr("widget not found")
 )
