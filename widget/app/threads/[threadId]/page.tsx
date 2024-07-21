@@ -5,237 +5,9 @@ import HomeButton from "@/components/home-btn";
 import CloseButton from "@/components/close-btn";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import MessageThreadForm from "@/components/message-thread-form";
-
-// const threadMessages = {
-//   threadChatId: "th_cpv9sektiduej80e6lug",
-//   sequence: 15526674508,
-//   status: "todo",
-//   read: false,
-//   replied: false,
-//   priority: "normal",
-//   customer: {
-//     customerId: "c_cpv9cn4tidu9gavgfk5g",
-//     name: "Tom Allison",
-//   },
-//   assignee: null,
-//   createdAt: "2024-06-28T11:27:54Z",
-//   updatedAt: "2024-06-28T11:27:54Z",
-//   messages: [
-//     {
-//       threadChatId: "th_cpv9sektiduej80e6lug",
-//       threadChatMessageId: "thm_cq04lrctidufe383koeg",
-//       body: "are you checking this?",
-//       sequence: 15636421359,
-//       customer: {
-//         customerId: "c_cpv9cn4tidu9gavgfk5g",
-//         name: "Tom Allison",
-//       },
-//       createdAt: "2024-06-29T17:57:01Z",
-//       updatedAt: "2024-06-29T17:57:01Z",
-//     },
-//     {
-//       threadChatId: "th_cpv9sektiduej80e6lug",
-//       threadChatMessageId: "thm_cpv9sektiduej80e6lv0",
-//       body: "I am having trouble when creating token, the personal access token. am I missing something here?\n\nlove if I can get some help\n\nThanks",
-//       sequence: 15526674527,
-//       customer: {
-//         customerId: "c_cpv9cn4tidu9gavgfk5g",
-//         name: "Tom Allison",
-//       },
-//       createdAt: "2024-06-28T11:27:54Z",
-//       updatedAt: "2024-06-28T11:27:54Z",
-//     },
-//   ],
-// };
-
-const threadMessages = {
-  threadChatId: "th_cpv9uj4tiduej80e6lvg",
-  sequence: 15526948204,
-  status: "todo",
-  read: false,
-  replied: true,
-  priority: "normal",
-  customer: {
-    customerId: "c_cpv9cn4tidu9gavgfk5g",
-    name: "Tom Allison",
-  },
-  assignee: {
-    memberId: "m_co60epktidu7sod96la0",
-    name: "Manmohini",
-  },
-  createdAt: "2024-06-28T11:32:28Z",
-  updatedAt: "2024-06-29T17:54:28Z",
-  messages: [
-    {
-      threadChatId: "th_cpv9uj4tiduej80e6lvg",
-      threadChatMessageId: "thm_cpvfec4tidu6vcj5an10",
-      body: "I am not sure that many messages are required!! But thanks!",
-      sequence: 15549449004,
-      customer: {
-        customerId: "c_cpv9cn4tidu9gavgfk5g",
-        name: "Tom Allison",
-      },
-      createdAt: "2024-06-28T17:47:28Z",
-      updatedAt: "2024-06-28T17:47:28Z",
-    },
-    {
-      threadChatId: "th_cpv9uj4tiduej80e6lvg",
-      threadChatMessageId: "thm_cpvfe1ctidu6hi227dr0",
-      body: "done!",
-      sequence: 15549405549,
-      member: {
-        memberId: "m_co60epktidu7sod96la0",
-        name: "Manmohini",
-      },
-      createdAt: "2024-06-28T17:46:45Z",
-      updatedAt: "2024-06-28T17:46:45Z",
-    },
-    {
-      threadChatId: "th_cpv9uj4tiduej80e6lvg",
-      threadChatMessageId: "thm_cpvfdo4tidu6hi227dqg",
-      body: "done!",
-      sequence: 15549368157,
-      member: {
-        memberId: "m_co60epktidu7sod96la0",
-        name: "Manmohini",
-      },
-      createdAt: "2024-06-28T17:46:08Z",
-      updatedAt: "2024-06-28T17:46:08Z",
-    },
-    {
-      threadChatId: "th_cpv9uj4tiduej80e6lvg",
-      threadChatMessageId: "thm_cpvfclctidu6hi227dp0",
-      body: "wow",
-      sequence: 15549229943,
-      member: {
-        memberId: "m_co60epktidu7sod96la0",
-        name: "Manmohini",
-      },
-      createdAt: "2024-06-28T17:43:49Z",
-      updatedAt: "2024-06-28T17:43:49Z",
-    },
-    {
-      threadChatId: "th_cpv9uj4tiduej80e6lvg",
-      threadChatMessageId: "thm_cpvfce4tidu6hi227dog",
-      body: "wow",
-      sequence: 15549200308,
-      member: {
-        memberId: "m_co60epktidu7sod96la0",
-        name: "Manmohini",
-      },
-      createdAt: "2024-06-28T17:43:20Z",
-      updatedAt: "2024-06-28T17:43:20Z",
-    },
-    {
-      threadChatId: "th_cpv9uj4tiduej80e6lvg",
-      threadChatMessageId: "thm_cpvfc7ktidu6hi227do0",
-      body: "wow",
-      sequence: 15549174765,
-      member: {
-        memberId: "m_co60epktidu7sod96la0",
-        name: "Manmohini",
-      },
-      createdAt: "2024-06-28T17:42:54Z",
-      updatedAt: "2024-06-28T17:42:54Z",
-    },
-    {
-      threadChatId: "th_cpv9uj4tiduej80e6lvg",
-      threadChatMessageId: "thm_cpvfblktidu6hi227dn0",
-      body: "wow",
-      sequence: 15549102482,
-      member: {
-        memberId: "m_co60epktidu7sod96la0",
-        name: "Manmohini",
-      },
-      createdAt: "2024-06-28T17:41:42Z",
-      updatedAt: "2024-06-28T17:41:42Z",
-    },
-    {
-      threadChatId: "th_cpv9uj4tiduej80e6lvg",
-      threadChatMessageId: "thm_cpvfbl4tidu6hi227dmg",
-      body: "wow",
-      sequence: 15549100363,
-      member: {
-        memberId: "m_co60epktidu7sod96la0",
-        name: "Manmohini",
-      },
-      createdAt: "2024-06-28T17:41:40Z",
-      updatedAt: "2024-06-28T17:41:40Z",
-    },
-    {
-      threadChatId: "th_cpv9uj4tiduej80e6lvg",
-      threadChatMessageId: "thm_cpvfat4tidu6hi227dl0",
-      body: "Okay lets implement this!!",
-      sequence: 15549004442,
-      member: {
-        memberId: "m_cpv7ts4tiduau9n48ufg",
-        name: "Sanchit",
-      },
-      createdAt: "2024-06-28T17:40:04Z",
-      updatedAt: "2024-06-28T17:40:04Z",
-    },
-    {
-      threadChatId: "th_cpv9uj4tiduej80e6lvg",
-      threadChatMessageId: "thm_cpve1tstidu6hi227dig",
-      body: "I think you are right",
-      sequence: 15543759340,
-      member: {
-        memberId: "m_co60epktidu7sod96la0",
-        name: "Manmohini",
-      },
-      createdAt: "2024-06-28T16:12:39Z",
-      updatedAt: "2024-06-28T16:12:39Z",
-    },
-    {
-      threadChatId: "th_cpv9uj4tiduej80e6lvg",
-      threadChatMessageId: "thm_cpve1g4tidu6hi227dhg",
-      body: "I think you are right",
-      sequence: 15543704895,
-      member: {
-        memberId: "m_co60epktidu7sod96la0",
-        name: "Manmohini",
-      },
-      createdAt: "2024-06-28T16:11:44Z",
-      updatedAt: "2024-06-28T16:11:44Z",
-    },
-    {
-      threadChatId: "th_cpv9uj4tiduej80e6lvg",
-      threadChatMessageId: "thm_cpvce9stidu0nnp475c0",
-      body: "Yeah, thanks we can think about it!",
-      sequence: 15537151422,
-      member: {
-        memberId: "m_cpv7ts4tiduau9n48ufg",
-        name: "Sanchit",
-      },
-      createdAt: "2024-06-28T14:22:31Z",
-      updatedAt: "2024-06-28T14:22:31Z",
-    },
-    {
-      threadChatId: "th_cpv9uj4tiduej80e6lvg",
-      threadChatMessageId: "thm_cpvab6ktiduasjl7kqig",
-      body: "I think it will be too much work",
-      sequence: 15528562194,
-      customer: {
-        customerId: "c_cpv9cn4tidu9gavgfk5g",
-        name: "Tom Allison",
-      },
-      createdAt: "2024-06-28T11:59:22Z",
-      updatedAt: "2024-06-28T11:59:22Z",
-    },
-    {
-      threadChatId: "th_cpv9uj4tiduej80e6lvg",
-      threadChatMessageId: "thm_cpv9uj4tiduej80e6m00",
-      body: "ah! now I am able to send messages, there seems to be issue with threadId - moving to typescript should help I guess for these type of issues.",
-      sequence: 15526948205,
-      customer: {
-        customerId: "c_cpv9cn4tidu9gavgfk5g",
-        name: "Tom Allison",
-      },
-      createdAt: "2024-06-28T11:32:28Z",
-      updatedAt: "2024-06-28T11:32:28Z",
-    },
-  ],
-};
+import { Icons } from "@/components/icons";
+import { useCustomer } from "@/lib/customer";
+import { useQuery } from "@tanstack/react-query";
 
 interface Thread {
   threadChatId: string;
@@ -286,6 +58,7 @@ function Message({ message }: { message: Message }) {
   });
 
   const isMe = typeof message.customer === "object";
+
   const memberId = message?.member?.memberId || "";
   const memberName = message?.member?.name || "";
 
@@ -315,16 +88,104 @@ export default function ThreadMessages({
   params: { threadId: string };
 }) {
   const { threadId } = params;
-  console.log(threadId);
-  const bottomRef = React.useRef<HTMLDivElement>(null);
+  const { isLoading, hasError, customer } = useCustomer();
 
+  const {
+    data: thread,
+    isLoading: isLoadingThread,
+    error: errorThread,
+  } = useQuery({
+    queryKey: ["messages", threadId],
+    queryFn: async () => {
+      const jwt = customer?.jwt;
+      if (!jwt) {
+        console.error("No JWT found");
+        return null;
+      }
+      const { widgetId } = customer;
+      const response = await fetch(
+        `/api/widgets/${widgetId}/threads/${threadId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            jwt,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Not Found");
+      }
+      const thread = await response.json();
+      return thread as Thread;
+    },
+    enabled: !!customer,
+  });
+
+  const bottomRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
     if (bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, []);
 
-  const { messages } = threadMessages;
+  if (hasError || errorThread) {
+    return (
+      <div className="absolute z-10 h-full w-full flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center text-muted-foreground">
+          <span className="text-lg">{`We're sorry, something went wrong.`}</span>
+          <span className="text-lg">Please try again later.</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="absolute z-10 h-full w-full flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center">
+          <svg
+            className="animate-spin h-5 w-5 text-muted-foreground"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoadingThread) return null;
+
+  if (!thread || !thread?.messages?.length) {
+    return (
+      <div className="flex flex-col items-center justify-center space-y-4 mt-24">
+        <Icons.nothing className="w-40" />
+        <p className="text-center text-muted-foreground">
+          Nothing to see here yet.
+        </p>
+      </div>
+    );
+  }
+
+  const { messages } = thread;
   const messagesReversed = messages.slice().reverse();
 
   return (
