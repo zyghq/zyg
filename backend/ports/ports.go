@@ -21,6 +21,7 @@ type AuthServicer interface {
 
 type CustomerAuthServicer interface {
 	ValidateWorkspaceCustomer(ctx context.Context, workspaceId string, customerId string) (models.Customer, error)
+	GetWidgetLinkedSecretKey(ctx context.Context, widgetId string) (models.SecretKey, error)
 }
 
 type WorkspaceServicer interface {
@@ -52,7 +53,7 @@ type CustomerServicer interface {
 	GetCustomerByExternalId(ctx context.Context, workspaceId string, externalId string) (models.Customer, error)
 	GetCustomerByEmail(ctx context.Context, workspaceId string, email string) (models.Customer, error)
 	GetCustomerByPhone(ctx context.Context, workspaceId string, phone string) (models.Customer, error)
-	GenerateCustomerToken(c models.Customer) (string, error)
+	GenerateCustomerToken(c models.Customer, sk string) (string, error)
 	VerifyExternalId(sk string, hash string, externalId string) bool
 	VerifyEmail(sk string, hash string, email string) bool
 	VerifyPhone(sk string, hash string, phone string) bool
@@ -121,6 +122,7 @@ type CustomerRepositorer interface {
 	UpsertCustomerByEmail(ctx context.Context, c models.Customer) (models.Customer, bool, error)
 	UpsertCustomerByPhone(ctx context.Context, c models.Customer) (models.Customer, bool, error)
 	FetchCustomersByWorkspaceId(ctx context.Context, workspaceId string) ([]models.Customer, error)
+	LookupSecretKeyByWidgetId(ctx context.Context, widgetId string) (models.SecretKey, error)
 }
 
 type ThreadChatRepositorer interface {

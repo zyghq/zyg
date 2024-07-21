@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/zyghq/zyg"
 	"github.com/zyghq/zyg/adapters/repository"
 	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
@@ -58,17 +57,17 @@ func (s *CustomerService) GetCustomerByPhone(ctx context.Context, workspaceId st
 	return customer, nil
 }
 
-func (s *CustomerService) GenerateCustomerToken(c models.Customer) (string, error) {
+func (s *CustomerService) GenerateCustomerToken(c models.Customer, sk string) (string, error) {
 	var externalId string
 	var email string
 	var phone string
 
 	audience := []string{"customer"}
 
-	sk, err := zyg.GetEnv("ZYG_CUSTOMER_JWT_SECRET")
-	if err != nil {
-		return "", fmt.Errorf("failed to get env ZYG_CUSTOMER_JWT_SECRET got error: %v", err)
-	}
+	// sk, err := zyg.GetEnv("ZYG_CUSTOMER_JWT_SECRET")
+	// if err != nil {
+	// 	return "", fmt.Errorf("failed to get env ZYG_CUSTOMER_JWT_SECRET got error: %v", err)
+	// }
 
 	if !c.ExternalId.Valid {
 		externalId = ""

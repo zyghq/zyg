@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/zyghq/zyg"
 	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
 	"github.com/zyghq/zyg/services"
@@ -29,35 +28,30 @@ func CheckAuthCredentials(r *http.Request) (string, string, error) {
 
 func AuthenticateCustomer(
 	ctx context.Context, authz ports.CustomerAuthServicer,
-	scheme string, cred string,
+	scheme string, cred string, widgetId string,
 ) (models.Customer, error) {
 	var customer models.Customer
 	if scheme == "bearer" {
-		slog.Info("authenticate with customer JWT")
-		hmacSecret, err := zyg.GetEnv("ZYG_CUSTOMER_JWT_SECRET")
+
+		sk, err := authz.GetWidgetLinkedSecretKey(ctx, widgetId)
 		if err != nil {
-			return customer, fmt.Errorf("failed to get env SUPABASE_JWT_SECRET with error: %v", err)
+			return customer, fmt.Errorf("%v", err)
 		}
 
-		cc, err := services.ParseCustomerJWTToken(cred, []byte(hmacSecret))
+		cc, err := services.ParseCustomerJWTToken(cred, []byte(sk.SecretKey))
 		if err != nil {
-			return customer, fmt.Errorf("failed to parse JWT token with error: %v", err)
+			return customer, fmt.Errorf("%v", err)
 		}
 
 		sub, err := cc.RegisteredClaims.GetSubject()
 		if err != nil {
-			return customer, fmt.Errorf("cannot get subject from parsed token: %v", err)
+			return customer, fmt.Errorf("%v", err)
 		}
 
 		slog.Info("authenticated customer with customer id", slog.String("customerId", sub))
 
 		customer, err = authz.ValidateWorkspaceCustomer(ctx, cc.WorkspaceId, sub)
-
 		if errors.Is(err, services.ErrCustomerNotFound) {
-			slog.Warn(
-				"customer not found or does not exist",
-				slog.String("customerId", sub),
-			)
 			return customer, fmt.Errorf("customer not found or does not exist")
 		}
 
@@ -67,7 +61,7 @@ func AuthenticateCustomer(
 					"something went wrong",
 				slog.String("customerId", sub),
 			)
-			return customer, fmt.Errorf("failed to get customer by customer id: %s got error: %v", sub, err)
+			return customer, fmt.Errorf("failed to validate customer with customer id: %s got error: %v", sub, err)
 		}
 
 		return customer, nil

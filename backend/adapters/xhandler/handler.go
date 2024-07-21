@@ -73,6 +73,17 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		return
 	}
 
+	sk, err := h.ws.GetWorkspaceSecretKey(ctx, widget.WorkspaceId)
+	if err != nil {
+		slog.Error(
+			"failed to get workspace secret key "+
+				"something went wrong",
+			slog.String("workspaceId", widget.WorkspaceId),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
 	var isCreated bool
 	var isVerified bool
 	var customer models.Customer
@@ -178,7 +189,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		}
 	}
 
-	jwt, err := h.cs.GenerateCustomerToken(customer)
+	jwt, err := h.cs.GenerateCustomerToken(customer, sk.SecretKey)
 	if err != nil {
 		slog.Error("failed to make jwt token with error", slog.Any("error", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -766,22 +777,20 @@ func NewServer(
 ) http.Handler {
 	mux := http.NewServeMux()
 
-	// initialize service handlers
 	ch := NewCustomerHandler(workspaceService, customerService, threadChatService)
 
 	mux.HandleFunc("GET /{$}", handleGetIndex)
-	mux.Handle("GET /me/{$}", NewEnsureAuth(ch.handleGetCustomer, authService))
 
-	mux.Handle("POST /threads/chat/{$}", NewEnsureAuth(ch.handleCreateCustomerThChat, authService))
-	mux.Handle("GET /threads/chat/{$}", NewEnsureAuth(ch.handleGetCustomerThChats, authService))
-
-	mux.Handle("POST /threads/chat/{threadId}/messages/{$}",
-		NewEnsureAuth(ch.handleCreateThChatMessage, authService))
-	mux.Handle("GET /threads/chat/{threadId}/messages/{$}",
-		NewEnsureAuth(ch.handleGetThChatMesssages, authService))
-
-	// new handlers
 	mux.HandleFunc("POST /widgets/{widgetId}/init/{$}", ch.handleGetOrCreateCustomer)
+	mux.Handle("GET /widgets/{widgetId}/me/{$}", NewEnsureAuth(ch.handleGetCustomer, authService))
+
+	mux.Handle("POST /widgets/{widgetId}/threads/chat/{$}", NewEnsureAuth(ch.handleCreateCustomerThChat, authService))
+	mux.Handle("GET /widgets/{widgetId}/threads/chat/{$}", NewEnsureAuth(ch.handleGetCustomerThChats, authService))
+
+	mux.Handle("POST /widgets/{widgetId}/threads/chat/{threadId}/messages/{$}",
+		NewEnsureAuth(ch.handleCreateThChatMessage, authService))
+	mux.Handle("GET /widgets/{widgetId}/threads/chat/{threadId}/messages/{$}",
+		NewEnsureAuth(ch.handleGetThChatMesssages, authService))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},

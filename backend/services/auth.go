@@ -16,48 +16,47 @@ const DefaultAuthProvider string = "supabase"
 func ParseJWTToken(token string, hmacSecret []byte) (ac models.AuthJWTClaims, err error) {
 	t, err := jwt.ParseWithClaims(token, &models.AuthJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			return nil, fmt.Errorf("%v", token.Header["alg"])
 		}
 		return hmacSecret, nil
 	})
 
 	if err != nil {
-		return ac, fmt.Errorf("error validating jwt token with error: %v", err)
+		return ac, fmt.Errorf("%v", err)
 	} else if claims, ok := t.Claims.(*models.AuthJWTClaims); ok {
 		return *claims, nil
 	}
-
-	return ac, fmt.Errorf("error parsing jwt token: %v", token)
+	return ac, fmt.Errorf("error parsing jwt token")
 }
 
 func ParseCustomerJWTToken(token string, hmacSecret []byte) (cc models.CustomerJWTClaims, err error) {
 	t, err := jwt.ParseWithClaims(token, &models.CustomerJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			return nil, fmt.Errorf("%v", token.Header["alg"])
 		}
 		return hmacSecret, nil
 	})
 
 	if err != nil {
-		return cc, fmt.Errorf("error validating jwt token with error: %v", err)
+		return cc, fmt.Errorf("%v", err)
 	} else if claims, ok := t.Claims.(*models.CustomerJWTClaims); ok {
 		return *claims, nil
 	}
-	return cc, fmt.Errorf("error parsing jwt token: %v", token)
+	return cc, fmt.Errorf("error parsing jwt token")
 }
 
 type AuthService struct {
-	repo ports.AccountRepositorer
+	accountRepo ports.AccountRepositorer
 }
 
-func NewAuthService(repo ports.AccountRepositorer) *AuthService {
+func NewAuthService(accountRepo ports.AccountRepositorer) *AuthService {
 	return &AuthService{
-		repo: repo,
+		accountRepo: accountRepo,
 	}
 }
 
 func (s *AuthService) AuthenticateUser(ctx context.Context, authUserId string) (models.Account, error) {
-	account, err := s.repo.FetchAccountByAuthId(ctx, authUserId)
+	account, err := s.accountRepo.FetchAccountByAuthId(ctx, authUserId)
 
 	if errors.Is(err, repository.ErrQuery) {
 		return account, ErrAccount
@@ -75,7 +74,7 @@ func (s *AuthService) AuthenticateUser(ctx context.Context, authUserId string) (
 }
 
 func (s *AuthService) ValidatePersonalAccessToken(ctx context.Context, token string) (models.Account, error) {
-	account, err := s.repo.LookupAccountByToken(ctx, token)
+	account, err := s.accountRepo.LookupAccountByToken(ctx, token)
 
 	if errors.Is(err, repository.ErrQuery) {
 		return account, ErrAccount
@@ -92,17 +91,17 @@ func (s *AuthService) ValidatePersonalAccessToken(ctx context.Context, token str
 }
 
 type CustomerAuthService struct {
-	repo ports.CustomerRepositorer
+	customerRepo ports.CustomerRepositorer
 }
 
-func NewCustomerAuthService(repo ports.CustomerRepositorer) *CustomerAuthService {
+func NewCustomerAuthService(customerRepo ports.CustomerRepositorer) *CustomerAuthService {
 	return &CustomerAuthService{
-		repo: repo,
+		customerRepo: customerRepo,
 	}
 }
 
 func (s *CustomerAuthService) ValidateWorkspaceCustomer(ctx context.Context, workspaceId string, customerId string) (models.Customer, error) {
-	customer, err := s.repo.LookupByWorkspaceCustomerId(ctx, workspaceId, customerId)
+	customer, err := s.customerRepo.LookupByWorkspaceCustomerId(ctx, workspaceId, customerId)
 
 	if errors.Is(err, repository.ErrQuery) {
 		return customer, ErrCustomer
@@ -116,4 +115,21 @@ func (s *CustomerAuthService) ValidateWorkspaceCustomer(ctx context.Context, wor
 		return customer, err
 	}
 	return customer, nil
+}
+
+func (s *CustomerAuthService) GetWidgetLinkedSecretKey(ctx context.Context, widgetId string) (models.SecretKey, error) {
+	sk, err := s.customerRepo.LookupSecretKeyByWidgetId(ctx, widgetId)
+
+	if errors.Is(err, repository.ErrEmpty) {
+		return sk, ErrSecretKeyNotFound
+	}
+
+	if errors.Is(err, repository.ErrQuery) {
+		return sk, ErrSecretKey
+	}
+
+	if err != nil {
+		return sk, err
+	}
+	return sk, nil
 }

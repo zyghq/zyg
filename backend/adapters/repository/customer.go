@@ -286,3 +286,30 @@ func (c *CustomerDB) FetchCustomersByWorkspaceId(ctx context.Context, workspaceI
 
 	return customers, nil
 }
+
+func (r *CustomerDB) LookupSecretKeyByWidgetId(ctx context.Context, widgetId string) (models.SecretKey, error) {
+	var sk models.SecretKey
+	stmt := `SELECT sk.workspace_id as workspace_id,
+		sk.secret_key as secret_key,
+		sk.created_at as created_at,
+		sk.updated_at as updated_at
+		FROM widget w
+		INNER JOIN secret_key sk ON sk.workspace_id = w.workspace_id
+		WHERE w.widget_id = $1`
+
+	err := r.db.QueryRow(ctx, stmt, widgetId).Scan(
+		&sk.WorkspaceId, &sk.SecretKey,
+		&sk.CreatedAt, &sk.UpdatedAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return models.SecretKey{}, ErrEmpty
+	}
+
+	if err != nil {
+		slog.Error("failed to query", "error", err)
+		return models.SecretKey{}, ErrQuery
+	}
+
+	return sk, nil
+}

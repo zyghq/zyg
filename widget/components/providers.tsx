@@ -1,7 +1,28 @@
 "use client";
 
 import * as React from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Customer, CustomerContext, SdkCustomerResponse } from "@/lib/customer";
+
+export const ReactQueryClientProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  const [queryClient] = React.useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 1000 * 60 * 5,
+          },
+        },
+      })
+  );
+  return (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+};
 
 export function CustomerProvider({ children }: { children: React.ReactNode }) {
   const [customer, setCustomer] = React.useState<Customer | null>(null);
@@ -41,6 +62,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
               console.log("response data", data);
               const { jwt, name } = data;
               setCustomer({
+                widgetId,
                 jwt,
                 name,
               });

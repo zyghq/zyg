@@ -89,8 +89,8 @@ func NewServer(
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
 		NewEnsureAuth(th.handleGetThreadChatLabels, authService))
 
-	mux.Handle("POST /workspaces/{workspaceId}/customers/tokens/{$}",
-		NewEnsureAuth(wh.handleIssueCustomerToken, authService))
+	// mux.Handle("POST /workspaces/{workspaceId}/customers/tokens/{$}",
+	// 	NewEnsureAuth(wh.handleIssueCustomerToken, authService))
 
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/metrics/{$}",
 		NewEnsureAuth(th.handleGetThreadChatMetrics, authService))

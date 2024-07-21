@@ -3,7 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -422,235 +421,235 @@ func (h *WorkspaceHandler) handleGetWorkspaceLabels(w http.ResponseWriter, r *ht
 }
 
 // TODO: deprecate this.
-func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *http.Request, account *models.Account) {
-	defer func(r io.ReadCloser) {
-		_, _ = io.Copy(io.Discard, r)
-		_ = r.Close()
-	}(r.Body)
+// func (h *WorkspaceHandler) handleIssueCustomerToken(w http.ResponseWriter, r *http.Request, account *models.Account) {
+// 	defer func(r io.ReadCloser) {
+// 		_, _ = io.Copy(io.Discard, r)
+// 		_ = r.Close()
+// 	}(r.Body)
 
-	ctx := r.Context()
+// 	ctx := r.Context()
 
-	var rb CustomerTIReqPayload
-	err := json.NewDecoder(r.Body).Decode(&rb)
-	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
+// 	var rb CustomerTIReqPayload
+// 	err := json.NewDecoder(r.Body).Decode(&rb)
+// 	if err != nil {
+// 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+// 		return
+// 	}
 
-	externalId := models.NullString(rb.Customer.ExternalId)
-	email := models.NullString(rb.Customer.Email)
-	phone := models.NullString(rb.Customer.Phone)
-	name := models.NullString(rb.Customer.Name)
-	if !externalId.Valid && !email.Valid && !phone.Valid {
-		slog.Error("at least one of `externalId`, `email` or `phone` is required")
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
+// 	externalId := models.NullString(rb.Customer.ExternalId)
+// 	email := models.NullString(rb.Customer.Email)
+// 	phone := models.NullString(rb.Customer.Phone)
+// 	name := models.NullString(rb.Customer.Name)
+// 	if !externalId.Valid && !email.Valid && !phone.Valid {
+// 		slog.Error("at least one of `externalId`, `email` or `phone` is required")
+// 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+// 		return
+// 	}
 
-	workspaceId := r.PathValue("workspaceId")
+// 	workspaceId := r.PathValue("workspaceId")
 
-	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
+// 	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
 
-	if errors.Is(err, services.ErrWorkspaceNotFound) {
-		slog.Warn(
-			"account workspace not found or does not exist",
-			slog.String("workspaceId", workspaceId),
-		)
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
+// 	if errors.Is(err, services.ErrWorkspaceNotFound) {
+// 		slog.Warn(
+// 			"account workspace not found or does not exist",
+// 			slog.String("workspaceId", workspaceId),
+// 		)
+// 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+// 		return
+// 	}
 
-	if err != nil {
-		slog.Error(
-			"failed to get account workspace or does not exist "+
-				"something went wrong",
-			slog.String("workspaceId", workspaceId),
-		)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
+// 	if err != nil {
+// 		slog.Error(
+// 			"failed to get account workspace or does not exist "+
+// 				"something went wrong",
+// 			slog.String("workspaceId", workspaceId),
+// 		)
+// 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+// 		return
+// 	}
 
-	customer := models.Customer{
-		WorkspaceId: workspace.WorkspaceId,
-		ExternalId:  externalId,
-		Email:       email,
-		Phone:       phone,
-		Name:        name,
-		IsVerified:  true,
-	}
+// 	customer := models.Customer{
+// 		WorkspaceId: workspace.WorkspaceId,
+// 		ExternalId:  externalId,
+// 		Email:       email,
+// 		Phone:       phone,
+// 		Name:        name,
+// 		IsVerified:  true,
+// 	}
 
-	var isCreated bool
-	var resp CustomerTIRespPayload
+// 	var isCreated bool
+// 	var resp CustomerTIRespPayload
 
-	if rb.Create {
-		if rb.CreateBy == nil {
-			slog.Error("requires `createBy` when `create` is enabled")
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-			return
-		}
-		createBy := *rb.CreateBy
-		slog.Info("create Customer if does not exists", slog.String("createBy", createBy))
-		switch createBy {
-		case "email":
-			if !customer.Email.Valid {
-				slog.Error("email is required for createBy email")
-				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-				return
-			}
+// 	if rb.Create {
+// 		if rb.CreateBy == nil {
+// 			slog.Error("requires `createBy` when `create` is enabled")
+// 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+// 			return
+// 		}
+// 		createBy := *rb.CreateBy
+// 		slog.Info("create Customer if does not exists", slog.String("createBy", createBy))
+// 		switch createBy {
+// 		case "email":
+// 			if !customer.Email.Valid {
+// 				slog.Error("email is required for createBy email")
+// 				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+// 				return
+// 			}
 
-			slog.Info("create Customer by email")
-			customer, isCreated, err = h.ws.CreateWorkspaceCustomerWithEmail(ctx, customer)
+// 			slog.Info("create Customer by email")
+// 			customer, isCreated, err = h.ws.CreateWorkspaceCustomerWithEmail(ctx, customer)
 
-			if err != nil {
-				slog.Error(
-					"failed to get or create Workspace Customer by email" +
-						"something went wrong",
-				)
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				return
-			}
-		case "phone":
-			if !customer.Phone.Valid {
-				slog.Error("phone is required for createBy phone")
-				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-				return
-			}
+// 			if err != nil {
+// 				slog.Error(
+// 					"failed to get or create Workspace Customer by email" +
+// 						"something went wrong",
+// 				)
+// 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+// 				return
+// 			}
+// 		case "phone":
+// 			if !customer.Phone.Valid {
+// 				slog.Error("phone is required for createBy phone")
+// 				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+// 				return
+// 			}
 
-			slog.Info("create Customer by phone")
-			customer, isCreated, err = h.ws.CreateWorkspaceCustomerWithPhone(ctx, customer)
+// 			slog.Info("create Customer by phone")
+// 			customer, isCreated, err = h.ws.CreateWorkspaceCustomerWithPhone(ctx, customer)
 
-			if err != nil {
-				slog.Error(
-					"failed to get or create Workspace Customer by phone " +
-						"something went wrong",
-				)
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				return
-			}
-		case "externalId":
-			if !customer.ExternalId.Valid {
-				slog.Error("externalId is required for createBy externalId")
-				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-				return
-			}
+// 			if err != nil {
+// 				slog.Error(
+// 					"failed to get or create Workspace Customer by phone " +
+// 						"something went wrong",
+// 				)
+// 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+// 				return
+// 			}
+// 		case "externalId":
+// 			if !customer.ExternalId.Valid {
+// 				slog.Error("externalId is required for createBy externalId")
+// 				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+// 				return
+// 			}
 
-			slog.Info("create Customer by externalId")
-			customer, isCreated, err = h.ws.CreateCustomerByExternalId(ctx, customer)
+// 			slog.Info("create Customer by externalId")
+// 			customer, isCreated, err = h.ws.CreateCustomerByExternalId(ctx, customer)
 
-			if err != nil {
-				slog.Error(
-					"failed to get or create Workspace Customer by externalId" +
-						"something went wrong",
-				)
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				return
-			}
-		default:
-			slog.Warn("unsupported createBy value")
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-			return
-		}
-	} else {
-		slog.Info("based on identifiers check for Customer in Workspace", slog.String("workspaceId", workspaceId))
-		if customer.ExternalId.Valid {
-			slog.Info("get customer by externalId")
-			customer, err = h.cs.GetCustomerByExternalId(ctx, workspace.WorkspaceId, customer.ExternalId.String)
-			if errors.Is(err, services.ErrCustomerNotFound) {
-				slog.Warn(
-					"Customer not found by externalId" +
-						"perhaps the customer is not created or is not returned",
-				)
-				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-				return
-			}
+// 			if err != nil {
+// 				slog.Error(
+// 					"failed to get or create Workspace Customer by externalId" +
+// 						"something went wrong",
+// 				)
+// 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+// 				return
+// 			}
+// 		default:
+// 			slog.Warn("unsupported createBy value")
+// 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+// 			return
+// 		}
+// 	} else {
+// 		slog.Info("based on identifiers check for Customer in Workspace", slog.String("workspaceId", workspaceId))
+// 		if customer.ExternalId.Valid {
+// 			slog.Info("get customer by externalId")
+// 			customer, err = h.cs.GetCustomerByExternalId(ctx, workspace.WorkspaceId, customer.ExternalId.String)
+// 			if errors.Is(err, services.ErrCustomerNotFound) {
+// 				slog.Warn(
+// 					"Customer not found by externalId" +
+// 						"perhaps the customer is not created or is not returned",
+// 				)
+// 				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+// 				return
+// 			}
 
-			if err != nil {
-				slog.Error(
-					"failed to get Workspace Customer by externalId" +
-						"something went wrong",
-				)
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				return
-			}
-		} else if customer.Email.Valid {
-			slog.Info("get customer by email")
-			customer, err = h.cs.GetCustomerByEmail(ctx, workspace.WorkspaceId, customer.Email.String)
+// 			if err != nil {
+// 				slog.Error(
+// 					"failed to get Workspace Customer by externalId" +
+// 						"something went wrong",
+// 				)
+// 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+// 				return
+// 			}
+// 		} else if customer.Email.Valid {
+// 			slog.Info("get customer by email")
+// 			customer, err = h.cs.GetCustomerByEmail(ctx, workspace.WorkspaceId, customer.Email.String)
 
-			if errors.Is(err, services.ErrCustomerNotFound) {
-				slog.Warn(
-					"Customer not found by email" +
-						"perhaps the customer is not created or is not returned",
-				)
-				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-				return
-			}
+// 			if errors.Is(err, services.ErrCustomerNotFound) {
+// 				slog.Warn(
+// 					"Customer not found by email" +
+// 						"perhaps the customer is not created or is not returned",
+// 				)
+// 				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+// 				return
+// 			}
 
-			if err != nil {
-				slog.Error(
-					"failed to get Workspace Customer by email" +
-						"something went wrong",
-				)
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				return
-			}
-		} else if customer.Phone.Valid {
-			slog.Info("get customer by phone")
-			customer, err = h.cs.GetCustomerByPhone(ctx, workspace.WorkspaceId, customer.Phone.String)
+// 			if err != nil {
+// 				slog.Error(
+// 					"failed to get Workspace Customer by email" +
+// 						"something went wrong",
+// 				)
+// 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+// 				return
+// 			}
+// 		} else if customer.Phone.Valid {
+// 			slog.Info("get customer by phone")
+// 			customer, err = h.cs.GetCustomerByPhone(ctx, workspace.WorkspaceId, customer.Phone.String)
 
-			if errors.Is(err, services.ErrCustomerNotFound) {
-				slog.Warn(
-					"Customer not found by phone" +
-						"perhaps the customer is not created or is not returned",
-				)
-				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-				return
-			}
+// 			if errors.Is(err, services.ErrCustomerNotFound) {
+// 				slog.Warn(
+// 					"Customer not found by phone" +
+// 						"perhaps the customer is not created or is not returned",
+// 				)
+// 				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+// 				return
+// 			}
 
-			if err != nil {
-				slog.Error(
-					"failed to get Workspace Customer by phone" +
-						"something went wrong",
-				)
-				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-				return
-			}
-		} else {
-			fmt.Println("unsupported customer identifier")
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-			return
-		}
-	}
+// 			if err != nil {
+// 				slog.Error(
+// 					"failed to get Workspace Customer by phone" +
+// 						"something went wrong",
+// 				)
+// 				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+// 				return
+// 			}
+// 		} else {
+// 			fmt.Println("unsupported customer identifier")
+// 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+// 			return
+// 		}
+// 	}
 
-	slog.Info("got Workspace Customer",
-		slog.String("customerId", customer.CustomerId),
-		slog.Bool("isCreated", isCreated),
-	)
-	slog.Info("issue Customer JWT token")
-	jwt, err := h.cs.GenerateCustomerToken(customer)
-	if err != nil {
-		slog.Error("failed to make jwt token with error", slog.Any("error", err))
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
+// 	slog.Info("got Workspace Customer",
+// 		slog.String("customerId", customer.CustomerId),
+// 		slog.Bool("isCreated", isCreated),
+// 	)
+// 	slog.Info("issue Customer JWT token")
+// 	jwt, err := h.cs.GenerateCustomerToken(customer)
+// 	if err != nil {
+// 		slog.Error("failed to make jwt token with error", slog.Any("error", err))
+// 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+// 		return
+// 	}
 
-	resp = CustomerTIRespPayload{
-		Create:     isCreated,
-		CustomerId: customer.CustomerId,
-		Jwt:        jwt,
-	}
+// 	resp = CustomerTIRespPayload{
+// 		Create:     isCreated,
+// 		CustomerId: customer.CustomerId,
+// 		Jwt:        jwt,
+// 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		slog.Error(
-			"failed to encode response to json "+
-				"check the json encoding defn",
-			slog.String("customerId", customer.CustomerId),
-		)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-}
+// 	w.Header().Set("Content-Type", "application/json")
+// 	w.WriteHeader(http.StatusOK)
+// 	if err := json.NewEncoder(w).Encode(resp); err != nil {
+// 		slog.Error(
+// 			"failed to encode response to json "+
+// 				"check the json encoding defn",
+// 			slog.String("customerId", customer.CustomerId),
+// 		)
+// 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+// 		return
+// 	}
+// }
 
 func (h *WorkspaceHandler) handleGetWorkspaceMembership(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	ctx := r.Context()

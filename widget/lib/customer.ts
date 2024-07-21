@@ -13,6 +13,7 @@ export interface SdkCustomerResponse {
 }
 
 export interface Customer {
+  widgetId: string;
   name: string;
   jwt: string;
 }

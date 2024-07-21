@@ -231,8 +231,7 @@ CREATE TABLE widget (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     CONSTRAINT widget_widget_id_pkey PRIMARY KEY (widget_id),
-    CONSTRAINT widget_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
-    CONSTRAINT widget_workspace_id_key UNIQUE (workspace_id)
+    CONSTRAINT widget_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id)
 );
 
 -- Represents the secret key table

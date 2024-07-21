@@ -54,8 +54,10 @@ func (ea *EnsureAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
-	customer, err := AuthenticateCustomer(r.Context(), ea.authz, scheme, cred)
+	widgetId := r.PathValue("widgetId")
+	customer, err := AuthenticateCustomer(r.Context(), ea.authz, scheme, cred, widgetId)
 	if err != nil {
+		slog.Error("failed to authenticate customer for widget", slog.Any("error", err))
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
