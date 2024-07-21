@@ -1,4 +1,5 @@
 "use client";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import CloseButton from "@/components/close-btn";
@@ -20,11 +21,9 @@ import { useQuery } from "@tanstack/react-query";
 
 interface HomeFeed {
   id: string;
-  type: string;
   title: string;
   previewText?: string;
-  href?: string;
-  ctas?: { link: string; text: string }[];
+  href: string;
 }
 
 interface Thread {
@@ -67,35 +66,20 @@ interface Message {
 const homeFeeds = [
   {
     id: "1",
-    type: "link",
     title: "What is Zyg?",
-    previewText: "Zyg is purpose-built customer support for your SaaS products",
+    previewText: "Check how Zyg can help you",
     href: "https://www.zyg.ai/",
   },
   {
     id: "3",
-    type: "link",
-    title: "What is Zyg?",
-    previewText: "Zyg is purpose-built customer support for your SaaS products",
+    title: "Read the Docs",
     href: "https://www.zyg.ai/",
   },
   {
     id: "4",
-    type: "link",
-    title: "What is Zyg?",
-    previewText: "Zyg is purpose-built customer support for your SaaS products",
+    title: "Book a Demo",
+    previewText: "Get a 10 min demo of Zyg",
     href: "https://www.zyg.ai/",
-  },
-  {
-    id: "2",
-    type: "card",
-    title: "Let's set up time for a demo",
-    ctas: [
-      {
-        link: "https://www.zyg.ai/",
-        text: "Schedule a demo",
-      },
-    ],
   },
 ];
 
@@ -132,46 +116,32 @@ export default function Home() {
     enabled: !!customer,
   });
 
-  const renderHomeFeed = (feed: HomeFeed) => {
-    if (feed.type === "link" && feed.href) {
-      return (
-        <Link
-          key={feed.id}
-          href={feed.href}
-          target="_blank"
-          className="flex font-normal"
-        >
-          <Card className="p-0 w-full">
-            <CardHeader className="p-4">
-              <CardTitle className="font-normal">{feed.title}</CardTitle>
-              {feed.previewText && (
-                <CardDescription>{feed.previewText}</CardDescription>
-              )}
-            </CardHeader>
-          </Card>
-        </Link>
-      );
-    } else if (feed.type === "card") {
-      return (
-        <Card key={feed.id} className="p-0 w-full">
-          <CardHeader className="p-4">
-            <CardTitle className="font-normal text-muted-foreground">
-              {feed.title}
-            </CardTitle>
-            <CardDescription>{feed.previewText}</CardDescription>
-          </CardHeader>
-          <CardFooter className="p-4 flex space-y-1">
-            {feed.ctas?.map((cta) => (
-              <Button key={cta.link} variant="secondary" asChild>
-                <Link href={cta.link}>{cta.text}</Link>
-              </Button>
-            ))}
-          </CardFooter>
-        </Card>
-      );
-    } else {
-      return null;
-    }
+  const renderHomeFeeds = (feeds: HomeFeed[]) => {
+    return (
+      <div className="flex flex-col gap-2">
+        {feeds.map((feed) => (
+          <Link
+            target="_blank"
+            href={feed.href}
+            key={feed.id}
+            className={cn(
+              "flex flex-col items-start gap-2 rounded-lg border px-3 py-3 text-left text-sm transition-all hover:bg-accent"
+            )}
+          >
+            <div className="flex w-full flex-col gap-1">
+              <div className="flex items-center">
+                <div className="flex items-center font-medium">
+                  {feed.title}
+                </div>
+              </div>
+            </div>
+            <div className="line-clamp-2 text-muted-foreground text-xs">
+              {feed.previewText}
+            </div>
+          </Link>
+        ))}
+      </div>
+    );
   };
 
   const renderThreads = (threads: Thread[]) => {
@@ -310,8 +280,8 @@ export default function Home() {
                 <TabsTrigger value="home">Home</TabsTrigger>
                 <TabsTrigger value="threads">Threads</TabsTrigger>
               </TabsList>
-              <TabsContent value="home" className="w-full flex flex-col gap-2">
-                {homeFeeds.map((feed) => renderHomeFeed(feed))}
+              <TabsContent value="home">
+                {renderHomeFeeds(homeFeeds)}
               </TabsContent>
               <TabsContent value="threads">
                 {renderThreads(threads)}
