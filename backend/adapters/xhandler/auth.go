@@ -48,8 +48,6 @@ func AuthenticateCustomer(
 			return customer, fmt.Errorf("%v", err)
 		}
 
-		slog.Info("authenticated customer with customer id", slog.String("customerId", sub))
-
 		customer, err = authz.ValidateWorkspaceCustomer(ctx, cc.WorkspaceId, sub)
 		if errors.Is(err, services.ErrCustomerNotFound) {
 			return customer, fmt.Errorf("customer not found or does not exist")

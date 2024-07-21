@@ -498,7 +498,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceLabels(w http.ResponseWriter, r *ht
 // 			}
 
 // 			slog.Info("create Customer by email")
-// 			customer, isCreated, err = h.ws.CreateWorkspaceCustomerWithEmail(ctx, customer)
+// 			customer, isCreated, err = h.ws.CreateCustomerWithEmail(ctx, customer)
 
 // 			if err != nil {
 // 				slog.Error(
@@ -516,7 +516,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceLabels(w http.ResponseWriter, r *ht
 // 			}
 
 // 			slog.Info("create Customer by phone")
-// 			customer, isCreated, err = h.ws.CreateWorkspaceCustomerWithPhone(ctx, customer)
+// 			customer, isCreated, err = h.ws.CreateCustomerWithPhone(ctx, customer)
 
 // 			if err != nil {
 // 				slog.Error(
@@ -534,7 +534,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceLabels(w http.ResponseWriter, r *ht
 // 			}
 
 // 			slog.Info("create Customer by externalId")
-// 			customer, isCreated, err = h.ws.CreateCustomerByExternalId(ctx, customer)
+// 			customer, isCreated, err = h.ws.CreateCustomerWithExternalId(ctx, customer)
 
 // 			if err != nil {
 // 				slog.Error(

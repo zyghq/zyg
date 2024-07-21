@@ -93,6 +93,8 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 	customerEmail := models.NullString(payload.CustomerEmail)
 	customerPhone := models.NullString(payload.CustomerPhone)
 
+	anonId := models.NullString(payload.AnonId)
+
 	anonName := models.Customer{}.AnonName()
 	customerName := models.NullString(&anonName)
 
@@ -129,7 +131,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 					IsVerified:  true,
 					Name:        customerName,
 				}
-				customer, isCreated, err = h.ws.CreateCustomerByExternalId(ctx, customer)
+				customer, isCreated, err = h.ws.CreateCustomerWithExternalId(ctx, customer)
 				if err != nil {
 					slog.Error(
 						"failed to create customer by externalId " +
@@ -151,7 +153,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 					IsVerified:  true,
 					Name:        customerName,
 				}
-				customer, isCreated, err = h.ws.CreateWorkspaceCustomerWithEmail(ctx, customer)
+				customer, isCreated, err = h.ws.CreateCustomerWithEmail(ctx, customer)
 				if err != nil {
 					slog.Error(
 						"failed to create customer by email " +
@@ -173,7 +175,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 					IsVerified:  true,
 					Name:        customerName,
 				}
-				customer, isCreated, err = h.ws.CreateWorkspaceCustomerWithPhone(ctx, customer)
+				customer, isCreated, err = h.ws.CreateCustomerWithPhone(ctx, customer)
 				if err != nil {
 					slog.Error(
 						"failed to create customer by phone " +
@@ -187,6 +189,32 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 				return
 			}
 		}
+	} else if anonId.Valid {
+		// make sure the anonymousId is a valid UUID
+		isValid := models.IsValidUUID(anonId.String)
+		if !isValid {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+		customer = models.Customer{
+			WorkspaceId: widget.WorkspaceId,
+			AnonId:      anonId.String,
+			IsVerified:  false,
+			Name:        customerName,
+		}
+		customer, isCreated, err = h.ws.CreateAnonymousCustomer(ctx, customer)
+		if err != nil {
+			slog.Error(
+				"failed to create anonymous customer "+
+					"something went wrong", slog.Any("error", err),
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		// force client to provide the anonymousId.
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
 	}
 
 	jwt, err := h.cs.GenerateCustomerToken(customer, sk.SecretKey)

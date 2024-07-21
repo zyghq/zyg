@@ -184,12 +184,7 @@ func (s *WorkspaceService) ListWorkspaceLabels(ctx context.Context, workspaceId 
 	return labels, nil
 }
 
-func (s *WorkspaceService) CreateCustomerByExternalId(ctx context.Context, c models.Customer) (models.Customer, bool, error) {
-	// defaultName := c.AnonName()
-	// if !c.Name.Valid {
-	// 	c.Name = models.NullString(&defaultName)
-	// }
-
+func (s *WorkspaceService) CreateCustomerWithExternalId(ctx context.Context, c models.Customer) (models.Customer, bool, error) {
 	customer, created, err := s.customerRepo.UpsertCustomerByExtId(ctx, c)
 	if err != nil {
 		return customer, created, err
@@ -197,12 +192,7 @@ func (s *WorkspaceService) CreateCustomerByExternalId(ctx context.Context, c mod
 	return customer, created, nil
 }
 
-func (s *WorkspaceService) CreateWorkspaceCustomerWithEmail(ctx context.Context, c models.Customer) (models.Customer, bool, error) {
-	// defaultName := c.AnonName()
-	// if !c.Name.Valid {
-	// 	c.Name = models.NullString(&defaultName)
-	// }
-
+func (s *WorkspaceService) CreateCustomerWithEmail(ctx context.Context, c models.Customer) (models.Customer, bool, error) {
 	customer, created, err := s.customerRepo.UpsertCustomerByEmail(ctx, c)
 	if err != nil {
 		return customer, created, err
@@ -210,13 +200,16 @@ func (s *WorkspaceService) CreateWorkspaceCustomerWithEmail(ctx context.Context,
 	return customer, created, nil
 }
 
-func (s *WorkspaceService) CreateWorkspaceCustomerWithPhone(ctx context.Context, c models.Customer) (models.Customer, bool, error) {
-	// defaultName := c.AnonName()
-	// if !c.Name.Valid {
-	// 	c.Name = models.NullString(&defaultName)
-	// }
-
+func (s *WorkspaceService) CreateCustomerWithPhone(ctx context.Context, c models.Customer) (models.Customer, bool, error) {
 	customer, created, err := s.customerRepo.UpsertCustomerByPhone(ctx, c)
+	if err != nil {
+		return customer, created, err
+	}
+	return customer, created, nil
+}
+
+func (s *WorkspaceService) CreateAnonymousCustomer(ctx context.Context, c models.Customer) (models.Customer, bool, error) {
+	customer, created, err := s.customerRepo.UpsertCustomerByAnonId(ctx, c)
 	if err != nil {
 		return customer, created, err
 	}

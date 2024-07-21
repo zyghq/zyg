@@ -5,13 +5,6 @@ import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import CloseButton from "@/components/close-btn";
 import SendMessageCTA from "@/components/send-message-cta";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Icons } from "@/components/icons";

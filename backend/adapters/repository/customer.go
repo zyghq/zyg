@@ -287,7 +287,7 @@ func (c *CustomerDB) FetchCustomersByWorkspaceId(ctx context.Context, workspaceI
 	return customers, nil
 }
 
-func (r *CustomerDB) LookupSecretKeyByWidgetId(ctx context.Context, widgetId string) (models.SecretKey, error) {
+func (c *CustomerDB) LookupSecretKeyByWidgetId(ctx context.Context, widgetId string) (models.SecretKey, error) {
 	var sk models.SecretKey
 	stmt := `SELECT sk.workspace_id as workspace_id,
 		sk.secret_key as secret_key,
@@ -297,7 +297,7 @@ func (r *CustomerDB) LookupSecretKeyByWidgetId(ctx context.Context, widgetId str
 		INNER JOIN secret_key sk ON sk.workspace_id = w.workspace_id
 		WHERE w.widget_id = $1`
 
-	err := r.db.QueryRow(ctx, stmt, widgetId).Scan(
+	err := c.db.QueryRow(ctx, stmt, widgetId).Scan(
 		&sk.WorkspaceId, &sk.SecretKey,
 		&sk.CreatedAt, &sk.UpdatedAt,
 	)
@@ -312,4 +312,46 @@ func (r *CustomerDB) LookupSecretKeyByWidgetId(ctx context.Context, widgetId str
 	}
 
 	return sk, nil
+}
+
+func (c *CustomerDB) UpsertCustomerByAnonId(ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
+	cId := customer.GenId()
+	stmt := `WITH ins AS (
+		INSERT INTO customer (customer_id, workspace_id, anonymous_id, is_verified, name)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (anonymous_id) DO NOTHING
+		RETURNING
+		customer_id, workspace_id,
+		external_id, email, phone, name, anonymous_id,
+		is_verified, created_at, updated_at,
+		TRUE AS is_created
+	)
+	SELECT * FROM ins
+	UNION ALL
+	SELECT customer_id, workspace_id, external_id, email, phone, name,
+	anonymous_id, is_verified, created_at, updated_at, FALSE AS is_created FROM customer
+	WHERE anonymous_id = $3 AND NOT EXISTS (SELECT 1 FROM ins)`
+
+	var isCreated bool
+	err := c.db.QueryRow(
+		ctx, stmt, cId, customer.WorkspaceId, customer.AnonId, customer.IsVerified, customer.Name,
+	).Scan(
+		&customer.CustomerId, &customer.WorkspaceId,
+		&customer.ExternalId, &customer.Email,
+		&customer.Phone, &customer.Name, &customer.AnonId,
+		&customer.IsVerified,
+		&customer.CreatedAt,
+		&customer.UpdatedAt, &isCreated,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return models.Customer{}, isCreated, ErrEmpty
+	}
+
+	if err != nil {
+		slog.Error("failed to query", "error", err)
+		return models.Customer{}, isCreated, ErrQuery
+	}
+
+	return customer, isCreated, nil
 }

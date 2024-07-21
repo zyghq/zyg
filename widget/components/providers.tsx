@@ -34,47 +34,47 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   React.useEffect(() => {
-    const onMessageHandler = (e: MessageEvent) => {
+    const onMessageHandler = async (e: MessageEvent) => {
       try {
         console.log("*********** ifc:onMessageHandler ***********");
         const data = JSON.parse(e.data);
-
         if (data.type === "customer") {
-          const response = JSON.parse(data.data) as SdkCustomerResponse;
-          const { widgetId, ...body } = response;
-          fetch(
-            `${process.env.NEXT_PUBLIC_XAPI_URL}/widgets/${widgetId}/init/`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(body),
-            }
-          )
-            .then((response) => {
-              if (!response.ok) {
-                throw new Error("Not Found");
+          try {
+            const response = JSON.parse(data.data) as SdkCustomerResponse;
+            const { widgetId, ...body } = response;
+            const fetchResponse = await fetch(
+              `/api/widgets/${widgetId}/init/`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(body),
               }
-              return response.json();
-            })
-            .then((data) => {
-              console.log("response data", data);
-              const { jwt, name } = data;
-              setCustomer({
-                widgetId,
-                jwt,
-                name,
-              });
-              // send post message to the parent
-              window.parent.postMessage("ifc:ack", "*");
-            })
-            .catch((err) => {
-              console.error("Error processing request:", err);
-              setHasError(true);
-              // send post message to the parent
-              window.parent.postMessage("ifc:error", "*");
+            );
+
+            if (!fetchResponse.ok) {
+              throw new Error("Not Found");
+            }
+
+            const responseData = await fetchResponse.json();
+            console.log("response data", responseData);
+
+            const { jwt, name } = responseData;
+            setCustomer({
+              widgetId,
+              jwt,
+              name,
             });
+
+            // send post message to the parent
+            window.parent.postMessage("ifc:ack", "*");
+          } catch (err) {
+            console.error("Error processing request:", err);
+            setHasError(true);
+            // send post message to the parent
+            window.parent.postMessage("ifc:error", "*");
+          }
         }
         if (data.type === "start") {
           setIsLoading(false);

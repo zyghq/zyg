@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/rs/xid"
 )
 
@@ -41,6 +42,12 @@ func NullString(s *string) sql.NullString {
 		return sql.NullString{String: "", Valid: false}
 	}
 	return sql.NullString{String: *s, Valid: true}
+}
+
+// validates if a string is a valid UUID
+func IsValidUUID(u string) bool {
+	_, err := uuid.Parse(u)
+	return err == nil
 }
 
 type ThreadStatus struct{}
