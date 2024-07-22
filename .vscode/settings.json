@@ -6,10 +6,17 @@
     "**/CVS": true,
     "**/.DS_Store": true,
     "**/Thumbs.db": true,
-    "ai": true,
-    "webapp": false,
-    "frontend": false,
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/.next": true,
+    "**/out": true,
+    "**/yarn.lock": true,
+    "**/package-lock.json": true,
+    "**/coverage": true,
     "deprecated": true,
+    "ai": false,
+    "frontend": false,
+    "widget": false,
     "backend": false
   }
 }
