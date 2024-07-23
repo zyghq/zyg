@@ -9,7 +9,7 @@ export async function POST(
     const body = await request.json();
     const { jwt } = body;
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_XAPI_URL}/widgets/${widgetId}/threads/chat/`,
+      `${process.env.ZYG_XAPI_URL}/widgets/${widgetId}/threads/chat/`,
       {
         method: "GET",
         headers: {

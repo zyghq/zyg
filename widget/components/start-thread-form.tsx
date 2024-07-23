@@ -3,6 +3,7 @@
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { SendHorizonalIcon } from "lucide-react";
+import { revalidatePath } from "next/cache";
 
 import {
   Form,
@@ -15,6 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
+import { createThreadAction } from "@/app/threads/_actions";
 
 const formSchema = z.object({
   message: z.string().min(1, "Message is required"),
@@ -39,7 +41,13 @@ function SubmitButton({ isDisabled }: { isDisabled: boolean }) {
   );
 }
 
-export default function StartThreadForm() {
+export default function StartThreadForm({
+  widgetId,
+  jwt,
+}: {
+  widgetId: string;
+  jwt: string;
+}) {
   const router = useRouter();
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -62,24 +70,23 @@ export default function StartThreadForm() {
   };
 
   const onSubmit: SubmitHandler<FormValues> = async (values) => {
-    console.log("values", values);
+    const { message } = values;
+    const response = await createThreadAction(widgetId, jwt, {
+      message,
+    });
+    const { error, data } = response;
+    if (error) {
+      const { message } = error;
+      form.setError("root.serverError", {
+        message: message || "Please try again later.",
+      });
+      return;
+    }
+    const { threadChatId } = data;
+    return router.push(`/threads/${threadChatId}`);
   };
 
-  // async function onSubmit(values) {
-  //   console.log("values", values);
-  //   // if (error) {
-  //   //   console.log("got error from server....", error);
-  //   //   const { message } = error;
-  //   //   form.setError("root.serverError", {
-  //   //     type: 500,
-  //   //     message:
-  //   //       message || "Failed to create the chat. Please try again later.",
-  //   //   });
-  //   //   return;
-  //   // }
-  //   // const { threadChatId } = data;
-  //   // return router.push(`/threads/${threadChatId}/`);
-  // }
+  const isDisabled = isSubmitting || isSubmitSuccessful;
 
   return (
     <Form {...form}>
@@ -99,14 +106,18 @@ export default function StartThreadForm() {
                   placeholder="Send us a message"
                   title="Send us a message"
                   required
+                  autoFocus
                   {...field}
                   onKeyDown={onEnterPress}
                 />
               </FormControl>
+              {errors?.root?.serverError && (
+                <FormMessage>{errors?.root?.serverError?.message}</FormMessage>
+              )}
             </FormItem>
           )}
         />
-        <SubmitButton isDisabled={isSubmitting || isSubmitSuccessful} />
+        <SubmitButton isDisabled={isDisabled} />
       </form>
     </Form>
   );

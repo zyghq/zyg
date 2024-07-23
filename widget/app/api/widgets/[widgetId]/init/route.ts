@@ -8,7 +8,7 @@ export async function POST(
     const { widgetId } = params;
     const body = await request.json();
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_XAPI_URL}/widgets/${widgetId}/init/`,
+      `${process.env.ZYG_XAPI_URL}/widgets/${widgetId}/init/`,
       {
         method: "POST",
         headers: {

@@ -1,8 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  QueryClient,
+  QueryClientProvider,
+  useMutation,
+} from "@tanstack/react-query";
 import { Customer, CustomerContext, SdkCustomerResponse } from "@/lib/customer";
+import { useQuery } from "@tanstack/react-query";
 
 export const ReactQueryClientProvider = ({
   children,
@@ -24,14 +29,60 @@ export const ReactQueryClientProvider = ({
   );
 };
 
+async function initWidgetRequest(payload: SdkCustomerResponse) {
+  const { widgetId, ...body } = payload;
+  const response = await fetch(`/api/widgets/${widgetId}/init`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    throw new Error("Not Found");
+  }
+
+  const responseData = await response.json();
+  const { jwt, name } = responseData;
+  return {
+    widgetId,
+    jwt,
+    name,
+  };
+}
+
 export function CustomerProvider({ children }: { children: React.ReactNode }) {
   const [customer, setCustomer] = React.useState<Customer | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [hasError, setHasError] = React.useState(false);
 
-  React.useEffect(() => {
-    window.parent.postMessage("ifc:ready", "*");
-  }, []);
+  // React.useEffect(() => {
+  //   window.parent.postMessage("ifc:ready", "*");
+  // }, []);
+
+  const _ = useQuery({
+    queryKey: ["ifc:ready"],
+    queryFn: async () => {
+      window.parent.postMessage("ifc:ready", "*");
+      return true;
+    },
+  });
+
+  const initMutate = useMutation({
+    mutationFn: async (payload: SdkCustomerResponse) => {
+      const customer = await initWidgetRequest(payload);
+      return customer;
+    },
+    onSuccess: (result) => {
+      setCustomer(result);
+      window.parent.postMessage("ifc:ack", "*");
+    },
+    onError: (error, variables, context) => {
+      console.log("onError", error, variables, context);
+      setHasError(true);
+    },
+  });
 
   React.useEffect(() => {
     const onMessageHandler = async (e: MessageEvent) => {
@@ -39,48 +90,14 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         console.log("*********** ifc:onMessageHandler ***********");
         const data = JSON.parse(e.data);
         if (data.type === "customer") {
-          try {
-            const response = JSON.parse(data.data) as SdkCustomerResponse;
-            const { widgetId, ...body } = response;
-            const fetchResponse = await fetch(
-              `/api/widgets/${widgetId}/init/`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(body),
-              }
-            );
-
-            if (!fetchResponse.ok) {
-              throw new Error("Not Found");
-            }
-
-            const responseData = await fetchResponse.json();
-            console.log("response data", responseData);
-
-            const { jwt, name } = responseData;
-            setCustomer({
-              widgetId,
-              jwt,
-              name,
-            });
-
-            // send post message to the parent
-            window.parent.postMessage("ifc:ack", "*");
-          } catch (err) {
-            console.error("Error processing request:", err);
-            setHasError(true);
-            // send post message to the parent
-            window.parent.postMessage("ifc:error", "*");
-          }
+          const response = JSON.parse(data.data) as SdkCustomerResponse;
+          initMutate.mutate({ ...response });
         }
         if (data.type === "start") {
           setIsLoading(false);
         }
       } catch (err) {
-        console.error("evt on message something went wrong:", err);
+        console.error("error procesing evt message:", err);
       } finally {
         console.log("*********** ifc:onMessageHandler ***********");
       }
@@ -89,7 +106,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     return () => {
       window.removeEventListener("message", onMessageHandler);
     };
-  }, []);
+  }, [initMutate]);
 
   const value = {
     isLoading,

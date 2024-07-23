@@ -107,6 +107,8 @@ export default function Home() {
       return response.json();
     },
     enabled: !!customer,
+    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
   });
 
   const renderHomeFeeds = (feeds: HomeFeed[]) => {
