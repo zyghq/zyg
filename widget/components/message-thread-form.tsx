@@ -14,6 +14,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
+import { sendThreadMessageAction } from "@/app/threads/_actions";
 
 const formSchema = z.object({
   message: z.string().min(1, "Message is required"),
@@ -38,7 +39,17 @@ function SubmitButton({ isDisabled }: { isDisabled: boolean }) {
   );
 }
 
-export default function MessageThreadForm() {
+export default function MessageThreadForm({
+  widgetId,
+  threadId,
+  jwt,
+  refetch,
+}: {
+  widgetId: string;
+  threadId: string;
+  jwt: string;
+  refetch: () => void;
+}) {
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -60,26 +71,21 @@ export default function MessageThreadForm() {
   };
 
   const onSubmit: SubmitHandler<FormValues> = async (values) => {
-    console.log("values", values);
+    const { message } = values;
+    const response = await sendThreadMessageAction(widgetId, threadId, jwt, {
+      message,
+    });
+    const { error } = response;
+    if (error) {
+      const { message } = error;
+      form.setError("root.serverError", {
+        message: message || "Please try again later.",
+      });
+      return;
+    }
+    form.reset({ message: "" });
+    refetch();
   };
-
-  //   async function onSubmit(values) {
-  //     const response = await sendThreadChatMessage(authToken, threadId, values);
-  //     const { error, data } = response;
-  //     if (error) {
-  //       console.log("got error from server....", error);
-  //       const { message } = error;
-  //       form.setError("root.serverError", {
-  //         type: 500,
-  //         message:
-  //           message || "Failed to create the chat. Please try again later.",
-  //       });
-  //       return;
-  //     }
-  //     console.log(data);
-  //     form.reset({ message: "" });
-  //     refetch();
-  //   }
 
   return (
     <Form {...form}>
@@ -102,11 +108,9 @@ export default function MessageThreadForm() {
                   onKeyDown={onEnterPress}
                 />
               </FormControl>
-              {/* {errors?.root?.serverError?.type === 500 && (
-                <FormMessage type="error">
-                  {errors?.root?.serverError?.message}
-                </FormMessage>
-              )} */}
+              {errors?.root?.serverError && (
+                <FormMessage>{errors?.root?.serverError?.message}</FormMessage>
+              )}
             </FormItem>
           )}
         />

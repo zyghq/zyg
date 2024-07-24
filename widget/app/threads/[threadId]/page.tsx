@@ -94,6 +94,7 @@ export default function ThreadMessages({
     data: thread,
     isLoading: isLoadingThread,
     error: errorThread,
+    refetch,
   } = useQuery({
     queryKey: ["messages", threadId],
     queryFn: async () => {
@@ -207,7 +208,14 @@ export default function ThreadMessages({
         </div>
         <div className="fixed bottom-0 left-0 flex w-full border-t flex-col bg-white">
           <div className="flex flex-col px-4 pt-4">
-            <MessageThreadForm />
+            {customer && (
+              <MessageThreadForm
+                widgetId={customer.widgetId}
+                threadId={threadId}
+                jwt={customer.jwt}
+                refetch={refetch}
+              />
+            )}
           </div>
           <div className="w-full flex justify-center items-center py-2">
             <a
