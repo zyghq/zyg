@@ -16,6 +16,11 @@ export interface Customer {
   widgetId: string;
   name: string;
   jwt: string;
+  anonId?: string;
+  customerExternalId?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  customerHash?: string;
 }
 
 export interface CustomerContext {

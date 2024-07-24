@@ -71,7 +71,14 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
 
   const initMutate = useMutation({
     mutationFn: async (payload: SdkCustomerResponse) => {
-      const customer = await initWidgetRequest(payload);
+      const response = await initWidgetRequest(payload);
+      const customer = {
+        ...response,
+        anonId: payload.anonId,
+        customeExternalId: payload.customerExternalId,
+        customerEmail: payload.customerEmail,
+        customerPhone: payload.customerPhone,
+      };
       return customer;
     },
     onSuccess: (result) => {

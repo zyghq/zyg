@@ -1,6 +1,8 @@
-"use client";
-
-import { Textarea } from "@/components/ui/textarea";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { SubmitHandler } from "react-hook-form";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SendHorizonalIcon } from "lucide-react";
 
@@ -11,18 +13,10 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, SubmitHandler } from "react-hook-form";
-import { z } from "zod";
-import { sendThreadMessageAction } from "@/app/threads/_actions";
 
 const formSchema = z.object({
-  message: z.string().min(1, "Message is required"),
+  email: z.string().email(),
 });
-
-// type FormValues = {
-//   message: string;
-// };
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -41,54 +35,27 @@ function SubmitButton({ isDisabled }: { isDisabled: boolean }) {
   );
 }
 
-export default function MessageThreadForm({
-  disabled,
+export default function AskEmailForm({
   widgetId,
   threadId,
   jwt,
-  refetch,
 }: {
-  disabled: boolean;
   widgetId: string;
   threadId: string;
   jwt: string;
-  refetch: () => void;
 }) {
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      message: "",
+      email: "",
     },
   });
 
   const { formState } = form;
   const { isSubmitting, errors } = formState;
 
-  const onEnterPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      const form = e.currentTarget.form;
-      if (form) {
-        form.requestSubmit();
-      }
-    }
-  };
-
   const onSubmit: SubmitHandler<FormValues> = async (values) => {
-    const { message } = values;
-    const response = await sendThreadMessageAction(widgetId, threadId, jwt, {
-      message,
-    });
-    const { error } = response;
-    if (error) {
-      const { message } = error;
-      form.setError("root.serverError", {
-        message: message || "Please try again later.",
-      });
-      return;
-    }
-    form.reset({ message: "" });
-    refetch();
+    console.log(values);
   };
 
   return (
@@ -99,18 +66,15 @@ export default function MessageThreadForm({
       >
         <FormField
           control={form.control}
-          name="message"
+          name="email"
           render={({ field }) => (
             <FormItem className="space-y-2 w-full">
               <FormControl>
-                <Textarea
-                  disabled={disabled}
-                  className="resize-none"
-                  placeholder="Send us a message"
-                  title="Send us a message"
+                <Input
+                  placeholder="you@example.com"
+                  title="Email"
                   required
                   {...field}
-                  onKeyDown={onEnterPress}
                 />
               </FormControl>
               {errors?.root?.serverError && (
@@ -119,7 +83,7 @@ export default function MessageThreadForm({
             </FormItem>
           )}
         />
-        <SubmitButton isDisabled={isSubmitting || disabled} />
+        <SubmitButton isDisabled={isSubmitting} />
       </form>
     </Form>
   );

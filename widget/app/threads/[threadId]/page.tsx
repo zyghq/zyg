@@ -8,6 +8,7 @@ import MessageThreadForm from "@/components/message-thread-form";
 import { Icons } from "@/components/icons";
 import { useCustomer } from "@/lib/customer";
 import { useQuery } from "@tanstack/react-query";
+import AskEmailForm from "@/components/ask-email-form";
 
 interface Thread {
   threadChatId: string;
@@ -89,6 +90,11 @@ export default function ThreadMessages({
 }) {
   const { threadId } = params;
   const { isLoading, hasError, customer } = useCustomer();
+
+  const hasIdentity =
+    customer?.customerEmail ||
+    customer?.customerPhone ||
+    customer?.customerExternalId;
 
   const {
     data: thread,
@@ -187,7 +193,13 @@ export default function ThreadMessages({
   }
 
   const { messages } = thread;
-  const messagesReversed = messages.slice().reverse();
+
+  const hasSentMessageWithoutIdentity =
+    messages.length > 0 && !hasIdentity && customer;
+
+  const messagesReversed = hasSentMessageWithoutIdentity
+    ? messages.reverse().slice(messages.length - 1)
+    : messages.reverse();
 
   return (
     <div className="flex min-h-screen flex-col font-sans">
@@ -210,6 +222,7 @@ export default function ThreadMessages({
           <div className="flex flex-col px-4 pt-4">
             {customer && (
               <MessageThreadForm
+                disabled={!!hasSentMessageWithoutIdentity}
                 widgetId={customer.widgetId}
                 threadId={threadId}
                 jwt={customer.jwt}
@@ -234,6 +247,18 @@ export default function ThreadMessages({
             {messagesReversed.map((message) => (
               <Message key={message.threadChatMessageId} message={message} />
             ))}
+            {hasSentMessageWithoutIdentity && (
+              <div className="flex flex-col px-2">
+                <div className="text-sm max-w-xs font-semibold mb-1">
+                  Please provide your email address so we can reach you.
+                </div>
+                <AskEmailForm
+                  widgetId={customer.widgetId}
+                  threadId={threadId}
+                  jwt={customer.jwt}
+                />
+              </div>
+            )}
             <div ref={bottomRef}></div>
           </div>
         </ScrollArea>
