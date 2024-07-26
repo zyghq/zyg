@@ -96,7 +96,8 @@ CREATE TABLE customer (
     email VARCHAR(255) NULL, -- email of the customer
     phone VARCHAR(255) NULL, -- phone of the customer
     name VARCHAR(255)  NULL, -- name of the customer
-    
+
+    role VARCHAR(255) NOT NULL, -- role of the customer
     anonymous_id UUID DEFAULT gen_random_uuid(), -- anonymous id of the customer
     is_verified BOOLEAN NOT NULL DEFAULT FALSE, -- verified status of the customer
     

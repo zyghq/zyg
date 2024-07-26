@@ -127,6 +127,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 					WorkspaceId: widget.WorkspaceId,
 					ExternalId:  customerExternalId,
 					IsVerified:  true,
+					Role:        models.Customer{}.Engaged(),
 					Name:        customerName,
 				}
 				customer, isCreated, err = h.ws.CreateCustomerWithExternalId(ctx, customer)
@@ -149,6 +150,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 					WorkspaceId: widget.WorkspaceId,
 					Email:       customerEmail,
 					IsVerified:  true,
+					Role:        models.Customer{}.Engaged(),
 					Name:        customerName,
 				}
 				customer, isCreated, err = h.ws.CreateCustomerWithEmail(ctx, customer)
@@ -171,6 +173,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 					WorkspaceId: widget.WorkspaceId,
 					Phone:       customerPhone,
 					IsVerified:  true,
+					Role:        models.Customer{}.Engaged(),
 					Name:        customerName,
 				}
 				customer, isCreated, err = h.ws.CreateCustomerWithPhone(ctx, customer)
@@ -198,6 +201,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 			WorkspaceId: widget.WorkspaceId,
 			AnonId:      anonId.String,
 			IsVerified:  false,
+			Role:        models.Customer{}.Visitor(),
 			Name:        customerName,
 		}
 		customer, isCreated, err = h.ws.CreateAnonymousCustomer(ctx, customer)

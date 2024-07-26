@@ -330,12 +330,25 @@ type Customer struct {
 	Name        sql.NullString
 	AnonId      string
 	IsVerified  bool
+	Role        string
 	UpdatedAt   time.Time
 	CreatedAt   time.Time
 }
 
 func (c Customer) GenId() string {
 	return "c_" + xid.New().String()
+}
+
+func (c Customer) Visitor() string {
+	return "visitor"
+}
+
+func (c Customer) Lead() string {
+	return "lead"
+}
+
+func (c Customer) Engaged() string {
+	return "engaged"
 }
 
 func (c Customer) MarshalJSON() ([]byte, error) {
@@ -362,6 +375,7 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 		Name        *string `json:"name"`
 		AnonId      string  `json:"anonId"`
 		IsVerified  bool    `json:"isVerified"`
+		Role        string  `json:"role"`
 		CreatedAt   string  `json:"createdAt"`
 		UpdatedAt   string  `json:"updatedAt"`
 	}{
@@ -373,6 +387,7 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 		Name:        name,
 		AnonId:      c.AnonId,
 		IsVerified:  c.IsVerified,
+		Role:        c.Role,
 		CreatedAt:   c.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:   c.UpdatedAt.Format(time.RFC3339),
 	}
