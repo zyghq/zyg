@@ -89,7 +89,7 @@ export default function ThreadMessages({
   params: { threadId: string };
 }) {
   const { threadId } = params;
-  const { isLoading, hasError, customer } = useCustomer();
+  const { isLoading, hasError, customer, setIdentities } = useCustomer();
 
   const hasIdentity =
     customer?.customerEmail ||
@@ -192,14 +192,22 @@ export default function ThreadMessages({
     );
   }
 
-  const { messages } = thread;
+  const reverse = function (arr: any[]) {
+    let newArr = [],
+      i = arr.length;
+    while (i--) {
+      newArr.push(arr[i]);
+    }
+    return newArr;
+  };
 
+  const { messages } = thread;
   const hasSentMessageWithoutIdentity =
     messages.length > 0 && !hasIdentity && customer;
 
   const messagesReversed = hasSentMessageWithoutIdentity
-    ? messages.reverse().slice(messages.length - 1)
-    : messages.reverse();
+    ? Array.from([messages[0]])
+    : reverse(messages);
 
   return (
     <div className="flex min-h-screen flex-col font-sans">
@@ -254,8 +262,8 @@ export default function ThreadMessages({
                 </div>
                 <AskEmailForm
                   widgetId={customer.widgetId}
-                  threadId={threadId}
                   jwt={customer.jwt}
+                  setIdentities={setIdentities}
                 />
               </div>
             )}

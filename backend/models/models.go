@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -380,6 +381,42 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 
 func (c Customer) AnonName() string {
 	return "Anon User"
+}
+
+func (c Customer) AddAnonimizedEmail(email string) string {
+	return c.AnonId + "~" + email
+}
+
+func (c Customer) AddAnonimizedPhone(phone string) string {
+	return c.AnonId + "~" + phone
+}
+
+func (c Customer) AddAnonimizedExternalId(externalId string) string {
+	return c.AnonId + "~" + externalId
+}
+
+func (c Customer) DeAnonEmail() string {
+	splits := strings.Split(c.Email.String, "~")
+	if len(splits) == 2 {
+		return splits[1]
+	}
+	return c.Email.String
+}
+
+func (c Customer) DeAnonPhone() string {
+	splits := strings.Split(c.Phone.String, "~")
+	if len(splits) == 2 {
+		return splits[1]
+	}
+	return c.Phone.String
+}
+
+func (c Customer) DeAnonExternalId() string {
+	splits := strings.Split(c.ExternalId.String, "~")
+	if len(splits) == 2 {
+		return splits[1]
+	}
+	return c.ExternalId.String
 }
 
 type ThreadChat struct {

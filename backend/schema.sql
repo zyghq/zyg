@@ -91,12 +91,15 @@ CREATE TABLE member (
 CREATE TABLE customer (
     customer_id VARCHAR(255) NOT NULL, -- primary key
     workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
+    
     external_id VARCHAR(255) NULL, -- external id of the customer
     email VARCHAR(255) NULL, -- email of the customer
     phone VARCHAR(255) NULL, -- phone of the customer
     name VARCHAR(255)  NULL, -- name of the customer
+    
     anonymous_id UUID DEFAULT gen_random_uuid(), -- anonymous id of the customer
     is_verified BOOLEAN NOT NULL DEFAULT FALSE, -- verified status of the customer
+    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 

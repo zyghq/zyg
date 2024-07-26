@@ -6,6 +6,10 @@ interface CreateThreadBody {
   message: string;
 }
 
+interface UpdateEmailBody {
+  email: string;
+}
+
 export async function createThreadActionAPI(
   widgetId: string,
   jwt: string,
@@ -132,6 +136,69 @@ export async function sendThreadMessageAction(
     jwt,
     body
   );
+  if (error) {
+    return {
+      error,
+      data: null,
+    };
+  }
+  revalidatePath("/");
+  return {
+    error: null,
+    data,
+  };
+}
+
+export async function updateEmailActionAPI(
+  widgetId: string,
+  jwt: string,
+  body: UpdateEmailBody
+) {
+  try {
+    const response = await fetch(
+      `${process.env.ZYG_XAPI_URL}/widgets/${widgetId}/me/identities/`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${jwt}`,
+        },
+        body: JSON.stringify(body),
+      }
+    );
+
+    if (!response.ok) {
+      const { status, statusText } = response;
+      console.error(`Failed to update email. Status: ${status} ${statusText}`);
+      return {
+        data: null,
+        error: {
+          message: "Failed. Please try again later.",
+        },
+      };
+    }
+    const data = await response.json();
+    return {
+      error: null,
+      data,
+    };
+  } catch (err) {
+    console.error("Something went wrong", err);
+    return {
+      error: {
+        message: "Something went wrong. Please try again later.",
+      },
+      data: null,
+    };
+  }
+}
+
+export async function updateEmailAction(
+  widgetId: string,
+  jwt: string,
+  body: UpdateEmailBody
+) {
+  const { error, data } = await updateEmailActionAPI(widgetId, jwt, body);
   if (error) {
     return {
       error,

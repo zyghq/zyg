@@ -7,8 +7,8 @@ import (
 )
 
 type AccountServicer interface {
-	InitiateAccount(ctx context.Context, a models.Account) (models.Account, bool, error)
-	GeneratePersonalAccessToken(ctx context.Context, ap models.AccountPAT) (models.AccountPAT, error)
+	InitiateAccount(ctx context.Context, account models.Account) (models.Account, bool, error)
+	GeneratePersonalAccessToken(ctx context.Context, pat models.AccountPAT) (models.AccountPAT, error)
 	GetPersonalAccessTokens(ctx context.Context, accountId string) ([]models.AccountPAT, error)
 	GetPersonalAccessToken(ctx context.Context, patId string) (models.AccountPAT, error)
 	DeletePersonalAccessToken(ctx context.Context, patId string) error
@@ -25,8 +25,8 @@ type CustomerAuthServicer interface {
 }
 
 type WorkspaceServicer interface {
-	CreateWorkspace(ctx context.Context, a models.Account, w models.Workspace) (models.Workspace, error)
-	UpdateWorkspace(ctx context.Context, w models.Workspace) (models.Workspace, error)
+	CreateWorkspace(ctx context.Context, account models.Account, workspace models.Workspace) (models.Workspace, error)
+	UpdateWorkspace(ctx context.Context, workspace models.Workspace) (models.Workspace, error)
 	SetWorkspaceLabel(ctx context.Context, workspaceId string, label models.Label) (models.Label, error)
 	GetWorkspace(ctx context.Context, workspaceId string) (models.Workspace, error)
 	GetMemberWorkspace(ctx context.Context, accountId string, workspaceId string) (models.Workspace, error)
@@ -39,10 +39,10 @@ type WorkspaceServicer interface {
 	ListWorkspaceMembers(ctx context.Context, workspaceId string) ([]models.Member, error)
 	GetWorkspaceMemberById(ctx context.Context, workspaceId string, memberId string) (models.Member, error)
 	ListWorkspaceCustomers(ctx context.Context, workspaceId string) ([]models.Customer, error)
-	CreateCustomerWithExternalId(ctx context.Context, c models.Customer) (models.Customer, bool, error)
-	CreateCustomerWithEmail(ctx context.Context, c models.Customer) (models.Customer, bool, error)
-	CreateCustomerWithPhone(ctx context.Context, c models.Customer) (models.Customer, bool, error)
-	CreateAnonymousCustomer(ctx context.Context, c models.Customer) (models.Customer, bool, error)
+	CreateCustomerWithExternalId(ctx context.Context, customer models.Customer) (models.Customer, bool, error)
+	CreateCustomerWithEmail(ctx context.Context, customer models.Customer) (models.Customer, bool, error)
+	CreateCustomerWithPhone(ctx context.Context, customer models.Customer) (models.Customer, bool, error)
+	CreateAnonymousCustomer(ctx context.Context, customer models.Customer) (models.Customer, bool, error)
 	CreateWidget(ctx context.Context, workspaceId string, widget models.Widget) (models.Widget, error)
 	ListWidgets(ctx context.Context, workspaceId string) ([]models.Widget, error)
 	GenerateSecretKey(ctx context.Context, workspaceId string, length int) (models.SecretKey, error)
@@ -51,13 +51,15 @@ type WorkspaceServicer interface {
 }
 
 type CustomerServicer interface {
-	GetCustomerByExternalId(ctx context.Context, workspaceId string, externalId string) (models.Customer, error)
-	GetCustomerByEmail(ctx context.Context, workspaceId string, email string) (models.Customer, error)
-	GetCustomerByPhone(ctx context.Context, workspaceId string, phone string) (models.Customer, error)
-	GenerateCustomerToken(c models.Customer, sk string) (string, error)
+	// GetCustomerByExternalId(ctx context.Context, workspaceId string, externalId string) (models.Customer, error)
+	// GetCustomerByEmail(ctx context.Context, workspaceId string, email string) (models.Customer, error)
+	// GetCustomerByPhone(ctx context.Context, workspaceId string, phone string) (models.Customer, error)
+	GenerateCustomerToken(customer models.Customer, sk string) (string, error)
 	VerifyExternalId(sk string, hash string, externalId string) bool
 	VerifyEmail(sk string, hash string, email string) bool
 	VerifyPhone(sk string, hash string, phone string) bool
+	GetWorkspaceCustomerById(ctx context.Context, workspaceId string, customerId string) (models.Customer, error)
+	UpdateCustomer(ctx context.Context, customer models.Customer) (models.Customer, error)
 }
 
 type ThreadChatServicer interface {
@@ -116,15 +118,16 @@ type MemberRepositorer interface {
 
 type CustomerRepositorer interface {
 	LookupByWorkspaceCustomerId(ctx context.Context, workspaceId string, customerId string) (models.Customer, error)
-	FetchWorkspaceCustomerByExtId(ctx context.Context, workspaceId string, externalId string) (models.Customer, error)
-	RetrieveWorkspaceCustomerByEmail(ctx context.Context, workspaceId string, email string) (models.Customer, error)
-	LookupWorkspaceCustomerByPhone(ctx context.Context, workspaceId string, phone string) (models.Customer, error)
+	// FetchWorkspaceCustomerByExtId(ctx context.Context, workspaceId string, externalId string) (models.Customer, error)
+	// RetrieveWorkspaceCustomerByEmail(ctx context.Context, workspaceId string, email string) (models.Customer, error)
+	// LookupWorkspaceCustomerByPhone(ctx context.Context, workspaceId string, phone string) (models.Customer, error)
 	UpsertCustomerByExtId(ctx context.Context, c models.Customer) (models.Customer, bool, error)
 	UpsertCustomerByEmail(ctx context.Context, c models.Customer) (models.Customer, bool, error)
 	UpsertCustomerByPhone(ctx context.Context, c models.Customer) (models.Customer, bool, error)
 	UpsertCustomerByAnonId(ctx context.Context, c models.Customer) (models.Customer, bool, error)
 	FetchCustomersByWorkspaceId(ctx context.Context, workspaceId string) ([]models.Customer, error)
 	LookupSecretKeyByWidgetId(ctx context.Context, widgetId string) (models.SecretKey, error)
+	ModifyCustomerById(ctx context.Context, c models.Customer) (models.Customer, error)
 }
 
 type ThreadChatRepositorer interface {

@@ -6,7 +6,12 @@ import {
   QueryClientProvider,
   useMutation,
 } from "@tanstack/react-query";
-import { Customer, CustomerContext, SdkCustomerResponse } from "@/lib/customer";
+import {
+  Customer,
+  Identities,
+  CustomerContext,
+  SdkCustomerResponse,
+} from "@/lib/customer";
 import { useQuery } from "@tanstack/react-query";
 
 export const ReactQueryClientProvider = ({
@@ -44,11 +49,9 @@ async function initWidgetRequest(payload: SdkCustomerResponse) {
   }
 
   const responseData = await response.json();
-  const { jwt, name } = responseData;
   return {
     widgetId,
-    jwt,
-    name,
+    ...responseData,
   };
 }
 
@@ -72,13 +75,22 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   const initMutate = useMutation({
     mutationFn: async (payload: SdkCustomerResponse) => {
       const response = await initWidgetRequest(payload);
+      const {
+        email: customerEmail,
+        phone: customerPhone,
+        externalId: customerExternalId,
+        isVerified,
+        ...others
+      } = response;
       const customer = {
-        ...response,
         anonId: payload.anonId,
-        customeExternalId: payload.customerExternalId,
-        customerEmail: payload.customerEmail,
-        customerPhone: payload.customerPhone,
+        customerExternalId,
+        customerEmail,
+        customerPhone,
+        isVerified,
+        ...others,
       };
+      console.log("*** customer ***", customer);
       return customer;
     },
     onSuccess: (result) => {
@@ -90,6 +102,31 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
       setHasError(true);
     },
   });
+
+  const setIdentities = (identities: Identities) => {
+    if (!customer) {
+      return;
+    }
+    const {
+      name,
+      customerEmail,
+      customerPhone,
+      customerExternalId,
+      isVerified,
+    } = identities;
+    const { widgetId, jwt, anonId } = customer;
+    const updates = {
+      name,
+      widgetId,
+      jwt,
+      anonId,
+      customerEmail,
+      customerPhone,
+      customerExternalId,
+      isVerified,
+    };
+    setCustomer(updates);
+  };
 
   React.useEffect(() => {
     const onMessageHandler = async (e: MessageEvent) => {
@@ -119,6 +156,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     hasError,
     customer,
+    setIdentities,
   };
 
   return (

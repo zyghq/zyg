@@ -5,7 +5,6 @@ import { SubmitHandler } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SendHorizonalIcon } from "lucide-react";
-
 import {
   Form,
   FormControl,
@@ -13,6 +12,8 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
+import { updateEmailAction } from "@/app/threads/_actions";
+import { Identities } from "@/lib/customer";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -37,12 +38,12 @@ function SubmitButton({ isDisabled }: { isDisabled: boolean }) {
 
 export default function AskEmailForm({
   widgetId,
-  threadId,
   jwt,
+  setIdentities,
 }: {
   widgetId: string;
-  threadId: string;
   jwt: string;
+  setIdentities: (identities: Identities) => void;
 }) {
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -55,7 +56,29 @@ export default function AskEmailForm({
   const { isSubmitting, errors } = formState;
 
   const onSubmit: SubmitHandler<FormValues> = async (values) => {
-    console.log(values);
+    const { email } = values;
+    const response = await updateEmailAction(widgetId, jwt, {
+      email,
+    });
+    const { error, data } = response;
+    if (error) {
+      const { message } = error;
+      form.setError("root.serverError", {
+        message: message || "Please try again later.",
+      });
+      return;
+    }
+    if (data) {
+      const { email, externalId, phone, name, isVerified } = data;
+      setIdentities({
+        name,
+        customerEmail: email,
+        customerPhone: phone,
+        customerExternalId: externalId,
+        isVerified,
+      });
+    }
+    form.reset({ email: "" });
   };
 
   return (

@@ -39,7 +39,6 @@ func NewCustomerHandler(
 	}
 }
 
-// TODO: add support for `anonymousId`
 func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *http.Request) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
@@ -94,7 +93,6 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 	customerPhone := models.NullString(payload.CustomerPhone)
 
 	anonId := models.NullString(payload.AnonId)
-
 	anonName := models.Customer{}.AnonName()
 	customerName := models.NullString(&anonName)
 
@@ -224,11 +222,18 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		return
 	}
 
+	denonEmail := customer.DeAnonEmail()
+	denonPhone := customer.DeAnonPhone()
+	denonExternalId := customer.DeAnonExternalId()
+
 	resp := WidgetInitRespPayload{
 		Jwt:        jwt,
 		Create:     isCreated,
 		IsVerified: isVerified,
 		Name:       customer.Name,
+		Email:      models.NullString(&denonEmail),
+		Phone:      models.NullString(&denonPhone),
+		ExternalId: models.NullString(&denonExternalId),
 	}
 
 	if isCreated {
@@ -254,7 +259,6 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 			return
 		}
 	}
-
 }
 
 func (h *CustomerHandler) handleGetCustomer(w http.ResponseWriter, r *http.Request, customer *models.Customer) {
@@ -268,6 +272,123 @@ func (h *CustomerHandler) handleGetCustomer(w http.ResponseWriter, r *http.Reque
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
+	}
+}
+
+func (h *CustomerHandler) handleAddCustomerIdentities(w http.ResponseWriter, r *http.Request, customer *models.Customer) {
+
+	defer func(r io.ReadCloser) {
+		_, _ = io.Copy(io.Discard, r)
+		_ = r.Close()
+	}(r.Body)
+
+	var payload AddCustomerIdentitiesReqPayload
+
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	widgetId := r.PathValue("widgetId")
+
+	widget, err := h.ws.GetWorkspaceWidget(ctx, widgetId)
+
+	if errors.Is(err, services.ErrWidgetNotFound) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		slog.Error(
+			"failed to get workspace widget "+
+				"something went wrong",
+			slog.String("widgetId", widgetId),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	widgetCustomer, err := h.cs.GetWorkspaceCustomerById(ctx, widget.WorkspaceId, customer.CustomerId)
+	if errors.Is(err, services.ErrCustomerNotFound) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		slog.Error(
+			"failed to get workspace customer by id "+
+				"something went wrong",
+			slog.String("customerId", customer.CustomerId),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	// don't want to modify a verified customer
+	// from the external widget.
+	if widgetCustomer.IsVerified {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	hasModified := false
+	if payload.Email != nil {
+		email := widgetCustomer.AddAnonimizedEmail(*payload.Email)
+		widgetCustomer.Email = models.NullString(&email)
+		hasModified = true
+	}
+
+	if payload.Phone != nil {
+		phone := widgetCustomer.AddAnonimizedPhone(*payload.Phone)
+		widgetCustomer.Phone = models.NullString(&phone)
+		hasModified = true
+	}
+
+	if payload.External != nil {
+		externalId := widgetCustomer.AddAnonimizedExternalId(*payload.External)
+		widgetCustomer.ExternalId = models.NullString(&externalId)
+		hasModified = true
+	}
+
+	if hasModified {
+		widgetCustomer, err = h.cs.UpdateCustomer(ctx, widgetCustomer)
+		if err != nil {
+			slog.Error(
+				"failed to update customer "+
+					"something went wrong",
+				slog.String("customerId", customer.CustomerId),
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		denonEmail := widgetCustomer.DeAnonEmail()
+		denonPhone := widgetCustomer.DeAnonPhone()
+		denonExternalId := widgetCustomer.DeAnonExternalId()
+
+		resp := AddCustomerIdentitiesRespPayload{
+			IsVerified: widgetCustomer.IsVerified,
+			Name:       widgetCustomer.Name,
+			Email:      models.NullString(&denonEmail),
+			Phone:      models.NullString(&denonPhone),
+			ExternalId: models.NullString(&denonExternalId),
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			slog.Error(
+				"failed to encode customer to json "+
+					"check the json encoding defn",
+				slog.String("customerId", customer.CustomerId),
+			)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 	}
 }
 
@@ -811,6 +932,7 @@ func NewServer(
 
 	mux.HandleFunc("POST /widgets/{widgetId}/init/{$}", ch.handleGetOrCreateCustomer)
 	mux.Handle("GET /widgets/{widgetId}/me/{$}", NewEnsureAuth(ch.handleGetCustomer, authService))
+	mux.Handle("POST /widgets/{widgetId}/me/identities/{$}", NewEnsureAuth(ch.handleAddCustomerIdentities, authService))
 
 	mux.Handle("POST /widgets/{widgetId}/threads/chat/{$}", NewEnsureAuth(ch.handleCreateCustomerThChat, authService))
 	mux.Handle("GET /widgets/{widgetId}/threads/chat/{$}", NewEnsureAuth(ch.handleGetCustomerThChats, authService))

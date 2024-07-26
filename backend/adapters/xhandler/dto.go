@@ -26,6 +26,9 @@ type WidgetInitRespPayload struct {
 	Create     bool           `json:"create"`
 	IsVerified bool           `json:"isVerified"`
 	Name       sql.NullString `json:"name"`
+	Email      sql.NullString `json:"email"`
+	Phone      sql.NullString `json:"phone"`
+	ExternalId sql.NullString `json:"externalId"`
 }
 
 func (w WidgetInitRespPayload) MarshalJSON() ([]byte, error) {
@@ -33,16 +36,38 @@ func (w WidgetInitRespPayload) MarshalJSON() ([]byte, error) {
 	if w.Name.Valid {
 		name = &w.Name.String
 	}
+
+	var email *string
+	if w.Email.Valid {
+		email = &w.Email.String
+	}
+
+	var phone *string
+	if w.Phone.Valid {
+		phone = &w.Phone.String
+	}
+
+	var externalId *string
+	if w.ExternalId.Valid {
+		externalId = &w.ExternalId.String
+	}
+
 	aux := &struct {
 		Jwt        string  `json:"jwt"`
 		Create     bool    `json:"create"`
 		IsVerified bool    `json:"isVerified"`
 		Name       *string `json:"name"`
+		Email      *string `json:"email"`
+		Phone      *string `json:"phone"`
+		ExternalId *string `json:"externalId"`
 	}{
 		Jwt:        w.Jwt,
 		Create:     w.Create,
 		IsVerified: w.IsVerified,
 		Name:       name,
+		Email:      email,
+		Phone:      phone,
+		ExternalId: externalId,
 	}
 	return json.Marshal(aux)
 }
@@ -181,6 +206,57 @@ func (thresp ThChatRespPayload) MarshalJSON() ([]byte, error) {
 		CreatedAt:    thresp.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:    thresp.UpdatedAt.Format(time.RFC3339),
 		Messages:     thresp.Messages,
+	}
+	return json.Marshal(aux)
+}
+
+type AddCustomerIdentitiesReqPayload struct {
+	Email    *string `json:"email"`
+	Phone    *string `json:"phone"`
+	External *string `json:"external"`
+}
+
+type AddCustomerIdentitiesRespPayload struct {
+	IsVerified bool           `json:"isVerified"`
+	Name       sql.NullString `json:"name"`
+	Email      sql.NullString `json:"email"`
+	Phone      sql.NullString `json:"phone"`
+	ExternalId sql.NullString `json:"externalId"`
+}
+
+func (w AddCustomerIdentitiesRespPayload) MarshalJSON() ([]byte, error) {
+	var name *string
+	if w.Name.Valid {
+		name = &w.Name.String
+	}
+
+	var email *string
+	if w.Email.Valid {
+		email = &w.Email.String
+	}
+
+	var phone *string
+	if w.Phone.Valid {
+		phone = &w.Phone.String
+	}
+
+	var externalId *string
+	if w.ExternalId.Valid {
+		externalId = &w.ExternalId.String
+	}
+
+	aux := &struct {
+		IsVerified bool    `json:"isVerified"`
+		Name       *string `json:"name"`
+		Email      *string `json:"email"`
+		Phone      *string `json:"phone"`
+		ExternalId *string `json:"externalId"`
+	}{
+		IsVerified: w.IsVerified,
+		Name:       name,
+		Email:      email,
+		Phone:      phone,
+		ExternalId: externalId,
 	}
 	return json.Marshal(aux)
 }

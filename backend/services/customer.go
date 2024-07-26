@@ -25,37 +25,37 @@ func NewCustomerService(repo ports.CustomerRepositorer) *CustomerService {
 	}
 }
 
-func (s *CustomerService) GetCustomerByExternalId(ctx context.Context, workspaceId string, externalId string,
-) (models.Customer, error) {
-	customer, err := s.repo.FetchWorkspaceCustomerByExtId(ctx, workspaceId, externalId)
+// func (s *CustomerService) GetCustomerByExternalId(ctx context.Context, workspaceId string, externalId string,
+// ) (models.Customer, error) {
+// 	customer, err := s.repo.FetchWorkspaceCustomerByExtId(ctx, workspaceId, externalId)
 
-	if errors.Is(err, repository.ErrEmpty) {
-		return customer, ErrCustomerNotFound
-	}
+// 	if errors.Is(err, repository.ErrEmpty) {
+// 		return customer, ErrCustomerNotFound
+// 	}
 
-	if err != nil {
-		return customer, ErrCustomer
-	}
-	return customer, nil
-}
+// 	if err != nil {
+// 		return customer, ErrCustomer
+// 	}
+// 	return customer, nil
+// }
 
-func (s *CustomerService) GetCustomerByEmail(ctx context.Context, workspaceId string, email string,
-) (models.Customer, error) {
-	customer, err := s.repo.RetrieveWorkspaceCustomerByEmail(ctx, workspaceId, email)
-	if err != nil {
-		return customer, err
-	}
-	return customer, nil
-}
+// func (s *CustomerService) GetCustomerByEmail(ctx context.Context, workspaceId string, email string,
+// ) (models.Customer, error) {
+// 	customer, err := s.repo.RetrieveWorkspaceCustomerByEmail(ctx, workspaceId, email)
+// 	if err != nil {
+// 		return customer, err
+// 	}
+// 	return customer, nil
+// }
 
-func (s *CustomerService) GetCustomerByPhone(ctx context.Context, workspaceId string, email string,
-) (models.Customer, error) {
-	customer, err := s.repo.LookupWorkspaceCustomerByPhone(ctx, workspaceId, email)
-	if err != nil {
-		return customer, err
-	}
-	return customer, nil
-}
+// func (s *CustomerService) GetCustomerByPhone(ctx context.Context, workspaceId string, email string,
+// ) (models.Customer, error) {
+// 	customer, err := s.repo.LookupWorkspaceCustomerByPhone(ctx, workspaceId, email)
+// 	if err != nil {
+// 		return customer, err
+// 	}
+// 	return customer, nil
+// }
 
 func (s *CustomerService) GenerateCustomerToken(c models.Customer, sk string) (string, error) {
 	var externalId string
@@ -130,4 +130,26 @@ func (s *CustomerService) VerifyPhone(sk string, hash string, phone string) bool
 	h.Write([]byte(phone))
 	hashHex := hex.EncodeToString(h.Sum(nil))
 	return hashHex == hash
+}
+
+func (s *CustomerService) GetWorkspaceCustomerById(ctx context.Context, workspaceId string, customerId string) (models.Customer, error) {
+	customer, err := s.repo.LookupByWorkspaceCustomerId(ctx, workspaceId, customerId)
+	if errors.Is(err, repository.ErrEmpty) {
+		return customer, ErrCustomerNotFound
+	}
+	if err != nil {
+		return customer, ErrCustomer
+	}
+	return customer, nil
+}
+
+func (s *CustomerService) UpdateCustomer(ctx context.Context, customer models.Customer) (models.Customer, error) {
+	customer, err := s.repo.ModifyCustomerById(ctx, customer)
+	if errors.Is(err, repository.ErrEmpty) {
+		return customer, ErrCustomerNotFound
+	}
+	if err != nil {
+		return customer, ErrCustomer
+	}
+	return customer, nil
 }
