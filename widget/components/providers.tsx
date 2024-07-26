@@ -82,8 +82,9 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
         isVerified,
         ...others
       } = response;
+      const anonId = payload.anonId || null;
       const customer = {
-        anonId: payload.anonId,
+        anonId: anonId,
         customerExternalId,
         customerEmail,
         customerPhone,
@@ -114,12 +115,9 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
       customerExternalId,
       isVerified,
     } = identities;
-    const { widgetId, jwt, anonId } = customer;
     const updates = {
+      ...customer,
       name,
-      widgetId,
-      jwt,
-      anonId,
       customerEmail,
       customerPhone,
       customerExternalId,
