@@ -15,6 +15,57 @@ type WorkspaceReqPayload struct {
 	Name string `json:"name"`
 }
 
+type CustomerResp struct {
+	WorkspaceId string
+	CustomerId  string
+	ExternalId  sql.NullString
+	Email       sql.NullString
+	Phone       sql.NullString
+	Name        sql.NullString
+	IsVerified  bool
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+func (c CustomerResp) MarshalJSON() ([]byte, error) {
+	var externalId, email, phone, name *string
+	if c.ExternalId.Valid {
+		externalId = &c.ExternalId.String
+	}
+	if c.Email.Valid {
+		email = &c.Email.String
+	}
+	if c.Phone.Valid {
+		phone = &c.Phone.String
+	}
+	if c.Name.Valid {
+		name = &c.Name.String
+	}
+
+	aux := &struct {
+		WorkspaceId string  `json:"workspaceId"`
+		CustomerId  string  `json:"customerId"`
+		ExternalId  *string `json:"externalId"`
+		Email       *string `json:"email"`
+		Phone       *string `json:"phone"`
+		Name        *string `json:"name"`
+		IsVerified  bool    `json:"isVerified"`
+		CreatedAt   string  `json:"createdAt"`
+		UpdatedAt   string  `json:"updatedAt"`
+	}{
+		WorkspaceId: c.WorkspaceId,
+		CustomerId:  c.CustomerId,
+		ExternalId:  externalId,
+		Email:       email,
+		Phone:       phone,
+		Name:        name,
+		IsVerified:  c.IsVerified,
+		CreatedAt:   c.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   c.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
+}
+
 type CrLabelReqPayload struct {
 	Name string `json:"name"`
 	Icon string `json:"icon"`

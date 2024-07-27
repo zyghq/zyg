@@ -798,9 +798,24 @@ func (h *WorkspaceHandler) handleGetWorkspaceCustomers(w http.ResponseWriter, r 
 		return
 	}
 
+	items := make([]CustomerResp, 0, len(customers))
+	for _, c := range customers {
+		items = append(items, CustomerResp{
+			WorkspaceId: workspaceId,
+			CustomerId:  c.CustomerId,
+			ExternalId:  c.ExternalId,
+			Email:       c.Email,
+			Phone:       c.Phone,
+			Name:        c.Name,
+			IsVerified:  c.IsVerified,
+			CreatedAt:   c.CreatedAt,
+			UpdatedAt:   c.UpdatedAt,
+		})
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(customers); err != nil {
+	if err := json.NewEncoder(w).Encode(items); err != nil {
 		slog.Error(
 			"failed to encode workspace customers to json "+
 				"check the json encoding defn",

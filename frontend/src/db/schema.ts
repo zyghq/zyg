@@ -81,6 +81,7 @@ export const workspaceCustomerResponseSchema = z.object({
   email: z.string().nullable().default(null),
   phone: z.string().nullable().default(null),
   name: z.string(),
+  isVerified: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

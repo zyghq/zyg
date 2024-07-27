@@ -31,17 +31,11 @@ func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.
 
 	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
 
-	// workspace not found
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
-		slog.Warn(
-			"workspace not found or does not exist for account",
-			"accountId", account.AccountId, "workspaceId", workspaceId,
-		)
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
-	// error workspace
 	if err != nil {
 		slog.Error(
 			"failed to get workspace by id "+

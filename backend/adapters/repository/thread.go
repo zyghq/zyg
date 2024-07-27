@@ -26,6 +26,8 @@ func (tc *ThreadChatDB) InsertThreadChat(ctx context.Context, th models.ThreadCh
 	defer tx.Rollback(ctx)
 
 	thId := th.GenId()
+
+	// TODO: @sanchitrk - move this logic to service layer.
 	if th.Status == "" {
 		th.Status = models.ThreadStatus{}.DefaultStatus() // set status
 	}
@@ -455,13 +457,11 @@ func (tc *ThreadChatDB) UpdateRepliedStatus(ctx context.Context, threadChatId st
 	return th, nil
 }
 
-// returns list of thread chats for the workspace
-func (tc *ThreadChatDB) RetrieveByWorkspaceId(
-	ctx context.Context, workspaceId string,
+func (tc *ThreadChatDB) RetrieveByWorkspaceId(ctx context.Context, workspaceId string,
 ) ([]models.ThreadChatWithMessage, error) {
 	var th models.ThreadChat
 	var message models.ThreadChatMessage
-
+	cr := models.Customer{}.Engaged()
 	ths := make([]models.ThreadChatWithMessage, 0, 100)
 	stmt := `SELECT
 			th.workspace_id AS workspace_id,	
@@ -502,10 +502,10 @@ func (tc *ThreadChatDB) RetrieveByWorkspaceId(
 			thread_chat_id
 		) latest ON thm.thread_chat_id = latest.thread_chat_id
 		AND thm.sequence = latest.sequence
-		WHERE th.workspace_id = $1
+		WHERE th.workspace_id = $1 AND thc.role = $2
 		ORDER BY message_sequence DESC LIMIT 100`
 
-	rows, _ := tc.db.Query(ctx, stmt, workspaceId)
+	rows, _ := tc.db.Query(ctx, stmt, workspaceId, cr)
 
 	defer rows.Close()
 
@@ -535,12 +535,11 @@ func (tc *ThreadChatDB) RetrieveByWorkspaceId(
 	return ths, nil
 }
 
-// returns a list of thread chats assigned to a member in the workspace
 func (tc *ThreadChatDB) FetchAssignedThreadsByMember(ctx context.Context, workspaceId string, memberId string,
 ) ([]models.ThreadChatWithMessage, error) {
 	var th models.ThreadChat
 	var message models.ThreadChatMessage
-
+	cr := models.Customer{}.Engaged()
 	ths := make([]models.ThreadChatWithMessage, 0, 100)
 	stmt := `SELECT
 			th.workspace_id AS workspace_id,	
@@ -581,10 +580,10 @@ func (tc *ThreadChatDB) FetchAssignedThreadsByMember(ctx context.Context, worksp
 			thread_chat_id
 		) latest ON thm.thread_chat_id = latest.thread_chat_id
 		AND thm.sequence = latest.sequence
-		WHERE th.workspace_id = $1 AND th.assignee_id = $2
+		WHERE th.workspace_id = $1 AND th.assignee_id = $2 AND thc.role = $3
 		ORDER BY member_sequence DESC LIMIT 100`
 
-	rows, _ := tc.db.Query(ctx, stmt, workspaceId, memberId)
+	rows, _ := tc.db.Query(ctx, stmt, workspaceId, memberId, cr)
 
 	defer rows.Close()
 
@@ -614,12 +613,11 @@ func (tc *ThreadChatDB) FetchAssignedThreadsByMember(ctx context.Context, worksp
 	return ths, nil
 }
 
-// returns a list of unassigned thread chats in the workspace
 func (tc *ThreadChatDB) RetrieveUnassignedThreads(ctx context.Context, workspaceId string,
 ) ([]models.ThreadChatWithMessage, error) {
 	var th models.ThreadChat
 	var message models.ThreadChatMessage
-
+	cr := models.Customer{}.Engaged()
 	ths := make([]models.ThreadChatWithMessage, 0, 100)
 	stmt := `SELECT
 			th.workspace_id AS workspace_id,	
@@ -660,10 +658,10 @@ func (tc *ThreadChatDB) RetrieveUnassignedThreads(ctx context.Context, workspace
 			thread_chat_id
 		) latest ON thm.thread_chat_id = latest.thread_chat_id
 		AND thm.sequence = latest.sequence
-		WHERE th.workspace_id = $1 AND th.assignee_id IS NULL
+		WHERE th.workspace_id = $1 AND th.assignee_id IS NULL AND thc.role = $2
 		ORDER BY message_sequence DESC LIMIT 100`
 
-	rows, _ := tc.db.Query(ctx, stmt, workspaceId)
+	rows, _ := tc.db.Query(ctx, stmt, workspaceId, cr)
 
 	defer rows.Close()
 
@@ -693,11 +691,11 @@ func (tc *ThreadChatDB) RetrieveUnassignedThreads(ctx context.Context, workspace
 	return ths, nil
 }
 
-// returns a list of labelled thread chats in the workspace
-func (tc *ThreadChatDB) FetchThreadsByLabel(ctx context.Context, workspaceId string, labelId string) ([]models.ThreadChatWithMessage, error) {
+func (tc *ThreadChatDB) FetchThreadsByLabel(ctx context.Context, workspaceId string, labelId string,
+) ([]models.ThreadChatWithMessage, error) {
 	var th models.ThreadChat
 	var message models.ThreadChatMessage
-
+	cr := models.Customer{}.Engaged()
 	ths := make([]models.ThreadChatWithMessage, 0, 100)
 	stmt := `SELECT
 			th.workspace_id AS workspace_id,	
@@ -739,10 +737,10 @@ func (tc *ThreadChatDB) FetchThreadsByLabel(ctx context.Context, workspaceId str
 		) latest ON thm.thread_chat_id = latest.thread_chat_id
 		AND thm.sequence = latest.sequence
 		INNER JOIN thread_chat_label tcl ON th.thread_chat_id = tcl.thread_chat_id
-		WHERE th.workspace_id = $1 AND tcl.label_id = $2
+		WHERE th.workspace_id = $1 AND tcl.label_id = $2 AND thc.role = $3
 		ORDER BY message_sequence DESC LIMIT 100`
 
-	rows, _ := tc.db.Query(ctx, stmt, workspaceId, labelId)
+	rows, _ := tc.db.Query(ctx, stmt, workspaceId, labelId, cr)
 
 	defer rows.Close()
 
@@ -773,9 +771,8 @@ func (tc *ThreadChatDB) FetchThreadsByLabel(ctx context.Context, workspaceId str
 	return ths, nil
 }
 
-// checks if a thread chat exists in the workspace
-func (tc *ThreadChatDB) CheckExistenceByWorkspaceThreadChatId(ctx context.Context, workspaceId string, threadChatId string,
-) (bool, error) {
+func (tc *ThreadChatDB) CheckExistenceByWorkspaceThreadChatId(
+	ctx context.Context, workspaceId string, threadChatId string) (bool, error) {
 	var isExist bool
 	stmt := `SELECT EXISTS(
 		SELECT 1 FROM thread_chat
@@ -792,7 +789,8 @@ func (tc *ThreadChatDB) CheckExistenceByWorkspaceThreadChatId(ctx context.Contex
 }
 
 // add a label to a thread chat
-func (tc *ThreadChatDB) AttachLabelToThread(ctx context.Context, thl models.ThreadChatLabel) (models.ThreadChatLabel, bool, error) {
+func (tc *ThreadChatDB) AttachLabelToThread(
+	ctx context.Context, thl models.ThreadChatLabel) (models.ThreadChatLabel, bool, error) {
 	var IsCreated bool
 	id := thl.GenId()
 
@@ -1012,18 +1010,19 @@ func (tc *ThreadChatDB) FetchMessagesByThreadChatId(ctx context.Context, threadC
 func (tc *ThreadChatDB) ComputeStatusMetricsByWorkspaceId(ctx context.Context, workspaceId string,
 ) (models.ThreadMetrics, error) {
 	var metrics models.ThreadMetrics
-
+	cr := models.Customer{}.Engaged()
 	stmt := `SELECT
 		COALESCE(SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END), 0) AS done,
 		COALESCE(SUM(CASE WHEN status = 'todo' THEN 1 ELSE 0 END), 0) AS todo,
 		COALESCE(SUM(CASE WHEN status = 'snoozed' THEN 1 ELSE 0 END), 0) AS snoozed,
 		COALESCE(SUM(CASE WHEN status = 'todo' OR status = 'snoozed' THEN 1 ELSE 0 END), 0) AS active
 	FROM 
-		thread_chat
+		thread_chat th
+	INNER JOIN customer c ON th.customer_id = c.customer_id
 	WHERE 
-		workspace_id = $1`
+		th.workspace_id = $1 AND c.role = $2`
 
-	err := tc.db.QueryRow(ctx, stmt, workspaceId).Scan(
+	err := tc.db.QueryRow(ctx, stmt, workspaceId, cr).Scan(
 		&metrics.DoneCount, &metrics.TodoCount,
 		&metrics.SnoozedCount, &metrics.ActiveCount,
 	)
@@ -1043,17 +1042,18 @@ func (tc *ThreadChatDB) ComputeStatusMetricsByWorkspaceId(ctx context.Context, w
 func (tc *ThreadChatDB) CalculateAssigneeMetricsByMember(ctx context.Context, workspaceId string, memberId string,
 ) (models.ThreadAssigneeMetrics, error) {
 	var metrics models.ThreadAssigneeMetrics
-
+	cr := models.Customer{}.Engaged()
 	stmt := `SELECT
 			COALESCE(SUM(CASE WHEN assignee_id = $2 THEN 1 ELSE 0 END), 0) AS member_assigned_count,
 			COALESCE(SUM(CASE WHEN assignee_id IS NULL THEN 1 ELSE 0 END), 0) AS unassigned_count,
 			COALESCE(SUM(CASE WHEN assignee_id IS NOT NULL AND assignee_id <> $2 THEN 1 ELSE 0 END), 0) AS other_assigned_count
 		FROM
-			thread_chat
+			thread_chat th
+		INNER JOIN customer c ON th.customer_id = c.customer_id
 		WHERE
-			workspace_id = $1`
+			th.workspace_id = $1 AND c.role = $3`
 
-	err := tc.db.QueryRow(ctx, stmt, workspaceId, memberId).Scan(
+	err := tc.db.QueryRow(ctx, stmt, workspaceId, memberId, cr).Scan(
 		&metrics.MeCount, &metrics.UnAssignedCount, &metrics.OtherAssignedCount,
 	)
 
