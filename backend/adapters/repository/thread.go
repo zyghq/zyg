@@ -368,7 +368,7 @@ func (tc *ThreadChatDB) UpdateAssignee(ctx context.Context, threadChatId string,
 		m.member_id AS assignee_id,
 		m.name AS assignee_name,
 		ups.thread_chat_id AS thread_chat_id,
-		ups.title AS title,9
+		ups.title AS title,
 		ups.summary AS summary,
 		ups.sequence AS sequence,
 		ups.status AS status,

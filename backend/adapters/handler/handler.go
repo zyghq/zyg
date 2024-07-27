@@ -42,7 +42,6 @@ func NewServer(
 	mux.Handle("GET /workspaces/{workspaceId}/{$}", NewEnsureAuth(wh.handleGetWorkspace, authService))
 	mux.Handle("PATCH /workspaces/{workspaceId}/{$}", NewEnsureAuth(wh.handleUpdateWorkspace, authService))
 
-	// generate workspace secret key
 	mux.Handle("POST /workspaces/{workspaceId}/sk/{$}",
 		NewEnsureAuth(wh.handleGenerateSecretKey, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/sk/{$}",
