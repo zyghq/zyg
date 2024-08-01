@@ -9,28 +9,27 @@ import (
 	"github.com/zyghq/zyg/models"
 )
 
-func (a *AccountDB) UpsertAccountByAuthId(ctx context.Context, account models.Account,
-) (models.Account, bool, error) {
+func (a *AccountDB) UpsertByAuthUserId(ctx context.Context, account models.Account) (models.Account, bool, error) {
 	var isCreated bool
-
-	aId := account.GenId()
-	stmt := `WITH ins AS (
+	accountId := account.GenId()
+	stmt := `
+		WITH ins AS (
 		INSERT INTO account(account_id, auth_user_id, email, provider, name)
-		VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT (auth_user_id) DO NOTHING
-		RETURNING
-		account_id, auth_user_id, email,
-		provider, name,
-		created_at, updated_at,
-		TRUE AS is_created
-	)
-	SELECT * FROM ins
-	UNION ALL
-	SELECT account_id, auth_user_id, email, provider, name,
-	created_at, updated_at, FALSE AS is_created FROM account
-	WHERE auth_user_id = $2 AND NOT EXISTS (SELECT 1 FROM ins)`
+			VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (auth_user_id)
+			DO NOTHING
+		RETURNING account_id, auth_user_id, email, provider, name, created_at, updated_at, TRUE AS is_created)
+		SELECT *
+		FROM ins
+		UNION ALL
+		SELECT account_id, auth_user_id, email, provider,
+			name, created_at, updated_at, FALSE AS is_created
+		FROM account
+		WHERE auth_user_id = $2
+			AND NOT EXISTS (SELECT 1 FROM ins)
+	`
 
-	err := a.db.QueryRow(ctx, stmt, aId, account.AuthUserId, account.Email,
+	err := a.db.QueryRow(ctx, stmt, accountId, account.AuthUserId, account.Email,
 		account.Provider, account.Name).Scan(
 		&account.AccountId, &account.AuthUserId,
 		&account.Email, &account.Provider, &account.Name,
@@ -40,19 +39,20 @@ func (a *AccountDB) UpsertAccountByAuthId(ctx context.Context, account models.Ac
 
 	// no rows returned error
 	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
 		return models.Account{}, isCreated, ErrEmpty
 	}
 
 	// query error
 	if err != nil {
-		slog.Error("failed to insert query", "error", err)
+		slog.Error("failed to insert query", slog.Any("err", err))
 		return models.Account{}, isCreated, ErrQuery
 	}
 	return account, isCreated, nil
 }
 
-func (a *AccountDB) FetchAccountByAuthId(ctx context.Context, authUserId string,
-) (models.Account, error) {
+func (a *AccountDB) FetchAccountByAuthId(
+	ctx context.Context, authUserId string) (models.Account, error) {
 	var account models.Account
 
 	err := a.db.QueryRow(ctx, `SELECT 
@@ -65,6 +65,7 @@ func (a *AccountDB) FetchAccountByAuthId(ctx context.Context, authUserId string,
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
 		return models.Account{}, ErrEmpty
 	}
 
@@ -75,35 +76,39 @@ func (a *AccountDB) FetchAccountByAuthId(ctx context.Context, authUserId string,
 	return account, nil
 }
 
-func (a *AccountDB) InsertPersonalAccessToken(ctx context.Context, ap models.AccountPAT,
-) (models.AccountPAT, error) {
-	apId := ap.GenId()
+func (a *AccountDB) InsertPersonalAccessToken(
+	ctx context.Context, pat models.AccountPAT) (models.AccountPAT, error) {
+	patId := pat.GenId()
 	token, err := models.GenToken(32, "pt_")
 	if err != nil {
-		slog.Error("failed to generate token got error", "error", err)
+		slog.Error("failed to generate pat token", "error", err)
 		return models.AccountPAT{}, err
 	}
 
-	stmt := `INSERT INTO account_pat(account_id, pat_id, token, name, description)
+	stmt := `
+		INSERT INTO account_pat(account_id, pat_id, token, name, description)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURNING account_id, pat_id, token, name, description, created_at, updated_at`
+		RETURNING
+		account_id, pat_id, token, name, description, created_at, updated_at
+	`
 
-	err = a.db.QueryRow(ctx, stmt, ap.AccountId, apId, token, ap.Name, ap.Description).Scan(
-		&ap.AccountId, &ap.PatId, &ap.Token,
-		&ap.Name, &ap.Description, &ap.CreatedAt, &ap.UpdatedAt,
+	err = a.db.QueryRow(ctx, stmt, pat.AccountId, patId, token, pat.Name, pat.Description).Scan(
+		&pat.AccountId, &pat.PatId, &pat.Token,
+		&pat.Name, &pat.Description, &pat.CreatedAt, &pat.UpdatedAt,
 	)
 
 	// no rows returned
 	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
 		return models.AccountPAT{}, ErrEmpty
 	}
 
 	if err != nil {
-		slog.Error("failed to query got error", "error", err)
+		slog.Error("failed to insert query", slog.Any("err", err))
 		return models.AccountPAT{}, ErrQuery
 	}
 
-	return ap, nil
+	return pat, nil
 }
 
 func (a *AccountDB) RetrievePatsByAccountId(ctx context.Context, accountId string) ([]models.AccountPAT, error) {
@@ -131,21 +136,22 @@ func (a *AccountDB) RetrievePatsByAccountId(ctx context.Context, accountId strin
 	})
 
 	if err != nil {
-		slog.Error("failed to query got error", "error", err)
+		slog.Error("failed to query", slog.Any("err", err))
 		return []models.AccountPAT{}, ErrQuery
 	}
 
 	return aps, nil
 }
 
-func (a *AccountDB) FetchPatByPatId(ctx context.Context, patId string) (models.AccountPAT, error) {
+func (a *AccountDB) FetchPatById(
+	ctx context.Context, patId string) (models.AccountPAT, error) {
 	var pat models.AccountPAT
-
-	stmt := `SELECT
-		account_id, pat_id, token, name, description,
-		created_at, updated_at
+	stmt := `
+		SELECT account_id, pat_id, token, name,
+		description, created_at, updated_at
 		FROM account_pat
-		WHERE pat_id = $1`
+		WHERE pat_id = $1
+	`
 
 	err := a.db.QueryRow(ctx, stmt, patId).Scan(
 		&pat.AccountId, &pat.PatId, &pat.Token,
@@ -153,22 +159,23 @@ func (a *AccountDB) FetchPatByPatId(ctx context.Context, patId string) (models.A
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
 		return models.AccountPAT{}, ErrEmpty
 	}
 
 	if err != nil {
-		slog.Error("failed to query", "error", err)
+		slog.Error("failed to query", slog.Any("err", err))
 		return models.AccountPAT{}, ErrQuery
 	}
 
 	return pat, nil
 }
 
-func (a *AccountDB) PermanentlyRemovePatByPatId(ctx context.Context, patId string) error {
+func (a *AccountDB) DeletePatById(ctx context.Context, patId string) error {
 	stmt := `DELETE FROM account_pat WHERE pat_id = $1`
 	_, err := a.db.Exec(ctx, stmt, patId)
 	if err != nil {
-		slog.Error("failed to delete pat", "error", err)
+		slog.Error("failed to delete query", slog.Any("err", err))
 		return ErrQuery
 	}
 	return nil

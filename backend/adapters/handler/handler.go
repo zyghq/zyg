@@ -74,7 +74,7 @@ func NewServer(
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/me/{$}",
 		NewEnsureAuth(th.handleGetMyThreadChats, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/unassigned/{$}",
-		NewEnsureAuth(th.handleGetUnassignedThreadChats, authService))
+		NewEnsureAuth(th.handleGetUnassignedThChats, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/labels/{labelId}/{$}",
 		NewEnsureAuth(th.handleGetLabelledThreadChats, authService))
 
@@ -86,7 +86,7 @@ func NewServer(
 	mux.Handle("PUT /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
 		NewEnsureAuth(th.handleSetThChatLabel, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
-		NewEnsureAuth(th.handleGetThreadChatLabels, authService))
+		NewEnsureAuth(th.handleGetThChatLabels, authService))
 
 	// mux.Handle("POST /workspaces/{workspaceId}/customers/tokens/{$}",
 	// 	NewEnsureAuth(wh.handleIssueCustomerToken, authService))
@@ -94,7 +94,6 @@ func NewServer(
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/metrics/{$}",
 		NewEnsureAuth(th.handleGetThreadChatMetrics, authService))
 
-	// creates a new workspace widget
 	mux.Handle("POST /workspaces/{workspaceId}/widgets/{$}",
 		NewEnsureAuth(wh.handleCreateWidget, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/widgets/{$}",

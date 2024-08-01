@@ -9,7 +9,8 @@ import (
 	"github.com/zyghq/zyg/models"
 )
 
-func (m *MemberDB) LookupByAccountWorkspaceId(ctx context.Context, accountId string, workspaceId string) (models.Member, error) {
+func (m *MemberDB) LookupByAccountWorkspaceId(
+	ctx context.Context, accountId string, workspaceId string) (models.Member, error) {
 	var member models.Member
 	err := m.db.QueryRow(ctx, `SELECT
 		workspace_id, account_id, member_id, name, role, created_at, updated_at
@@ -19,26 +20,31 @@ func (m *MemberDB) LookupByAccountWorkspaceId(ctx context.Context, accountId str
 		&member.CreatedAt, &member.UpdatedAt,
 	)
 
-	// check if the query returned no rows
 	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("error", err))
 		return models.Member{}, ErrEmpty
 	}
 
-	// check if the query returned an error
 	if err != nil {
-		slog.Error("failed to query", "error", err)
+		slog.Error("failed to query", slog.Any("error", err))
 		return models.Member{}, ErrQuery
 	}
 
 	return member, nil
 }
 
-func (m *MemberDB) RetrieveMembersByWorkspaceId(ctx context.Context, workspaceId string) ([]models.Member, error) {
+func (m *MemberDB) RetrieveMembersByWorkspaceId(
+	ctx context.Context, workspaceId string) ([]models.Member, error) {
 	var member models.Member
 	members := make([]models.Member, 0, 100)
-	stmt := `SELECT workspace_id, account_id, member_id, name, role,
-	created_at, updated_at
-	FROM member WHERE workspace_id = $1 ORDER BY created_at DESC LIMIT 100`
+	stmt := `
+		SELECT workspace_id, account_id, member_id, name,
+			role, created_at, updated_at
+		FROM member
+		WHERE workspace_id = $1
+		ORDER BY created_at DESC
+		LIMIT 100
+	`
 
 	rows, _ := m.db.Query(ctx, stmt, workspaceId)
 
@@ -53,14 +59,15 @@ func (m *MemberDB) RetrieveMembersByWorkspaceId(ctx context.Context, workspaceId
 	})
 
 	if err != nil {
-		slog.Error("failed to query", "error", err)
+		slog.Error("failed to query", slog.Any("error", err))
 		return []models.Member{}, ErrQuery
 	}
 
 	return members, nil
 }
 
-func (m *MemberDB) FetchByWorkspaceMemberId(ctx context.Context, workspaceId string, memberId string) (models.Member, error) {
+func (m *MemberDB) FetchByWorkspaceMemberId(
+	ctx context.Context, workspaceId string, memberId string) (models.Member, error) {
 	var member models.Member
 	err := m.db.QueryRow(ctx, `SELECT
 		workspace_id, account_id, member_id, name, role, created_at, updated_at
@@ -70,14 +77,13 @@ func (m *MemberDB) FetchByWorkspaceMemberId(ctx context.Context, workspaceId str
 		&member.CreatedAt, &member.UpdatedAt,
 	)
 
-	// check if the query returned no rows
 	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("error", err))
 		return models.Member{}, ErrEmpty
 	}
 
-	// check if the query returned an error
 	if err != nil {
-		slog.Error("failed to query", "error", err)
+		slog.Error("failed to query", slog.Any("error", err))
 		return models.Member{}, ErrQuery
 	}
 

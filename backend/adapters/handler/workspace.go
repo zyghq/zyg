@@ -29,34 +29,31 @@ func (h *WorkspaceHandler) handleCreateWorkspace(w http.ResponseWriter, r *http.
 
 	ctx := r.Context()
 
-	var rb WorkspaceReqPayload
-	err := json.NewDecoder(r.Body).Decode(&rb)
+	var reqp WorkspaceReq
+	err := json.NewDecoder(r.Body).Decode(&reqp)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	workspace := models.Workspace{AccountId: account.AccountId, Name: rb.Name}
-	workspace, err = h.ws.CreateWorkspace(ctx, *account, workspace)
-
+	workspace, err := h.ws.CreateWorkspace(ctx, account.AccountId, account.Name, reqp.Name)
 	if err != nil {
-		slog.Error(
-			"failed to create workspace "+
-				"something went wrong",
-			slog.String("accountId", account.AccountId),
-		)
+		slog.Error("failed to create workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
+	resp := WorkspaceResp{
+		WorkspaceId: workspace.WorkspaceId,
+		Name:        workspace.Name,
+		CreatedAt:   workspace.CreatedAt,
+		UpdatedAt:   workspace.UpdatedAt,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(workspace); err != nil {
-		slog.Error(
-			"failed to encode workspace to json "+
-				"check the json encoding defn",
-			slog.String("workspaceId", workspace.WorkspaceId),
-		)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("failed to encode json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -64,27 +61,28 @@ func (h *WorkspaceHandler) handleCreateWorkspace(w http.ResponseWriter, r *http.
 
 func (h *WorkspaceHandler) handleGetWorkspaces(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	ctx := r.Context()
-
-	workspaces, err := h.ws.ListMemberWorkspaces(ctx, account.AccountId)
-
+	workspaces, err := h.ws.ListAccountWorkspaces(ctx, account.AccountId)
 	if err != nil {
-		slog.Error(
-			"failed to get list of workspaces "+
-				"something went wrong",
-			slog.String("accountId", account.AccountId),
-		)
+		slog.Error("failed fetch workspaces", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
+	items := make([]WorkspaceResp, 0, len(workspaces))
+	for _, w := range workspaces {
+		item := WorkspaceResp{
+			WorkspaceId: w.WorkspaceId,
+			Name:        w.Name,
+			CreatedAt:   w.CreatedAt,
+			UpdatedAt:   w.UpdatedAt,
+		}
+		items = append(items, item)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(workspaces); err != nil {
-		slog.Error(
-			"failed to encode workspaces to json "+
-				"check the json encoding defn",
-			slog.String("accountId", account.AccountId),
-		)
+	if err := json.NewEncoder(w).Encode(items); err != nil {
+		slog.Error("failed to encode json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -95,47 +93,44 @@ func (h *WorkspaceHandler) handleGetWorkspace(w http.ResponseWriter, r *http.Req
 	ctx := r.Context()
 	workspaceId := r.PathValue("workspaceId")
 
-	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetLinkedWorkspaceMember(ctx, account.AccountId, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
-		slog.Warn(
-			"workspace not found or does not exist",
-			slog.String("workspaceId", workspaceId),
-		)
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
 	if err != nil {
-		slog.Error(
-			"failed to get account workspace or does not exist "+
-				"something went wrong",
-			slog.String("workspaceId", workspaceId),
-		)
+		slog.Error("failed to fetch workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
+	resp := WorkspaceResp{
+		WorkspaceId: workspace.WorkspaceId,
+		Name:        workspace.Name,
+		CreatedAt:   workspace.CreatedAt,
+		UpdatedAt:   workspace.UpdatedAt,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(workspace); err != nil {
-		slog.Error(
-			"failed to encode workspace to json "+
-				"check the json encoding defn",
-			slog.String("workspaceId", workspace.WorkspaceId),
-		)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("failed to encode json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 }
 
+// keeping it simple for now
+// future shall handle more workspace updates.
 func (h *WorkspaceHandler) handleUpdateWorkspace(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
 	}(r.Body)
 
-	var rb WorkspaceReqPayload
-	err := json.NewDecoder(r.Body).Decode(&rb)
+	var reqp WorkspaceReq
+	err := json.NewDecoder(r.Body).Decode(&reqp)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -144,36 +139,48 @@ func (h *WorkspaceHandler) handleUpdateWorkspace(w http.ResponseWriter, r *http.
 	ctx := r.Context()
 	workspaceId := r.PathValue("workspaceId")
 
-	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetLinkedWorkspaceMember(ctx, account.AccountId, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
-		slog.Warn(
-			"workspace not found or does not exist",
-			slog.String("workspaceId", workspaceId),
-		)
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
 	if err != nil {
-		slog.Error(
-			"failed to get account workspace or does not exist "+
-				"something went wrong",
-			slog.String("workspaceId", workspaceId),
-		)
+		slog.Error("failed to fetch workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	// apply updates
-	workspace.Name = rb.Name
+	var hasUpdates bool
+
+	// apply updates if any
+	if reqp.Name != "" {
+		hasUpdates = true
+		workspace.Name = reqp.Name
+	}
+
+	// short circuit if no updates
+	if !hasUpdates {
+		resp := WorkspaceResp{
+			WorkspaceId: workspace.WorkspaceId,
+			Name:        workspace.Name,
+			CreatedAt:   workspace.CreatedAt,
+			UpdatedAt:   workspace.UpdatedAt,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			slog.Error("failed to encode json", slog.Any("err", err))
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+		return
+	}
 
 	workspace, err = h.ws.UpdateWorkspace(ctx, workspace)
 	if err != nil {
-		slog.Error(
-			"failed to update workspace "+
-				"something went wrong",
-			slog.String("workspaceId", workspaceId),
-		)
+		slog.Error("failed to update workspce", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -181,11 +188,7 @@ func (h *WorkspaceHandler) handleUpdateWorkspace(w http.ResponseWriter, r *http.
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(workspace); err != nil {
-		slog.Error(
-			"failed to encode workspace to json "+
-				"check the json encoding defn",
-			slog.String("workspaceId", workspace.WorkspaceId),
-		)
+		slog.Error("failed to encode json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -198,8 +201,8 @@ func (h *WorkspaceHandler) handleGetOrCreateWorkspaceLabel(w http.ResponseWriter
 	}(r.Body)
 
 	workspaceId := r.PathValue("workspaceId")
-	var reqp CrLabelReqPayload
 
+	var reqp NewLabelReq
 	err := json.NewDecoder(r.Body).Decode(&reqp)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -208,45 +211,26 @@ func (h *WorkspaceHandler) handleGetOrCreateWorkspaceLabel(w http.ResponseWriter
 
 	ctx := r.Context()
 
-	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
-
+	workspace, err := h.ws.GetLinkedWorkspaceMember(ctx, account.AccountId, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
-		slog.Warn(
-			"workspace not found or does not exist",
-			"accountId", account.AccountId, "workspaceId", workspaceId,
-		)
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
 	if err != nil {
-		slog.Error(
-			"failed to get workspace by id "+
-				"something went wrong",
-			"accountId", account.AccountId, "workspaceId", workspaceId,
-		)
+		slog.Error("failed to fetch workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	label := models.Label{
-		WorkspaceId: workspace.WorkspaceId,
-		Name:        reqp.Name,
-		Icon:        reqp.Icon,
-	}
-
-	label, isCreated, err := h.ws.CreateLabel(ctx, label)
-
+	label, isCreated, err := h.ws.CreateLabel(ctx, workspace.WorkspaceId, reqp.Name, reqp.Icon)
 	if err != nil {
-		slog.Error(
-			"failed to get or create label something went wrong",
-			"error", err,
-		)
+		slog.Error("failed to create label", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	resp := CrLabelRespPayload{
+	resp := LabelResp{
 		LabelId:   label.LabelId,
 		Name:      label.Name,
 		Icon:      label.Icon,
@@ -255,28 +239,18 @@ func (h *WorkspaceHandler) handleGetOrCreateWorkspaceLabel(w http.ResponseWriter
 	}
 
 	if isCreated {
-		slog.Info("created label", "labelId", label.LabelId)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			slog.Error(
-				"failed to encode label to json "+
-					"check the json encoding defn",
-				"labelId", label.LabelId,
-			)
+			slog.Error("failed to encode json", slog.Any("err", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 	} else {
-		slog.Info("label already exists", "labelId", label.LabelId)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			slog.Error(
-				"failed to encode label to json "+
-					"check the json encoding defn",
-				"labelId", label.LabelId,
-			)
+			slog.Error("failed to encode json", slog.Any("err", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
@@ -291,7 +265,7 @@ func (h *WorkspaceHandler) handleUpdateWorkspaceLabel(w http.ResponseWriter, r *
 
 	workspaceId := r.PathValue("workspaceId")
 	labelId := r.PathValue("labelId")
-	var reqp CrLabelReqPayload
+	var reqp NewLabelReq
 
 	err := json.NewDecoder(r.Body).Decode(&reqp)
 	if err != nil {
@@ -303,58 +277,65 @@ func (h *WorkspaceHandler) handleUpdateWorkspaceLabel(w http.ResponseWriter, r *
 
 	label, err := h.ws.GetWorkspaceLabel(ctx, workspaceId, labelId)
 	if errors.Is(err, services.ErrLabelNotFound) {
-		slog.Warn(
-			"label not found or does not exist",
-			slog.String("labelId", labelId),
-			slog.String("workspaceId", workspaceId),
-		)
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
 	if err != nil {
-		slog.Error(
-			"failed to get label by id "+
-				"something went wrong",
-			slog.String("labelId", labelId),
-			slog.String("workspaceId", workspaceId),
-		)
+		slog.Error("failed to fetch workspace label", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	// apply updates
-	label.Name = reqp.Name
-	label.Icon = reqp.Icon
+	var hasUpdates bool
+	if reqp.Name != "" {
+		hasUpdates = true
+		label.Name = reqp.Name
+	}
+	if reqp.Icon != "" {
+		hasUpdates = true
+		label.Icon = reqp.Icon
+	}
 
-	label, err = h.ws.SetWorkspaceLabel(ctx, label.WorkspaceId, label)
+	if !hasUpdates {
+		resp := LabelResp{
+			LabelId:     label.LabelId,
+			WorkspaceId: label.WorkspaceId,
+			Name:        label.Name,
+			Icon:        label.Icon,
+			CreatedAt:   label.CreatedAt,
+			UpdatedAt:   label.UpdatedAt,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			slog.Error("failed to encode json", slog.Any("err", err))
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+		return
+	}
+
+	label, err = h.ws.UpdateWorkspaceLabel(ctx, label.WorkspaceId, label)
 	if err != nil {
-		slog.Error(
-			"failed to update label "+
-				"something went wrong",
-			slog.String("labelId", labelId),
-			slog.String("workspaceId", workspaceId),
-		)
+		slog.Error("failed to update workspace label", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	response := CrLabelRespPayload{
-		LabelId:   label.LabelId,
-		Name:      label.Name,
-		Icon:      label.Icon,
-		CreatedAt: label.CreatedAt,
-		UpdatedAt: label.UpdatedAt,
+	resp := LabelResp{
+		LabelId:     label.LabelId,
+		WorkspaceId: label.WorkspaceId,
+		Name:        label.Name,
+		Icon:        label.Icon,
+		CreatedAt:   label.CreatedAt,
+		UpdatedAt:   label.UpdatedAt,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		slog.Error(
-			"failed to encode label to json "+
-				"check the json encoding defn",
-			slog.String("labelId", label.LabelId),
-		)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("failed to encode json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -365,56 +346,31 @@ func (h *WorkspaceHandler) handleGetWorkspaceLabels(w http.ResponseWriter, r *ht
 
 	workspaceId := r.PathValue("workspaceId")
 
-	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
-	if errors.Is(err, services.ErrWorkspaceNotFound) {
-		slog.Warn(
-			"workspace not found or does not exist",
-			slog.String("workspaceId", workspaceId),
-		)
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-
+	labels, err := h.ws.ListWorkspaceLabels(ctx, workspaceId)
 	if err != nil {
-		slog.Error(
-			"failed to get account workspace or does not exist "+
-				"something went wrong",
-			slog.String("workspaceId", workspaceId),
-		)
+		slog.Error("failed to fetch workspace labels", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	results, err := h.ws.ListWorkspaceLabels(ctx, workspace.WorkspaceId)
-	if err != nil {
-		slog.Error(
-			"failed to get workspace labels "+
-				"something went wrong",
-			slog.String("workspaceId", workspaceId),
-		)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
+	items := make([]LabelResp, 0, len(labels))
 
-	labels := make([]CrLabelRespPayload, 0, len(results))
-	for _, l := range results {
-		labels = append(labels, CrLabelRespPayload{
-			LabelId:   l.LabelId,
-			Name:      l.Name,
-			Icon:      l.Icon,
-			CreatedAt: l.CreatedAt,
-			UpdatedAt: l.UpdatedAt,
-		})
+	for _, l := range labels {
+		item := LabelResp{
+			LabelId:     l.LabelId,
+			WorkspaceId: l.WorkspaceId,
+			Name:        l.Name,
+			Icon:        l.Icon,
+			CreatedAt:   l.CreatedAt,
+			UpdatedAt:   l.UpdatedAt,
+		}
+		items = append(items, item)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(labels); err != nil {
-		slog.Error(
-			"failed to encode workspace labels to json "+
-				"check the json encoding defn",
-			slog.String("workspaceId", workspaceId),
-		)
+	if err := json.NewEncoder(w).Encode(items); err != nil {
+		slog.Error("failed to encode json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -448,7 +404,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceLabels(w http.ResponseWriter, r *ht
 
 // 	workspaceId := r.PathValue("workspaceId")
 
-// 	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
+// 	workspace, err := h.ws.GetLinkedWorkspaceMember(ctx, account.AccountId, workspaceId)
 
 // 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 // 		slog.Warn(
@@ -655,46 +611,25 @@ func (h *WorkspaceHandler) handleGetWorkspaceMembership(w http.ResponseWriter, r
 	ctx := r.Context()
 
 	workspaceId := r.PathValue("workspaceId")
-
-	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
-	if errors.Is(err, services.ErrWorkspaceNotFound) {
-		slog.Warn(
-			"workspace not found or does not exist",
-			slog.String("workspaceId", workspaceId),
-		)
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-
+	member, err := h.ws.GetWorkspaceAccountMember(ctx, account.AccountId, workspaceId)
 	if err != nil {
-		slog.Error(
-			"failed to get account workspace or does not exist "+
-				"something went wrong",
-			slog.String("workspaceId", workspaceId),
-		)
+		slog.Error("failed to fetch workspace membership", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	member, err := h.ws.GetWorkspaceMember(ctx, account.AccountId, workspace.WorkspaceId)
-	if err != nil {
-		slog.Error(
-			"failed to get workspace membership "+
-				"something went wrong",
-			slog.String("workspaceId", workspaceId),
-		)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+	resp := MemberResp{
+		MemberId:  member.MemberId,
+		Name:      member.Name,
+		Role:      member.Role,
+		CreatedAt: member.CreatedAt,
+		UpdatedAt: member.UpdatedAt,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(member); err != nil {
-		slog.Error(
-			"failed to encode workspace membership to json "+
-				"check the json encoding defn",
-			slog.String("workspaceId", workspaceId),
-		)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("failed to encode json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -706,57 +641,30 @@ func (h *WorkspaceHandler) handleGetWorkspaceMember(w http.ResponseWriter, r *ht
 	workspaceId := r.PathValue("workspaceId")
 	memberId := r.PathValue("memberId")
 
-	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
-	if errors.Is(err, services.ErrWorkspaceNotFound) {
-		slog.Warn(
-			"workspace not found or does not exist",
-			slog.String("workspaceId", workspaceId),
-		)
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-
-	if err != nil {
-		slog.Error(
-			"failed to get account workspace or does not exist "+
-				"something went wrong",
-			slog.String("workspaceId", workspaceId),
-		)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	member, err := h.ws.GetWorkspaceMemberById(ctx, workspace.WorkspaceId, memberId)
+	member, err := h.ws.GetWorkspaceMemberById(ctx, workspaceId, memberId)
 	if errors.Is(err, services.ErrMemberNotFound) {
-		slog.Warn(
-			"workspace member not found or does not exist",
-			slog.String("memberId", memberId),
-			slog.String("workspaceId", workspaceId),
-		)
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
 	if err != nil {
-		slog.Error(
-			"failed to get workspace member or does not exist "+
-				"something went wrong",
-			slog.String("memberId", memberId),
-			slog.String("workspaceId", workspaceId),
-		)
+		slog.Error("failed to fetch workspace member", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
+	}
+
+	resp := MemberResp{
+		MemberId:  member.MemberId,
+		Name:      member.Name,
+		Role:      member.Role,
+		CreatedAt: member.CreatedAt,
+		UpdatedAt: member.UpdatedAt,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(member); err != nil {
-		slog.Error(
-			"failed to encode workspace member to json "+
-				"check the json encoding defn",
-			slog.String("memberId", memberId),
-			slog.String("workspaceId", workspaceId),
-		)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("failed to encode json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -767,33 +675,9 @@ func (h *WorkspaceHandler) handleGetWorkspaceCustomers(w http.ResponseWriter, r 
 
 	workspaceId := r.PathValue("workspaceId")
 
-	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
-	if errors.Is(err, services.ErrWorkspaceNotFound) {
-		slog.Warn(
-			"workspace not found or does not exist",
-			slog.String("workspaceId", workspaceId),
-		)
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-
+	customers, err := h.ws.ListWorkspaceCustomers(ctx, workspaceId)
 	if err != nil {
-		slog.Error(
-			"failed to get account workspace or does not exist "+
-				"something went wrong",
-			slog.String("workspaceId", workspaceId),
-		)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	customers, err := h.ws.ListWorkspaceCustomers(ctx, workspace.WorkspaceId)
-	if err != nil {
-		slog.Error(
-			"failed to get workspace customers "+
-				"something went wrong",
-			slog.String("workspaceId", workspaceId),
-		)
+		slog.Error("failed to fetch workspace customers", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -816,11 +700,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceCustomers(w http.ResponseWriter, r 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(items); err != nil {
-		slog.Error(
-			"failed to encode workspace customers to json "+
-				"check the json encoding defn",
-			slog.String("workspaceId", workspaceId),
-		)
+		slog.Error("failed to encode json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -830,46 +710,29 @@ func (h *WorkspaceHandler) handleGetWorkspaceMembers(w http.ResponseWriter, r *h
 	ctx := r.Context()
 
 	workspaceId := r.PathValue("workspaceId")
-
-	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
-	if errors.Is(err, services.ErrWorkspaceNotFound) {
-		slog.Warn(
-			"workspace not found or does not exist",
-			slog.String("workspaceId", workspaceId),
-		)
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-
+	members, err := h.ws.ListWorkspaceMembers(ctx, workspaceId)
 	if err != nil {
-		slog.Error(
-			"failed to get account workspace or does not exist "+
-				"something went wrong",
-			slog.String("workspaceId", workspaceId),
-		)
+		slog.Error("failed to fetch workspace members", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	members, err := h.ws.ListWorkspaceMembers(ctx, workspace.WorkspaceId)
-	if err != nil {
-		slog.Error(
-			"failed to get workspace members "+
-				"something went wrong",
-			slog.String("workspaceId", workspaceId),
-		)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+	items := make([]MemberResp, 0, len(members))
+	for _, m := range members {
+		item := MemberResp{
+			MemberId:  m.MemberId,
+			Name:      m.Name,
+			Role:      m.Role,
+			CreatedAt: m.CreatedAt,
+			UpdatedAt: m.UpdatedAt,
+		}
+		items = append(items, item)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(members); err != nil {
-		slog.Error(
-			"failed to encode workspace members to json "+
-				"check the json encoding defn",
-			slog.String("workspaceId", workspaceId),
-		)
+	if err := json.NewEncoder(w).Encode(items); err != nil {
+		slog.Error("failed to encode json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -885,34 +748,26 @@ func (h *WorkspaceHandler) handleGenerateSecretKey(w http.ResponseWriter, r *htt
 
 	workspaceId := r.PathValue("workspaceId")
 
-	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetLinkedWorkspaceMember(ctx, account.AccountId, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
 	if err != nil {
-		slog.Error(
-			"failed to get account workspace or does not exist "+
-				"something went wrong",
-			slog.String("workspaceId", workspaceId),
-		)
+		slog.Error("failed to fetch workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
 	sk, err := h.ws.GenerateSecretKey(ctx, workspace.WorkspaceId, 64)
 	if err != nil {
-		slog.Error(
-			"failed to generate workspace secret key "+
-				"something went wrong",
-			slog.String("workspaceId", workspaceId),
-		)
+		slog.Error("failed to generate workspace secret key", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	resp := SKRespPayload{
+	resp := SKResp{
 		SecretKey: sk.SecretKey,
 		CreatedAt: sk.CreatedAt,
 		UpdatedAt: sk.UpdatedAt,
@@ -921,11 +776,7 @@ func (h *WorkspaceHandler) handleGenerateSecretKey(w http.ResponseWriter, r *htt
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		slog.Error(
-			"failed to encode workspace secret key to json "+
-				"check the json encoding defn",
-			slog.String("workspaceId", workspaceId),
-		)
+		slog.Error("failed to encode json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -936,44 +787,19 @@ func (h *WorkspaceHandler) handleGetWorkspaceSecretKey(w http.ResponseWriter, r 
 
 	workspaceId := r.PathValue("workspaceId")
 
-	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
-	if errors.Is(err, services.ErrWorkspaceNotFound) {
-		slog.Warn(
-			"workspace not found or does not exist",
-			slog.String("workspaceId", workspaceId),
-		)
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-
-	if err != nil {
-		slog.Error(
-			"failed to get account workspace or does not exist "+
-				"something went wrong",
-			slog.String("workspaceId", workspaceId),
-		)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	sk, err := h.ws.GetWorkspaceSecretKey(ctx, workspace.WorkspaceId)
-
+	sk, err := h.ws.GetWorkspaceSecretKey(ctx, workspaceId)
 	if errors.Is(err, services.ErrSecretKeyNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
 	if err != nil {
-		slog.Error(
-			"failed to get workspace secret key "+
-				"something went wrong",
-			slog.String("workspaceId", workspaceId),
-		)
+		slog.Error("failed to fetch workspace secret key", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	resp := SKRespPayload{
+	resp := SKResp{
 		SecretKey: sk.SecretKey,
 		CreatedAt: sk.CreatedAt,
 		UpdatedAt: sk.UpdatedAt,
@@ -982,11 +808,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceSecretKey(w http.ResponseWriter, r 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		slog.Error(
-			"failed to encode workspace secret key to json "+
-				"check the json encoding defn",
-			slog.String("workspaceId", workspaceId),
-		)
+		slog.Error("failed to encode json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -996,33 +818,16 @@ func (h *WorkspaceHandler) handleGetWidgets(w http.ResponseWriter, r *http.Reque
 	workspaceId := r.PathValue("workspaceId")
 	ctx := r.Context()
 
-	workspace, err := h.ws.GetMemberWorkspace(ctx, account.AccountId, workspaceId)
-	if errors.Is(err, services.ErrWorkspaceNotFound) {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-
+	widgets, err := h.ws.ListWidgets(ctx, workspaceId)
 	if err != nil {
-		slog.Error("failed to get workspace by id "+
-			"something went wrong", "accountId", account.AccountId, "workspaceId", workspaceId)
+		slog.Error("failed to fetch widgets", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	widgets, err := h.ws.ListWidgets(ctx, workspace.WorkspaceId)
-	if err != nil {
-		slog.Error(
-			"failed to get list of widgets for workspace "+
-				"something went wrong",
-			"workspaceId", workspace.WorkspaceId,
-		)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	response := make([]WidgetRespPayload, 0, 100)
+	response := make([]WidgetResp, 0, 100)
 	for _, widget := range widgets {
-		resp := WidgetRespPayload{
+		resp := WidgetResp{
 			WidgetId:      widget.WidgetId,
 			Name:          widget.Name,
 			Configuration: widget.Configuration,
@@ -1035,11 +840,7 @@ func (h *WorkspaceHandler) handleGetWidgets(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		slog.Error(
-			"failed to encode widgets to json "+
-				"check the json encoding defn",
-			"workspaceId", workspace.WorkspaceId,
-		)
+		slog.Error("failed to encode json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}

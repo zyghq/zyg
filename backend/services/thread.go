@@ -19,72 +19,73 @@ func NewThreadChatService(repo ports.ThreadChatRepositorer) *ThreadChatService {
 	}
 }
 
-// creates a new thread chat for the customer and message.
-// a thread can only be created for a customer.
-// thread cannot exists without a valid customer.
-func (s *ThreadChatService) CreateThreadWithMessage(ctx context.Context, th models.ThreadChat, msg string,
-) (models.ThreadChat, models.ThreadChatMessage, error) {
-	thread, message, err := s.repo.InsertThreadChat(ctx, th, msg)
-
-	if err != nil {
-		return thread, message, ErrThreadChat
+func (s *ThreadChatService) CreateThreadInAppChat(
+	ctx context.Context, workspaceId string, customerId string, message string) (models.Thread, models.Chat, error) {
+	chat := models.Chat{
+		Body:       message,
+		CustomerId: models.NullString(&customerId),
+		IsHead:     true,
 	}
-
-	return thread, message, nil
+	thread := models.Thread{
+		WorkspaceId:       workspaceId,
+		CustomerId:        customerId,
+		Status:            models.ThreadStatus{}.Todo(),
+		Channel:           models.ThreadChannel{}.Chat(),
+		MessageBody:       chat.PreviewBody(),
+		MessageCustomerId: chat.CustomerId,
+		MessageMemberId:   chat.MemberId,
+	}
+	thread, chat, err := s.repo.InsertInAppThreadChat(ctx, thread, chat)
+	if err != nil {
+		return models.Thread{}, models.Chat{}, ErrThreadChat
+	}
+	return thread, chat, nil
 }
 
-func (s *ThreadChatService) UpdateThread(ctx context.Context, th models.ThreadChat, fields []string) (models.ThreadChat, error) {
-	thread, err := s.repo.ModifyThreadChatById(ctx, th, fields)
+func (s *ThreadChatService) UpdateThread(
+	ctx context.Context, thread models.Thread, fields []string) (models.Thread, error) {
+	thread, err := s.repo.ModifyThreadById(ctx, thread, fields)
 
 	if err != nil {
-		return thread, ErrThreadChat
+		return models.Thread{}, ErrThreadChat
 	}
 
 	return thread, nil
 }
 
-// returns a thread chat by workspace and thread chat.
-// a thread chat is unique in a workspace.
-func (s *ThreadChatService) GetThread(ctx context.Context, workspaceId string, threadChatId string,
-) (models.ThreadChat, error) {
-	thread, err := s.repo.LookupByWorkspaceThreadChatId(ctx, workspaceId, threadChatId)
+func (s *ThreadChatService) GetWorkspaceThread(
+	ctx context.Context, workspaceId string, threadId string) (models.Thread, error) {
+	thread, err := s.repo.LookupByWorkspaceThreadId(ctx, workspaceId, threadId)
 
 	if errors.Is(err, repository.ErrEmpty) {
-		return thread, ErrThreadChatNotFound
+		return models.Thread{}, ErrThreadChatNotFound
 	}
 
 	if err != nil {
-		return thread, ErrThreadChat
+		return models.Thread{}, ErrThreadChat
 	}
 
 	return thread, nil
 }
 
-// returns a list of thread chat for the customer in the workspace.
-func (s *ThreadChatService) ListCustomerThreads(ctx context.Context, workspaceId string, customerId string,
-) ([]models.ThreadChatWithMessage, error) {
-	threads, err := s.repo.FetchByWorkspaceCustomerId(ctx, workspaceId, customerId)
-
+func (s *ThreadChatService) ListCustomerThreadChats(
+	ctx context.Context, workspaceId string, customerId string) ([]models.Thread, error) {
+	threads, err := s.repo.RetrieveWorkspaceThChatsByCustomerId(ctx, workspaceId, customerId)
 	if err != nil {
 		return threads, ErrThreadChat
 	}
-
 	return threads, nil
 }
 
-// assigns a member to a thread chat.
-func (s *ThreadChatService) AssignMemberToThread(ctx context.Context, threadChatId string, assigneeId string,
-) (models.ThreadChat, error) {
-	thread, err := s.repo.UpdateAssignee(ctx, threadChatId, assigneeId)
+func (s *ThreadChatService) AssignMemberToThread(ctx context.Context, threadId string, assigneeId string) (models.Thread, error) {
+	thread, err := s.repo.UpdateAssignee(ctx, threadId, assigneeId)
 	if err != nil {
 		return thread, ErrThreadChatAssign
 	}
 	return thread, nil
 }
 
-// marks a thread chat as replied or unreplied.
-func (s *ThreadChatService) SetThreadReplyStatus(ctx context.Context, threadChatId string, replied bool,
-) (models.ThreadChat, error) {
+func (s *ThreadChatService) SetThreadReplyStatus(ctx context.Context, threadChatId string, replied bool) (models.Thread, error) {
 	thread, err := s.repo.UpdateRepliedStatus(ctx, threadChatId, replied)
 	if err != nil {
 		return thread, ErrThreadChatReplied
@@ -92,120 +93,124 @@ func (s *ThreadChatService) SetThreadReplyStatus(ctx context.Context, threadChat
 	return thread, nil
 }
 
-// returns a list of thread chat in the workspace.
-func (s *ThreadChatService) ListWorkspaceThreads(ctx context.Context, workspaceId string) ([]models.ThreadChatWithMessage, error) {
-	threads, err := s.repo.RetrieveByWorkspaceId(ctx, workspaceId)
+func (s *ThreadChatService) ListWorkspaceThreadChats(
+	ctx context.Context, workspaceId string) ([]models.Thread, error) {
+	threads, err := s.repo.FetchThChatsByWorkspaceId(ctx, workspaceId)
 	if err != nil {
-		return threads, ErrThreadChat
+		return []models.Thread{}, ErrThreadChat
 	}
 	return threads, nil
 }
 
-// returns a list of thread chat assigned to the member in the workspace.
-func (s *ThreadChatService) ListMemberAssignedThreads(ctx context.Context, workspaceId string, memberId string,
-) ([]models.ThreadChatWithMessage, error) {
-	threads, err := s.repo.FetchAssignedThreadsByMember(ctx, workspaceId, memberId)
+func (s *ThreadChatService) ListMemberAssignedThreadChats(
+	ctx context.Context, memberId string) ([]models.Thread, error) {
+	threads, err := s.repo.FetchAssignedThChatsByMemberId(ctx, memberId)
 	if err != nil {
-		return threads, ErrThreadChat
+		return []models.Thread{}, ErrThreadChat
 	}
 	return threads, nil
 }
 
-// returns a list of thread chat unassigned in the workspace.
-func (s *ThreadChatService) ListUnassignedThreads(ctx context.Context, workspaceId string,
-) ([]models.ThreadChatWithMessage, error) {
-	threads, err := s.repo.RetrieveUnassignedThreads(ctx, workspaceId)
+func (s *ThreadChatService) ListUnassignedThreadChats(
+	ctx context.Context, workspaceId string) ([]models.Thread, error) {
+	threads, err := s.repo.FetchUnassignedThChatsByWorkspaceId(ctx, workspaceId)
 	if err != nil {
-		return threads, ErrThreadChat
+		return []models.Thread{}, ErrThreadChat
 	}
 	return threads, nil
 }
 
-// returns a list of thread chat labelled in the workspace.
-func (s *ThreadChatService) ListLabelledThreads(ctx context.Context, workspaceId string, labelId string,
-) ([]models.ThreadChatWithMessage, error) {
-	threads, err := s.repo.FetchThreadsByLabel(ctx, workspaceId, labelId)
+func (s *ThreadChatService) ListLabelledThreadChats(
+	ctx context.Context, labelId string) ([]models.Thread, error) {
+	threads, err := s.repo.FetchThChatsByLabelId(ctx, labelId)
 	if err != nil {
-		return threads, ErrThreadChat
+		return []models.Thread{}, ErrThreadChat
 	}
 	return threads, nil
 }
 
-// checks if a thread chat exists in the workspace.
-func (s *ThreadChatService) ThreadExistsInWorkspace(ctx context.Context, workspaceId string, threadChatId string,
-) (bool, error) {
-	exist, err := s.repo.CheckExistenceByWorkspaceThreadChatId(ctx, workspaceId, threadChatId)
+func (s *ThreadChatService) ThreadExistsInWorkspace(
+	ctx context.Context, workspaceId string, threadId string) (bool, error) {
+	exist, err := s.repo.CheckWorkspaceExistenceByThreadId(ctx, workspaceId, threadId)
 	if err != nil {
-		return exist, ErrThreadChat
+		return false, ErrThreadChat
 	}
 	return exist, nil
 }
 
-// adds a label to a thread chat.
-// label must exist in the workspace.
-func (s *ThreadChatService) AttachLabelToThread(ctx context.Context, thl models.ThreadChatLabel,
-) (models.ThreadChatLabel, bool, error) {
-	label, created, err := s.repo.AttachLabelToThread(ctx, thl)
+func (s *ThreadChatService) AttachLabelToThread(
+	ctx context.Context, threadId string, labelId string, addedBy string) (models.ThreadLabel, bool, error) {
+	label := models.ThreadLabel{
+		ThreadId: threadId,
+		LabelId:  labelId,
+		AddedBy:  addedBy,
+	}
+	label, created, err := s.repo.SetLabelToThread(ctx, label)
 	if err != nil {
-		return label, created, ErrThChatLabel
+		return models.ThreadLabel{}, created, ErrThChatLabel
 	}
 
 	return label, created, nil
 }
 
-// returns a list of labels added to the thread chat.
-func (s *ThreadChatService) ListThreadLabels(ctx context.Context, threadChatId string) ([]models.ThreadChatLabelled, error) {
-	labels, err := s.repo.RetrieveLabelsByThreadChatId(ctx, threadChatId)
+func (s *ThreadChatService) ListThreadLabels(
+	ctx context.Context, threadId string) ([]models.ThreadLabel, error) {
+	labels, err := s.repo.RetrieveLabelsByThreadId(ctx, threadId)
 	if err != nil {
 		return labels, ErrThChatLabel
 	}
 	return labels, nil
 }
 
-// creates a new message for the customer in the thread chat.
-// a customer thread chat must exist before creating a message.
-func (s *ThreadChatService) AddCustomerMessageToThread(ctx context.Context, th models.ThreadChat, c *models.Customer, msg string,
-) (models.ThreadChatMessage, error) {
-	message, err := s.repo.InsertCustomerMessage(ctx, th.ThreadChatId, c.CustomerId, msg)
+func (s *ThreadChatService) AddCustomerMessageToThread(
+	ctx context.Context, threadId string, customerId string, message string) (models.Chat, error) {
+	chat := models.Chat{
+		ThreadId:   threadId,
+		Body:       message,
+		CustomerId: models.NullString(&customerId),
+		IsHead:     false,
+	}
+	chat, err := s.repo.InsertCustomerMessage(ctx, chat)
 	if err != nil {
-		return models.ThreadChatMessage{}, ErrThChatMessage
+		return models.Chat{}, ErrThChatMessage
 	}
 
-	return message, nil
+	return chat, nil
 }
 
-// creates a new message for the member in the thread chat.
-// a member thread chat must exist before creating a message.
-func (s *ThreadChatService) AddMemberMessageToThread(ctx context.Context, th models.ThreadChat, m *models.Member, msg string,
-) (models.ThreadChatMessage, error) {
-	message, err := s.repo.InsertMemberMessage(ctx, th.ThreadChatId, m.MemberId, msg)
+func (s *ThreadChatService) AddMemberMessageToThreadChat(
+	ctx context.Context, threadId string, memberId string, message string) (models.Chat, error) {
+	chat := models.Chat{
+		ThreadId: threadId,
+		Body:     message,
+		MemberId: models.NullString(&memberId),
+		IsHead:   false,
+	}
+	chat, err := s.repo.InsertThChatMemberMessage(ctx, chat)
 	if err != nil {
-		return models.ThreadChatMessage{}, ErrThChatMessage
+		return models.Chat{}, ErrThChatMessage
 	}
 
-	return message, nil
+	return chat, nil
 }
 
-// returns a list of messages for the thread chat item.
-func (s *ThreadChatService) ListThreadMessages(ctx context.Context, threadChatId string,
-) ([]models.ThreadChatMessage, error) {
-	messages, err := s.repo.FetchMessagesByThreadChatId(ctx, threadChatId)
+func (s *ThreadChatService) ListThreadChatMessages(
+	ctx context.Context, threadId string) ([]models.Chat, error) {
+	messages, err := s.repo.FetchThChatMessagesByThreadId(ctx, threadId)
 	if err != nil {
-		return messages, ErrThChatMessage
+		return []models.Chat{}, ErrThChatMessage
 	}
-
 	return messages, nil
 }
 
-// generates metrics for the member in the workspace.
-func (s *ThreadChatService) GenerateMemberThreadMetrics(ctx context.Context, workspaceId string, memberId string,
-) (models.ThreadMemberMetrics, error) {
+func (s *ThreadChatService) GenerateMemberThreadMetrics(
+	ctx context.Context, workspaceId string, memberId string) (models.ThreadMemberMetrics, error) {
 	statusMetrics, err := s.repo.ComputeStatusMetricsByWorkspaceId(ctx, workspaceId)
 	if err != nil {
 		return models.ThreadMemberMetrics{}, ErrThreadChatMetrics
 	}
 
-	assignmentMetrics, err := s.repo.CalculateAssigneeMetricsByMember(ctx, workspaceId, memberId)
+	assignmentMetrics, err := s.repo.ComputeAssigneeMetricsByMember(ctx, workspaceId, memberId)
 	if err != nil {
 		return models.ThreadMemberMetrics{}, ErrThreadChatMetrics
 	}

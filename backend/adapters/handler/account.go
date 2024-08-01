@@ -38,16 +38,12 @@ func (h *AccountHandler) handleGetOrCreateAccount(w http.ResponseWriter, r *http
 	ctx := r.Context()
 
 	if scheme == "token" {
-		slog.Warn("token authorization scheme unsupported for auth account creation")
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	} else if scheme == "bearer" {
 		hmacSecret, err := zyg.GetEnv("SUPABASE_JWT_SECRET")
 		if err != nil {
-			slog.Error(
-				"failed to get env SUPABASE_JWT_SECRET " +
-					"required to decode the incoming jwt token",
-			)
+			slog.Error("env SUPABASE_JWT_SECRET is not set")
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
@@ -58,7 +54,6 @@ func (h *AccountHandler) handleGetOrCreateAccount(w http.ResponseWriter, r *http
 		}
 		sub, err := ac.RegisteredClaims.GetSubject()
 		if err != nil {
-			slog.Warn("failed to get subject from parsed token - make sure it is set in the token")
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
@@ -70,86 +65,44 @@ func (h *AccountHandler) handleGetOrCreateAccount(w http.ResponseWriter, r *http
 			return
 		}
 
-		// initialize auth user account by subject.
-		account := models.Account{AuthUserId: sub, Email: ac.Email, Provider: services.DefaultAuthProvider}
-
+		var accountName string
 		if name, found := reqp["name"]; found {
 			if name == nil {
-				slog.Error("name cannot be null", slog.String("subject", sub))
+				slog.Error(
+					"name cannot be empty", slog.String("subject", sub),
+				)
 				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 				return
 			}
 			ns := name.(string)
-			account.Name = ns
+			accountName = ns
 		}
 
-		account, isCreated, err := h.as.InitiateAccount(ctx, account)
+		account, isCreated, err := h.as.CreateAuthAccount(ctx, sub, ac.Email, accountName, services.DefaultAuthProvider)
 		if err != nil {
 			slog.Error(
-				"failed to get or create account by subject "+
-					"perhaps a failed query or mapping", slog.String("subject", sub),
+				"failed to create auth account", slog.Any("err", err),
 			)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
-		// TODO: fix this asap.
+		// @sanchitrk
+		// add CDP event when the account is created
 		if isCreated {
-			// add to demo workspace
-			workspaceId := "wrkcq1c89i9io6g008he020"
-			memberName := models.NullString(&account.Name)
-			member := models.Member{
-				WorkspaceId: workspaceId,
-				AccountId:   account.AccountId,
-				MemberId:    account.AuthUserId,
-				Name:        memberName,
-				Role:        models.MemberRole{}.Member(),
-			}
-			workspace, err := h.ws.GetWorkspace(ctx, workspaceId)
-			if err != nil {
-				slog.Error("failed to get demo workspace "+
-					"something went wrong",
-					slog.String("workspaceId", workspaceId),
-				)
-				slog.Info("skipping...")
-			} else {
-				member, err = h.ws.AddMember(ctx, workspace, member)
-				if err != nil {
-					slog.Error("failed to add member to demo workspace "+
-						"something went wrong",
-						slog.String("workspaceId", workspaceId),
-					)
-					slog.Info("skipping...")
-				} else {
-					slog.Info("added member to demo workspace",
-						slog.String("workspaceId", workspaceId),
-						slog.String("memberId", member.MemberId),
-					)
-				}
-			}
-
-			slog.Info("created auth account for subject", slog.String("accountId", account.AccountId))
+			slog.Info("created auth account", slog.String("accountId", account.AccountId))
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
 			if err := json.NewEncoder(w).Encode(account); err != nil {
-				slog.Error(
-					"failed to encode account to json "+
-						"check the json encoding defn",
-					slog.String("accountId", account.AccountId),
-				)
+				slog.Error("failed to encode json", slog.Any("err", err))
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
 		} else {
-			slog.Info("auth account already exists for subject", slog.String("accountId", account.AccountId))
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			if err := json.NewEncoder(w).Encode(account); err != nil {
-				slog.Error(
-					"failed to encode account to json "+
-						"check the json encoding defn",
-					slog.String("accountId", account.AccountId),
-				)
+				slog.Error("failed to encode json", slog.Any("err", err))
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
@@ -164,10 +117,7 @@ func (h *AccountHandler) handleGetPatList(w http.ResponseWriter, r *http.Request
 	ctx := r.Context()
 	aps, err := h.as.GetPersonalAccessTokens(ctx, account.AccountId)
 	if err != nil {
-		slog.Error("failed to pat list "+
-			"something went wrong",
-			slog.String("accountId", account.AccountId),
-		)
+		slog.Error("failed to fetch pat list", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -193,38 +143,25 @@ func (h *AccountHandler) handleCreatePat(w http.ResponseWriter, r *http.Request,
 
 	ctx := r.Context()
 
-	var rb PATReqPayload
-	err := json.NewDecoder(r.Body).Decode(&rb)
+	var reqp PATReq
+	err := json.NewDecoder(r.Body).Decode(&reqp)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	ap := models.AccountPAT{
-		AccountId:   account.AccountId,
-		Name:        rb.Name,
-		UnMask:      true, // unmask only once created
-		Description: models.NullString(rb.Description),
-	}
-
-	ap, err = h.as.GeneratePersonalAccessToken(ctx, ap)
+	pat, err := h.as.GeneratePersonalAccessToken(ctx, account.AccountId, reqp.Name, reqp.Description)
 	if err != nil {
 		slog.Error(
-			"failed to create account PAT "+
-				"perhaps check the db query or mapping",
-			slog.String("accountId", account.AccountId),
+			"failed to create pat", slog.Any("err", err),
 		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(ap); err != nil {
-		slog.Error(
-			"failed to encode account pat to json "+
-				"check the json encoding defn",
-			slog.String("patId", ap.PatId),
-		)
+	if err := json.NewEncoder(w).Encode(pat); err != nil {
+		slog.Error("failed to encode json", slog.String("patId", pat.PatId))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -240,24 +177,17 @@ func (h *AccountHandler) handleDeletePat(w http.ResponseWriter, r *http.Request,
 		return
 	}
 	if err != nil {
-		slog.Error("failed to get pat by pat id "+
-			"something went wrong",
-			slog.String("patId", patId),
-		)
+		slog.Error("failed to fetch pat for deletion", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
 	err = h.as.DeletePersonalAccessToken(ctx, pat.PatId)
 	if err != nil {
-		slog.Error("failed to delete pat "+
-			"something went wrong",
-			slog.String("patId", pat.PatId),
-		)
+		slog.Error("failed to delete pat", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	// return http status 204 no content
 	w.WriteHeader(http.StatusNoContent)
 }

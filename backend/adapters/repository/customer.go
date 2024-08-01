@@ -262,7 +262,8 @@ func (c *CustomerDB) UpsertCustomerByPhone(ctx context.Context, customer models.
 	return customer, isCreated, nil
 }
 
-func (c *CustomerDB) FetchCustomersByWorkspaceId(ctx context.Context, workspaceId string) ([]models.Customer, error) {
+func (c *CustomerDB) FetchCustomersByWorkspaceId(
+	ctx context.Context, workspaceId string) ([]models.Customer, error) {
 	var customer models.Customer
 	customers := make([]models.Customer, 0, 100)
 	role := models.Customer{}.Engaged()
@@ -289,7 +290,7 @@ func (c *CustomerDB) FetchCustomersByWorkspaceId(ctx context.Context, workspaceI
 	})
 
 	if err != nil {
-		slog.Error("failed to query", "error", err)
+		slog.Error("failed to query", slog.Any("error", err))
 		return []models.Customer{}, ErrQuery
 	}
 

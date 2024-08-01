@@ -51,6 +51,35 @@ func IsValidUUID(u string) bool {
 	return err == nil
 }
 
+type Workspace struct {
+	WorkspaceId string
+	AccountId   string
+	Name        string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+func (w Workspace) GenId() string {
+	return "wrk" + xid.New().String()
+}
+
+func (w Workspace) MarshalJSON() ([]byte, error) {
+	aux := &struct {
+		WorkspaceId string `json:"workspaceId"`
+		AccountId   string `json:"accountId"`
+		Name        string `json:"name"`
+		CreatedAt   string `json:"createdAt"`
+		UpdatedAt   string `json:"updatedAt"`
+	}{
+		WorkspaceId: w.WorkspaceId,
+		AccountId:   w.AccountId,
+		Name:        w.Name,
+		CreatedAt:   w.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   w.UpdatedAt.Format(time.RFC3339),
+	}
+	return json.Marshal(aux)
+}
+
 type ThreadStatus struct{}
 
 func (s ThreadStatus) Todo() string {
@@ -115,6 +144,12 @@ func (p ThreadPriority) IsValid(s string) bool {
 	}
 }
 
+type ThreadChannel struct{}
+
+func (c ThreadChannel) Chat() string {
+	return "chat"
+}
+
 type LabelAddedBy struct{}
 
 func (a LabelAddedBy) User() string {
@@ -171,7 +206,7 @@ type AccountPAT struct {
 	PatId       string
 	Token       string
 	Name        string
-	Description sql.NullString
+	Description string
 	UnMask      bool
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
@@ -182,12 +217,7 @@ func (ap AccountPAT) GenId() string {
 }
 
 func (ap AccountPAT) MarshalJSON() ([]byte, error) {
-	var description *string
 	var token string
-	if ap.Description.Valid {
-		description = &ap.Description.String
-	}
-
 	maskLeft := func(s string) string {
 		rs := []rune(s)
 		for i := range rs[:len(rs)-4] {
@@ -203,50 +233,21 @@ func (ap AccountPAT) MarshalJSON() ([]byte, error) {
 	}
 
 	aux := &struct {
-		AccountId   string  `json:"accountId"`
-		PatId       string  `json:"patId"`
-		Token       string  `json:"token"`
-		Name        string  `json:"name"`
-		Description *string `json:"description"`
-		CreatedAt   string  `json:"createdAt"`
-		UpdatedAt   string  `json:"updatedAt"`
+		AccountId   string `json:"accountId"`
+		PatId       string `json:"patId"`
+		Token       string `json:"token"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		CreatedAt   string `json:"createdAt"`
+		UpdatedAt   string `json:"updatedAt"`
 	}{
 		AccountId:   ap.AccountId,
 		PatId:       ap.PatId,
 		Token:       token,
 		Name:        ap.Name,
-		Description: description,
+		Description: ap.Description,
 		CreatedAt:   ap.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:   ap.UpdatedAt.Format(time.RFC3339),
-	}
-	return json.Marshal(aux)
-}
-
-type Workspace struct {
-	WorkspaceId string
-	AccountId   string
-	Name        string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
-func (w Workspace) GenId() string {
-	return "wrk" + xid.New().String()
-}
-
-func (w Workspace) MarshalJSON() ([]byte, error) {
-	aux := &struct {
-		WorkspaceId string `json:"workspaceId"`
-		AccountId   string `json:"accountId"`
-		Name        string `json:"name"`
-		CreatedAt   string `json:"createdAt"`
-		UpdatedAt   string `json:"updatedAt"`
-	}{
-		WorkspaceId: w.WorkspaceId,
-		AccountId:   w.AccountId,
-		Name:        w.Name,
-		CreatedAt:   w.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:   w.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
 }
@@ -255,7 +256,7 @@ type Member struct {
 	WorkspaceId string
 	AccountId   string
 	MemberId    string
-	Name        sql.NullString
+	Name        string
 	Role        string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
@@ -266,23 +267,19 @@ func (m Member) GenId() string {
 }
 
 func (m Member) MarshalJSON() ([]byte, error) {
-	var name *string
-	if m.Name.Valid {
-		name = &m.Name.String
-	}
 	aux := &struct {
-		WorkspaceId string  `json:"workspaceId"`
-		AccountId   string  `json:"accountId"`
-		MemberId    string  `json:"memberId"`
-		Name        *string `json:"name"`
-		Role        string  `json:"role"`
-		CreatedAt   string  `json:"createdAt"`
-		UpdatedAt   string  `json:"updatedAt"`
+		WorkspaceId string `json:"workspaceId"`
+		AccountId   string `json:"accountId"`
+		MemberId    string `json:"memberId"`
+		Name        string `json:"name"`
+		Role        string `json:"role"`
+		CreatedAt   string `json:"createdAt"`
+		UpdatedAt   string `json:"updatedAt"`
 	}{
 		WorkspaceId: m.WorkspaceId,
 		AccountId:   m.AccountId,
 		MemberId:    m.MemberId,
-		Name:        name,
+		Name:        m.Name,
 		Role:        m.Role,
 		CreatedAt:   m.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:   m.UpdatedAt.Format(time.RFC3339),
@@ -327,7 +324,7 @@ type Customer struct {
 	ExternalId  sql.NullString
 	Email       sql.NullString
 	Phone       sql.NullString
-	Name        sql.NullString
+	Name        string
 	AnonId      string
 	IsVerified  bool
 	Role        string
@@ -352,7 +349,7 @@ func (c Customer) Engaged() string {
 }
 
 func (c Customer) MarshalJSON() ([]byte, error) {
-	var externalId, email, phone, name *string
+	var externalId, email, phone *string
 	if c.ExternalId.Valid {
 		externalId = &c.ExternalId.String
 	}
@@ -362,9 +359,6 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 	if c.Phone.Valid {
 		phone = &c.Phone.String
 	}
-	if c.Name.Valid {
-		name = &c.Name.String
-	}
 
 	aux := &struct {
 		WorkspaceId string  `json:"workspaceId"`
@@ -372,7 +366,7 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 		ExternalId  *string `json:"externalId"`
 		Email       *string `json:"email"`
 		Phone       *string `json:"phone"`
-		Name        *string `json:"name"`
+		Name        string  `json:"name"`
 		AnonId      string  `json:"anonId"`
 		IsVerified  bool    `json:"isVerified"`
 		Role        string  `json:"role"`
@@ -384,7 +378,7 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 		ExternalId:  externalId,
 		Email:       email,
 		Phone:       phone,
-		Name:        name,
+		Name:        c.Name,
 		AnonId:      c.AnonId,
 		IsVerified:  c.IsVerified,
 		Role:        c.Role,
@@ -434,26 +428,56 @@ func (c Customer) DeAnonExternalId() string {
 	return c.ExternalId.String
 }
 
-type ThreadChat struct {
-	WorkspaceId  string
-	CustomerId   string
-	CustomerName sql.NullString
-	AssigneeId   sql.NullString
-	AssigneeName sql.NullString
-	ThreadChatId string
-	Title        string
-	Summary      string
+type Thread struct {
+	WorkspaceId         string
+	ThreadId            string
+	CustomerId          string
+	CustomerName        string
+	AssigneeId          sql.NullString
+	AssigneeName        sql.NullString
+	Title               string
+	Summary             string
+	Sequence            int
+	Status              string
+	Read                bool
+	Replied             bool
+	Priority            string
+	Spam                bool
+	Channel             string
+	MessageBody         string
+	MessageSequence     int
+	MessageCustomerId   sql.NullString
+	MessageCustomerName sql.NullString
+	MessageMemberId     sql.NullString
+	MessageMemberName   sql.NullString
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+}
+
+func (t Thread) GenId() string {
+	return "th_" + xid.New().String()
+}
+
+type Chat struct {
+	ThreadId     string
+	ChatId       string
+	Body         string
 	Sequence     int
-	Status       string
-	Read         bool
-	Replied      bool
-	Priority     string
+	CustomerId   sql.NullString
+	CustomerName sql.NullString
+	MemberId     sql.NullString
+	MemberName   sql.NullString
+	IsHead       bool
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
 
-func (th ThreadChat) GenId() string {
-	return "th_" + xid.New().String()
+func (c Chat) GenId() string {
+	return "ch_" + xid.New().String()
+}
+
+func (c Chat) PreviewBody() string {
+	return c.Body[:255]
 }
 
 func (l Label) MarshalJSON() ([]byte, error) {
@@ -473,28 +497,6 @@ func (l Label) MarshalJSON() ([]byte, error) {
 		UpdatedAt:   l.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
-}
-
-type ThreadChatMessage struct {
-	ThreadChatId        string
-	ThreadChatMessageId string
-	Body                string
-	Sequence            int
-	CustomerId          sql.NullString
-	CustomerName        sql.NullString
-	MemberId            sql.NullString
-	MemberName          sql.NullString
-	CreatedAt           time.Time
-	UpdatedAt           time.Time
-}
-
-func (thm ThreadChatMessage) GenId() string {
-	return "thm_" + xid.New().String()
-}
-
-type ThreadChatWithMessage struct {
-	ThreadChat ThreadChat
-	Message    ThreadChatMessage
 }
 
 type ThreadQAA struct {
@@ -534,28 +536,19 @@ func (l Label) GenId() string {
 	return "l_" + xid.New().String()
 }
 
-type ThreadChatLabel struct {
-	ThreadChatId      string
-	LabelId           string
-	ThreadChatLabelId string
-	AddedBy           string
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
+type ThreadLabel struct {
+	ThreadLabelId string
+	ThreadId      string
+	LabelId       string
+	Name          string
+	Icon          string
+	AddedBy       string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
-func (thl ThreadChatLabel) GenId() string {
+func (thl ThreadLabel) GenId() string {
 	return xid.New().String()
-}
-
-type ThreadChatLabelled struct {
-	ThreadChatLabelId string
-	ThreadChatId      string
-	LabelId           string
-	Name              string
-	Icon              string
-	AddedBy           string
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
 }
 
 type ThreadLabelMetric struct {

@@ -19,18 +19,13 @@ func NewAccountService(repo ports.AccountRepositorer) *AccountService {
 	}
 }
 
-func (s *AccountService) InitiateAccount(ctx context.Context, a models.Account) (models.Account, bool, error) {
-	account, created, err := s.repo.UpsertAccountByAuthId(ctx, a)
-
-	// checks if the result was empty or have query error
-	if errors.Is(err, repository.ErrEmpty) || errors.Is(err, repository.ErrQuery) {
-		return account, created, ErrAccount
-	}
-
+func (s *AccountService) CreateAuthAccount(
+	ctx context.Context, authUserId string, email string, name string, provider string) (models.Account, bool, error) {
+	account := models.Account{AuthUserId: authUserId, Email: email, Name: name, Provider: provider}
+	account, created, err := s.repo.UpsertByAuthUserId(ctx, account)
 	if err != nil {
-		return account, created, err
+		return models.Account{}, false, ErrAccount
 	}
-
 	return account, created, nil
 }
 
@@ -52,18 +47,20 @@ func (s *AccountService) AuthenticateUser(ctx context.Context, authUserId string
 	return account, nil
 }
 
-func (s *AccountService) GeneratePersonalAccessToken(ctx context.Context, ap models.AccountPAT) (models.AccountPAT, error) {
-	ap, err := s.repo.InsertPersonalAccessToken(ctx, ap)
-
-	if errors.Is(err, repository.ErrQuery) || errors.Is(err, repository.ErrEmpty) {
-		return ap, ErrPat
+func (s *AccountService) GeneratePersonalAccessToken(
+	ctx context.Context, accountId string, name string, description string) (models.AccountPAT, error) {
+	pat := models.AccountPAT{
+		AccountId:   accountId,
+		Name:        name,
+		UnMask:      true, // unmask only when created
+		Description: description,
 	}
-
+	ap, err := s.repo.InsertPersonalAccessToken(ctx, pat)
 	if err != nil {
-		return ap, err
+		return models.AccountPAT{}, ErrPat
 	}
-	// probably send a mail that a new token was created
-	// send via background job
+	// @sanchitrk
+	// send an email that a new token was created.
 	return ap, nil
 }
 
@@ -81,30 +78,27 @@ func (s *AccountService) GetPersonalAccessTokens(ctx context.Context, accountId 
 	return pats, nil
 }
 
-func (s *AccountService) GetPersonalAccessToken(ctx context.Context, patId string) (models.AccountPAT, error) {
-	pat, err := s.repo.FetchPatByPatId(ctx, patId)
+func (s *AccountService) GetPersonalAccessToken(
+	ctx context.Context, patId string) (models.AccountPAT, error) {
+	pat, err := s.repo.FetchPatById(ctx, patId)
 
 	if errors.Is(err, repository.ErrEmpty) {
 		return models.AccountPAT{}, ErrPatNotFound
 	}
 
-	if errors.Is(err, repository.ErrQuery) {
-		return models.AccountPAT{}, ErrPat
-	}
-
 	if err != nil {
-		return models.AccountPAT{}, err
+		return models.AccountPAT{}, ErrPat
 	}
 
 	return pat, nil
 }
 
 func (s *AccountService) DeletePersonalAccessToken(ctx context.Context, patId string) error {
-	err := s.repo.PermanentlyRemovePatByPatId(ctx, patId)
+	err := s.repo.DeletePatById(ctx, patId)
 	if err != nil {
-		return err
+		return ErrPat
 	}
-	// probably send a mail that the token was deleted
-	// send via background job
+	// @sanchitrk
+	// send an email that the token is deleted
 	return nil
 }

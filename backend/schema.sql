@@ -74,7 +74,7 @@ CREATE TABLE member (
     member_id VARCHAR(255) NOT NULL, -- primary key
     workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
     account_id VARCHAR(255) NOT NULL, -- fk to account
-    name VARCHAR NULL, -- name of the member
+    name VARCHAR (255) NOT NULL, -- name of the member
     role VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -95,7 +95,7 @@ CREATE TABLE customer (
     external_id VARCHAR(255) NULL, -- external id of the customer
     email VARCHAR(255) NULL, -- email of the customer
     phone VARCHAR(255) NULL, -- phone of the customer
-    name VARCHAR(255)  NULL, -- name of the customer
+    name VARCHAR(255)  NOT NULL, -- name of the customer
 
     role VARCHAR(255) NOT NULL, -- role of the customer
     anonymous_id UUID DEFAULT gen_random_uuid(), -- anonymous id of the customer
@@ -152,45 +152,94 @@ CREATE TABLE thread_qa_answer (
 
 -- Represents the chat thread table
 -- This table is used to store the chat information linked to the workspace.
-CREATE TABLE thread_chat (
+-- CREATE TABLE thread_chat (
+--     workspace_id VARCHAR(255) NOT NULL,
+--     customer_id VARCHAR(255) NOT NULL,
+--     assignee_id VARCHAR(255) NULL,
+--     thread_chat_id VARCHAR(255) NOT NULL,
+--     title TEXT NOT NULL,
+--     summary TEXT NOT NULL,
+--     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+--     status VARCHAR(127) NOT NULL,
+--     read BOOLEAN NOT NULL DEFAULT FALSE,  -- read by the member
+--     replied BOOLEAN NOT NULL DEFAULT FALSE,  -- replied by the member
+--     priority VARCHAR(255) NOT NULL, -- priority of the thread
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+--     CONSTRAINT thread_chat_thread_chat_id_pkey PRIMARY KEY (thread_chat_id),
+--     CONSTRAINT thread_chat_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
+--     CONSTRAINT thread_chat_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
+--     CONSTRAINT thread_chat_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES member (member_id)
+-- );
+
+CREATE TABLE thread (
+    thread_id VARCHAR(255) NOT NULL, 
     workspace_id VARCHAR(255) NOT NULL,
     customer_id VARCHAR(255) NOT NULL,
     assignee_id VARCHAR(255) NULL,
-    thread_chat_id VARCHAR(255) NOT NULL,
     title TEXT NOT NULL,
     summary TEXT NOT NULL,
     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
-    status VARCHAR(127) NOT NULL,
+    status VARCHAR(127) NOT NULL, -- status of the thread
     read BOOLEAN NOT NULL DEFAULT FALSE,  -- read by the member
     replied BOOLEAN NOT NULL DEFAULT FALSE,  -- replied by the member
     priority VARCHAR(255) NOT NULL, -- priority of the thread
+    spam BOOLEAN NOT NULL DEFAULT FALSE, -- spam flag
+
+    channel VARCHAR(127) NOT NULL, -- channel of the thread
+    
+    message_body TEXT NOT NULL, -- body of the message
+    message_sequence BIGINT NOT NULL DEFAULT fn_next_id(), -- sequence number of the message
+    message_customer_id VARCHAR(255) NULL, -- fk to customer if message is customer specific
+    message_member_id VARCHAR(255) NULL, -- fk to member if message is member specific
+    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    CONSTRAINT thread_chat_thread_chat_id_pkey PRIMARY KEY (thread_chat_id),
-    CONSTRAINT thread_chat_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
-    CONSTRAINT thread_chat_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
-    CONSTRAINT thread_chat_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES member (member_id)
+    CONSTRAINT thread_thread_id_pkey PRIMARY KEY (thread_id),
+    CONSTRAINT thread_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
+    CONSTRAINT thread_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
+    CONSTRAINT thread_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES member (member_id)
+);
+
+
+CREATE TABLE chat (
+    chat_id VARCHAR(255) NOT NULL,
+    thread_id VARCHAR(255) NOT NULL,
+    body TEXT NOT NULL,
+    sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+    customer_id VARCHAR(255) NULL,
+    member_id VARCHAR(255) NULL,
+    is_head BOOLEAN NOT NULL DEFAULT FALSE,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT chat_chat_id_pkey PRIMARY KEY (chat_id),
+    CONSTRAINT chat_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES thread (thread_id),
+    CONSTRAINT chat_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
+    CONSTRAINT chat_member_id_fkey FOREIGN KEY (member_id) REFERENCES member (member_id)
 );
 
 
 -- Represents the chat message table
 -- This table is used to store the chat messages linked to the chat thread.
-CREATE TABLE thread_chat_message (
-    thread_chat_id VARCHAR(255) NOT NULL,
-    thread_chat_message_id VARCHAR(255) NOT NULL,
-    body TEXT NOT NULL,
-    sequence BIGINT NOT NULL DEFAULT fn_next_id(),
-    customer_id VARCHAR(255) NULL,
-    member_id VARCHAR(255) NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+-- CREATE TABLE thread_chat_message (
+--     thread_chat_id VARCHAR(255) NOT NULL,
+--     thread_chat_message_id VARCHAR(255) NOT NULL,
+--     body TEXT NOT NULL,
+--     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+--     customer_id VARCHAR(255) NULL,
+--     member_id VARCHAR(255) NULL,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT thread_chat_message_thread_chat_message_id_pkey PRIMARY KEY (thread_chat_message_id),
-    CONSTRAINT thread_chat_message_thread_chat_id_fkey FOREIGN KEY (thread_chat_id) REFERENCES thread_chat (thread_chat_id),
-    CONSTRAINT thread_chat_message_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
-    CONSTRAINT thread_chat_message_member_id_fkey FOREIGN KEY (member_id) REFERENCES member (member_id)
-);
+--     CONSTRAINT thread_chat_message_thread_chat_message_id_pkey PRIMARY KEY (thread_chat_message_id),
+--     CONSTRAINT thread_chat_message_thread_chat_id_fkey FOREIGN KEY (thread_chat_id) REFERENCES thread_chat (thread_chat_id),
+--     CONSTRAINT thread_chat_message_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
+--     CONSTRAINT thread_chat_message_member_id_fkey FOREIGN KEY (member_id) REFERENCES member (member_id)
+-- );
 
 -- Represents the label table
 -- This table is used to store the labels linked to the workspace.
@@ -210,18 +259,32 @@ CREATE TABLE label (
 
 -- Represents the thread chat label table
 -- This table is used to store the thread chat labels linked to the thread chat.
-CREATE TABLE thread_chat_label (
-    thread_chat_id VARCHAR(255) NOT NULL,
+-- CREATE TABLE thread_chat_label (
+--     thread_chat_id VARCHAR(255) NOT NULL,
+--     label_id VARCHAR(255) NOT NULL,
+--     thread_chat_label_id VARCHAR(255) NOT NULL,
+--     addedby VARCHAR(255) NOT NULL,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+--     CONSTRAINT th_chat_label_th_chat_label_id_pkey PRIMARY KEY (thread_chat_label_id),
+--     CONSTRAINT th_chat_label_th_chat_id_fkey FOREIGN KEY (thread_chat_id) REFERENCES thread_chat (thread_chat_id),
+--     CONSTRAINT th_chat_label_label_id_fkey FOREIGN KEY (label_id) REFERENCES label (label_id),
+--     CONSTRAINT th_chat_label_id_th_chat_id_label_id_key UNIQUE (thread_chat_id, label_id)
+-- );
+
+CREATE TABLE thread_label (
+    thread_label_id VARCHAR(255) NOT NULL,
+    thread_id VARCHAR(255) NOT NULL,
     label_id VARCHAR(255) NOT NULL,
-    thread_chat_label_id VARCHAR(255) NOT NULL,
     addedby VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT th_chat_label_th_chat_label_id_pkey PRIMARY KEY (thread_chat_label_id),
-    CONSTRAINT th_chat_label_th_chat_id_fkey FOREIGN KEY (thread_chat_id) REFERENCES thread_chat (thread_chat_id),
-    CONSTRAINT th_chat_label_label_id_fkey FOREIGN KEY (label_id) REFERENCES label (label_id),
-    CONSTRAINT th_chat_label_id_th_chat_id_label_id_key UNIQUE (thread_chat_id, label_id)
+    CONSTRAINT thread_label_thread_label_id_pkey PRIMARY KEY (thread_label_id),
+    CONSTRAINT thread_label_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES thread (thread_id),
+    CONSTRAINT thread_label_label_id_fkey FOREIGN KEY (label_id) REFERENCES label (label_id),
+    CONSTRAINT thread_label_thread_label_id_key UNIQUE (thread_id, label_id)
 );
 
 -- Represents the widget table
