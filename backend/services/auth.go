@@ -100,36 +100,29 @@ func NewCustomerAuthService(customerRepo ports.CustomerRepositorer) *CustomerAut
 	}
 }
 
-func (s *CustomerAuthService) ValidateWorkspaceCustomer(ctx context.Context, workspaceId string, customerId string) (models.Customer, error) {
+func (s *CustomerAuthService) ValidateWorkspaceCustomer(
+	ctx context.Context, workspaceId string, customerId string) (models.Customer, error) {
 	customer, err := s.customerRepo.LookupByWorkspaceCustomerId(ctx, workspaceId, customerId)
-
-	if errors.Is(err, repository.ErrQuery) {
-		return customer, ErrCustomer
-	}
-
 	if errors.Is(err, repository.ErrEmpty) {
-		return customer, ErrCustomerNotFound
+		return models.Customer{}, ErrCustomerNotFound
 	}
 
 	if err != nil {
-		return customer, err
+		return models.Customer{}, ErrCustomer
 	}
 	return customer, nil
 }
 
-func (s *CustomerAuthService) GetWidgetLinkedSecretKey(ctx context.Context, widgetId string) (models.SecretKey, error) {
+func (s *CustomerAuthService) GetWidgetLinkedSecretKey(
+	ctx context.Context, widgetId string) (models.SecretKey, error) {
 	sk, err := s.customerRepo.LookupSecretKeyByWidgetId(ctx, widgetId)
 
 	if errors.Is(err, repository.ErrEmpty) {
-		return sk, ErrSecretKeyNotFound
-	}
-
-	if errors.Is(err, repository.ErrQuery) {
-		return sk, ErrSecretKey
+		return models.SecretKey{}, ErrSecretKeyNotFound
 	}
 
 	if err != nil {
-		return sk, err
+		return models.SecretKey{}, ErrSecretKey
 	}
 	return sk, nil
 }

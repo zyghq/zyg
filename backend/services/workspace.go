@@ -188,34 +188,79 @@ func (s *WorkspaceService) ListWorkspaceLabels(
 	return labels, nil
 }
 
-func (s *WorkspaceService) CreateCustomerWithExternalId(ctx context.Context, c models.Customer) (models.Customer, bool, error) {
-	customer, created, err := s.customerRepo.UpsertCustomerByExtId(ctx, c)
+func (s *WorkspaceService) CreateCustomerWithExternalId(
+	ctx context.Context, workspaceId string, externalId string, isVerified bool, name string,
+) (models.Customer, bool, error) {
+	if name == "" {
+		name = models.Customer{}.AnonName()
+	}
+	customer := models.Customer{
+		WorkspaceId: workspaceId,
+		ExternalId:  models.NullString(&externalId),
+		IsVerified:  isVerified,
+		Name:        name,
+		Role:        models.Customer{}.Engaged(),
+	}
+	customer, created, err := s.customerRepo.UpsertCustomerByExtId(ctx, customer)
 	if err != nil {
-		return customer, created, err
+		return models.Customer{}, created, err
 	}
 	return customer, created, nil
 }
 
-func (s *WorkspaceService) CreateCustomerWithEmail(ctx context.Context, c models.Customer) (models.Customer, bool, error) {
-	customer, created, err := s.customerRepo.UpsertCustomerByEmail(ctx, c)
+func (s *WorkspaceService) CreateCustomerWithEmail(
+	ctx context.Context, workspaceId string, email string, isVerified bool, name string) (models.Customer, bool, error) {
+	if name == "" {
+		name = models.Customer{}.AnonName()
+	}
+	customer := models.Customer{
+		WorkspaceId: workspaceId,
+		Email:       models.NullString(&email),
+		IsVerified:  isVerified,
+		Name:        name,
+		Role:        models.Customer{}.Engaged(),
+	}
+	customer, created, err := s.customerRepo.UpsertCustomerByEmail(ctx, customer)
 	if err != nil {
-		return customer, created, err
+		return models.Customer{}, created, err
 	}
 	return customer, created, nil
 }
 
-func (s *WorkspaceService) CreateCustomerWithPhone(ctx context.Context, c models.Customer) (models.Customer, bool, error) {
-	customer, created, err := s.customerRepo.UpsertCustomerByPhone(ctx, c)
+func (s *WorkspaceService) CreateCustomerWithPhone(
+	ctx context.Context, workspaceId string, phone string, isVerified bool, name string) (models.Customer, bool, error) {
+	if name == "" {
+		name = models.Customer{}.AnonName()
+	}
+	customer := models.Customer{
+		WorkspaceId: workspaceId,
+		Phone:       models.NullString(&phone),
+		IsVerified:  isVerified,
+		Name:        name,
+		Role:        models.Customer{}.Engaged(),
+	}
+	customer, created, err := s.customerRepo.UpsertCustomerByPhone(ctx, customer)
 	if err != nil {
-		return customer, created, err
+		return models.Customer{}, created, err
 	}
 	return customer, created, nil
 }
 
-func (s *WorkspaceService) CreateAnonymousCustomer(ctx context.Context, c models.Customer) (models.Customer, bool, error) {
-	customer, created, err := s.customerRepo.UpsertCustomerByAnonId(ctx, c)
+func (s *WorkspaceService) CreateAnonymousCustomer(
+	ctx context.Context, workspaceId string, anonId string, isVerified bool, name string) (models.Customer, bool, error) {
+	if name == "" {
+		name = models.Customer{}.AnonName()
+	}
+	customer := models.Customer{
+		WorkspaceId: workspaceId,
+		AnonId:      anonId,
+		IsVerified:  isVerified,
+		Name:        name,
+		Role:        models.Customer{}.Visitor(),
+	}
+	customer, created, err := s.customerRepo.UpsertCustomerByAnonId(ctx, customer)
 	if err != nil {
-		return customer, created, err
+		return models.Customer{}, created, err
 	}
 	return customer, created, nil
 }

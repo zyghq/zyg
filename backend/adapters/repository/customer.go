@@ -9,7 +9,8 @@ import (
 	"github.com/zyghq/zyg/models"
 )
 
-func (c *CustomerDB) LookupByWorkspaceCustomerId(ctx context.Context, workspaceId string, customerId string) (models.Customer, error) {
+func (c *CustomerDB) LookupByWorkspaceCustomerId(
+	ctx context.Context, workspaceId string, customerId string) (models.Customer, error) {
 	var customer models.Customer
 	role := models.Customer{}.Engaged()
 	err := c.db.QueryRow(ctx, `SELECT
@@ -17,7 +18,8 @@ func (c *CustomerDB) LookupByWorkspaceCustomerId(ctx context.Context, workspaceI
 		name, anonymous_id,
 		is_verified, role,
 		created_at, updated_at
-		FROM customer WHERE
+		FROM customer
+		WHERE
 		workspace_id = $1 AND customer_id = $2 AND role = $3`, workspaceId, customerId, role).Scan(
 		&customer.WorkspaceId, &customer.CustomerId,
 		&customer.ExternalId, &customer.Email, &customer.Phone,
@@ -26,105 +28,116 @@ func (c *CustomerDB) LookupByWorkspaceCustomerId(ctx context.Context, workspaceI
 		&customer.CreatedAt, &customer.UpdatedAt,
 	)
 
-	// check if the query returned no rows
 	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("error", err))
 		return models.Customer{}, ErrEmpty
 	}
 
-	// check if the query returned an error
 	if err != nil {
-		slog.Error("failed to query", "error", err)
+		slog.Error("failed to query", slog.Any("error", err))
 		return models.Customer{}, ErrQuery
 	}
 
 	return customer, nil
 }
 
-// func (c *CustomerDB) FetchWorkspaceCustomerByExtId(ctx context.Context, workspaceId string, externalId string,
-// ) (models.Customer, error) {
-// 	var customer models.Customer
-// 	err := c.db.QueryRow(ctx, `SELECT
-// 		workspace_id, customer_id, external_id, email, phone,
-// 		name, anonymous_id, is_verified,
-// 		created_at, updated_at
-// 		FROM customer WHERE workspace_id = $1 AND external_id = $2`, workspaceId, externalId).Scan(
-// 		&customer.WorkspaceId, &customer.CustomerId,
-// 		&customer.ExternalId, &customer.Email, &customer.Phone,
-// 		&customer.Name, &customer.AnonId, &customer.IsVerified,
-// 		&customer.CreatedAt, &customer.UpdatedAt,
-// 	)
+func (c *CustomerDB) LookupWorkspaceCustomerByExtId(
+	ctx context.Context, workspaceId string, externalId string) (models.Customer, error) {
+	var customer models.Customer
+	role := models.Customer{}.Engaged()
+	err := c.db.QueryRow(ctx, `SELECT
+		workspace_id, customer_id, external_id, email, phone,
+		name, anonymous_id,
+		is_verified, role,
+		created_at, updated_at
+		FROM customer
+		WHERE
+		workspace_id = $1 AND external_id = $2 AND role = $3`, workspaceId, externalId, role).Scan(
+		&customer.WorkspaceId, &customer.CustomerId,
+		&customer.ExternalId, &customer.Email, &customer.Phone,
+		&customer.Name, &customer.AnonId, &customer.IsVerified, &customer.Role,
+		&customer.CreatedAt, &customer.UpdatedAt,
+	)
 
-// 	// check if the query returned no rows
-// 	if errors.Is(err, pgx.ErrNoRows) {
-// 		return models.Customer{}, ErrEmpty
-// 	}
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("error", err))
+		return models.Customer{}, ErrEmpty
+	}
 
-// 	// check if the query returned an error
-// 	if err != nil {
-// 		slog.Error("failed to query", "error", err)
-// 		return models.Customer{}, ErrQuery
-// 	}
+	if err != nil {
+		slog.Error("failed to query", slog.Any("error", err))
+		return models.Customer{}, ErrQuery
+	}
 
-// 	return customer, nil
-// }
+	return customer, nil
+}
 
-// func (c *CustomerDB) RetrieveWorkspaceCustomerByEmail(ctx context.Context, workspaceId string, email string,
-// ) (models.Customer, error) {
-// 	var customer models.Customer
-// 	err := c.db.QueryRow(ctx, `SELECT
-// 		workspace_id, customer_id, external_id, email, phone,
-// 		name, anonymous_id, is_verified,
-// 		created_at, updated_at
-// 		FROM customer WHERE workspace_id = $1 AND email = $2`, workspaceId, email).Scan(
-// 		&customer.WorkspaceId, &customer.CustomerId,
-// 		&customer.ExternalId, &customer.Email, &customer.Phone,
-// 		&customer.Name, &customer.AnonId, &customer.IsVerified,
-// 		&customer.CreatedAt, &customer.UpdatedAt,
-// 	)
+func (c *CustomerDB) LookupWorkspaceCustomerByEmail(
+	ctx context.Context, workspaceId string, email string) (models.Customer, error) {
+	var customer models.Customer
+	role := models.Customer{}.Engaged()
+	err := c.db.QueryRow(ctx, `SELECT
+		workspace_id, customer_id, external_id, email, phone,
+		name, anonymous_id,
+		is_verified, role,
+		created_at, updated_at
+		FROM customer
+		WHERE
+		workspace_id = $1 AND email = $2 AND role = $3`, workspaceId, email, role).Scan(
+		&customer.WorkspaceId, &customer.CustomerId,
+		&customer.ExternalId, &customer.Email, &customer.Phone,
+		&customer.Name, &customer.AnonId,
+		&customer.IsVerified, &customer.Role,
+		&customer.CreatedAt, &customer.UpdatedAt,
+	)
 
-// 	// check if the query returned no rows
-// 	if errors.Is(err, pgx.ErrNoRows) {
-// 		return models.Customer{}, ErrEmpty
-// 	}
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("error", err))
+		return models.Customer{}, ErrEmpty
+	}
 
-// 	// check if the query returned an error
-// 	if err != nil {
-// 		slog.Error("failed to query", "error", err)
-// 		return models.Customer{}, ErrQuery
-// 	}
+	if err != nil {
+		slog.Error("failed to query", slog.Any("error", err))
+		return models.Customer{}, ErrQuery
+	}
 
-// 	return customer, nil
-// }
+	return customer, nil
+}
 
-// func (c *CustomerDB) LookupWorkspaceCustomerByPhone(ctx context.Context, workspaceId string, phone string,
-// ) (models.Customer, error) {
-// 	var customer models.Customer
-// 	err := c.db.QueryRow(ctx, `SELECT
-// 		workspace_id, customer_id, external_id, email, phone,
-// 		name, anonymous_id, is_verified,
-// 		created_at, updated_at
-// 		FROM customer WHERE workspace_id = $1 AND phone = $2`, workspaceId, phone).Scan(
-// 		&customer.WorkspaceId, &customer.CustomerId,
-// 		&customer.ExternalId, &customer.Email, &customer.Phone,
-// 		&customer.Name, &customer.AnonId, &customer.IsVerified,
-// 		&customer.CreatedAt, &customer.UpdatedAt,
-// 	)
+func (c *CustomerDB) LookupWorkspaceCustomerByPhone(
+	ctx context.Context, workspaceId string, phone string) (models.Customer, error) {
+	var customer models.Customer
+	role := models.Customer{}.Engaged()
+	err := c.db.QueryRow(ctx, `SELECT
+		workspace_id, customer_id, external_id, email, phone,
+		name, anonymous_id,
+		is_verified, role,
+		created_at, updated_at
+		FROM customer
+		WHERE
+		workspace_id = $1 AND phone = $2 AND role = $3`, workspaceId, phone, role).Scan(
+		&customer.WorkspaceId, &customer.CustomerId,
+		&customer.ExternalId, &customer.Email, &customer.Phone,
+		&customer.Name, &customer.AnonId,
+		&customer.IsVerified, &customer.Role,
+		&customer.CreatedAt, &customer.UpdatedAt,
+	)
 
-// 	// check if the query returned no rows
-// 	if errors.Is(err, pgx.ErrNoRows) {
-// 		return models.Customer{}, ErrEmpty
-// 	}
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("error", err))
+		return models.Customer{}, ErrEmpty
+	}
 
-// 	// check if the query returned an error
-// 	if err != nil {
-// 		slog.Error("failed to query", "error", err)
-// 		return models.Customer{}, ErrQuery
-// 	}
+	if err != nil {
+		slog.Error("failed to query", slog.Any("error", err))
+		return models.Customer{}, ErrQuery
+	}
 
-// 	return customer, nil
-// }
+	return customer, nil
+}
 
-func (c *CustomerDB) UpsertCustomerByExtId(ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
+func (c *CustomerDB) UpsertCustomerByExtId(
+	ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
 	cId := customer.GenId()
 	st := `WITH ins AS (
 		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name, is_verified, role)
@@ -156,21 +169,21 @@ func (c *CustomerDB) UpsertCustomerByExtId(ctx context.Context, customer models.
 		&customer.UpdatedAt, &isCreated,
 	)
 
-	// check if query returned a row
 	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("error", err))
 		return models.Customer{}, isCreated, ErrEmpty
 	}
 
-	// check if query returned an error
 	if err != nil {
-		slog.Error("failed to query", "error", err)
+		slog.Error("failed to query", slog.Any("error", err))
 		return models.Customer{}, isCreated, ErrQuery
 	}
 
 	return customer, isCreated, nil
 }
 
-func (c *CustomerDB) UpsertCustomerByEmail(ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
+func (c *CustomerDB) UpsertCustomerByEmail(
+	ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
 	cId := customer.GenId()
 	st := `WITH ins AS (
 		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name, is_verified, role)
@@ -202,21 +215,21 @@ func (c *CustomerDB) UpsertCustomerByEmail(ctx context.Context, customer models.
 		&customer.UpdatedAt, &isCreated,
 	)
 
-	// check if query returned a row
 	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("error", err))
 		return models.Customer{}, isCreated, ErrEmpty
 	}
 
-	// check if query returned an error
 	if err != nil {
-		slog.Error("failed to query", "error", err)
+		slog.Error("failed to query", slog.Any("error", err))
 		return models.Customer{}, isCreated, ErrQuery
 	}
 
 	return customer, isCreated, nil
 }
 
-func (c *CustomerDB) UpsertCustomerByPhone(ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
+func (c *CustomerDB) UpsertCustomerByPhone(
+	ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
 	cId := customer.GenId()
 	st := `WITH ins AS (
 		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name, is_verified, role)
@@ -248,14 +261,13 @@ func (c *CustomerDB) UpsertCustomerByPhone(ctx context.Context, customer models.
 		&customer.UpdatedAt, &isCreated,
 	)
 
-	// check if query returned a row
 	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("error", err))
 		return models.Customer{}, isCreated, ErrEmpty
 	}
 
-	// check if query returned an error
 	if err != nil {
-		slog.Error("failed to query", "error", err)
+		slog.Error("failed to query", slog.Any("error", err))
 		return models.Customer{}, isCreated, ErrQuery
 	}
 
@@ -297,7 +309,8 @@ func (c *CustomerDB) FetchCustomersByWorkspaceId(
 	return customers, nil
 }
 
-func (c *CustomerDB) LookupSecretKeyByWidgetId(ctx context.Context, widgetId string) (models.SecretKey, error) {
+func (c *CustomerDB) LookupSecretKeyByWidgetId(
+	ctx context.Context, widgetId string) (models.SecretKey, error) {
 	var sk models.SecretKey
 	stmt := `SELECT sk.workspace_id as workspace_id,
 		sk.secret_key as secret_key,
@@ -313,18 +326,20 @@ func (c *CustomerDB) LookupSecretKeyByWidgetId(ctx context.Context, widgetId str
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("error", err))
 		return models.SecretKey{}, ErrEmpty
 	}
 
 	if err != nil {
-		slog.Error("failed to query", "error", err)
+		slog.Error("failed to query", slog.Any("error", err))
 		return models.SecretKey{}, ErrQuery
 	}
 
 	return sk, nil
 }
 
-func (c *CustomerDB) UpsertCustomerByAnonId(ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
+func (c *CustomerDB) UpsertCustomerByAnonId(
+	ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
 	cId := customer.GenId()
 	stmt := `WITH ins AS (
 		INSERT INTO customer (customer_id, workspace_id, anonymous_id, is_verified, name, role)
@@ -357,18 +372,20 @@ func (c *CustomerDB) UpsertCustomerByAnonId(ctx context.Context, customer models
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("error", err))
 		return models.Customer{}, isCreated, ErrEmpty
 	}
 
 	if err != nil {
-		slog.Error("failed to query", "error", err)
+		slog.Error("failed to query", slog.Any("error", err))
 		return models.Customer{}, isCreated, ErrQuery
 	}
 
 	return customer, isCreated, nil
 }
 
-func (c *CustomerDB) ModifyCustomerById(ctx context.Context, customer models.Customer) (models.Customer, error) {
+func (c *CustomerDB) ModifyCustomerById(
+	ctx context.Context, customer models.Customer) (models.Customer, error) {
 	stmt := `UPDATE customer SET
 		external_id = $2, email = $3, phone = $4, name = $5, is_verified = $6, role = $7,
 		updated_at = NOW()
@@ -392,14 +409,13 @@ func (c *CustomerDB) ModifyCustomerById(ctx context.Context, customer models.Cus
 		&customer.UpdatedAt,
 	)
 
-	// check if the query returned no rows
 	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("error", err))
 		return models.Customer{}, ErrEmpty
 	}
 
-	// check if the query returned an error
 	if err != nil {
-		slog.Error("failed to query", "error", err)
+		slog.Error("failed to query", slog.Any("error", err))
 		return models.Customer{}, ErrQuery
 	}
 

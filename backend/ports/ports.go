@@ -53,10 +53,14 @@ type WorkspaceServicer interface {
 	GetWorkspaceMemberById(ctx context.Context, workspaceId string, memberId string) (models.Member, error)
 	ListWorkspaceCustomers(
 		ctx context.Context, workspaceId string) ([]models.Customer, error)
-	CreateCustomerWithExternalId(ctx context.Context, customer models.Customer) (models.Customer, bool, error)
-	CreateCustomerWithEmail(ctx context.Context, customer models.Customer) (models.Customer, bool, error)
-	CreateCustomerWithPhone(ctx context.Context, customer models.Customer) (models.Customer, bool, error)
-	CreateAnonymousCustomer(ctx context.Context, customer models.Customer) (models.Customer, bool, error)
+	CreateCustomerWithExternalId(
+		ctx context.Context, workspaceId string, externalId string, isVerified bool, name string) (models.Customer, bool, error)
+	CreateCustomerWithEmail(
+		ctx context.Context, workspaceId string, email string, isVerified bool, name string) (models.Customer, bool, error)
+	CreateCustomerWithPhone(
+		ctx context.Context, workspaceId string, phone string, isVerified bool, name string) (models.Customer, bool, error)
+	CreateAnonymousCustomer(
+		ctx context.Context, workspaceId string, anonId string, isVerified bool, name string) (models.Customer, bool, error)
 	CreateWidget(
 		ctx context.Context, workspaceId string, name string, configuration map[string]interface{}) (models.Widget, error)
 	ListWidgets(ctx context.Context, workspaceId string) ([]models.Widget, error)
@@ -68,9 +72,12 @@ type WorkspaceServicer interface {
 }
 
 type CustomerServicer interface {
-	// GetCustomerByExternalId(ctx context.Context, workspaceId string, externalId string) (models.Customer, error)
-	// GetCustomerByEmail(ctx context.Context, workspaceId string, email string) (models.Customer, error)
-	// GetCustomerByPhone(ctx context.Context, workspaceId string, phone string) (models.Customer, error)
+	GetWorkspaceCustomerByExtId(
+		ctx context.Context, workspaceId string, externalId string) (models.Customer, error)
+	GetWorkspaceCustomerByEmail(
+		ctx context.Context, workspaceId string, email string) (models.Customer, error)
+	GetWorkspaceCustomerByPhone(
+		ctx context.Context, workspaceId string, phone string) (models.Customer, error)
 	GenerateCustomerToken(customer models.Customer, sk string) (string, error)
 	VerifyExternalId(sk string, hash string, externalId string) bool
 	VerifyEmail(sk string, hash string, email string) bool
@@ -160,15 +167,26 @@ type MemberRepositorer interface {
 }
 
 type CustomerRepositorer interface {
-	LookupByWorkspaceCustomerId(ctx context.Context, workspaceId string, customerId string) (models.Customer, error)
-	UpsertCustomerByExtId(ctx context.Context, c models.Customer) (models.Customer, bool, error)
-	UpsertCustomerByEmail(ctx context.Context, c models.Customer) (models.Customer, bool, error)
-	UpsertCustomerByPhone(ctx context.Context, c models.Customer) (models.Customer, bool, error)
+	LookupByWorkspaceCustomerId(
+		ctx context.Context, workspaceId string, customerId string) (models.Customer, error)
+	UpsertCustomerByExtId(
+		ctx context.Context, customer models.Customer) (models.Customer, bool, error)
+	UpsertCustomerByEmail(
+		ctx context.Context, customer models.Customer) (models.Customer, bool, error)
+	UpsertCustomerByPhone(
+		ctx context.Context, customer models.Customer) (models.Customer, bool, error)
 	UpsertCustomerByAnonId(ctx context.Context, c models.Customer) (models.Customer, bool, error)
 	FetchCustomersByWorkspaceId(
 		ctx context.Context, workspaceId string) ([]models.Customer, error)
-	LookupSecretKeyByWidgetId(ctx context.Context, widgetId string) (models.SecretKey, error)
+	LookupSecretKeyByWidgetId(
+		ctx context.Context, widgetId string) (models.SecretKey, error)
 	ModifyCustomerById(ctx context.Context, c models.Customer) (models.Customer, error)
+	LookupWorkspaceCustomerByExtId(
+		ctx context.Context, workspaceId string, externalId string) (models.Customer, error)
+	LookupWorkspaceCustomerByEmail(
+		ctx context.Context, workspaceId string, email string) (models.Customer, error)
+	LookupWorkspaceCustomerByPhone(
+		ctx context.Context, workspaceId string, phone string) (models.Customer, error)
 }
 
 // todo: rename to ThreadRepository

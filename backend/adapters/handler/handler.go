@@ -29,15 +29,15 @@ func NewServer(
 	wh := NewWorkspaceHandler(workspaceService, customerService)
 	th := NewThreadChatHandler(workspaceService, threadChatService)
 
-	mux.HandleFunc("GET /{$}", handleGetIndex)
+	mux.HandleFunc("GET /{$}", handleGetIndex) // tested
 	mux.HandleFunc("POST /accounts/auth/{$}", ah.handleGetOrCreateAccount)
 
 	mux.Handle("POST /pats/{$}", NewEnsureAuth(ah.handleCreatePat, authService))
 	mux.Handle("GET /pats/{$}", NewEnsureAuth(ah.handleGetPatList, authService))
 	mux.Handle("DELETE /pats/{patId}/{$}", NewEnsureAuth(ah.handleDeletePat, authService))
 
-	mux.Handle("POST /workspaces/{$}", NewEnsureAuth(wh.handleCreateWorkspace, authService))
-	mux.Handle("GET /workspaces/{$}", NewEnsureAuth(wh.handleGetWorkspaces, authService))
+	mux.Handle("POST /workspaces/{$}", NewEnsureAuth(wh.handleCreateWorkspace, authService)) // tested
+	mux.Handle("GET /workspaces/{$}", NewEnsureAuth(wh.handleGetWorkspaces, authService))    // tested
 
 	mux.Handle("GET /workspaces/{workspaceId}/{$}", NewEnsureAuth(wh.handleGetWorkspace, authService))
 	mux.Handle("PATCH /workspaces/{workspaceId}/{$}", NewEnsureAuth(wh.handleUpdateWorkspace, authService))
@@ -48,13 +48,15 @@ func NewServer(
 		NewEnsureAuth(wh.handleGetWorkspaceSecretKey, authService))
 
 	mux.Handle("GET /workspaces/{workspaceId}/members/{$}",
-		NewEnsureAuth(wh.handleGetWorkspaceMembers, authService))
+		NewEnsureAuth(wh.handleGetWorkspaceMembers, authService)) // tested
 	mux.Handle("GET /workspaces/{workspaceId}/members/me/{$}",
-		NewEnsureAuth(wh.handleGetWorkspaceMembership, authService))
+		NewEnsureAuth(wh.handleGetWorkspaceMembership, authService)) // tested
 
 	mux.Handle("GET /workspaces/{workspaceId}/members/{memberId}/{$}",
 		NewEnsureAuth(wh.handleGetWorkspaceMember, authService))
 
+	mux.Handle("POST /workspaces/{workspaceId}/customers/{$}",
+		NewEnsureAuth(wh.handleCreateWorkspaceCustomer, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/customers/{$}",
 		NewEnsureAuth(wh.handleGetWorkspaceCustomers, authService))
 
@@ -87,9 +89,6 @@ func NewServer(
 		NewEnsureAuth(th.handleSetThChatLabel, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
 		NewEnsureAuth(th.handleGetThChatLabels, authService))
-
-	// mux.Handle("POST /workspaces/{workspaceId}/customers/tokens/{$}",
-	// 	NewEnsureAuth(wh.handleIssueCustomerToken, authService))
 
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/metrics/{$}",
 		NewEnsureAuth(th.handleGetThreadChatMetrics, authService))

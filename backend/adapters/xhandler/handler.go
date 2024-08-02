@@ -63,22 +63,14 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 	}
 
 	if err != nil {
-		slog.Error(
-			"failed to get workspace widget "+
-				"something went wrong",
-			slog.String("widgetId", widgetId),
-		)
+		slog.Error("failed to fetch workspace widget", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
 	sk, err := h.ws.GetWorkspaceSecretKey(ctx, widget.WorkspaceId)
 	if err != nil {
-		slog.Error(
-			"failed to get workspace secret key "+
-				"something went wrong",
-			slog.String("workspaceId", widget.WorkspaceId),
-		)
+		slog.Error("failed to fetch workspace secret key", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -122,19 +114,14 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		if customerExternalId.Valid {
 			if h.cs.VerifyExternalId(sk.SecretKey, customerHash.String, customerExternalId.String) {
 				isVerified = true
-				customer = models.Customer{
-					WorkspaceId: widget.WorkspaceId,
-					ExternalId:  customerExternalId,
-					IsVerified:  true,
-					Role:        models.Customer{}.Engaged(),
-					Name:        customerName,
-				}
-				customer, isCreated, err = h.ws.CreateCustomerWithExternalId(ctx, customer)
+				customer, isCreated, err = h.ws.CreateCustomerWithExternalId(
+					ctx, widget.WorkspaceId,
+					customerExternalId.String,
+					true,
+					customerName,
+				)
 				if err != nil {
-					slog.Error(
-						"failed to create customer by externalId " +
-							"something went wrong",
-					)
+					slog.Error("failed to create customer by externalId", slog.Any("err", err))
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
@@ -145,19 +132,14 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		} else if customerEmail.Valid {
 			if h.cs.VerifyEmail(sk.SecretKey, customerHash.String, customerEmail.String) {
 				isVerified = true
-				customer = models.Customer{
-					WorkspaceId: widget.WorkspaceId,
-					Email:       customerEmail,
-					IsVerified:  true,
-					Role:        models.Customer{}.Engaged(),
-					Name:        customerName,
-				}
-				customer, isCreated, err = h.ws.CreateCustomerWithEmail(ctx, customer)
+				customer, isCreated, err = h.ws.CreateCustomerWithEmail(
+					ctx, widget.WorkspaceId,
+					customerEmail.String,
+					true,
+					customerName,
+				)
 				if err != nil {
-					slog.Error(
-						"failed to create customer by email " +
-							"something went wrong",
-					)
+					slog.Error("failed to create customer by email", slog.Any("err", err))
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
@@ -168,14 +150,12 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		} else if customerPhone.Valid {
 			if h.cs.VerifyPhone(sk.SecretKey, customerHash.String, customerPhone.String) {
 				isVerified = true
-				customer = models.Customer{
-					WorkspaceId: widget.WorkspaceId,
-					Phone:       customerPhone,
-					IsVerified:  true,
-					Role:        models.Customer{}.Engaged(),
-					Name:        customerName,
-				}
-				customer, isCreated, err = h.ws.CreateCustomerWithPhone(ctx, customer)
+				customer, isCreated, err = h.ws.CreateCustomerWithPhone(
+					ctx, widget.WorkspaceId,
+					customerPhone.String,
+					true,
+					customerName,
+				)
 				if err != nil {
 					slog.Error(
 						"failed to create customer by phone " +
@@ -196,19 +176,14 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
-		customer = models.Customer{
-			WorkspaceId: widget.WorkspaceId,
-			AnonId:      anonId.String,
-			IsVerified:  false,
-			Role:        models.Customer{}.Visitor(),
-			Name:        customerName,
-		}
-		customer, isCreated, err = h.ws.CreateAnonymousCustomer(ctx, customer)
+		customer, isCreated, err = h.ws.CreateAnonymousCustomer(
+			ctx, widget.WorkspaceId,
+			anonId.String,
+			false,
+			customerName,
+		)
 		if err != nil {
-			slog.Error(
-				"failed to create anonymous customer "+
-					"something went wrong", slog.Any("error", err),
-			)
+			slog.Error("failed to create anonymous customer", slog.Any("err", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}

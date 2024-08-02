@@ -38,15 +38,14 @@ func (w WorkspaceResp) MarshalJSON() ([]byte, error) {
 }
 
 type CustomerResp struct {
-	WorkspaceId string
-	CustomerId  string
-	ExternalId  sql.NullString
-	Email       sql.NullString
-	Phone       sql.NullString
-	Name        string
-	IsVerified  bool
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	CustomerId string
+	ExternalId sql.NullString
+	Email      sql.NullString
+	Phone      sql.NullString
+	Name       string
+	IsVerified bool
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 func (c CustomerResp) MarshalJSON() ([]byte, error) {
@@ -62,25 +61,23 @@ func (c CustomerResp) MarshalJSON() ([]byte, error) {
 	}
 
 	aux := &struct {
-		WorkspaceId string  `json:"workspaceId"`
-		CustomerId  string  `json:"customerId"`
-		ExternalId  *string `json:"externalId"`
-		Email       *string `json:"email"`
-		Phone       *string `json:"phone"`
-		Name        string  `json:"name"`
-		IsVerified  bool    `json:"isVerified"`
-		CreatedAt   string  `json:"createdAt"`
-		UpdatedAt   string  `json:"updatedAt"`
+		CustomerId string  `json:"customerId"`
+		ExternalId *string `json:"externalId"`
+		Email      *string `json:"email"`
+		Phone      *string `json:"phone"`
+		Name       string  `json:"name"`
+		IsVerified bool    `json:"isVerified"`
+		CreatedAt  string  `json:"createdAt"`
+		UpdatedAt  string  `json:"updatedAt"`
 	}{
-		WorkspaceId: c.WorkspaceId,
-		CustomerId:  c.CustomerId,
-		ExternalId:  externalId,
-		Email:       email,
-		Phone:       phone,
-		Name:        c.Name,
-		IsVerified:  c.IsVerified,
-		CreatedAt:   c.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:   c.UpdatedAt.Format(time.RFC3339),
+		CustomerId: c.CustomerId,
+		ExternalId: externalId,
+		Email:      email,
+		Phone:      phone,
+		Name:       c.Name,
+		IsVerified: c.IsVerified,
+		CreatedAt:  c.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:  c.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
 }
@@ -304,30 +301,11 @@ type ThChatLabelReq struct {
 	Icon string `json:"icon"`
 }
 
-// type SetThChatLabelRespPayload struct {
-// 	ThreadChatLabelId string    `json:"threadChatLabelId"`
-// 	ThreadChatId      string    `json:"threadChatId"`
-// 	AddedBy           string    `json:"addedBy"`
-// 	CreatedAt         time.Time `json:"createdAt"`
-// 	UpdatedAt         time.Time `json:"updatedAt"`
-// 	CrLabelRespPayload
-// }
-
-type CustomerTIReqPayload struct {
-	Create   bool    `json:"create"`
-	CreateBy *string `json:"createBy"` // optional
-	Customer struct {
-		ExternalId *string `json:"externalId"` // optional
-		Email      *string `json:"email"`      // optional
-		Phone      *string `json:"phone"`      // optional
-		Name       *string `json:"name"`       // optional
-	} `json:"customer"`
-}
-
-type CustomerTIRespPayload struct {
-	Create     bool   `json:"create"`
-	CustomerId string `json:"customerId"`
-	Jwt        string `json:"jwt"`
+type CreateCustomerReq struct {
+	Name       string  `json:"name"`
+	ExternalId *string `json:"externalId"` // optional
+	Email      *string `json:"email"`      // optional
+	Phone      *string `json:"phone"`      // optional
 }
 
 type ThreadLabelCountResp struct {
