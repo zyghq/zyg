@@ -45,9 +45,9 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		_ = r.Close()
 	}(r.Body)
 
-	var payload WidgetInitReqPayload
+	var reqp WidgetInitReq
 
-	err := json.NewDecoder(r.Body).Decode(&payload)
+	err := json.NewDecoder(r.Body).Decode(&reqp)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -79,25 +79,25 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 	var isVerified bool
 	var customer models.Customer
 
-	customerHash := models.NullString(payload.CustomerHash)
-	customerExternalId := models.NullString(payload.CustomerExternalId)
-	customerEmail := models.NullString(payload.CustomerEmail)
-	customerPhone := models.NullString(payload.CustomerPhone)
+	customerHash := models.NullString(reqp.CustomerHash)
+	customerExternalId := models.NullString(reqp.CustomerExternalId)
+	customerEmail := models.NullString(reqp.CustomerEmail)
+	customerPhone := models.NullString(reqp.CustomerPhone)
 
-	anonId := models.NullString(payload.AnonId)
+	anonId := models.NullString(reqp.AnonId)
 	customerName := models.Customer{}.AnonName()
 
-	if payload.Traits != nil {
-		if payload.Traits.Name != nil {
-			customerName = *payload.Traits.Name
+	if reqp.Traits != nil {
+		if reqp.Traits.Name != nil {
+			customerName = *reqp.Traits.Name
 		} else {
-			if payload.Traits.FirstName != nil || payload.Traits.LastName != nil {
+			if reqp.Traits.FirstName != nil || reqp.Traits.LastName != nil {
 				n := ""
-				if payload.Traits.FirstName != nil {
-					n += *payload.Traits.FirstName
+				if reqp.Traits.FirstName != nil {
+					n += *reqp.Traits.FirstName
 				}
-				if payload.Traits.LastName != nil {
-					n += " " + *payload.Traits.LastName
+				if reqp.Traits.LastName != nil {
+					n += " " + *reqp.Traits.LastName
 				}
 				customerName = n
 			}
@@ -780,7 +780,7 @@ func NewServer(
 
 	ch := NewCustomerHandler(workspaceService, customerService, threadChatService)
 
-	mux.HandleFunc("GET /{$}", handleGetIndex)
+	mux.HandleFunc("GET /{$}", handleGetIndex) // tested
 
 	mux.HandleFunc("POST /widgets/{widgetId}/init/{$}", ch.handleGetOrCreateCustomer)
 	mux.Handle("GET /widgets/{widgetId}/me/{$}", NewEnsureAuth(ch.handleGetCustomer, authService))

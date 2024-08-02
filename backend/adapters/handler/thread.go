@@ -840,7 +840,7 @@ func (h *WorkspaceHandler) handleCreateWidget(w http.ResponseWriter, r *http.Req
 
 	workspaceId := r.PathValue("workspaceId")
 
-	var reqp WidgetCreateReq
+	var reqp CreateWidgetReq
 
 	err := json.NewDecoder(r.Body).Decode(&reqp)
 	if err != nil {

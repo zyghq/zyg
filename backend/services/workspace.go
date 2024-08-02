@@ -319,7 +319,7 @@ func (s *WorkspaceService) GenerateSecretKey(
 	// Encode the hash using base64
 	encodedHash := base64.URLEncoding.EncodeToString(hash[:])
 	// Return the first 'length' characters of the encoded hash
-	slicedHash := encodedHash[:length]
+	slicedHash := "sk-" + encodedHash[:length]
 
 	sk, err := s.workspaceRepo.InsertSecretKeyIntoWorkspace(ctx, workspaceId, slicedHash)
 	if err != nil {

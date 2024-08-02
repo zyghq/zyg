@@ -12,7 +12,7 @@ type CustomerTraits struct {
 	Name      *string `json:"name"`
 }
 
-type WidgetInitReqPayload struct {
+type WidgetInitReq struct {
 	AnonId             *string         `json:"anonId"`
 	CustomerHash       *string         `json:"customerHash"`
 	CustomerExternalId *string         `json:"customerExternalId"`

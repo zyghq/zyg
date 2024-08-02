@@ -56,9 +56,9 @@ func NewServer(
 		NewEnsureAuth(wh.handleGetWorkspaceMember, authService))
 
 	mux.Handle("POST /workspaces/{workspaceId}/customers/{$}",
-		NewEnsureAuth(wh.handleCreateWorkspaceCustomer, authService))
+		NewEnsureAuth(wh.handleCreateWorkspaceCustomer, authService)) // tested
 	mux.Handle("GET /workspaces/{workspaceId}/customers/{$}",
-		NewEnsureAuth(wh.handleGetWorkspaceCustomers, authService))
+		NewEnsureAuth(wh.handleGetWorkspaceCustomers, authService)) // tested
 
 	mux.Handle("POST /workspaces/{workspaceId}/labels/{$}",
 		NewEnsureAuth(wh.handleGetOrCreateWorkspaceLabel, authService))
@@ -94,9 +94,9 @@ func NewServer(
 		NewEnsureAuth(th.handleGetThreadChatMetrics, authService))
 
 	mux.Handle("POST /workspaces/{workspaceId}/widgets/{$}",
-		NewEnsureAuth(wh.handleCreateWidget, authService))
+		NewEnsureAuth(wh.handleCreateWidget, authService)) // tested
 	mux.Handle("GET /workspaces/{workspaceId}/widgets/{$}",
-		NewEnsureAuth(wh.handleGetWidgets, authService))
+		NewEnsureAuth(wh.handleGetWidgets, authService)) // tested
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},

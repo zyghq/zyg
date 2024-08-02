@@ -44,6 +44,7 @@ type CustomerResp struct {
 	Phone      sql.NullString
 	Name       string
 	IsVerified bool
+	Role       string
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 }
@@ -67,6 +68,7 @@ func (c CustomerResp) MarshalJSON() ([]byte, error) {
 		Phone      *string `json:"phone"`
 		Name       string  `json:"name"`
 		IsVerified bool    `json:"isVerified"`
+		Role       string  `json:"role"`
 		CreatedAt  string  `json:"createdAt"`
 		UpdatedAt  string  `json:"updatedAt"`
 	}{
@@ -76,6 +78,7 @@ func (c CustomerResp) MarshalJSON() ([]byte, error) {
 		Phone:      phone,
 		Name:       c.Name,
 		IsVerified: c.IsVerified,
+		Role:       c.Role,
 		CreatedAt:  c.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:  c.UpdatedAt.Format(time.RFC3339),
 	}
@@ -330,7 +333,7 @@ type ThreadMetricsRespPayload struct {
 	Count ThreadCountRespPayload `json:"count"`
 }
 
-type WidgetCreateReq struct {
+type CreateWidgetReq struct {
 	Name          string                  `json:"name"`
 	Configuration *map[string]interface{} `json:"configuration"`
 }
@@ -361,9 +364,9 @@ func (w WidgetResp) MarshalJSON() ([]byte, error) {
 }
 
 type SKResp struct {
-	SecretKey string `json:"secretKey"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	SecretKey string    `json:"secretKey"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 func (sk SKResp) MarshalJSON() ([]byte, error) {

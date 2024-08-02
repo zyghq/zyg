@@ -461,6 +461,7 @@ func (h *WorkspaceHandler) handleCreateWorkspaceCustomer(w http.ResponseWriter, 
 		CustomerId: customer.CustomerId,
 		Name:       customer.Name,
 		IsVerified: customer.IsVerified,
+		Role:       customer.Role,
 		ExternalId: customer.ExternalId,
 		Email:      customer.Email,
 		Phone:      customer.Phone,
@@ -571,6 +572,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceCustomers(w http.ResponseWriter, r 
 			Phone:      c.Phone,
 			Name:       c.Name,
 			IsVerified: c.IsVerified,
+			Role:       c.Role,
 			CreatedAt:  c.CreatedAt,
 			UpdatedAt:  c.UpdatedAt,
 		})
@@ -653,7 +655,7 @@ func (h *WorkspaceHandler) handleGenerateSecretKey(w http.ResponseWriter, r *htt
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		slog.Error("failed to encode json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
