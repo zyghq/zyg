@@ -41,6 +41,37 @@ func (c *CustomerDB) LookupByWorkspaceCustomerId(
 	return customer, nil
 }
 
+func (c *CustomerDB) LookupWorkspaceCustomerWithoutRoleById(
+	ctx context.Context, workspaceId string, customerId string) (models.Customer, error) {
+	var customer models.Customer
+	err := c.db.QueryRow(ctx, `SELECT
+		workspace_id, customer_id, external_id, email, phone,
+		name, anonymous_id,
+		is_verified, role,
+		created_at, updated_at
+		FROM customer
+		WHERE
+		workspace_id = $1 AND customer_id = $2`, workspaceId, customerId).Scan(
+		&customer.WorkspaceId, &customer.CustomerId,
+		&customer.ExternalId, &customer.Email, &customer.Phone,
+		&customer.Name, &customer.AnonId,
+		&customer.IsVerified, &customer.Role,
+		&customer.CreatedAt, &customer.UpdatedAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("error", err))
+		return models.Customer{}, ErrEmpty
+	}
+
+	if err != nil {
+		slog.Error("failed to query", slog.Any("error", err))
+		return models.Customer{}, ErrQuery
+	}
+
+	return customer, nil
+}
+
 func (c *CustomerDB) LookupWorkspaceCustomerByExtId(
 	ctx context.Context, workspaceId string, externalId string) (models.Customer, error) {
 	var customer models.Customer

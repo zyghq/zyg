@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/rs/cors"
@@ -69,6 +70,11 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 	}
 
 	sk, err := h.ws.GetWorkspaceSecretKey(ctx, widget.WorkspaceId)
+	if errors.Is(err, services.ErrSecretKeyNotFound) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
 	if err != nil {
 		slog.Error("failed to fetch workspace secret key", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -99,18 +105,12 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 				if reqp.Traits.LastName != nil {
 					n += " " + *reqp.Traits.LastName
 				}
-				customerName = n
+				customerName = strings.Trim(n, " ")
 			}
 		}
 	}
 
 	if customerHash.Valid {
-		sk, err := h.ws.GetWorkspaceSecretKey(ctx, widget.WorkspaceId)
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-			return
-		}
-
 		if customerExternalId.Valid {
 			if h.cs.VerifyExternalId(sk.SecretKey, customerHash.String, customerExternalId.String) {
 				isVerified = true
@@ -170,7 +170,6 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 			}
 		}
 	} else if anonId.Valid {
-		// make sure the anonymousId is a valid UUID
 		isValid := models.IsValidUUID(anonId.String)
 		if !isValid {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -204,7 +203,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 	denonPhone := customer.DeAnonPhone()
 	denonExternalId := customer.DeAnonExternalId()
 
-	resp := WidgetInitRespPayload{
+	resp := WidgetInitResp{
 		Jwt:        jwt,
 		Create:     isCreated,
 		IsVerified: isVerified,
@@ -240,14 +239,38 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 }
 
 func (h *CustomerHandler) handleGetCustomer(w http.ResponseWriter, r *http.Request, customer *models.Customer) {
+	var email string
+	var phone string
+	var externalId string
+
+	if customer.Email.Valid {
+		email = customer.Email.String
+	}
+
+	if customer.Phone.Valid {
+		phone = customer.Phone.String
+	}
+
+	if customer.ExternalId.Valid {
+		externalId = customer.ExternalId.String
+	}
+
+	resp := CustomerResp{
+		CustomerId: customer.CustomerId,
+		Name:       customer.Name,
+		Email:      models.NullString(&email),
+		Phone:      models.NullString(&phone),
+		ExternalId: models.NullString(&externalId),
+		IsVerified: customer.IsVerified,
+		Role:       customer.Role,
+		CreatedAt:  customer.CreatedAt,
+		UpdatedAt:  customer.UpdatedAt,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(customer); err != nil {
-		slog.Error(
-			"failed to encode customer to json "+
-				"check the json encoding defn",
-			slog.String("customerId", customer.CustomerId),
-		)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("failed to encode json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -782,8 +805,8 @@ func NewServer(
 
 	mux.HandleFunc("GET /{$}", handleGetIndex) // tested
 
-	mux.HandleFunc("POST /widgets/{widgetId}/init/{$}", ch.handleGetOrCreateCustomer)
-	mux.Handle("GET /widgets/{widgetId}/me/{$}", NewEnsureAuth(ch.handleGetCustomer, authService))
+	mux.HandleFunc("POST /widgets/{widgetId}/init/{$}", ch.handleGetOrCreateCustomer) // tested
+	mux.Handle("GET /widgets/{widgetId}/me/{$}", NewEnsureAuth(ch.handleGetCustomer, authService)) // tested
 	mux.Handle("POST /widgets/{widgetId}/me/identities/{$}", NewEnsureAuth(ch.handleAddCustomerIdentities, authService))
 
 	mux.Handle("POST /widgets/{widgetId}/threads/chat/{$}", NewEnsureAuth(ch.handleCreateCustomerThChat, authService))

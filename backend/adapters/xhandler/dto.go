@@ -21,7 +21,7 @@ type WidgetInitReq struct {
 	Traits             *CustomerTraits `json:"traits"`
 }
 
-type WidgetInitRespPayload struct {
+type WidgetInitResp struct {
 	Jwt        string         `json:"jwt"`
 	Create     bool           `json:"create"`
 	IsVerified bool           `json:"isVerified"`
@@ -31,7 +31,7 @@ type WidgetInitRespPayload struct {
 	ExternalId sql.NullString `json:"externalId"`
 }
 
-func (w WidgetInitRespPayload) MarshalJSON() ([]byte, error) {
+func (w WidgetInitResp) MarshalJSON() ([]byte, error) {
 	var email *string
 	if w.Email.Valid {
 		email = &w.Email.String
@@ -380,6 +380,54 @@ func (w AddCustomerIdentitiesRespPayload) MarshalJSON() ([]byte, error) {
 		Email:      email,
 		Phone:      phone,
 		ExternalId: externalId,
+	}
+	return json.Marshal(aux)
+}
+
+type CustomerResp struct {
+	CustomerId string
+	ExternalId sql.NullString
+	Email      sql.NullString
+	Phone      sql.NullString
+	Name       string
+	IsVerified bool
+	Role       string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+}
+
+func (c CustomerResp) MarshalJSON() ([]byte, error) {
+	var externalId, email, phone *string
+	if c.ExternalId.Valid {
+		externalId = &c.ExternalId.String
+	}
+	if c.Email.Valid {
+		email = &c.Email.String
+	}
+	if c.Phone.Valid {
+		phone = &c.Phone.String
+	}
+
+	aux := &struct {
+		CustomerId string  `json:"customerId"`
+		ExternalId *string `json:"externalId"`
+		Email      *string `json:"email"`
+		Phone      *string `json:"phone"`
+		Name       string  `json:"name"`
+		IsVerified bool    `json:"isVerified"`
+		Role       string  `json:"role"`
+		CreatedAt  string  `json:"createdAt"`
+		UpdatedAt  string  `json:"updatedAt"`
+	}{
+		CustomerId: c.CustomerId,
+		ExternalId: externalId,
+		Email:      email,
+		Phone:      phone,
+		Name:       c.Name,
+		IsVerified: c.IsVerified,
+		Role:       c.Role,
+		CreatedAt:  c.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:  c.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
 }

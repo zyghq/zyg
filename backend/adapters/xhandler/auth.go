@@ -28,8 +28,7 @@ func CheckAuthCredentials(r *http.Request) (string, string, error) {
 
 func AuthenticateCustomer(
 	ctx context.Context, authz ports.CustomerAuthServicer,
-	scheme string, cred string, widgetId string,
-) (models.Customer, error) {
+	scheme string, cred string, widgetId string) (models.Customer, error) {
 	var customer models.Customer
 	if scheme == "bearer" {
 
@@ -48,17 +47,13 @@ func AuthenticateCustomer(
 			return customer, fmt.Errorf("%v", err)
 		}
 
-		customer, err = authz.ValidateWorkspaceCustomer(ctx, cc.WorkspaceId, sub)
+		customer, err = authz.GetWorkspaceCustomerIgnoreRole(ctx, cc.WorkspaceId, sub)
 		if errors.Is(err, services.ErrCustomerNotFound) {
 			return customer, fmt.Errorf("customer not found or does not exist")
 		}
 
 		if err != nil {
-			slog.Error(
-				"failed to get customer by customer id"+
-					"something went wrong",
-				slog.String("customerId", sub),
-			)
+			slog.Error("failed to fetch customer", slog.Any("err", err))
 			return customer, fmt.Errorf("failed to validate customer with customer id: %s got error: %v", sub, err)
 		}
 

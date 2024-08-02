@@ -100,9 +100,9 @@ func NewCustomerAuthService(customerRepo ports.CustomerRepositorer) *CustomerAut
 	}
 }
 
-func (s *CustomerAuthService) ValidateWorkspaceCustomer(
+func (s *CustomerAuthService) GetWorkspaceCustomerIgnoreRole(
 	ctx context.Context, workspaceId string, customerId string) (models.Customer, error) {
-	customer, err := s.customerRepo.LookupByWorkspaceCustomerId(ctx, workspaceId, customerId)
+	customer, err := s.customerRepo.LookupWorkspaceCustomerWithoutRoleById(ctx, workspaceId, customerId)
 	if errors.Is(err, repository.ErrEmpty) {
 		return models.Customer{}, ErrCustomerNotFound
 	}

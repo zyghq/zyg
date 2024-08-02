@@ -179,7 +179,7 @@ type Account struct {
 }
 
 func (a Account) GenId() string {
-	return "a_" + xid.New().String()
+	return "ac" + xid.New().String()
 }
 
 func (a Account) MarshalJSON() ([]byte, error) {
@@ -263,7 +263,7 @@ type Member struct {
 }
 
 func (m Member) GenId() string {
-	return "m_" + xid.New().String()
+	return "mm" + xid.New().String()
 }
 
 func (m Member) MarshalJSON() ([]byte, error) {
@@ -333,7 +333,7 @@ type Customer struct {
 }
 
 func (c Customer) GenId() string {
-	return "c_" + xid.New().String()
+	return "cs" + xid.New().String()
 }
 
 func (c Customer) Visitor() string {
@@ -455,7 +455,7 @@ type Thread struct {
 }
 
 func (t Thread) GenId() string {
-	return "th_" + xid.New().String()
+	return "th" + xid.New().String()
 }
 
 type Chat struct {
@@ -533,7 +533,7 @@ type Label struct {
 }
 
 func (l Label) GenId() string {
-	return "l_" + xid.New().String()
+	return "lb" + xid.New().String()
 }
 
 type ThreadLabel struct {
@@ -587,7 +587,7 @@ type Widget struct {
 }
 
 func (w Widget) GenId() string {
-	return "wg_" + xid.New().String()
+	return "wd" + xid.New().String()
 }
 
 type SecretKey struct {

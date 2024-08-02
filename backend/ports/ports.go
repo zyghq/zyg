@@ -23,8 +23,10 @@ type AuthServicer interface {
 }
 
 type CustomerAuthServicer interface {
-	ValidateWorkspaceCustomer(ctx context.Context, workspaceId string, customerId string) (models.Customer, error)
-	GetWidgetLinkedSecretKey(ctx context.Context, widgetId string) (models.SecretKey, error)
+	GetWorkspaceCustomerIgnoreRole(
+		ctx context.Context, workspaceId string, customerId string) (models.Customer, error)
+	GetWidgetLinkedSecretKey(
+		ctx context.Context, widgetId string) (models.SecretKey, error)
 }
 
 type WorkspaceServicer interface {
@@ -78,7 +80,8 @@ type CustomerServicer interface {
 		ctx context.Context, workspaceId string, email string) (models.Customer, error)
 	GetWorkspaceCustomerByPhone(
 		ctx context.Context, workspaceId string, phone string) (models.Customer, error)
-	GenerateCustomerToken(customer models.Customer, sk string) (string, error)
+	GenerateCustomerToken(
+		customer models.Customer, sk string) (string, error)
 	VerifyExternalId(sk string, hash string, externalId string) bool
 	VerifyEmail(sk string, hash string, email string) bool
 	VerifyPhone(sk string, hash string, phone string) bool
@@ -168,6 +171,8 @@ type MemberRepositorer interface {
 
 type CustomerRepositorer interface {
 	LookupByWorkspaceCustomerId(
+		ctx context.Context, workspaceId string, customerId string) (models.Customer, error)
+	LookupWorkspaceCustomerWithoutRoleById(
 		ctx context.Context, workspaceId string, customerId string) (models.Customer, error)
 	UpsertCustomerByExtId(
 		ctx context.Context, customer models.Customer) (models.Customer, bool, error)
