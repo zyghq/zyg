@@ -47,7 +47,7 @@ func AuthenticateCustomer(
 			return customer, fmt.Errorf("%v", err)
 		}
 
-		customer, err = authz.GetWorkspaceCustomerIgnoreRole(ctx, cc.WorkspaceId, sub)
+		customer, err = authz.AuthenticateWorkspaceCustomer(ctx, cc.WorkspaceId, sub, nil)
 		if errors.Is(err, services.ErrCustomerNotFound) {
 			return customer, fmt.Errorf("customer not found or does not exist")
 		}

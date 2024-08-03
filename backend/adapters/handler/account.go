@@ -115,7 +115,7 @@ func (h *AccountHandler) handleGetOrCreateAccount(w http.ResponseWriter, r *http
 
 func (h *AccountHandler) handleGetPatList(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	ctx := r.Context()
-	aps, err := h.as.GetPersonalAccessTokens(ctx, account.AccountId)
+	aps, err := h.as.ListPersonalAccessTokens(ctx, account.AccountId)
 	if err != nil {
 		slog.Error("failed to fetch pat list", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

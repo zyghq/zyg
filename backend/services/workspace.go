@@ -39,7 +39,7 @@ func (s *WorkspaceService) CreateWorkspace(
 		AccountId: accountId,
 		Name:      workspaceName,
 	}
-	workspace, err := s.workspaceRepo.InsertWorkspaceByAccountId(ctx, memberName, workspace)
+	workspace, err := s.workspaceRepo.InsertWorkspace(ctx, memberName, workspace)
 	if err != nil {
 		return models.Workspace{}, err
 	}
@@ -55,9 +55,9 @@ func (s *WorkspaceService) UpdateWorkspace(
 	return workspace, nil
 }
 
-func (s *WorkspaceService) UpdateWorkspaceLabel(
-	ctx context.Context, workspaceId string, label models.Label) (models.Label, error) {
-	label, err := s.workspaceRepo.ModifyWorkspaceLabelById(ctx, workspaceId, label)
+func (s *WorkspaceService) UpdateLabel(
+	ctx context.Context, label models.Label) (models.Label, error) {
+	label, err := s.workspaceRepo.ModifyLabelById(ctx, label)
 	if err != nil {
 		return models.Label{}, err
 	}
@@ -66,7 +66,7 @@ func (s *WorkspaceService) UpdateWorkspaceLabel(
 }
 
 func (s *WorkspaceService) GetWorkspace(ctx context.Context, workspaceId string) (models.Workspace, error) {
-	workspace, err := s.workspaceRepo.FetchWorkspaceById(ctx, workspaceId)
+	workspace, err := s.workspaceRepo.FetchByWorkspaceId(ctx, workspaceId)
 
 	if errors.Is(err, repository.ErrQuery) {
 		return workspace, ErrWorkspace
@@ -82,9 +82,9 @@ func (s *WorkspaceService) GetWorkspace(ctx context.Context, workspaceId string)
 	return workspace, nil
 }
 
-func (s *WorkspaceService) GetLinkedWorkspaceMember(
+func (s *WorkspaceService) GetAccountLinkedWorkspace(
 	ctx context.Context, accountId string, workspaceId string) (models.Workspace, error) {
-	workspace, err := s.workspaceRepo.LookupLinkedWorkspaceByAccountId(ctx, accountId, workspaceId)
+	workspace, err := s.workspaceRepo.LookupWorkspaceByAccountId(ctx, workspaceId, accountId)
 	if errors.Is(err, repository.ErrEmpty) {
 		return models.Workspace{}, ErrWorkspaceNotFound
 	}
@@ -95,18 +95,18 @@ func (s *WorkspaceService) GetLinkedWorkspaceMember(
 	return workspace, nil
 }
 
-func (s *WorkspaceService) ListAccountWorkspaces(
+func (s *WorkspaceService) ListAccountLinkedWorkspaces(
 	ctx context.Context, accountId string) ([]models.Workspace, error) {
-	workspaces, err := s.workspaceRepo.FetchLinkedWorkspacesByAccountId(ctx, accountId)
+	workspaces, err := s.workspaceRepo.FetchWorkspacesByAccountId(ctx, accountId)
 	if err != nil {
 		return []models.Workspace{}, err
 	}
 	return workspaces, nil
 }
 
-func (s *WorkspaceService) GetWorkspaceAccountMember(
-	ctx context.Context, accountId string, workspaceId string) (models.Member, error) {
-	member, err := s.memberRepo.LookupByAccountWorkspaceId(ctx, accountId, workspaceId)
+func (s *WorkspaceService) GetAccountLinkedMember(
+	ctx context.Context, workspaceId string, accountId string) (models.Member, error) {
+	member, err := s.memberRepo.LookupByWorkspaceAccountId(ctx, workspaceId, accountId)
 
 	if errors.Is(err, repository.ErrEmpty) {
 		return models.Member{}, ErrMemberNotFound
@@ -118,7 +118,7 @@ func (s *WorkspaceService) GetWorkspaceAccountMember(
 	return member, nil
 }
 
-func (s *WorkspaceService) ListWorkspaceMembers(
+func (s *WorkspaceService) ListMembers(
 	ctx context.Context, workspaceId string) ([]models.Member, error) {
 	members, err := s.memberRepo.RetrieveMembersByWorkspaceId(ctx, workspaceId)
 	if err != nil {
@@ -127,7 +127,7 @@ func (s *WorkspaceService) ListWorkspaceMembers(
 	return members, nil
 }
 
-func (s *WorkspaceService) GetWorkspaceMemberById(
+func (s *WorkspaceService) GetMember(
 	ctx context.Context, workspaceId string, memberId string) (models.Member, error) {
 	member, err := s.memberRepo.FetchByWorkspaceMemberId(ctx, workspaceId, memberId)
 
@@ -141,7 +141,7 @@ func (s *WorkspaceService) GetWorkspaceMemberById(
 	return member, nil
 }
 
-func (s *WorkspaceService) ListWorkspaceCustomers(
+func (s *WorkspaceService) ListCustomers(
 	ctx context.Context, workspaceId string) ([]models.Customer, error) {
 	customers, err := s.customerRepo.FetchCustomersByWorkspaceId(ctx, workspaceId)
 	if err != nil {
@@ -165,7 +165,7 @@ func (s *WorkspaceService) CreateLabel(
 	return label, created, err
 }
 
-func (s *WorkspaceService) GetWorkspaceLabel(
+func (s *WorkspaceService) GetLabel(
 	ctx context.Context, workspaceId string, labelId string) (models.Label, error) {
 	label, err := s.workspaceRepo.LookupWorkspaceLabelById(ctx, workspaceId, labelId)
 	if errors.Is(err, repository.ErrEmpty) {
@@ -179,9 +179,9 @@ func (s *WorkspaceService) GetWorkspaceLabel(
 	return label, err
 }
 
-func (s *WorkspaceService) ListWorkspaceLabels(
+func (s *WorkspaceService) ListLabels(
 	ctx context.Context, workspaceId string) ([]models.Label, error) {
-	labels, err := s.workspaceRepo.RetrieveLabelsByWorkspaceId(ctx, workspaceId)
+	labels, err := s.workspaceRepo.FetchLabelsByWorkspaceId(ctx, workspaceId)
 	if err != nil {
 		return []models.Label{}, ErrLabel
 	}
@@ -265,13 +265,14 @@ func (s *WorkspaceService) CreateAnonymousCustomer(
 	return customer, created, nil
 }
 
-func (s *WorkspaceService) AddMember(ctx context.Context, workspace models.Workspace, member models.Member) (models.Member, error) {
-	member, err := s.workspaceRepo.InsertMemberIntoWorkspace(ctx, workspace.WorkspaceId, member)
-	if err != nil {
-		return member, err
-	}
-	return member, nil
-}
+// func (s *WorkspaceService) AddMember(
+// 	ctx context.Context, workspaceId string, member models.Member) (models.Member, error) {
+// 	member, err := s.workspaceRepo.InsertMember(ctx, workspaceId, member)
+// 	if err != nil {
+// 		return member, err
+// 	}
+// 	return member, nil
+// }
 
 func (s *WorkspaceService) CreateWidget(
 	ctx context.Context, workspaceId string, name string, configuration map[string]interface{}) (models.Widget, error) {
@@ -280,7 +281,7 @@ func (s *WorkspaceService) CreateWidget(
 		Name:          name,
 		Configuration: configuration,
 	}
-	widget, err := s.workspaceRepo.InsertWidgetIntoWorkspace(ctx, workspaceId, widget)
+	widget, err := s.workspaceRepo.InsertWidget(ctx, widget)
 	if err != nil {
 		return models.Widget{}, err
 	}
@@ -289,7 +290,7 @@ func (s *WorkspaceService) CreateWidget(
 
 func (s *WorkspaceService) ListWidgets(
 	ctx context.Context, workspaceId string) ([]models.Widget, error) {
-	widgets, err := s.workspaceRepo.RetrieveWidgetsByWorkspaceId(ctx, workspaceId)
+	widgets, err := s.workspaceRepo.FetchWidgetsByWorkspaceId(ctx, workspaceId)
 	if err != nil {
 		return []models.Widget{}, err
 	}
@@ -321,14 +322,14 @@ func (s *WorkspaceService) GenerateSecretKey(
 	// Return the first 'length' characters of the encoded hash
 	slicedHash := "sk" + encodedHash[:length]
 
-	sk, err := s.workspaceRepo.InsertSecretKeyIntoWorkspace(ctx, workspaceId, slicedHash)
+	sk, err := s.workspaceRepo.InsertSecretKey(ctx, workspaceId, slicedHash)
 	if err != nil {
 		return models.SecretKey{}, err
 	}
 	return sk, nil
 }
 
-func (s *WorkspaceService) GetWorkspaceSecretKey(
+func (s *WorkspaceService) GetSecretKey(
 	ctx context.Context, workspaceId string) (models.SecretKey, error) {
 	sk, err := s.workspaceRepo.FetchSecretKeyByWorkspaceId(ctx, workspaceId)
 
@@ -342,19 +343,17 @@ func (s *WorkspaceService) GetWorkspaceSecretKey(
 	return sk, nil
 }
 
-func (s *WorkspaceService) GetWorkspaceWidget(ctx context.Context, widgetId string) (models.Widget, error) {
-	widget, err := s.workspaceRepo.LookupWorkspaceWidget(ctx, widgetId)
-
-	if errors.Is(err, repository.ErrQuery) {
-		return widget, ErrWidget
-	}
+func (s *WorkspaceService) GetWidget(
+	ctx context.Context, widgetId string) (models.Widget, error) {
+	widget, err := s.workspaceRepo.LookupWidgetById(ctx, widgetId)
 
 	if errors.Is(err, repository.ErrEmpty) {
-		return widget, ErrWidgetNotFound
+		return models.Widget{}, ErrWidgetNotFound
 	}
 
 	if err != nil {
-		return widget, err
+		return models.Widget{}, err
 	}
+
 	return widget, nil
 }

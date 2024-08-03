@@ -68,17 +68,12 @@ func (s *CustomerService) GetWorkspaceCustomerByPhone(
 	return customer, nil
 }
 
-func (s *CustomerService) GenerateCustomerToken(c models.Customer, sk string) (string, error) {
+func (s *CustomerService) GenerateCustomerJwt(c models.Customer, sk string) (string, error) {
 	var externalId string
 	var email string
 	var phone string
 
 	audience := []string{"customer"}
-
-	// sk, err := zyg.GetEnv("ZYG_CUSTOMER_JWT_SECRET")
-	// if err != nil {
-	// 	return "", fmt.Errorf("failed to get env ZYG_CUSTOMER_JWT_SECRET got error: %v", err)
-	// }
 
 	if !c.ExternalId.Valid {
 		externalId = ""
@@ -143,14 +138,17 @@ func (s *CustomerService) VerifyPhone(sk string, hash string, phone string) bool
 	return hashHex == hash
 }
 
-func (s *CustomerService) GetWorkspaceCustomerById(ctx context.Context, workspaceId string, customerId string) (models.Customer, error) {
-	customer, err := s.repo.LookupByWorkspaceCustomerId(ctx, workspaceId, customerId)
+func (s *CustomerService) GetWorkspaceCustomerById(
+	ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error) {
+	customer, err := s.repo.LookupWorkspaceCustomerById(ctx, workspaceId, customerId, role)
 	if errors.Is(err, repository.ErrEmpty) {
-		return customer, ErrCustomerNotFound
+		return models.Customer{}, ErrCustomerNotFound
 	}
+
 	if err != nil {
-		return customer, ErrCustomer
+		return models.Customer{}, ErrCustomer
 	}
+
 	return customer, nil
 }
 

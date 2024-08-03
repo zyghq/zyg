@@ -338,7 +338,7 @@ func (thc ThreadChatResp) MarshalJSON() ([]byte, error) {
 // 	return json.Marshal(aux)
 // }
 
-type AddCustomerIdentitiesReqPayload struct {
+type CustomerIdentitiesReq struct {
 	Email    *string `json:"email"`
 	Phone    *string `json:"phone"`
 	External *string `json:"external"`

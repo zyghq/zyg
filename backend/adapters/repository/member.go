@@ -9,8 +9,8 @@ import (
 	"github.com/zyghq/zyg/models"
 )
 
-func (m *MemberDB) LookupByAccountWorkspaceId(
-	ctx context.Context, accountId string, workspaceId string) (models.Member, error) {
+func (m *MemberDB) LookupByWorkspaceAccountId(
+	ctx context.Context, workspaceId string, accountId string) (models.Member, error) {
 	var member models.Member
 	err := m.db.QueryRow(ctx, `SELECT
 		workspace_id, account_id, member_id, name, role, created_at, updated_at

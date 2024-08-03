@@ -61,7 +61,7 @@ func (h *WorkspaceHandler) handleCreateWorkspace(w http.ResponseWriter, r *http.
 
 func (h *WorkspaceHandler) handleGetWorkspaces(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	ctx := r.Context()
-	workspaces, err := h.ws.ListAccountWorkspaces(ctx, account.AccountId)
+	workspaces, err := h.ws.ListAccountLinkedWorkspaces(ctx, account.AccountId)
 	if err != nil {
 		slog.Error("failed fetch workspaces", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -93,7 +93,7 @@ func (h *WorkspaceHandler) handleGetWorkspace(w http.ResponseWriter, r *http.Req
 	ctx := r.Context()
 	workspaceId := r.PathValue("workspaceId")
 
-	workspace, err := h.ws.GetLinkedWorkspaceMember(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetAccountLinkedWorkspace(ctx, account.AccountId, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -139,7 +139,7 @@ func (h *WorkspaceHandler) handleUpdateWorkspace(w http.ResponseWriter, r *http.
 	ctx := r.Context()
 	workspaceId := r.PathValue("workspaceId")
 
-	workspace, err := h.ws.GetLinkedWorkspaceMember(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetAccountLinkedWorkspace(ctx, account.AccountId, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -211,7 +211,7 @@ func (h *WorkspaceHandler) handleGetOrCreateWorkspaceLabel(w http.ResponseWriter
 
 	ctx := r.Context()
 
-	workspace, err := h.ws.GetLinkedWorkspaceMember(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetAccountLinkedWorkspace(ctx, account.AccountId, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -275,7 +275,7 @@ func (h *WorkspaceHandler) handleUpdateWorkspaceLabel(w http.ResponseWriter, r *
 
 	ctx := r.Context()
 
-	label, err := h.ws.GetWorkspaceLabel(ctx, workspaceId, labelId)
+	label, err := h.ws.GetLabel(ctx, workspaceId, labelId)
 	if errors.Is(err, services.ErrLabelNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -316,7 +316,7 @@ func (h *WorkspaceHandler) handleUpdateWorkspaceLabel(w http.ResponseWriter, r *
 		return
 	}
 
-	label, err = h.ws.UpdateWorkspaceLabel(ctx, label.WorkspaceId, label)
+	label, err = h.ws.UpdateLabel(ctx, label)
 	if err != nil {
 		slog.Error("failed to update workspace label", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -346,7 +346,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceLabels(w http.ResponseWriter, r *ht
 
 	workspaceId := r.PathValue("workspaceId")
 
-	labels, err := h.ws.ListWorkspaceLabels(ctx, workspaceId)
+	labels, err := h.ws.ListLabels(ctx, workspaceId)
 	if err != nil {
 		slog.Error("failed to fetch workspace labels", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -402,7 +402,7 @@ func (h *WorkspaceHandler) handleCreateWorkspaceCustomer(w http.ResponseWriter, 
 
 	workspaceId := r.PathValue("workspaceId")
 
-	workspace, err := h.ws.GetLinkedWorkspaceMember(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetAccountLinkedWorkspace(ctx, account.AccountId, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -492,7 +492,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceMembership(w http.ResponseWriter, r
 	ctx := r.Context()
 
 	workspaceId := r.PathValue("workspaceId")
-	member, err := h.ws.GetWorkspaceAccountMember(ctx, account.AccountId, workspaceId)
+	member, err := h.ws.GetAccountLinkedMember(ctx, workspaceId, account.AccountId)
 	if err != nil {
 		slog.Error("failed to fetch workspace membership", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -522,7 +522,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceMember(w http.ResponseWriter, r *ht
 	workspaceId := r.PathValue("workspaceId")
 	memberId := r.PathValue("memberId")
 
-	member, err := h.ws.GetWorkspaceMemberById(ctx, workspaceId, memberId)
+	member, err := h.ws.GetMember(ctx, workspaceId, memberId)
 	if errors.Is(err, services.ErrMemberNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -556,7 +556,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceCustomers(w http.ResponseWriter, r 
 
 	workspaceId := r.PathValue("workspaceId")
 
-	customers, err := h.ws.ListWorkspaceCustomers(ctx, workspaceId)
+	customers, err := h.ws.ListCustomers(ctx, workspaceId)
 	if err != nil {
 		slog.Error("failed to fetch workspace customers", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -591,7 +591,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceMembers(w http.ResponseWriter, r *h
 	ctx := r.Context()
 
 	workspaceId := r.PathValue("workspaceId")
-	members, err := h.ws.ListWorkspaceMembers(ctx, workspaceId)
+	members, err := h.ws.ListMembers(ctx, workspaceId)
 	if err != nil {
 		slog.Error("failed to fetch workspace members", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -629,7 +629,7 @@ func (h *WorkspaceHandler) handleGenerateSecretKey(w http.ResponseWriter, r *htt
 
 	workspaceId := r.PathValue("workspaceId")
 
-	workspace, err := h.ws.GetLinkedWorkspaceMember(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetAccountLinkedWorkspace(ctx, account.AccountId, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -668,7 +668,7 @@ func (h *WorkspaceHandler) handleGetWorkspaceSecretKey(w http.ResponseWriter, r 
 
 	workspaceId := r.PathValue("workspaceId")
 
-	sk, err := h.ws.GetWorkspaceSecretKey(ctx, workspaceId)
+	sk, err := h.ws.GetSecretKey(ctx, workspaceId)
 	if errors.Is(err, services.ErrSecretKeyNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return

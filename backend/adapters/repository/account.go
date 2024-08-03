@@ -9,7 +9,8 @@ import (
 	"github.com/zyghq/zyg/models"
 )
 
-func (a *AccountDB) UpsertByAuthUserId(ctx context.Context, account models.Account) (models.Account, bool, error) {
+func (a *AccountDB) UpsertByAuthUserId(
+	ctx context.Context, account models.Account) (models.Account, bool, error) {
 	var isCreated bool
 	accountId := account.GenId()
 	stmt := `
@@ -18,7 +19,10 @@ func (a *AccountDB) UpsertByAuthUserId(ctx context.Context, account models.Accou
 			VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (auth_user_id)
 			DO NOTHING
-		RETURNING account_id, auth_user_id, email, provider, name, created_at, updated_at, TRUE AS is_created)
+		RETURNING
+		account_id, auth_user_id, email, provider, name,
+		created_at, updated_at, 
+		TRUE AS is_created)
 		SELECT *
 		FROM ins
 		UNION ALL
@@ -37,13 +41,11 @@ func (a *AccountDB) UpsertByAuthUserId(ctx context.Context, account models.Accou
 		&isCreated,
 	)
 
-	// no rows returned error
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("err", err))
 		return models.Account{}, isCreated, ErrEmpty
 	}
 
-	// query error
 	if err != nil {
 		slog.Error("failed to insert query", slog.Any("err", err))
 		return models.Account{}, isCreated, ErrQuery
@@ -51,7 +53,7 @@ func (a *AccountDB) UpsertByAuthUserId(ctx context.Context, account models.Accou
 	return account, isCreated, nil
 }
 
-func (a *AccountDB) FetchAccountByAuthId(
+func (a *AccountDB) FetchByAuthUserId(
 	ctx context.Context, authUserId string) (models.Account, error) {
 	var account models.Account
 
@@ -79,9 +81,9 @@ func (a *AccountDB) FetchAccountByAuthId(
 func (a *AccountDB) InsertPersonalAccessToken(
 	ctx context.Context, pat models.AccountPAT) (models.AccountPAT, error) {
 	patId := pat.GenId()
-	token, err := models.GenToken(32, "pt_")
+	token, err := models.GenToken(32, "pt")
 	if err != nil {
-		slog.Error("failed to generate pat token", "error", err)
+		slog.Error("failed to generate pat token", slog.Any("err", err))
 		return models.AccountPAT{}, err
 	}
 
@@ -97,7 +99,6 @@ func (a *AccountDB) InsertPersonalAccessToken(
 		&pat.Name, &pat.Description, &pat.CreatedAt, &pat.UpdatedAt,
 	)
 
-	// no rows returned
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("err", err))
 		return models.AccountPAT{}, ErrEmpty
@@ -111,7 +112,8 @@ func (a *AccountDB) InsertPersonalAccessToken(
 	return pat, nil
 }
 
-func (a *AccountDB) RetrievePatsByAccountId(ctx context.Context, accountId string) ([]models.AccountPAT, error) {
+func (a *AccountDB) FetchPatsByAccountId(
+	ctx context.Context, accountId string) ([]models.AccountPAT, error) {
 	var pat models.AccountPAT
 	aps := make([]models.AccountPAT, 0, 100)
 
@@ -171,7 +173,8 @@ func (a *AccountDB) FetchPatById(
 	return pat, nil
 }
 
-func (a *AccountDB) DeletePatById(ctx context.Context, patId string) error {
+func (a *AccountDB) DeletePatById(
+	ctx context.Context, patId string) error {
 	stmt := `DELETE FROM account_pat WHERE pat_id = $1`
 	_, err := a.db.Exec(ctx, stmt, patId)
 	if err != nil {
@@ -181,7 +184,8 @@ func (a *AccountDB) DeletePatById(ctx context.Context, patId string) error {
 	return nil
 }
 
-func (a *AccountDB) LookupAccountByToken(ctx context.Context, token string) (models.Account, error) {
+func (a *AccountDB) LookupByToken(
+	ctx context.Context, token string) (models.Account, error) {
 	var account models.Account
 
 	stmt := `SELECT
@@ -199,11 +203,12 @@ func (a *AccountDB) LookupAccountByToken(ctx context.Context, token string) (mod
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
 		return models.Account{}, ErrEmpty
 	}
 
 	if err != nil {
-		slog.Error("failed to query", "error", err)
+		slog.Error("failed to query", slog.Any("err", err))
 		return models.Account{}, ErrQuery
 	}
 

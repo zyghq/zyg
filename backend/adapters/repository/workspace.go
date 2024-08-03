@@ -10,7 +10,7 @@ import (
 	"github.com/zyghq/zyg/models"
 )
 
-func (w *WorkspaceDB) InsertWorkspaceByAccountId(
+func (w *WorkspaceDB) InsertWorkspace(
 	ctx context.Context, memberName string, workspace models.Workspace) (models.Workspace, error) {
 	var member models.Member
 	tx, err := w.db.Begin(ctx)
@@ -91,15 +91,15 @@ func (w *WorkspaceDB) ModifyWorkspaceById(
 	return workspace, nil
 }
 
-func (w *WorkspaceDB) ModifyWorkspaceLabelById(
-	ctx context.Context, workspaceId string, label models.Label,
+func (w *WorkspaceDB) ModifyLabelById(
+	ctx context.Context, label models.Label,
 ) (models.Label, error) {
 	err := w.db.QueryRow(ctx, `UPDATE label SET
 		name = $1, icon = $2, updated_at = NOW()
 		WHERE workspace_id = $3 AND label_id = $4
 		RETURNING
 		label_id, workspace_id, name, icon, created_at, updated_at`,
-		label.Name, label.Icon, workspaceId, label.LabelId).Scan(
+		label.Name, label.Icon, label.WorkspaceId, label.LabelId).Scan(
 		&label.LabelId, &label.WorkspaceId,
 		&label.Name, &label.Icon, &label.CreatedAt, &label.UpdatedAt,
 	)
@@ -112,7 +112,8 @@ func (w *WorkspaceDB) ModifyWorkspaceLabelById(
 	return label, nil
 }
 
-func (w *WorkspaceDB) FetchWorkspaceById(ctx context.Context, workspaceId string) (models.Workspace, error) {
+func (w *WorkspaceDB) FetchByWorkspaceId(
+	ctx context.Context, workspaceId string) (models.Workspace, error) {
 	var workspace models.Workspace
 	err := w.db.QueryRow(ctx, `SELECT 
 		workspace_id, account_id, name, created_at, updated_at
@@ -121,22 +122,21 @@ func (w *WorkspaceDB) FetchWorkspaceById(ctx context.Context, workspaceId string
 		&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt,
 	)
 
-	// check if the query returned no rows
 	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
 		return models.Workspace{}, ErrEmpty
 	}
 
-	// check if the query returned an error
 	if err != nil {
-		slog.Error("failed to query", "error", err)
+		slog.Error("failed to query", slog.Any("err", err))
 		return models.Workspace{}, ErrQuery
 	}
 
 	return workspace, nil
 }
 
-func (w *WorkspaceDB) LookupLinkedWorkspaceByAccountId(
-	ctx context.Context, accountId string, workspaceId string) (models.Workspace, error) {
+func (w *WorkspaceDB) LookupWorkspaceByAccountId(
+	ctx context.Context, workspaceId string, accountId string) (models.Workspace, error) {
 	var workspace models.Workspace
 	stmt := `
 		SELECT
@@ -172,7 +172,7 @@ func (w *WorkspaceDB) LookupLinkedWorkspaceByAccountId(
 	return workspace, nil
 }
 
-func (w *WorkspaceDB) FetchLinkedWorkspacesByAccountId(
+func (w *WorkspaceDB) FetchWorkspacesByAccountId(
 	ctx context.Context, accountId string) ([]models.Workspace, error) {
 	var workspace models.Workspace
 	workspaces := make([]models.Workspace, 0, 100)
@@ -271,7 +271,7 @@ func (w *WorkspaceDB) LookupWorkspaceLabelById(
 	return label, nil
 }
 
-func (w *WorkspaceDB) RetrieveLabelsByWorkspaceId(
+func (w *WorkspaceDB) FetchLabelsByWorkspaceId(
 	ctx context.Context, workspaceId string) ([]models.Label, error) {
 	var label models.Label
 	labels := make([]models.Label, 0, 100)
@@ -298,41 +298,41 @@ func (w *WorkspaceDB) RetrieveLabelsByWorkspaceId(
 	return labels, nil
 }
 
-func (w *WorkspaceDB) InsertMemberIntoWorkspace(ctx context.Context, workspaceId string, member models.Member) (models.Member, error) {
+func (w *WorkspaceDB) InsertMember(
+	ctx context.Context, member models.Member) (models.Member, error) {
 	var m models.Member
 	memberId := member.GenId()
 	err := w.db.QueryRow(ctx, `INSERT INTO member(workspace_id, account_id, member_id, name, role)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING
 		workspace_id, account_id, member_id, name, role, created_at, updated_at`,
-		workspaceId, member.AccountId, memberId, member.Name, member.Role).Scan(
+		member.WorkspaceId, member.AccountId, memberId, member.Name, member.Role).Scan(
 		&m.WorkspaceId, &m.AccountId,
 		&m.MemberId, &m.Name, &m.Role,
 		&m.CreatedAt, &m.UpdatedAt,
 	)
 
-	// check if the query returned no rows
 	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
 		return models.Member{}, ErrEmpty
 	}
 
-	// check if the query returned an error
 	if err != nil {
-		slog.Error("failed to insert query", "error", err)
+		slog.Error("failed to insert query", slog.Any("err", err))
 		return models.Member{}, ErrQuery
 	}
 
 	return m, nil
 }
 
-func (w *WorkspaceDB) InsertWidgetIntoWorkspace(
-	ctx context.Context, workspaceId string, widget models.Widget) (models.Widget, error) {
+func (w *WorkspaceDB) InsertWidget(
+	ctx context.Context, widget models.Widget) (models.Widget, error) {
 	widgetId := widget.GenId()
 	err := w.db.QueryRow(ctx, `INSERT INTO widget(workspace_id, widget_id, name, configuration)
 		VALUES ($1, $2, $3, $4)
 		RETURNING
 		workspace_id, widget_id, name, configuration, created_at, updated_at`,
-		workspaceId, widgetId, widget.Name, widget.Configuration).Scan(
+		widget.WorkspaceId, widgetId, widget.Name, widget.Configuration).Scan(
 		&widget.WorkspaceId, &widget.WidgetId,
 		&widget.Name, &widget.Configuration,
 		&widget.CreatedAt, &widget.UpdatedAt,
@@ -351,7 +351,7 @@ func (w *WorkspaceDB) InsertWidgetIntoWorkspace(
 	return widget, nil
 }
 
-func (w *WorkspaceDB) RetrieveWidgetsByWorkspaceId(
+func (w *WorkspaceDB) FetchWidgetsByWorkspaceId(
 	ctx context.Context, workspaceId string) ([]models.Widget, error) {
 	var widget models.Widget
 	widgets := make([]models.Widget, 0, 100)
@@ -380,7 +380,7 @@ func (w *WorkspaceDB) RetrieveWidgetsByWorkspaceId(
 	return widgets, nil
 }
 
-func (w *WorkspaceDB) InsertSecretKeyIntoWorkspace(
+func (w *WorkspaceDB) InsertSecretKey(
 	ctx context.Context, workspaceId string, sk string) (models.SecretKey, error) {
 	var secretKey models.SecretKey
 	err := w.db.QueryRow(ctx, `INSERT INTO secret_key(workspace_id, secret_key)
@@ -428,7 +428,8 @@ func (r *WorkspaceDB) FetchSecretKeyByWorkspaceId(
 	return secretKey, nil
 }
 
-func (r *WorkspaceDB) LookupWorkspaceWidget(ctx context.Context, widgetId string) (models.Widget, error) {
+func (r *WorkspaceDB) LookupWidgetById(
+	ctx context.Context, widgetId string) (models.Widget, error) {
 	var widget models.Widget
 
 	stmt := `SELECT
@@ -445,14 +446,13 @@ func (r *WorkspaceDB) LookupWorkspaceWidget(ctx context.Context, widgetId string
 		&widget.UpdatedAt,
 	)
 
-	// check if the query returned no rows
 	if errors.Is(err, sql.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
 		return models.Widget{}, ErrEmpty
 	}
 
-	// check if the query returned an error
 	if err != nil {
-		slog.Error("failed to query", "error", err)
+		slog.Error("failed to query", slog.Any("err", err))
 		return models.Widget{}, ErrQuery
 	}
 

@@ -163,7 +163,7 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 			fields = append(fields, "assignee")
 		} else {
 			assigneeId := assignee.(string)
-			member, err := h.ws.GetWorkspaceMemberById(ctx, workspaceId, assigneeId)
+			member, err := h.ws.GetMember(ctx, workspaceId, assigneeId)
 			if errors.Is(err, services.ErrMemberNotFound) {
 				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 				return
@@ -242,7 +242,7 @@ func (h *ThreadChatHandler) handleGetMyThreadChats(w http.ResponseWriter, r *htt
 
 	ctx := r.Context()
 
-	member, err := h.ws.GetWorkspaceAccountMember(ctx, account.AccountId, workspaceId)
+	member, err := h.ws.GetAccountLinkedMember(ctx, workspaceId, account.AccountId)
 	if errors.Is(err, services.ErrMemberNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -390,7 +390,7 @@ func (h *ThreadChatHandler) handleGetLabelledThreadChats(w http.ResponseWriter, 
 
 	ctx := r.Context()
 
-	label, err := h.ws.GetWorkspaceLabel(ctx, workspaceId, labelId)
+	label, err := h.ws.GetLabel(ctx, workspaceId, labelId)
 	if errors.Is(err, services.ErrLabelNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -484,7 +484,7 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 
 	ctx := r.Context()
 
-	member, err := h.ws.GetWorkspaceAccountMember(ctx, account.AccountId, workspaceId)
+	member, err := h.ws.GetAccountLinkedMember(ctx, workspaceId, account.AccountId)
 	if errors.Is(err, services.ErrMemberNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -776,7 +776,7 @@ func (h *ThreadChatHandler) handleGetThreadChatMetrics(w http.ResponseWriter, r 
 	workspaceId := r.PathValue("workspaceId")
 	ctx := r.Context()
 
-	member, err := h.ws.GetWorkspaceAccountMember(ctx, account.AccountId, workspaceId)
+	member, err := h.ws.GetAccountLinkedMember(ctx, workspaceId, account.AccountId)
 	if errors.Is(err, services.ErrMemberNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -850,7 +850,7 @@ func (h *WorkspaceHandler) handleCreateWidget(w http.ResponseWriter, r *http.Req
 
 	ctx := r.Context()
 
-	workspace, err := h.ws.GetLinkedWorkspaceMember(ctx, account.AccountId, workspaceId)
+	workspace, err := h.ws.GetAccountLinkedWorkspace(ctx, account.AccountId, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return

@@ -21,7 +21,12 @@ func NewAccountService(repo ports.AccountRepositorer) *AccountService {
 
 func (s *AccountService) CreateAuthAccount(
 	ctx context.Context, authUserId string, email string, name string, provider string) (models.Account, bool, error) {
-	account := models.Account{AuthUserId: authUserId, Email: email, Name: name, Provider: provider}
+	account := models.Account{
+		AuthUserId: authUserId,
+		Email:      email,
+		Name:       name,
+		Provider:   provider,
+	}
 	account, created, err := s.repo.UpsertByAuthUserId(ctx, account)
 	if err != nil {
 		return models.Account{}, false, ErrAccount
@@ -29,19 +34,16 @@ func (s *AccountService) CreateAuthAccount(
 	return account, created, nil
 }
 
-func (s *AccountService) AuthenticateUser(ctx context.Context, authUserId string) (models.Account, error) {
-	account, err := s.repo.FetchAccountByAuthId(ctx, authUserId)
-
-	if errors.Is(err, repository.ErrQuery) {
-		return account, ErrAccount
-	}
+func (s *AccountService) AuthenticateUser(
+	ctx context.Context, authUserId string) (models.Account, error) {
+	account, err := s.repo.FetchByAuthUserId(ctx, authUserId)
 
 	if errors.Is(err, repository.ErrEmpty) {
-		return account, ErrAccountNotFound
+		return models.Account{}, ErrAccountNotFound
 	}
 
 	if err != nil {
-		return account, err
+		return models.Account{}, ErrAccount
 	}
 
 	return account, nil
@@ -64,15 +66,11 @@ func (s *AccountService) GeneratePersonalAccessToken(
 	return ap, nil
 }
 
-func (s *AccountService) GetPersonalAccessTokens(ctx context.Context, accountId string) ([]models.AccountPAT, error) {
-	pats, err := s.repo.RetrievePatsByAccountId(ctx, accountId)
-
-	if errors.Is(err, repository.ErrQuery) {
-		return pats, ErrPat
-	}
-
+func (s *AccountService) ListPersonalAccessTokens(
+	ctx context.Context, accountId string) ([]models.AccountPAT, error) {
+	pats, err := s.repo.FetchPatsByAccountId(ctx, accountId)
 	if err != nil {
-		return pats, err
+		return []models.AccountPAT{}, ErrPat
 	}
 
 	return pats, nil

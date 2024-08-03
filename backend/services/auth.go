@@ -46,63 +46,59 @@ func ParseCustomerJWTToken(token string, hmacSecret []byte) (cc models.CustomerJ
 }
 
 type AuthService struct {
-	accountRepo ports.AccountRepositorer
+	repo ports.AccountRepositorer
 }
 
-func NewAuthService(accountRepo ports.AccountRepositorer) *AuthService {
+func NewAuthService(repo ports.AccountRepositorer) *AuthService {
 	return &AuthService{
-		accountRepo: accountRepo,
+		repo: repo,
 	}
 }
 
-func (s *AuthService) AuthenticateUser(ctx context.Context, authUserId string) (models.Account, error) {
-	account, err := s.accountRepo.FetchAccountByAuthId(ctx, authUserId)
-
-	if errors.Is(err, repository.ErrQuery) {
-		return account, ErrAccount
-	}
+func (s *AuthService) AuthenticateUser(
+	ctx context.Context, authUserId string) (models.Account, error) {
+	account, err := s.repo.FetchByAuthUserId(ctx, authUserId)
 
 	if errors.Is(err, repository.ErrEmpty) {
-		return account, ErrAccountNotFound
+		return models.Account{}, ErrAccountNotFound
 	}
 
 	if err != nil {
-		return account, err
+		return models.Account{}, ErrAccount
 	}
 
 	return account, nil
 }
 
-func (s *AuthService) ValidatePersonalAccessToken(ctx context.Context, token string) (models.Account, error) {
-	account, err := s.accountRepo.LookupAccountByToken(ctx, token)
-
-	if errors.Is(err, repository.ErrQuery) {
-		return account, ErrAccount
-	}
+func (s *AuthService) ValidatePersonalAccessToken(
+	ctx context.Context, token string) (models.Account, error) {
+	account, err := s.repo.LookupByToken(ctx, token)
 
 	if errors.Is(err, repository.ErrEmpty) {
-		return account, ErrAccountNotFound
+		return models.Account{}, ErrAccountNotFound
 	}
 
 	if err != nil {
-		return account, err
+		return models.Account{}, ErrAccount
+
 	}
+
 	return account, nil
 }
 
 type CustomerAuthService struct {
-	customerRepo ports.CustomerRepositorer
+	repo ports.CustomerRepositorer
 }
 
-func NewCustomerAuthService(customerRepo ports.CustomerRepositorer) *CustomerAuthService {
+func NewCustomerAuthService(repo ports.CustomerRepositorer) *CustomerAuthService {
 	return &CustomerAuthService{
-		customerRepo: customerRepo,
+		repo: repo,
 	}
 }
 
-func (s *CustomerAuthService) GetWorkspaceCustomerIgnoreRole(
-	ctx context.Context, workspaceId string, customerId string) (models.Customer, error) {
-	customer, err := s.customerRepo.LookupWorkspaceCustomerWithoutRoleById(ctx, workspaceId, customerId)
+func (s *CustomerAuthService) AuthenticateWorkspaceCustomer(
+	ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error) {
+	customer, err := s.repo.LookupWorkspaceCustomerById(ctx, workspaceId, customerId, role)
 	if errors.Is(err, repository.ErrEmpty) {
 		return models.Customer{}, ErrCustomerNotFound
 	}
@@ -115,7 +111,7 @@ func (s *CustomerAuthService) GetWorkspaceCustomerIgnoreRole(
 
 func (s *CustomerAuthService) GetWidgetLinkedSecretKey(
 	ctx context.Context, widgetId string) (models.SecretKey, error) {
-	sk, err := s.customerRepo.LookupSecretKeyByWidgetId(ctx, widgetId)
+	sk, err := s.repo.LookupSecretKeyByWidgetId(ctx, widgetId)
 
 	if errors.Is(err, repository.ErrEmpty) {
 		return models.SecretKey{}, ErrSecretKeyNotFound

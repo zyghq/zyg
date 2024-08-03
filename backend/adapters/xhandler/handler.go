@@ -57,7 +57,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 	ctx := r.Context()
 	widgetId := r.PathValue("widgetId")
 
-	widget, err := h.ws.GetWorkspaceWidget(ctx, widgetId)
+	widget, err := h.ws.GetWidget(ctx, widgetId)
 	if errors.Is(err, services.ErrWidgetNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -69,7 +69,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		return
 	}
 
-	sk, err := h.ws.GetWorkspaceSecretKey(ctx, widget.WorkspaceId)
+	sk, err := h.ws.GetSecretKey(ctx, widget.WorkspaceId)
 	if errors.Is(err, services.ErrSecretKeyNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -192,7 +192,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		return
 	}
 
-	jwt, err := h.cs.GenerateCustomerToken(customer, sk.SecretKey)
+	jwt, err := h.cs.GenerateCustomerJwt(customer, sk.SecretKey)
 	if err != nil {
 		slog.Error("failed to make jwt token with error", slog.Any("error", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -283,9 +283,9 @@ func (h *CustomerHandler) handleAddCustomerIdentities(w http.ResponseWriter, r *
 		_ = r.Close()
 	}(r.Body)
 
-	var payload AddCustomerIdentitiesReqPayload
+	var reqp CustomerIdentitiesReq
 
-	err := json.NewDecoder(r.Body).Decode(&payload)
+	err := json.NewDecoder(r.Body).Decode(&reqp)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -294,7 +294,7 @@ func (h *CustomerHandler) handleAddCustomerIdentities(w http.ResponseWriter, r *
 	ctx := r.Context()
 	widgetId := r.PathValue("widgetId")
 
-	widget, err := h.ws.GetWorkspaceWidget(ctx, widgetId)
+	widget, err := h.ws.GetWidget(ctx, widgetId)
 
 	if errors.Is(err, services.ErrWidgetNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
@@ -302,16 +302,12 @@ func (h *CustomerHandler) handleAddCustomerIdentities(w http.ResponseWriter, r *
 	}
 
 	if err != nil {
-		slog.Error(
-			"failed to get workspace widget "+
-				"something went wrong",
-			slog.String("widgetId", widgetId),
-		)
+		slog.Error("failed to get workspace widget", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	widgetCustomer, err := h.cs.GetWorkspaceCustomerById(ctx, widget.WorkspaceId, customer.CustomerId)
+	widgetCustomer, err := h.cs.GetWorkspaceCustomerById(ctx, widget.WorkspaceId, customer.CustomerId, nil)
 	if errors.Is(err, services.ErrCustomerNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -335,20 +331,20 @@ func (h *CustomerHandler) handleAddCustomerIdentities(w http.ResponseWriter, r *
 	}
 
 	hasModified := false
-	if payload.Email != nil {
-		email := widgetCustomer.AddAnonimizedEmail(*payload.Email)
+	if reqp.Email != nil {
+		email := widgetCustomer.AddAnonimizedEmail(*reqp.Email)
 		widgetCustomer.Email = models.NullString(&email)
 		hasModified = true
 	}
 
-	if payload.Phone != nil {
-		phone := widgetCustomer.AddAnonimizedPhone(*payload.Phone)
+	if reqp.Phone != nil {
+		phone := widgetCustomer.AddAnonimizedPhone(*reqp.Phone)
 		widgetCustomer.Phone = models.NullString(&phone)
 		hasModified = true
 	}
 
-	if payload.External != nil {
-		externalId := widgetCustomer.AddAnonimizedExternalId(*payload.External)
+	if reqp.External != nil {
+		externalId := widgetCustomer.AddAnonimizedExternalId(*reqp.External)
 		widgetCustomer.ExternalId = models.NullString(&externalId)
 		hasModified = true
 	}
@@ -805,7 +801,7 @@ func NewServer(
 
 	mux.HandleFunc("GET /{$}", handleGetIndex) // tested
 
-	mux.HandleFunc("POST /widgets/{widgetId}/init/{$}", ch.handleGetOrCreateCustomer) // tested
+	mux.HandleFunc("POST /widgets/{widgetId}/init/{$}", ch.handleGetOrCreateCustomer)              // tested
 	mux.Handle("GET /widgets/{widgetId}/me/{$}", NewEnsureAuth(ch.handleGetCustomer, authService)) // tested
 	mux.Handle("POST /widgets/{widgetId}/me/identities/{$}", NewEnsureAuth(ch.handleAddCustomerIdentities, authService))
 

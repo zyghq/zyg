@@ -28,8 +28,7 @@ func CheckAuthCredentials(r *http.Request) (string, string, error) {
 }
 
 func AuthenticateAccount(
-	ctx context.Context, authz ports.AuthServicer, scheme string, cred string,
-) (models.Account, error) {
+	ctx context.Context, authz ports.AuthServicer, scheme string, cred string) (models.Account, error) {
 	if scheme == "token" {
 		account, err := authz.ValidatePersonalAccessToken(ctx, cred)
 		if err != nil {
@@ -55,10 +54,6 @@ func AuthenticateAccount(
 		account, err := authz.AuthenticateUser(ctx, sub)
 
 		if errors.Is(err, services.ErrAccountNotFound) {
-			slog.Warn(
-				"account not found or does not exist",
-				slog.String("authUserId", sub),
-			)
 			return account, fmt.Errorf("account not found or does not exist")
 		}
 		if errors.Is(err, services.ErrAccount) {
