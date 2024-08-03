@@ -45,6 +45,7 @@ func (c *CustomerDB) LookupWorkspaceCustomerById(
 	ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error) {
 	var customer models.Customer
 
+	args := []any{workspaceId, customerId}
 	stmt := `SELECT
 		workspace_id, customer_id, external_id, email, phone,
 		name, anonymous_id,
@@ -56,9 +57,10 @@ func (c *CustomerDB) LookupWorkspaceCustomerById(
 
 	if role != nil {
 		stmt += " AND role = $3"
+		args = append(args, *role)
 	}
 
-	err := c.db.QueryRow(ctx, stmt, workspaceId, customerId, role).Scan(
+	err := c.db.QueryRow(ctx, stmt, args...).Scan(
 		&customer.WorkspaceId, &customer.CustomerId,
 		&customer.ExternalId, &customer.Email, &customer.Phone,
 		&customer.Name, &customer.AnonId,
@@ -313,18 +315,27 @@ func (c *CustomerDB) UpsertCustomerByPhone(
 }
 
 func (c *CustomerDB) FetchCustomersByWorkspaceId(
-	ctx context.Context, workspaceId string) ([]models.Customer, error) {
+	ctx context.Context, workspaceId string, role *string) ([]models.Customer, error) {
 	var customer models.Customer
 	customers := make([]models.Customer, 0, 100)
-	role := models.Customer{}.Engaged()
+
+	args := []any{workspaceId}
+
 	stmt := `SELECT workspace_id, customer_id, external_id, email, phone,
 		name, anonymous_id, is_verified, role,
 		created_at, updated_at
-		FROM customer WHERE
-		workspace_id = $1 AND role = $2
-		ORDER BY created_at DESC LIMIT 100`
+		FROM customer
+		WHERE
+		workspace_id = $1`
 
-	rows, _ := c.db.Query(ctx, stmt, workspaceId, role)
+	if role != nil {
+		stmt += " AND role = $2"
+		args = append(args, *role)
+	}
+
+	stmt += " ORDER BY created_at DESC LIMIT 100"
+
+	rows, _ := c.db.Query(ctx, stmt, args...)
 
 	defer rows.Close()
 

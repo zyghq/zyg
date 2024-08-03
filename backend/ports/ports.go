@@ -55,7 +55,6 @@ type WorkspaceServicer interface {
 		ctx context.Context, workspaceId string, labelId string) (models.Label, error)
 	ListLabels(
 		ctx context.Context, workspaceId string) ([]models.Label, error)
-	// move to account service
 	GetAccountLinkedMember(
 		ctx context.Context, workspaceId string, accountId string) (models.Member, error)
 	// AddMember(
@@ -81,7 +80,8 @@ type WorkspaceServicer interface {
 		ctx context.Context, workspaceId string, length int) (models.SecretKey, error)
 	GetSecretKey(
 		ctx context.Context, workspaceId string) (models.SecretKey, error)
-	GetWidget(ctx context.Context, widgetId string) (models.Widget, error)
+	GetWidget(
+		ctx context.Context, widgetId string) (models.Widget, error)
 }
 
 type CustomerServicer interface {
@@ -102,7 +102,8 @@ type CustomerServicer interface {
 	// move to workspace service
 	GetWorkspaceCustomerById(
 		ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error)
-	UpdateCustomer(ctx context.Context, customer models.Customer) (models.Customer, error)
+	UpdateCustomer(
+		ctx context.Context, customer models.Customer) (models.Customer, error)
 }
 
 type ThreadChatServicer interface {
@@ -155,8 +156,8 @@ type AccountRepositorer interface {
 }
 
 type WorkspaceRepositorer interface {
-	InsertWorkspace(
-		ctx context.Context, memberName string, workspace models.Workspace) (models.Workspace, error)
+	InsertWorkspaceWithMember(
+		ctx context.Context, workspace models.Workspace, member models.Member) (models.Workspace, error)
 	ModifyWorkspaceById(
 		ctx context.Context, workspace models.Workspace) (models.Workspace, error)
 	ModifyLabelById(
@@ -173,9 +174,8 @@ type WorkspaceRepositorer interface {
 		ctx context.Context, workspaceId string, labelId string) (models.Label, error)
 	FetchLabelsByWorkspaceId(
 		ctx context.Context, workspaceId string) ([]models.Label, error)
-	// todo: needs service impl
-	InsertMember(
-		ctx context.Context, member models.Member) (models.Member, error)
+	// InsertMember(
+	// 	ctx context.Context, member models.Member) (models.Member, error)
 	InsertWidget(
 		ctx context.Context, widget models.Widget) (models.Widget, error)
 	FetchWidgetsByWorkspaceId(
@@ -184,13 +184,14 @@ type WorkspaceRepositorer interface {
 		ctx context.Context, workspaceId string, sk string) (models.SecretKey, error)
 	FetchSecretKeyByWorkspaceId(
 		ctx context.Context, workspaceId string) (models.SecretKey, error)
-	LookupWidgetById(ctx context.Context, widgetId string) (models.Widget, error)
+	LookupWidgetById(
+		ctx context.Context, widgetId string) (models.Widget, error)
 }
 
 type MemberRepositorer interface {
 	LookupByWorkspaceAccountId(
 		ctx context.Context, workspaceId string, accountId string) (models.Member, error)
-	RetrieveMembersByWorkspaceId(
+	FetchMembersByWorkspaceId(
 		ctx context.Context, workspaceId string) ([]models.Member, error)
 	FetchByWorkspaceMemberId(
 		ctx context.Context, workspaceId string, memberId string) (models.Member, error)
@@ -205,16 +206,22 @@ type CustomerRepositorer interface {
 		ctx context.Context, customer models.Customer) (models.Customer, bool, error)
 	UpsertCustomerByPhone(
 		ctx context.Context, customer models.Customer) (models.Customer, bool, error)
-	UpsertCustomerByAnonId(ctx context.Context, c models.Customer) (models.Customer, bool, error)
+	UpsertCustomerByAnonId(
+		ctx context.Context, customer models.Customer) (models.Customer, bool, error)
+	// move to workspace
 	FetchCustomersByWorkspaceId(
-		ctx context.Context, workspaceId string) ([]models.Customer, error)
+		ctx context.Context, workspaceId string, role *string) ([]models.Customer, error)
 	LookupSecretKeyByWidgetId(
 		ctx context.Context, widgetId string) (models.SecretKey, error)
-	ModifyCustomerById(ctx context.Context, c models.Customer) (models.Customer, error)
+	ModifyCustomerById(
+		ctx context.Context, customer models.Customer) (models.Customer, error)
+	// move to worskpace
 	LookupWorkspaceCustomerByExtId(
 		ctx context.Context, workspaceId string, externalId string) (models.Customer, error)
+	// move to workspace
 	LookupWorkspaceCustomerByEmail(
 		ctx context.Context, workspaceId string, email string) (models.Customer, error)
+	// move to workspace
 	LookupWorkspaceCustomerByPhone(
 		ctx context.Context, workspaceId string, phone string) (models.Customer, error)
 }

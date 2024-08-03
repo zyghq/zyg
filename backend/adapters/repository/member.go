@@ -33,7 +33,7 @@ func (m *MemberDB) LookupByWorkspaceAccountId(
 	return member, nil
 }
 
-func (m *MemberDB) RetrieveMembersByWorkspaceId(
+func (m *MemberDB) FetchMembersByWorkspaceId(
 	ctx context.Context, workspaceId string) ([]models.Member, error) {
 	var member models.Member
 	members := make([]models.Member, 0, 100)

@@ -39,7 +39,11 @@ func (s *WorkspaceService) CreateWorkspace(
 		AccountId: accountId,
 		Name:      workspaceName,
 	}
-	workspace, err := s.workspaceRepo.InsertWorkspace(ctx, memberName, workspace)
+	member := models.Member{
+		Name: memberName,
+		Role: models.MemberRole{}.Primary(),
+	}
+	workspace, err := s.workspaceRepo.InsertWorkspaceWithMember(ctx, workspace, member)
 	if err != nil {
 		return models.Workspace{}, err
 	}
@@ -120,7 +124,7 @@ func (s *WorkspaceService) GetAccountLinkedMember(
 
 func (s *WorkspaceService) ListMembers(
 	ctx context.Context, workspaceId string) ([]models.Member, error) {
-	members, err := s.memberRepo.RetrieveMembersByWorkspaceId(ctx, workspaceId)
+	members, err := s.memberRepo.FetchMembersByWorkspaceId(ctx, workspaceId)
 	if err != nil {
 		return []models.Member{}, ErrMember
 	}
@@ -143,7 +147,8 @@ func (s *WorkspaceService) GetMember(
 
 func (s *WorkspaceService) ListCustomers(
 	ctx context.Context, workspaceId string) ([]models.Customer, error) {
-	customers, err := s.customerRepo.FetchCustomersByWorkspaceId(ctx, workspaceId)
+	role := models.Customer{}.Engaged()
+	customers, err := s.customerRepo.FetchCustomersByWorkspaceId(ctx, workspaceId, &role)
 	if err != nil {
 		return []models.Customer{}, err
 	}
