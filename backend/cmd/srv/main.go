@@ -56,7 +56,7 @@ func run(ctx context.Context) error {
 
 	// init services
 	authService := services.NewAuthService(accountStore)
-	accountService := services.NewAccountService(accountStore)
+	accountService := services.NewAccountService(accountStore, workspaceStore)
 	workspaceService := services.NewWorkspaceService(workspaceStore, memberStore, customerStore)
 	customerService := services.NewCustomerService(customerStore)
 	threadChatService := services.NewThreadChatService(threadChatStore)

@@ -10,12 +10,16 @@ import (
 )
 
 type AccountService struct {
-	repo ports.AccountRepositorer
+	accountRepo   ports.AccountRepositorer
+	workspaceRepo ports.WorkspaceRepositorer
 }
 
-func NewAccountService(repo ports.AccountRepositorer) *AccountService {
+func NewAccountService(
+	accountRepo ports.AccountRepositorer,
+	workspaceRepo ports.WorkspaceRepositorer) *AccountService {
 	return &AccountService{
-		repo: repo,
+		accountRepo:   accountRepo,
+		workspaceRepo: workspaceRepo,
 	}
 }
 
@@ -27,26 +31,11 @@ func (s *AccountService) CreateAuthAccount(
 		Name:       name,
 		Provider:   provider,
 	}
-	account, created, err := s.repo.UpsertByAuthUserId(ctx, account)
+	account, created, err := s.accountRepo.UpsertByAuthUserId(ctx, account)
 	if err != nil {
 		return models.Account{}, false, ErrAccount
 	}
 	return account, created, nil
-}
-
-func (s *AccountService) AuthenticateUser(
-	ctx context.Context, authUserId string) (models.Account, error) {
-	account, err := s.repo.FetchByAuthUserId(ctx, authUserId)
-
-	if errors.Is(err, repository.ErrEmpty) {
-		return models.Account{}, ErrAccountNotFound
-	}
-
-	if err != nil {
-		return models.Account{}, ErrAccount
-	}
-
-	return account, nil
 }
 
 func (s *AccountService) GeneratePersonalAccessToken(
@@ -57,7 +46,7 @@ func (s *AccountService) GeneratePersonalAccessToken(
 		UnMask:      true, // unmask only when created
 		Description: description,
 	}
-	ap, err := s.repo.InsertPersonalAccessToken(ctx, pat)
+	ap, err := s.accountRepo.InsertPersonalAccessToken(ctx, pat)
 	if err != nil {
 		return models.AccountPAT{}, ErrPat
 	}
@@ -68,7 +57,7 @@ func (s *AccountService) GeneratePersonalAccessToken(
 
 func (s *AccountService) ListPersonalAccessTokens(
 	ctx context.Context, accountId string) ([]models.AccountPAT, error) {
-	pats, err := s.repo.FetchPatsByAccountId(ctx, accountId)
+	pats, err := s.accountRepo.FetchPatsByAccountId(ctx, accountId)
 	if err != nil {
 		return []models.AccountPAT{}, ErrPat
 	}
@@ -78,7 +67,7 @@ func (s *AccountService) ListPersonalAccessTokens(
 
 func (s *AccountService) GetPersonalAccessToken(
 	ctx context.Context, patId string) (models.AccountPAT, error) {
-	pat, err := s.repo.FetchPatById(ctx, patId)
+	pat, err := s.accountRepo.FetchPatById(ctx, patId)
 
 	if errors.Is(err, repository.ErrEmpty) {
 		return models.AccountPAT{}, ErrPatNotFound
@@ -92,11 +81,50 @@ func (s *AccountService) GetPersonalAccessToken(
 }
 
 func (s *AccountService) DeletePersonalAccessToken(ctx context.Context, patId string) error {
-	err := s.repo.DeletePatById(ctx, patId)
+	err := s.accountRepo.DeletePatById(ctx, patId)
 	if err != nil {
 		return ErrPat
 	}
 	// @sanchitrk
 	// send an email that the token is deleted
 	return nil
+}
+
+func (s *AccountService) CreateWorkspace(
+	ctx context.Context, accountId string, memberName string, workspaceName string) (models.Workspace, error) {
+	workspace := models.Workspace{
+		AccountId: accountId,
+		Name:      workspaceName,
+	}
+	member := models.Member{
+		Name: memberName,
+		Role: models.MemberRole{}.Primary(),
+	}
+	workspace, err := s.workspaceRepo.InsertWorkspaceWithMember(ctx, workspace, member)
+	if err != nil {
+		return models.Workspace{}, err
+	}
+	return workspace, nil
+}
+
+func (s *AccountService) GetAccountLinkedWorkspace(
+	ctx context.Context, accountId string, workspaceId string) (models.Workspace, error) {
+	workspace, err := s.workspaceRepo.LookupWorkspaceByAccountId(ctx, workspaceId, accountId)
+	if errors.Is(err, repository.ErrEmpty) {
+		return models.Workspace{}, ErrWorkspaceNotFound
+	}
+
+	if err != nil {
+		return models.Workspace{}, err
+	}
+	return workspace, nil
+}
+
+func (s *AccountService) ListAccountLinkedWorkspaces(
+	ctx context.Context, accountId string) ([]models.Workspace, error) {
+	workspaces, err := s.workspaceRepo.FetchWorkspacesByAccountId(ctx, accountId)
+	if err != nil {
+		return []models.Workspace{}, err
+	}
+	return workspaces, nil
 }

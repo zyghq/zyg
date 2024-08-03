@@ -26,7 +26,7 @@ func NewServer(
 
 	// initialize service handlers
 	ah := NewAccountHandler(accountService, workspaceService)
-	wh := NewWorkspaceHandler(workspaceService, customerService)
+	wh := NewWorkspaceHandler(workspaceService, accountService, customerService)
 	th := NewThreadChatHandler(workspaceService, threadChatService)
 
 	mux.HandleFunc("GET /{$}", handleGetIndex) // tested

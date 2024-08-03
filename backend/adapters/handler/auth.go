@@ -50,7 +50,6 @@ func AuthenticateAccount(
 			return models.Account{}, fmt.Errorf("cannot get subject from parsed token: %v", err)
 		}
 
-		slog.Info("authenticated account with jwt", slog.String("authUserId", sub))
 		account, err := authz.AuthenticateUser(ctx, sub)
 
 		if errors.Is(err, services.ErrAccountNotFound) {

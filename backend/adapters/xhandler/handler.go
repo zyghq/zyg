@@ -307,7 +307,7 @@ func (h *CustomerHandler) handleAddCustomerIdentities(w http.ResponseWriter, r *
 		return
 	}
 
-	widgetCustomer, err := h.cs.GetWorkspaceCustomerById(ctx, widget.WorkspaceId, customer.CustomerId, nil)
+	widgetCustomer, err := h.ws.GetCustomer(ctx, widget.WorkspaceId, customer.CustomerId, nil)
 	if errors.Is(err, services.ErrCustomerNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return

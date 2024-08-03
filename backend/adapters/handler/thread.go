@@ -850,7 +850,7 @@ func (h *WorkspaceHandler) handleCreateWidget(w http.ResponseWriter, r *http.Req
 
 	ctx := r.Context()
 
-	workspace, err := h.ws.GetAccountLinkedWorkspace(ctx, account.AccountId, workspaceId)
+	workspace, err := h.as.GetAccountLinkedWorkspace(ctx, account.AccountId, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return

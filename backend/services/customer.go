@@ -25,49 +25,6 @@ func NewCustomerService(repo ports.CustomerRepositorer) *CustomerService {
 	}
 }
 
-func (s *CustomerService) GetWorkspaceCustomerByExtId(
-	ctx context.Context, workspaceId string, externalId string) (models.Customer, error) {
-	customer, err := s.repo.LookupWorkspaceCustomerByExtId(ctx, workspaceId, externalId)
-
-	if errors.Is(err, repository.ErrEmpty) {
-		return models.Customer{}, ErrCustomerNotFound
-	}
-
-	if err != nil {
-		return models.Customer{}, ErrCustomer
-	}
-	return customer, nil
-}
-
-func (s *CustomerService) GetWorkspaceCustomerByEmail(
-	ctx context.Context, workspaceId string, email string) (models.Customer, error) {
-	customer, err := s.repo.LookupWorkspaceCustomerByEmail(ctx, workspaceId, email)
-
-	if errors.Is(err, repository.ErrEmpty) {
-		return models.Customer{}, ErrCustomerNotFound
-	}
-
-	if err != nil {
-		return models.Customer{}, ErrCustomer
-	}
-	return customer, nil
-}
-
-func (s *CustomerService) GetWorkspaceCustomerByPhone(
-	ctx context.Context, workspaceId string, email string) (models.Customer, error) {
-	customer, err := s.repo.LookupWorkspaceCustomerByPhone(ctx, workspaceId, email)
-
-	if errors.Is(err, repository.ErrEmpty) {
-		return models.Customer{}, ErrCustomerNotFound
-	}
-
-	if err != nil {
-		return models.Customer{}, ErrCustomer
-	}
-
-	return customer, nil
-}
-
 func (s *CustomerService) GenerateCustomerJwt(c models.Customer, sk string) (string, error) {
 	var externalId string
 	var email string
@@ -136,20 +93,6 @@ func (s *CustomerService) VerifyPhone(sk string, hash string, phone string) bool
 	h.Write([]byte(phone))
 	hashHex := hex.EncodeToString(h.Sum(nil))
 	return hashHex == hash
-}
-
-func (s *CustomerService) GetWorkspaceCustomerById(
-	ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error) {
-	customer, err := s.repo.LookupWorkspaceCustomerById(ctx, workspaceId, customerId, role)
-	if errors.Is(err, repository.ErrEmpty) {
-		return models.Customer{}, ErrCustomerNotFound
-	}
-
-	if err != nil {
-		return models.Customer{}, ErrCustomer
-	}
-
-	return customer, nil
 }
 
 func (s *CustomerService) UpdateCustomer(
