@@ -10,10 +10,10 @@ import (
 )
 
 type ThreadChatService struct {
-	repo ports.ThreadChatRepositorer
+	repo ports.ThreadRepositorer
 }
 
-func NewThreadChatService(repo ports.ThreadChatRepositorer) *ThreadChatService {
+func NewThreadChatService(repo ports.ThreadRepositorer) *ThreadChatService {
 	return &ThreadChatService{
 		repo: repo,
 	}

@@ -18,13 +18,13 @@ import (
 type CustomerHandler struct {
 	ws  ports.WorkspaceServicer
 	cs  ports.CustomerServicer
-	ths ports.ThreadChatServicer
+	ths ports.ThreadServicer
 }
 
 func NewCustomerHandler(
 	ws ports.WorkspaceServicer,
 	cs ports.CustomerServicer,
-	ths ports.ThreadChatServicer,
+	ths ports.ThreadServicer,
 ) *CustomerHandler {
 	return &CustomerHandler{
 		ws:  ws,
@@ -793,7 +793,7 @@ func NewServer(
 	authService ports.CustomerAuthServicer,
 	workspaceService ports.WorkspaceServicer,
 	customerService ports.CustomerServicer,
-	threadChatService ports.ThreadChatServicer,
+	threadChatService ports.ThreadServicer,
 ) http.Handler {
 	mux := http.NewServeMux()
 

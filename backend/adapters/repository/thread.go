@@ -10,7 +10,8 @@ import (
 	"github.com/zyghq/zyg/models"
 )
 
-func (tc *ThreadChatDB) InsertInAppThreadChat(ctx context.Context, th models.Thread, chat models.Chat) (models.Thread, models.Chat, error) {
+func (tc *ThreadChatDB) InsertInAppThreadChat(
+	ctx context.Context, th models.Thread, chat models.Chat) (models.Thread, models.Chat, error) {
 	// start transaction
 	tx, err := tc.db.Begin(ctx)
 	if err != nil {

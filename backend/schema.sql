@@ -178,7 +178,9 @@ CREATE TABLE thread (
     workspace_id VARCHAR(255) NOT NULL,
     customer_id VARCHAR(255) NOT NULL,
     assignee_id VARCHAR(255) NULL,
+    -- add a field for `assigned_at`
     title TEXT NOT NULL,
+    -- lets rename this to `description` - more generic nature
     summary TEXT NOT NULL,
     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
     status VARCHAR(127) NOT NULL, -- status of the thread
@@ -188,8 +190,10 @@ CREATE TABLE thread (
     spam BOOLEAN NOT NULL DEFAULT FALSE, -- spam flag
 
     channel VARCHAR(127) NOT NULL, -- channel of the thread
-    
+
+    -- rename `message_body` to `preview_text`
     message_body TEXT NOT NULL, -- body of the message
+    
     message_sequence BIGINT NOT NULL DEFAULT fn_next_id(), -- sequence number of the message
     message_customer_id VARCHAR(255) NULL, -- fk to customer if message is customer specific
     message_member_id VARCHAR(255) NULL, -- fk to member if message is member specific

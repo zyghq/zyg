@@ -190,16 +190,23 @@ func (h *WorkspaceHandler) handleUpdateWorkspace(w http.ResponseWriter, r *http.
 		return
 	}
 
+	resp := WorkspaceResp{
+		WorkspaceId: workspace.WorkspaceId,
+		Name:        workspace.Name,
+		CreatedAt:   workspace.CreatedAt,
+		UpdatedAt:   workspace.UpdatedAt,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(workspace); err != nil {
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		slog.Error("failed to encode json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 }
 
-func (h *WorkspaceHandler) handleGetOrCreateWorkspaceLabel(w http.ResponseWriter, r *http.Request, account *models.Account) {
+func (h *WorkspaceHandler) handleCreateWorkspaceLabel(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
@@ -274,6 +281,7 @@ func (h *WorkspaceHandler) handleUpdateWorkspaceLabel(w http.ResponseWriter, r *
 
 	err := json.NewDecoder(r.Body).Decode(&reqp)
 	if err != nil {
+		slog.Error("failed to decode json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
@@ -304,12 +312,11 @@ func (h *WorkspaceHandler) handleUpdateWorkspaceLabel(w http.ResponseWriter, r *
 
 	if !hasUpdates {
 		resp := LabelResp{
-			LabelId:     label.LabelId,
-			WorkspaceId: label.WorkspaceId,
-			Name:        label.Name,
-			Icon:        label.Icon,
-			CreatedAt:   label.CreatedAt,
-			UpdatedAt:   label.UpdatedAt,
+			LabelId:   label.LabelId,
+			Name:      label.Name,
+			Icon:      label.Icon,
+			CreatedAt: label.CreatedAt,
+			UpdatedAt: label.UpdatedAt,
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -329,12 +336,11 @@ func (h *WorkspaceHandler) handleUpdateWorkspaceLabel(w http.ResponseWriter, r *
 	}
 
 	resp := LabelResp{
-		LabelId:     label.LabelId,
-		WorkspaceId: label.WorkspaceId,
-		Name:        label.Name,
-		Icon:        label.Icon,
-		CreatedAt:   label.CreatedAt,
-		UpdatedAt:   label.UpdatedAt,
+		LabelId:   label.LabelId,
+		Name:      label.Name,
+		Icon:      label.Icon,
+		CreatedAt: label.CreatedAt,
+		UpdatedAt: label.UpdatedAt,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -362,12 +368,11 @@ func (h *WorkspaceHandler) handleGetWorkspaceLabels(w http.ResponseWriter, r *ht
 
 	for _, l := range labels {
 		item := LabelResp{
-			LabelId:     l.LabelId,
-			WorkspaceId: l.WorkspaceId,
-			Name:        l.Name,
-			Icon:        l.Icon,
-			CreatedAt:   l.CreatedAt,
-			UpdatedAt:   l.UpdatedAt,
+			LabelId:   l.LabelId,
+			Name:      l.Name,
+			Icon:      l.Icon,
+			CreatedAt: l.CreatedAt,
+			UpdatedAt: l.UpdatedAt,
 		}
 		items = append(items, item)
 	}
@@ -375,6 +380,41 @@ func (h *WorkspaceHandler) handleGetWorkspaceLabels(w http.ResponseWriter, r *ht
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(items); err != nil {
+		slog.Error("failed to encode json", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *WorkspaceHandler) handleGetWorkspaceLabel(w http.ResponseWriter, r *http.Request, account *models.Account) {
+	ctx := r.Context()
+
+	workspaceId := r.PathValue("workspaceId")
+	labelId := r.PathValue("labelId")
+
+	label, err := h.ws.GetLabel(ctx, workspaceId, labelId)
+	if errors.Is(err, services.ErrLabelNotFound) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		slog.Error("failed to fetch workspace label", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	resp := LabelResp{
+		LabelId:   label.LabelId,
+		Name:      label.Name,
+		Icon:      label.Icon,
+		CreatedAt: label.CreatedAt,
+		UpdatedAt: label.UpdatedAt,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		slog.Error("failed to encode json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return

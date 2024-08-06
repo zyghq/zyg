@@ -20,7 +20,7 @@ func NewServer(
 	accountService ports.AccountServicer,
 	workspaceService ports.WorkspaceServicer,
 	customerService ports.CustomerServicer,
-	threadChatService ports.ThreadChatServicer,
+	threadChatService ports.ThreadServicer,
 ) http.Handler {
 	mux := http.NewServeMux()
 
@@ -29,8 +29,8 @@ func NewServer(
 	wh := NewWorkspaceHandler(workspaceService, accountService, customerService)
 	th := NewThreadChatHandler(workspaceService, threadChatService)
 
-	mux.HandleFunc("GET /{$}", handleGetIndex) // tested
-	mux.HandleFunc("POST /accounts/auth/{$}", ah.handleGetOrCreateAccount)
+	mux.HandleFunc("GET /{$}", handleGetIndex)                             // tested
+	mux.HandleFunc("POST /accounts/auth/{$}", ah.handleGetOrCreateAccount) // tested (indirectly)
 
 	mux.Handle("POST /pats/{$}", NewEnsureAuth(ah.handleCreatePat, authService))
 	mux.Handle("GET /pats/{$}", NewEnsureAuth(ah.handleGetPatList, authService))
@@ -39,13 +39,15 @@ func NewServer(
 	mux.Handle("POST /workspaces/{$}", NewEnsureAuth(wh.handleCreateWorkspace, authService)) // tested
 	mux.Handle("GET /workspaces/{$}", NewEnsureAuth(wh.handleGetWorkspaces, authService))    // tested
 
-	mux.Handle("GET /workspaces/{workspaceId}/{$}", NewEnsureAuth(wh.handleGetWorkspace, authService))
-	mux.Handle("PATCH /workspaces/{workspaceId}/{$}", NewEnsureAuth(wh.handleUpdateWorkspace, authService))
+	mux.Handle("GET /workspaces/{workspaceId}/{$}",
+		NewEnsureAuth(wh.handleGetWorkspace, authService)) // tested
+	mux.Handle("PATCH /workspaces/{workspaceId}/{$}",
+		NewEnsureAuth(wh.handleUpdateWorkspace, authService)) // tested
 
 	mux.Handle("POST /workspaces/{workspaceId}/sk/{$}",
-		NewEnsureAuth(wh.handleGenerateSecretKey, authService))
+		NewEnsureAuth(wh.handleGenerateSecretKey, authService)) // tested
 	mux.Handle("GET /workspaces/{workspaceId}/sk/{$}",
-		NewEnsureAuth(wh.handleGetWorkspaceSecretKey, authService))
+		NewEnsureAuth(wh.handleGetWorkspaceSecretKey, authService)) // tested
 
 	mux.Handle("GET /workspaces/{workspaceId}/members/{$}",
 		NewEnsureAuth(wh.handleGetWorkspaceMembers, authService)) // tested
@@ -53,7 +55,7 @@ func NewServer(
 		NewEnsureAuth(wh.handleGetWorkspaceMembership, authService)) // tested
 
 	mux.Handle("GET /workspaces/{workspaceId}/members/{memberId}/{$}",
-		NewEnsureAuth(wh.handleGetWorkspaceMember, authService))
+		NewEnsureAuth(wh.handleGetWorkspaceMember, authService)) // tested
 
 	mux.Handle("POST /workspaces/{workspaceId}/customers/{$}",
 		NewEnsureAuth(wh.handleCreateWorkspaceCustomer, authService)) // tested
@@ -61,11 +63,13 @@ func NewServer(
 		NewEnsureAuth(wh.handleGetWorkspaceCustomers, authService)) // tested
 
 	mux.Handle("POST /workspaces/{workspaceId}/labels/{$}",
-		NewEnsureAuth(wh.handleGetOrCreateWorkspaceLabel, authService))
+		NewEnsureAuth(wh.handleCreateWorkspaceLabel, authService)) // tested
 	mux.Handle("GET /workspaces/{workspaceId}/labels/{$}",
-		NewEnsureAuth(wh.handleGetWorkspaceLabels, authService))
+		NewEnsureAuth(wh.handleGetWorkspaceLabels, authService)) // tested
 	mux.Handle("PATCH /workspaces/{workspaceId}/labels/{labelId}/{$}",
-		NewEnsureAuth(wh.handleUpdateWorkspaceLabel, authService))
+		NewEnsureAuth(wh.handleUpdateWorkspaceLabel, authService)) // tested
+	mux.Handle("GET /workspaces/{workspaceId}/labels/{labelId}/{$}",
+		NewEnsureAuth(wh.handleGetWorkspaceLabel, authService)) // tested
 
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{$}",
 		NewEnsureAuth(th.handleGetThreadChats, authService))

@@ -84,13 +84,17 @@ type WorkspaceServicer interface {
 type CustomerServicer interface {
 	GenerateCustomerJwt(
 		customer models.Customer, sk string) (string, error)
-	VerifyExternalId(sk string, hash string, externalId string) bool
-	VerifyEmail(sk string, hash string, email string) bool
-	VerifyPhone(sk string, hash string, phone string) bool
-	UpdateCustomer(ctx context.Context, customer models.Customer) (models.Customer, error)
+	VerifyExternalId(
+		sk string, hash string, externalId string) bool
+	VerifyEmail(
+		sk string, hash string, email string) bool
+	VerifyPhone(
+		sk string, hash string, phone string) bool
+	UpdateCustomer(
+		ctx context.Context, customer models.Customer) (models.Customer, error)
 }
 
-type ThreadChatServicer interface {
+type ThreadServicer interface {
 	CreateThreadInAppChat(
 		ctx context.Context, workspaceId string, customerId string, message string) (models.Thread, models.Chat, error)
 	GetWorkspaceThread(
@@ -198,8 +202,7 @@ type CustomerRepositorer interface {
 		ctx context.Context, customer models.Customer) (models.Customer, error)
 }
 
-// todo: rename to ThreadRepository
-type ThreadChatRepositorer interface {
+type ThreadRepositorer interface {
 	InsertInAppThreadChat(ctx context.Context, th models.Thread, chat models.Chat) (models.Thread, models.Chat, error) // done
 	LookupByWorkspaceThreadId(
 		ctx context.Context, workspaceId string, threadId string) (models.Thread, error)

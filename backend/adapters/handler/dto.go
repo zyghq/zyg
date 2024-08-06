@@ -540,29 +540,26 @@ func (ch ChatResp) MarshalJSON() ([]byte, error) {
 }
 
 type LabelResp struct {
-	LabelId     string `json:"labelId"`
-	WorkspaceId string `json:"workspaceId"`
-	Name        string `json:"name"`
-	Icon        string `json:"icon"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	LabelId   string `json:"labelId"`
+	Name      string `json:"name"`
+	Icon      string `json:"icon"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 func (l LabelResp) MarshalJSON() ([]byte, error) {
 	aux := &struct {
-		LabelId     string `json:"labelId"`
-		WorkspaceId string `json:"workspaceId"`
-		Name        string `json:"name"`
-		Icon        string `json:"icon"`
-		CreatedAt   string `json:"createdAt"`
-		UpdatedAt   string `json:"updatedAt"`
+		LabelId   string `json:"labelId"`
+		Name      string `json:"name"`
+		Icon      string `json:"icon"`
+		CreatedAt string `json:"createdAt"`
+		UpdatedAt string `json:"updatedAt"`
 	}{
-		LabelId:     l.LabelId,
-		WorkspaceId: l.WorkspaceId,
-		Name:        l.Name,
-		Icon:        l.Icon,
-		CreatedAt:   l.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:   l.UpdatedAt.Format(time.RFC3339),
+		LabelId:   l.LabelId,
+		Name:      l.Name,
+		Icon:      l.Icon,
+		CreatedAt: l.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: l.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
 }

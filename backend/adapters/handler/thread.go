@@ -14,12 +14,12 @@ import (
 
 type ThreadChatHandler struct {
 	ws  ports.WorkspaceServicer
-	ths ports.ThreadChatServicer
+	ths ports.ThreadServicer
 }
 
 func NewThreadChatHandler(
 	ws ports.WorkspaceServicer,
-	ths ports.ThreadChatServicer,
+	ths ports.ThreadServicer,
 ) *ThreadChatHandler {
 	return &ThreadChatHandler{ws: ws, ths: ths}
 }
