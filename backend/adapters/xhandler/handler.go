@@ -3,6 +3,7 @@ package xhandler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -365,7 +366,7 @@ func (h *CustomerHandler) handleAddCustomerIdentities(w http.ResponseWriter, r *
 		denonPhone := widgetCustomer.DeAnonPhone()
 		denonExternalId := widgetCustomer.DeAnonExternalId()
 
-		resp := AddCustomerIdentitiesRespPayload{
+		resp := AddCustomerIdentitiesResp{
 			IsVerified: widgetCustomer.IsVerified,
 			Name:       widgetCustomer.Name,
 			Email:      models.NullString(&denonEmail),
@@ -395,7 +396,7 @@ func (h *CustomerHandler) handleCreateCustomerThChat(w http.ResponseWriter, r *h
 		_ = r.Close()
 	}(r.Body)
 
-	var message ThChatReqPayload
+	var message ThChatReq
 
 	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
@@ -412,30 +413,30 @@ func (h *CustomerHandler) handleCreateCustomerThChat(w http.ResponseWriter, r *h
 	}
 
 	if err != nil {
-		slog.Error(
-			"failed to get workspace by id "+
-				"something went wrong",
-			slog.String("workspaceId", customer.WorkspaceId),
-		)
+		slog.Error("failed to fetch workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	thread, chat, err := h.ths.CreateThreadInAppChat(ctx, workspace.WorkspaceId, customer.CustomerId, message.Message)
+	thread, chat, err := h.ths.CreateInboundThreadChat(ctx, workspace.WorkspaceId, customer.CustomerId, message.Message)
 	if err != nil {
-		slog.Error(
-			"failed to create thread chat for customer "+
-				"something went wrong",
-			slog.String("customerId", customer.CustomerId),
-			slog.String("workspaceid", workspace.WorkspaceId),
-		)
+		slog.Error("failed to create thread chat", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+
+	fmt.Println("************ checking API thread **************")
+	fmt.Println(thread)
+	fmt.Println("thread.CustomerId", thread.CustomerId)
+	fmt.Println("thread.CustomerName", thread.CustomerName)
+	fmt.Println("************ checking API thread **************")
+
+	var threadAssignee *ThMemberResp
+	var ingressCustomer *ThCustomerResp
+	var egressMember *ThMemberResp
 
 	var chatCustomer *ThCustomerResp
 	var chatMember *ThMemberResp
-	var threadAssignee *ThMemberResp
 
 	// for chat - either of them
 	if chat.CustomerId.Valid {
@@ -462,13 +463,15 @@ func (h *CustomerHandler) handleCreateCustomerThChat(w http.ResponseWriter, r *h
 		UpdatedAt: chat.UpdatedAt,
 	}
 
-	// for thread
 	threadCustomer := ThCustomerResp{
 		CustomerId: thread.CustomerId,
 		Name:       thread.CustomerName,
 	}
 
-	// for thread
+	fmt.Println("************ checking  thread customer **************")
+	fmt.Println(threadCustomer)
+	fmt.Println("************ checking  thread customer **************")
+
 	if thread.AssigneeId.Valid {
 		threadAssignee = &ThMemberResp{
 			MemberId: thread.AssigneeId.String,
@@ -476,22 +479,39 @@ func (h *CustomerHandler) handleCreateCustomerThChat(w http.ResponseWriter, r *h
 		}
 	}
 
+	if thread.IngressMessageId.Valid {
+		ingressCustomer = &ThCustomerResp{
+			CustomerId: thread.IngressCustomerId.String,
+			Name:       thread.IngressCustomerName.String,
+		}
+	}
+
+	if thread.EgressMessageId.Valid {
+		egressMember = &ThMemberResp{
+			MemberId: thread.EgressMemberId.String,
+			Name:     thread.EgressMemberName.String,
+		}
+	}
+
 	resp := ThreadChatResp{
-		ThreadId:  thread.ThreadId,
-		Sequence:  thread.Sequence,
-		Status:    thread.Status,
-		Read:      thread.Read,
-		Replied:   thread.Replied,
-		Priority:  thread.Priority,
-		Customer:  threadCustomer,
-		Assignee:  threadAssignee,
-		Title:     thread.Title,
-		Summary:   thread.Summary,
-		Spam:      thread.Spam,
-		Channel:   thread.Channel,
-		CreatedAt: thread.CreatedAt,
-		UpdatedAt: thread.UpdatedAt,
-		Chat:      chatResp,
+		ThreadId:        thread.ThreadId,
+		Customer:        threadCustomer,
+		Title:           thread.Title,
+		Description:     thread.Description,
+		Sequence:        thread.Sequence,
+		Status:          thread.Status,
+		Read:            thread.Read,
+		Replied:         thread.Replied,
+		Priority:        thread.Priority,
+		Spam:            thread.Spam,
+		Channel:         thread.Channel,
+		PreviewText:     thread.PreviewText,
+		Assignee:        threadAssignee,
+		IngressCustomer: ingressCustomer,
+		EgressMember:    egressMember,
+		CreatedAt:       thread.CreatedAt,
+		UpdatedAt:       thread.UpdatedAt,
+		Chat:            chatResp,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -509,41 +529,10 @@ func (h *CustomerHandler) handleCreateCustomerThChat(w http.ResponseWriter, r *h
 
 func (h *CustomerHandler) handleGetCustomerThChats(w http.ResponseWriter, r *http.Request, customer *models.Customer) {
 	ctx := r.Context()
-	workspace, err := h.ws.GetWorkspace(ctx, customer.WorkspaceId)
-	if errors.Is(err, services.ErrWorkspaceNotFound) {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
 
+	threads, err := h.ths.ListCustomerThreadChats(ctx, customer.CustomerId, nil)
 	if err != nil {
-		slog.Error(
-			"failed to get workspace by id "+
-				"something went wrong",
-			slog.String("workspaceId", customer.WorkspaceId),
-		)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	threads, err := h.ths.ListCustomerThreadChats(ctx, workspace.WorkspaceId, customer.CustomerId)
-	if errors.Is(err, services.ErrThreadChat) {
-		slog.Error(
-			"failed to get list of thread chats for customer "+
-				"perhaps a failed query or mapping",
-			slog.String("customerId", customer.CustomerId),
-			slog.String("workspaceId", workspace.WorkspaceId),
-		)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	if err != nil {
-		slog.Error(
-			"failed to get list of thread chats for customer "+
-				"something went wrong",
-			slog.String("customerId", customer.CustomerId),
-			slog.String("workspaceId", workspace.WorkspaceId),
-		)
+		slog.Error("failed to fetch thread chats", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -551,9 +540,15 @@ func (h *CustomerHandler) handleGetCustomerThChats(w http.ResponseWriter, r *htt
 	items := make([]ThreadResp, 0, 100)
 
 	for _, thread := range threads {
+		var threadCustomer ThCustomerResp
 		var threadAssignee *ThMemberResp
-		var threadCustomer *ThCustomerResp
-		var threadMember *ThMemberResp
+		var ingressCustomer *ThCustomerResp
+		var egressMember *ThMemberResp
+
+		threadCustomer = ThCustomerResp{
+			CustomerId: thread.CustomerId,
+			Name:       thread.CustomerName,
+		}
 
 		if thread.AssigneeId.Valid {
 			threadAssignee = &ThMemberResp{
@@ -562,36 +557,40 @@ func (h *CustomerHandler) handleGetCustomerThChats(w http.ResponseWriter, r *htt
 			}
 		}
 
-		if thread.MessageCustomerId.Valid {
-			threadCustomer = &ThCustomerResp{
-				CustomerId: thread.MessageCustomerId.String,
-				Name:       thread.MessageCustomerName.String,
-			}
-		} else if thread.MessageMemberId.Valid {
-			threadMember = &ThMemberResp{
-				MemberId: thread.MessageMemberId.String,
-				Name:     thread.MessageMemberName.String,
+		if thread.IngressMessageId.Valid {
+			ingressCustomer = &ThCustomerResp{
+				CustomerId: thread.IngressCustomerId.String,
+				Name:       thread.IngressCustomerName.String,
 			}
 		}
-		items = append(items, ThreadResp{
+
+		if thread.EgressMessageId.Valid {
+			egressMember = &ThMemberResp{
+				MemberId: thread.EgressMemberId.String,
+				Name:     thread.EgressMemberName.String,
+			}
+		}
+
+		resp := ThreadResp{
 			ThreadId:        thread.ThreadId,
+			Customer:        threadCustomer,
+			Title:           thread.Title,
+			Description:     thread.Description,
 			Sequence:        thread.Sequence,
 			Status:          thread.Status,
 			Read:            thread.Read,
 			Replied:         thread.Replied,
 			Priority:        thread.Priority,
-			Assignee:        threadAssignee,
-			Title:           thread.Title,
-			Summary:         thread.Summary,
 			Spam:            thread.Spam,
 			Channel:         thread.Channel,
-			Body:            thread.MessageBody,
-			MessageSequence: thread.MessageSequence,
-			Customer:        threadCustomer,
-			Member:          threadMember,
+			PreviewText:     thread.PreviewText,
+			Assignee:        threadAssignee,
+			IngressCustomer: ingressCustomer,
+			EgressMember:    egressMember,
 			CreatedAt:       thread.CreatedAt,
 			UpdatedAt:       thread.UpdatedAt,
-		})
+		}
+		items = append(items, resp)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -615,7 +614,7 @@ func (h *CustomerHandler) handleCreateThChatMessage(w http.ResponseWriter, r *ht
 
 	threadId := r.PathValue("threadId")
 
-	var message ThChatReqPayload
+	var message ThChatReq
 
 	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
@@ -641,8 +640,9 @@ func (h *CustomerHandler) handleCreateThChatMessage(w http.ResponseWriter, r *ht
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	thread, err := h.ths.GetWorkspaceThread(ctx, workspace.WorkspaceId, threadId)
 
+	channel := models.ThreadChannel{}.Chat()
+	thread, err := h.ths.GetWorkspaceThread(ctx, workspace.WorkspaceId, threadId, &channel)
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -658,7 +658,7 @@ func (h *CustomerHandler) handleCreateThChatMessage(w http.ResponseWriter, r *ht
 		return
 	}
 
-	chat, err := h.ths.AddCustomerMessageToThread(ctx, thread.ThreadId, customer.CustomerId, message.Message)
+	chat, err := h.ths.AddCustomerMessage(ctx, thread.ThreadId, customer.CustomerId, message.Message)
 	if err != nil {
 		slog.Error(
 			"failed to create thread chat message for customer "+
@@ -730,7 +730,9 @@ func (h *CustomerHandler) handleGetThChatMesssages(w http.ResponseWriter, r *htt
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	thread, err := h.ths.GetWorkspaceThread(ctx, workspace.WorkspaceId, threadId)
+
+	channel := models.ThreadChannel{}.Chat()
+	thread, err := h.ths.GetWorkspaceThread(ctx, workspace.WorkspaceId, threadId, &channel)
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return

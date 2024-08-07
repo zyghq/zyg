@@ -95,18 +95,21 @@ type CustomerServicer interface {
 }
 
 type ThreadServicer interface {
-	CreateThreadInAppChat(
+	CreateInboundThreadChat(
 		ctx context.Context, workspaceId string, customerId string, message string) (models.Thread, models.Chat, error)
 	GetWorkspaceThread(
-		ctx context.Context, workspaceId string, threadId string) (models.Thread, error)
+		ctx context.Context, workspaceId string, threadId string, channel *string) (models.Thread, error)
 	UpdateThread(
 		ctx context.Context, thread models.Thread, fields []string) (models.Thread, error)
-	ListCustomerThreadChats(ctx context.Context, workspaceId string, customerId string) ([]models.Thread, error)
-	AssignMemberToThread(ctx context.Context, threadId string, assigneeId string) (models.Thread, error)
-	SetThreadReplyStatus(ctx context.Context, threadId string, replied bool) (models.Thread, error)
+	ListCustomerThreadChats(
+		ctx context.Context, customerId string, role *string) ([]models.Thread, error)
+	AssignMember(
+		ctx context.Context, threadId string, assigneeId string) (models.Thread, error)
+	SetReplyStatus(
+		ctx context.Context, threadId string, replied bool) (models.Thread, error)
 	ListWorkspaceThreadChats(
 		ctx context.Context, workspaceId string) ([]models.Thread, error)
-	ListMemberAssignedThreadChats(
+	ListMemberThreadChats(
 		ctx context.Context, memberId string) ([]models.Thread, error)
 	ListUnassignedThreadChats(
 		ctx context.Context, workspaceId string) ([]models.Thread, error)
@@ -114,11 +117,12 @@ type ThreadServicer interface {
 		ctx context.Context, labelId string) ([]models.Thread, error)
 	ThreadExistsInWorkspace(
 		ctx context.Context, workspaceId string, threadId string) (bool, error)
-	AttachLabelToThread(
+	SetLabel(
 		ctx context.Context, threadId string, labelId string, addedBy string) (models.ThreadLabel, bool, error)
 	ListThreadLabels(ctx context.Context, threadChatId string) ([]models.ThreadLabel, error)
-	AddCustomerMessageToThread(ctx context.Context, threadId string, customerId string, message string) (models.Chat, error)
-	AddMemberMessageToThreadChat(
+	AddCustomerMessage(
+		ctx context.Context, threadId string, customerId string, message string) (models.Chat, error)
+	AddMemberMessage(
 		ctx context.Context, threadId string, memberId string, message string) (models.Chat, error)
 	ListThreadChatMessages(
 		ctx context.Context, threadId string) ([]models.Chat, error)
@@ -203,31 +207,32 @@ type CustomerRepositorer interface {
 }
 
 type ThreadRepositorer interface {
-	InsertInAppThreadChat(ctx context.Context, th models.Thread, chat models.Chat) (models.Thread, models.Chat, error) // done
+	InsertInboundThreadChat(
+		ctx context.Context, inbound models.IngressMessage,
+		thread models.Thread, chat models.Chat) (models.Thread, models.Chat, error)
 	LookupByWorkspaceThreadId(
-		ctx context.Context, workspaceId string, threadId string) (models.Thread, error)
+		ctx context.Context, workspaceId string, threadId string, channel *string) (models.Thread, error)
 	ModifyThreadById(
 		ctx context.Context, thread models.Thread, fields []string) (models.Thread, error)
-	// todo: rename FetchThChatsByCustomerId remove workspaceId
-	RetrieveWorkspaceThChatsByCustomerId(
-		ctx context.Context, workspaceId string, customerId string,
-	) ([]models.Thread, error)
+	FetchThreadsByCustomerId(
+		ctx context.Context, customerId string, channel *string, role *string) ([]models.Thread, error)
 	UpdateAssignee(ctx context.Context, threadId string, assigneeId string) (models.Thread, error)
-	UpdateRepliedStatus(ctx context.Context, threadId string, replied bool) (models.Thread, error)
-	FetchThChatsByWorkspaceId(
-		ctx context.Context, workspaceId string) ([]models.Thread, error)
-	FetchAssignedThChatsByMemberId(
-		ctx context.Context, memberId string) ([]models.Thread, error)
-	FetchUnassignedThChatsByWorkspaceId(
-		ctx context.Context, workspaceId string) ([]models.Thread, error)
-	FetchThChatsByLabelId(
-		ctx context.Context, labelId string) ([]models.Thread, error)
+	UpdateRepliedState(
+		ctx context.Context, threadId string, replied bool) (models.Thread, error)
+	FetchThreadsByWorkspaceId(
+		ctx context.Context, workspaceId string, channel *string, role *string) ([]models.Thread, error)
+	FetchThreadsByAssignedMemberId(
+		ctx context.Context, memberId string, channel *string, role *string) ([]models.Thread, error)
+	FetchThreadsByMemberUnassigned(
+		ctx context.Context, workspaceId string, channel *string, role *string) ([]models.Thread, error)
+	FetchThreadsByLabelId(
+		ctx context.Context, labelId string, channel *string, role *string) ([]models.Thread, error)
 	CheckWorkspaceExistenceByThreadId(
 		ctx context.Context, workspaceId string, threadId string) (bool, error)
 	SetLabelToThread(
 		ctx context.Context, thl models.ThreadLabel) (models.ThreadLabel, bool, error)
 	RetrieveLabelsByThreadId(ctx context.Context, threadId string) ([]models.ThreadLabel, error)
-	InsertCustomerMessage(ctx context.Context, chat models.Chat) (models.Chat, error)
+	InsertCustomerChat(ctx context.Context, chat models.Chat) (models.Chat, error)
 	InsertThChatMemberMessage(
 		ctx context.Context, chat models.Chat) (models.Chat, error)
 	FetchThChatMessagesByThreadId(

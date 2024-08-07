@@ -115,186 +115,6 @@ type NewLabelReq struct {
 	Icon string `json:"icon"`
 }
 
-type ThCustomerRespPayload struct {
-	CustomerId string
-	Name       sql.NullString
-}
-
-type ThMemberRespPayload struct {
-	MemberId string
-	Name     sql.NullString
-}
-
-func (m ThMemberRespPayload) MarshalJSON() ([]byte, error) {
-	var name *string
-	if m.Name.Valid {
-		name = &m.Name.String
-	}
-	aux := &struct {
-		MemberId string  `json:"memberId"`
-		Name     *string `json:"name"`
-	}{
-		MemberId: m.MemberId,
-		Name:     name,
-	}
-	return json.Marshal(aux)
-}
-
-func (c ThCustomerRespPayload) MarshalJSON() ([]byte, error) {
-	var name *string
-	if c.Name.Valid {
-		name = &c.Name.String
-	}
-	aux := &struct {
-		CustomerId string  `json:"customerId"`
-		Name       *string `json:"name"`
-	}{
-		CustomerId: c.CustomerId,
-		Name:       name,
-	}
-	return json.Marshal(aux)
-}
-
-type ThChatMessageRespPayload struct {
-	ThreadChatId        string
-	ThreadChatMessageId string
-	Body                string
-	Sequence            int
-	Customer            *ThCustomerRespPayload
-	Member              *ThMemberRespPayload
-	CreatedAt           time.Time
-	UpdatedAt           time.Time
-}
-
-func (thcresp ThChatMessageRespPayload) MarshalJSON() ([]byte, error) {
-	var customer *ThCustomerRespPayload
-	var member *ThMemberRespPayload
-
-	if thcresp.Customer != nil {
-		customer = thcresp.Customer
-	}
-
-	if thcresp.Member != nil {
-		member = thcresp.Member
-	}
-
-	aux := &struct {
-		ThreadChatId        string                 `json:"threadChatId"`
-		ThreadChatMessageId string                 `json:"threadChatMessageId"`
-		Body                string                 `json:"body"`
-		Sequence            int                    `json:"sequence"`
-		Customer            *ThCustomerRespPayload `json:"customer,omitempty"`
-		Member              *ThMemberRespPayload   `json:"member,omitempty"`
-		CreatedAt           string                 `json:"createdAt"`
-		UpdatedAt           string                 `json:"updatedAt"`
-	}{
-		ThreadChatId:        thcresp.ThreadChatId,
-		ThreadChatMessageId: thcresp.ThreadChatMessageId,
-		Body:                thcresp.Body,
-		Sequence:            thcresp.Sequence,
-		Customer:            customer,
-		Member:              member,
-		CreatedAt:           thcresp.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:           thcresp.UpdatedAt.Format(time.RFC3339),
-	}
-	return json.Marshal(aux)
-}
-
-type ThChatRespPayload struct {
-	ThreadChatId string
-	Sequence     int
-	Status       string
-	Read         bool
-	Replied      bool
-	Priority     string
-	Customer     ThCustomerRespPayload
-	Assignee     *ThMemberRespPayload
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	Messages     []ThChatMessageRespPayload
-}
-
-func (th ThChatRespPayload) MarshalJSON() ([]byte, error) {
-	var assignee *ThMemberRespPayload
-
-	if th.Assignee != nil {
-		assignee = th.Assignee
-	}
-
-	aux := &struct {
-		ThreadChatId string                     `json:"threadChatId"`
-		Sequence     int                        `json:"sequence"`
-		Status       string                     `json:"status"`
-		Read         bool                       `json:"read"`
-		Replied      bool                       `json:"replied"`
-		Priority     string                     `json:"priority"`
-		Customer     ThCustomerRespPayload      `json:"customer"`
-		Assignee     *ThMemberRespPayload       `json:"assignee"`
-		CreatedAt    string                     `json:"createdAt"`
-		UpdatedAt    string                     `json:"updatedAt"`
-		Messages     []ThChatMessageRespPayload `json:"messages"`
-	}{
-		ThreadChatId: th.ThreadChatId,
-		Sequence:     th.Sequence,
-		Status:       th.Status,
-		Read:         th.Read,
-		Replied:      th.Replied,
-		Priority:     th.Priority,
-		Customer:     th.Customer,
-		Assignee:     assignee,
-		CreatedAt:    th.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:    th.UpdatedAt.Format(time.RFC3339),
-		Messages:     th.Messages,
-	}
-	return json.Marshal(aux)
-}
-
-// type ThChatUpdateRespPayload struct {
-// 	ThreadChatId string
-// 	Sequence     int
-// 	Status       string
-// 	Read         bool
-// 	Replied      bool
-// 	Priority     string
-// 	Customer     ThCustomerRespPayload
-// 	Assignee     *ThMemberRespPayload
-// 	CreatedAt    time.Time
-// 	UpdatedAt    time.Time
-// }
-
-// func (th ThChatUpdateRespPayload) MarshalJSON() ([]byte, error) {
-// 	var assignee *ThMemberRespPayload
-
-// 	if th.Assignee != nil {
-// 		assignee = th.Assignee
-// 	}
-
-// 	aux := &struct {
-// 		ThreadChatId string                `json:"threadChatId"`
-// 		Sequence     int                   `json:"sequence"`
-// 		Status       string                `json:"status"`
-// 		Read         bool                  `json:"read"`
-// 		Replied      bool                  `json:"replied"`
-// 		Priority     string                `json:"priority"`
-// 		Customer     ThCustomerRespPayload `json:"customer"`
-// 		Assignee     *ThMemberRespPayload  `json:"assignee"`
-// 		CreatedAt    string                `json:"createdAt"`
-// 		UpdatedAt    string                `json:"updatedAt"`
-// 	}{
-// 		ThreadChatId: th.ThreadChatId,
-// 		Sequence:     th.Sequence,
-// 		Status:       th.Status,
-// 		Read:         th.Read,
-// 		Replied:      th.Replied,
-// 		Priority:     th.Priority,
-// 		Customer:     th.Customer,
-// 		Assignee:     assignee,
-// 		CreatedAt:    th.CreatedAt.Format(time.RFC3339),
-// 		UpdatedAt:    th.UpdatedAt.Format(time.RFC3339),
-// 	}
-// 	return json.Marshal(aux)
-// }
-
 type ThChatReq struct {
 	Message string `json:"message"`
 }
@@ -318,7 +138,7 @@ type ThreadLabelCountResp struct {
 	Count   int    `json:"count"`
 }
 
-type ThreadCountRespPayload struct {
+type ThreadCountResp struct {
 	ActiveCount   int                    `json:"active"`
 	DoneCount     int                    `json:"done"`
 	TodoCount     int                    `json:"todo"`
@@ -329,8 +149,8 @@ type ThreadCountRespPayload struct {
 	Labels        []ThreadLabelCountResp `json:"labels"`
 }
 
-type ThreadMetricsRespPayload struct {
-	Count ThreadCountRespPayload `json:"count"`
+type ThreadMetricsResp struct {
+	Count ThreadCountResp `json:"count"`
 }
 
 type CreateWidgetReq struct {
@@ -416,75 +236,107 @@ func (m ThMemberResp) MarshalJSON() ([]byte, error) {
 
 type ThreadResp struct {
 	ThreadId        string
+	Customer        ThCustomerResp
+	Title           string
+	Description     string
 	Sequence        int
 	Status          string
 	Read            bool
 	Replied         bool
 	Priority        string
-	Assignee        *ThMemberResp
-	Title           string
-	Summary         string
 	Spam            bool
 	Channel         string
-	Body            string
-	MessageSequence int
-	Customer        *ThCustomerResp
-	Member          *ThMemberResp
+	PreviewText     string
+	Assignee        *ThMemberResp
+	IngressFirstSeq sql.NullInt64
+	IngressLastSeq  sql.NullInt64
+	IngressCustomer *ThCustomerResp
+	EgressFirstSeq  sql.NullInt64
+	EgressLastSeq   sql.NullInt64
+	EgressMember    *ThMemberResp
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
 
 func (t ThreadResp) MarshalJSON() ([]byte, error) {
+	var customer ThCustomerResp
 	var assignee *ThMemberResp
-	var customer *ThCustomerResp
-	var member *ThMemberResp
+	var ingressCustomer *ThCustomerResp
+	var egressMember *ThMemberResp
+
+	var ingressFirstSeq, ingressLastSeq *int64
+	var egressFirstSeq, egressLastSeq *int64
 
 	if t.Assignee != nil {
 		assignee = t.Assignee
 	}
 
-	if t.Customer != nil {
-		customer = t.Customer
+	if t.IngressCustomer != nil {
+		ingressCustomer = t.IngressCustomer
 	}
 
-	if t.Member != nil {
-		member = t.Member
+	if t.EgressMember != nil {
+		egressMember = t.EgressMember
+	}
+
+	if t.IngressFirstSeq.Valid {
+		ingressFirstSeq = &t.IngressFirstSeq.Int64
+	}
+
+	if t.IngressLastSeq.Valid {
+		ingressLastSeq = &t.IngressLastSeq.Int64
+	}
+
+	if t.EgressFirstSeq.Valid {
+		egressFirstSeq = &t.EgressFirstSeq.Int64
+	}
+
+	if t.EgressLastSeq.Valid {
+		egressLastSeq = &t.EgressLastSeq.Int64
 	}
 
 	aux := &struct {
 		ThreadId        string          `json:"threadId"`
+		Customer        ThCustomerResp  `json:"customer"`
+		Title           string          `json:"title"`
+		Description     string          `json:"description"`
 		Sequence        int             `json:"sequence"`
 		Status          string          `json:"status"`
 		Read            bool            `json:"read"`
 		Replied         bool            `json:"replied"`
 		Priority        string          `json:"priority"`
-		Assignee        *ThMemberResp   `json:"assignee"`
-		Title           string          `json:"title"`
-		Summary         string          `json:"summary"`
 		Spam            bool            `json:"spam"`
 		Channel         string          `json:"channel"`
-		Body            string          `json:"body"`
-		MessageSequence int             `json:"messageSequence"`
-		Customer        *ThCustomerResp `json:"customer,omitempty"`
-		Member          *ThMemberResp   `json:"member,omitempty"`
+		PreviewText     string          `json:"previewText"`
+		Assignee        *ThMemberResp   `json:"assignee,omitempty"`
+		IngressFirstSeq *int64          `json:"ingressFirstSeq,omitempty"`
+		IngressLastSeq  *int64          `json:"ingressLastSeq,omitempty"`
+		IngressCustomer *ThCustomerResp `json:"ingressCustomer,omitempty"`
+		EgressFirstSeq  *int64          `json:"egressFirstSeq,omitempty"`
+		EgressLastSeq   *int64          `json:"egressLastSeq,omitempty"`
+		EgressMember    *ThMemberResp   `json:"egressMember,omitempty"`
 		CreatedAt       string          `json:"createdAt"`
 		UpdatedAt       string          `json:"updatedAt"`
 	}{
 		ThreadId:        t.ThreadId,
+		Customer:        customer,
+		Title:           t.Title,
+		Description:     t.Description,
 		Sequence:        t.Sequence,
 		Status:          t.Status,
 		Read:            t.Read,
 		Replied:         t.Replied,
 		Priority:        t.Priority,
-		Assignee:        assignee,
-		Title:           t.Title,
-		Summary:         t.Summary,
 		Spam:            t.Spam,
 		Channel:         t.Channel,
-		Body:            t.Body,
-		MessageSequence: t.MessageSequence,
-		Customer:        customer,
-		Member:          member,
+		PreviewText:     t.PreviewText,
+		Assignee:        assignee,
+		IngressFirstSeq: ingressFirstSeq,
+		IngressLastSeq:  ingressLastSeq,
+		IngressCustomer: ingressCustomer,
+		EgressFirstSeq:  egressFirstSeq,
+		EgressLastSeq:   egressLastSeq,
+		EgressMember:    egressMember,
 		CreatedAt:       t.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:       t.UpdatedAt.Format(time.RFC3339),
 	}

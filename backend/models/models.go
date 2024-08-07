@@ -164,10 +164,6 @@ func (a LabelAddedBy) Ai() string {
 	return "ai"
 }
 
-func (a LabelAddedBy) AiAssist() string {
-	return "aiassist"
-}
-
 type Account struct {
 	AccountId  string
 	Email      string
@@ -428,6 +424,32 @@ func (c Customer) DeAnonExternalId() string {
 	return c.ExternalId.String
 }
 
+type IngressMessage struct {
+	MessageId  string
+	CustomerId string
+	FirstSeq   int
+	LastSeq    int
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+}
+
+func (im IngressMessage) GenId() string {
+	return "im" + xid.New().String()
+}
+
+type EgressMessage struct {
+	MessageId string
+	MemberId  string
+	FirstSeq  int
+	LastSeq   int
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func (em EgressMessage) GenId() string {
+	return "em" + xid.New().String()
+}
+
 type Thread struct {
 	WorkspaceId         string
 	ThreadId            string
@@ -436,7 +458,7 @@ type Thread struct {
 	AssigneeId          sql.NullString
 	AssigneeName        sql.NullString
 	Title               string
-	Summary             string
+	Description         string
 	Sequence            int
 	Status              string
 	Read                bool
@@ -444,12 +466,17 @@ type Thread struct {
 	Priority            string
 	Spam                bool
 	Channel             string
-	MessageBody         string
-	MessageSequence     int
-	MessageCustomerId   sql.NullString
-	MessageCustomerName sql.NullString
-	MessageMemberId     sql.NullString
-	MessageMemberName   sql.NullString
+	PreviewText         string
+	IngressMessageId    sql.NullString
+	IngressFirstSeq     sql.NullInt64
+	IngressLastSeq      sql.NullInt64
+	IngressCustomerId   sql.NullString
+	IngressCustomerName sql.NullString
+	EgressMessageId     sql.NullString
+	EgressFirstSeq      sql.NullInt64
+	EgressLastSeq       sql.NullInt64
+	EgressMemberId      sql.NullString
+	EgressMemberName    sql.NullString
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
 }
@@ -473,11 +500,14 @@ type Chat struct {
 }
 
 func (c Chat) GenId() string {
-	return "ch_" + xid.New().String()
+	return "ch" + xid.New().String()
 }
 
 func (c Chat) PreviewBody() string {
-	return c.Body[:255]
+	if len(c.Body) > 255 {
+		return c.Body[:255]
+	}
+	return c.Body
 }
 
 func (l Label) MarshalJSON() ([]byte, error) {

@@ -124,6 +124,7 @@ CREATE TABLE thread_qa (
     title TEXT NOT NULL,
     summary TEXT NOT NULL,
     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -142,6 +143,7 @@ CREATE TABLE thread_qa_answer (
     answer TEXT NOT NULL,
     eval INT NULL DEFAULT NULL,
     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -173,30 +175,50 @@ CREATE TABLE thread_qa_answer (
 --     CONSTRAINT thread_chat_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES member (member_id)
 -- );
 
+
+CREATE TABLE ingress_message (
+    message_id VARCHAR(255) NOT NULL,
+    customer_id VARCHAR(255) NOT NULL,
+    first_sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+    last_sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT ingress_message_message_id_pkey PRIMARY KEY (message_id),
+    CONSTRAINT ingress_message_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id)
+);
+
+CREATE TABLE egress_message (
+    message_id VARCHAR(255) NOT NULL,
+    member_id VARCHAR(255) NOT NULL,
+    first_sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+    last_sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT egress_message_message_id_pkey PRIMARY KEY (message_id),
+    CONSTRAINT egress_message_member_id_fkey FOREIGN KEY (member_id) REFERENCES member (member_id)
+);
+
 CREATE TABLE thread (
     thread_id VARCHAR(255) NOT NULL, 
     workspace_id VARCHAR(255) NOT NULL,
     customer_id VARCHAR(255) NOT NULL,
     assignee_id VARCHAR(255) NULL,
-    -- add a field for `assigned_at`
     title TEXT NOT NULL,
-    -- lets rename this to `description` - more generic nature
-    summary TEXT NOT NULL,
+    description TEXT NOT NULL,
     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
     status VARCHAR(127) NOT NULL, -- status of the thread
     read BOOLEAN NOT NULL DEFAULT FALSE,  -- read by the member
     replied BOOLEAN NOT NULL DEFAULT FALSE,  -- replied by the member
     priority VARCHAR(255) NOT NULL, -- priority of the thread
     spam BOOLEAN NOT NULL DEFAULT FALSE, -- spam flag
-
     channel VARCHAR(127) NOT NULL, -- channel of the thread
-
-    -- rename `message_body` to `preview_text`
-    message_body TEXT NOT NULL, -- body of the message
-    
-    message_sequence BIGINT NOT NULL DEFAULT fn_next_id(), -- sequence number of the message
-    message_customer_id VARCHAR(255) NULL, -- fk to customer if message is customer specific
-    message_member_id VARCHAR(255) NULL, -- fk to member if message is member specific
+    preview_text TEXT NOT NULL, -- preview text of the message
+    ingress_message_id VARCHAR(255) NULL, -- fk to ingress_message
+    egress_message_id VARCHAR(255) NULL, -- fk to egress_message
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -204,7 +226,9 @@ CREATE TABLE thread (
     CONSTRAINT thread_thread_id_pkey PRIMARY KEY (thread_id),
     CONSTRAINT thread_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
     CONSTRAINT thread_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
-    CONSTRAINT thread_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES member (member_id)
+    CONSTRAINT thread_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES member (member_id),
+    CONSTRAINT thread_ingress_message_id_fkey FOREIGN KEY (ingress_message_id) REFERENCES ingress_message (message_id),
+    CONSTRAINT thread_egress_message_id_fkey FOREIGN KEY (egress_message_id) REFERENCES egress_message (message_id)
 );
 
 

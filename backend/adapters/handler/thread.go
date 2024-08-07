@@ -37,10 +37,17 @@ func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.
 	}
 
 	items := make([]ThreadResp, 0, 100)
+
 	for _, thread := range threads {
+		var threadCustomer ThCustomerResp
 		var threadAssignee *ThMemberResp
-		var threadCustomer *ThCustomerResp
-		var threadMember *ThMemberResp
+		var ingressCustomer *ThCustomerResp
+		var egressMember *ThMemberResp
+
+		threadCustomer = ThCustomerResp{
+			CustomerId: thread.CustomerId,
+			Name:       thread.CustomerName,
+		}
 
 		if thread.AssigneeId.Valid {
 			threadAssignee = &ThMemberResp{
@@ -49,36 +56,40 @@ func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.
 			}
 		}
 
-		if thread.MessageCustomerId.Valid {
-			threadCustomer = &ThCustomerResp{
-				CustomerId: thread.MessageCustomerId.String,
-				Name:       thread.MessageCustomerName.String,
-			}
-		} else if thread.MessageMemberId.Valid {
-			threadMember = &ThMemberResp{
-				MemberId: thread.MessageMemberId.String,
-				Name:     thread.MessageMemberName.String,
+		if thread.IngressMessageId.Valid {
+			ingressCustomer = &ThCustomerResp{
+				CustomerId: thread.IngressCustomerId.String,
+				Name:       thread.IngressCustomerName.String,
 			}
 		}
-		items = append(items, ThreadResp{
+
+		if thread.EgressMessageId.Valid {
+			egressMember = &ThMemberResp{
+				MemberId: thread.EgressMemberId.String,
+				Name:     thread.EgressMemberName.String,
+			}
+		}
+
+		resp := ThreadResp{
 			ThreadId:        thread.ThreadId,
+			Customer:        threadCustomer,
+			Title:           thread.Title,
+			Description:     thread.Description,
 			Sequence:        thread.Sequence,
 			Status:          thread.Status,
 			Read:            thread.Read,
 			Replied:         thread.Replied,
 			Priority:        thread.Priority,
-			Assignee:        threadAssignee,
-			Title:           thread.Title,
-			Summary:         thread.Summary,
 			Spam:            thread.Spam,
 			Channel:         thread.Channel,
-			Body:            thread.MessageBody,
-			MessageSequence: thread.MessageSequence,
-			Customer:        threadCustomer,
-			Member:          threadMember,
+			PreviewText:     thread.PreviewText,
+			Assignee:        threadAssignee,
+			IngressCustomer: ingressCustomer,
+			EgressMember:    egressMember,
 			CreatedAt:       thread.CreatedAt,
 			UpdatedAt:       thread.UpdatedAt,
-		})
+		}
+		items = append(items, resp)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -90,7 +101,6 @@ func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.
 	}
 }
 
-// TODO: add support for new fields
 func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
@@ -108,8 +118,8 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
-
-	thread, err := h.ths.GetWorkspaceThread(ctx, workspaceId, threadId)
+	channel := models.ThreadChannel{}.Chat()
+	thread, err := h.ths.GetWorkspaceThread(ctx, workspaceId, threadId, &channel)
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -178,6 +188,42 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 		}
 	}
 
+	if read, found := reqp["read"]; found {
+		if read == nil {
+			// set default read
+			thread.Read = false
+			fields = append(fields, "read")
+		} else {
+			read := read.(bool)
+			thread.Read = read
+			fields = append(fields, "read")
+		}
+	}
+
+	if replied, found := reqp["replied"]; found {
+		if replied == nil {
+			// set default replied
+			thread.Replied = false
+			fields = append(fields, "replied")
+		} else {
+			replied := replied.(bool)
+			thread.Replied = replied
+			fields = append(fields, "replied")
+		}
+	}
+
+	if spam, found := reqp["spam"]; found {
+		if spam == nil {
+			// set default spam
+			thread.Spam = false
+			fields = append(fields, "spam")
+		} else {
+			spam := spam.(bool)
+			thread.Spam = spam
+			fields = append(fields, "spam")
+		}
+	}
+
 	thread, err = h.ths.UpdateThread(ctx, thread, fields)
 	if err != nil {
 		slog.Error("failed to update thread", slog.Any("err", err))
@@ -185,9 +231,15 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 		return
 	}
 
+	var threadCustomer ThCustomerResp
 	var threadAssignee *ThMemberResp
-	var threadCustomer *ThCustomerResp
-	var threadMember *ThMemberResp
+	var ingressCustomer *ThCustomerResp
+	var egressMember *ThMemberResp
+
+	threadCustomer = ThCustomerResp{
+		CustomerId: thread.CustomerId,
+		Name:       thread.CustomerName,
+	}
 
 	if thread.AssigneeId.Valid {
 		threadAssignee = &ThMemberResp{
@@ -196,34 +248,36 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 		}
 	}
 
-	if thread.MessageCustomerId.Valid {
-		threadCustomer = &ThCustomerResp{
-			CustomerId: thread.MessageCustomerId.String,
-			Name:       thread.MessageCustomerName.String,
+	if thread.IngressMessageId.Valid {
+		ingressCustomer = &ThCustomerResp{
+			CustomerId: thread.IngressCustomerId.String,
+			Name:       thread.IngressCustomerName.String,
 		}
-	} else if thread.MessageMemberId.Valid {
-		threadMember = &ThMemberResp{
-			MemberId: thread.MessageMemberId.String,
-			Name:     thread.MessageMemberName.String,
+	}
+
+	if thread.EgressMessageId.Valid {
+		egressMember = &ThMemberResp{
+			MemberId: thread.EgressMemberId.String,
+			Name:     thread.EgressMemberName.String,
 		}
 	}
 
 	resp := ThreadResp{
 		ThreadId:        thread.ThreadId,
+		Customer:        threadCustomer,
+		Title:           thread.Title,
+		Description:     thread.Description,
 		Sequence:        thread.Sequence,
 		Status:          thread.Status,
 		Read:            thread.Read,
 		Replied:         thread.Replied,
 		Priority:        thread.Priority,
-		Assignee:        threadAssignee,
-		Title:           thread.Title,
-		Summary:         thread.Summary,
 		Spam:            thread.Spam,
 		Channel:         thread.Channel,
-		Body:            thread.MessageBody,
-		MessageSequence: thread.MessageSequence,
-		Customer:        threadCustomer,
-		Member:          threadMember,
+		PreviewText:     thread.PreviewText,
+		Assignee:        threadAssignee,
+		IngressCustomer: ingressCustomer,
+		EgressMember:    egressMember,
 		CreatedAt:       thread.CreatedAt,
 		UpdatedAt:       thread.UpdatedAt,
 	}
@@ -255,7 +309,7 @@ func (h *ThreadChatHandler) handleGetMyThreadChats(w http.ResponseWriter, r *htt
 
 	}
 
-	threads, err := h.ths.ListMemberAssignedThreadChats(ctx, member.MemberId)
+	threads, err := h.ths.ListMemberThreadChats(ctx, member.MemberId)
 	if err != nil {
 		slog.Error("failed to fetch assigned threads", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -265,9 +319,15 @@ func (h *ThreadChatHandler) handleGetMyThreadChats(w http.ResponseWriter, r *htt
 	items := make([]ThreadResp, 0, 100)
 
 	for _, thread := range threads {
+		var threadCustomer ThCustomerResp
 		var threadAssignee *ThMemberResp
-		var threadCustomer *ThCustomerResp
-		var threadMember *ThMemberResp
+		var ingressCustomer *ThCustomerResp
+		var egressMember *ThMemberResp
+
+		threadCustomer = ThCustomerResp{
+			CustomerId: thread.CustomerId,
+			Name:       thread.CustomerName,
+		}
 
 		if thread.AssigneeId.Valid {
 			threadAssignee = &ThMemberResp{
@@ -276,36 +336,40 @@ func (h *ThreadChatHandler) handleGetMyThreadChats(w http.ResponseWriter, r *htt
 			}
 		}
 
-		if thread.MessageCustomerId.Valid {
-			threadCustomer = &ThCustomerResp{
-				CustomerId: thread.MessageCustomerId.String,
-				Name:       thread.MessageCustomerName.String,
-			}
-		} else if thread.MessageMemberId.Valid {
-			threadMember = &ThMemberResp{
-				MemberId: thread.MessageMemberId.String,
-				Name:     thread.MessageMemberName.String,
+		if thread.IngressMessageId.Valid {
+			ingressCustomer = &ThCustomerResp{
+				CustomerId: thread.IngressCustomerId.String,
+				Name:       thread.IngressCustomerName.String,
 			}
 		}
-		items = append(items, ThreadResp{
+
+		if thread.EgressMessageId.Valid {
+			egressMember = &ThMemberResp{
+				MemberId: thread.EgressMemberId.String,
+				Name:     thread.EgressMemberName.String,
+			}
+		}
+
+		resp := ThreadResp{
 			ThreadId:        thread.ThreadId,
+			Customer:        threadCustomer,
+			Title:           thread.Title,
+			Description:     thread.Description,
 			Sequence:        thread.Sequence,
 			Status:          thread.Status,
 			Read:            thread.Read,
 			Replied:         thread.Replied,
 			Priority:        thread.Priority,
-			Assignee:        threadAssignee,
-			Title:           thread.Title,
-			Summary:         thread.Summary,
 			Spam:            thread.Spam,
 			Channel:         thread.Channel,
-			Body:            thread.MessageBody,
-			MessageSequence: thread.MessageSequence,
-			Customer:        threadCustomer,
-			Member:          threadMember,
+			PreviewText:     thread.PreviewText,
+			Assignee:        threadAssignee,
+			IngressCustomer: ingressCustomer,
+			EgressMember:    egressMember,
 			CreatedAt:       thread.CreatedAt,
 			UpdatedAt:       thread.UpdatedAt,
-		})
+		}
+		items = append(items, resp)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -332,9 +396,15 @@ func (h *ThreadChatHandler) handleGetUnassignedThChats(w http.ResponseWriter, r 
 	items := make([]ThreadResp, 0, 100)
 
 	for _, thread := range threads {
+		var threadCustomer ThCustomerResp
 		var threadAssignee *ThMemberResp
-		var threadCustomer *ThCustomerResp
-		var threadMember *ThMemberResp
+		var ingressCustomer *ThCustomerResp
+		var egressMember *ThMemberResp
+
+		threadCustomer = ThCustomerResp{
+			CustomerId: thread.CustomerId,
+			Name:       thread.CustomerName,
+		}
 
 		if thread.AssigneeId.Valid {
 			threadAssignee = &ThMemberResp{
@@ -343,36 +413,40 @@ func (h *ThreadChatHandler) handleGetUnassignedThChats(w http.ResponseWriter, r 
 			}
 		}
 
-		if thread.MessageCustomerId.Valid {
-			threadCustomer = &ThCustomerResp{
-				CustomerId: thread.MessageCustomerId.String,
-				Name:       thread.MessageCustomerName.String,
-			}
-		} else if thread.MessageMemberId.Valid {
-			threadMember = &ThMemberResp{
-				MemberId: thread.MessageMemberId.String,
-				Name:     thread.MessageMemberName.String,
+		if thread.IngressMessageId.Valid {
+			ingressCustomer = &ThCustomerResp{
+				CustomerId: thread.IngressCustomerId.String,
+				Name:       thread.IngressCustomerName.String,
 			}
 		}
-		items = append(items, ThreadResp{
+
+		if thread.EgressMessageId.Valid {
+			egressMember = &ThMemberResp{
+				MemberId: thread.EgressMemberId.String,
+				Name:     thread.EgressMemberName.String,
+			}
+		}
+
+		resp := ThreadResp{
 			ThreadId:        thread.ThreadId,
+			Customer:        threadCustomer,
+			Title:           thread.Title,
+			Description:     thread.Description,
 			Sequence:        thread.Sequence,
 			Status:          thread.Status,
 			Read:            thread.Read,
 			Replied:         thread.Replied,
 			Priority:        thread.Priority,
-			Assignee:        threadAssignee,
-			Title:           thread.Title,
-			Summary:         thread.Summary,
 			Spam:            thread.Spam,
 			Channel:         thread.Channel,
-			Body:            thread.MessageBody,
-			MessageSequence: thread.MessageSequence,
-			Customer:        threadCustomer,
-			Member:          threadMember,
+			PreviewText:     thread.PreviewText,
+			Assignee:        threadAssignee,
+			IngressCustomer: ingressCustomer,
+			EgressMember:    egressMember,
 			CreatedAt:       thread.CreatedAt,
 			UpdatedAt:       thread.UpdatedAt,
-		})
+		}
+		items = append(items, resp)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -413,9 +487,15 @@ func (h *ThreadChatHandler) handleGetLabelledThreadChats(w http.ResponseWriter, 
 	items := make([]ThreadResp, 0, 100)
 
 	for _, thread := range threads {
+		var threadCustomer ThCustomerResp
 		var threadAssignee *ThMemberResp
-		var threadCustomer *ThCustomerResp
-		var threadMember *ThMemberResp
+		var ingressCustomer *ThCustomerResp
+		var egressMember *ThMemberResp
+
+		threadCustomer = ThCustomerResp{
+			CustomerId: thread.CustomerId,
+			Name:       thread.CustomerName,
+		}
 
 		if thread.AssigneeId.Valid {
 			threadAssignee = &ThMemberResp{
@@ -424,36 +504,40 @@ func (h *ThreadChatHandler) handleGetLabelledThreadChats(w http.ResponseWriter, 
 			}
 		}
 
-		if thread.MessageCustomerId.Valid {
-			threadCustomer = &ThCustomerResp{
-				CustomerId: thread.MessageCustomerId.String,
-				Name:       thread.MessageCustomerName.String,
-			}
-		} else if thread.MessageMemberId.Valid {
-			threadMember = &ThMemberResp{
-				MemberId: thread.MessageMemberId.String,
-				Name:     thread.MessageMemberName.String,
+		if thread.IngressMessageId.Valid {
+			ingressCustomer = &ThCustomerResp{
+				CustomerId: thread.IngressCustomerId.String,
+				Name:       thread.IngressCustomerName.String,
 			}
 		}
-		items = append(items, ThreadResp{
+
+		if thread.EgressMessageId.Valid {
+			egressMember = &ThMemberResp{
+				MemberId: thread.EgressMemberId.String,
+				Name:     thread.EgressMemberName.String,
+			}
+		}
+
+		resp := ThreadResp{
 			ThreadId:        thread.ThreadId,
+			Customer:        threadCustomer,
+			Title:           thread.Title,
+			Description:     thread.Description,
 			Sequence:        thread.Sequence,
 			Status:          thread.Status,
 			Read:            thread.Read,
 			Replied:         thread.Replied,
 			Priority:        thread.Priority,
-			Assignee:        threadAssignee,
-			Title:           thread.Title,
-			Summary:         thread.Summary,
 			Spam:            thread.Spam,
 			Channel:         thread.Channel,
-			Body:            thread.MessageBody,
-			MessageSequence: thread.MessageSequence,
-			Customer:        threadCustomer,
-			Member:          threadMember,
+			PreviewText:     thread.PreviewText,
+			Assignee:        threadAssignee,
+			IngressCustomer: ingressCustomer,
+			EgressMember:    egressMember,
 			CreatedAt:       thread.CreatedAt,
 			UpdatedAt:       thread.UpdatedAt,
-		})
+		}
+		items = append(items, resp)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -495,16 +579,10 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-
-	thread, err := h.ths.GetWorkspaceThread(ctx, workspaceId, threadId)
+	channel := models.ThreadChannel{}.Chat()
+	thread, err := h.ths.GetWorkspaceThread(ctx, workspaceId, threadId, &channel)
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-
-	channel := models.ThreadChannel{}.Chat()
-	if thread.Channel != channel {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
@@ -514,7 +592,7 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 		return
 	}
 
-	chat, err := h.ths.AddMemberMessageToThreadChat(ctx, threadId, member.MemberId, reqp.Message)
+	chat, err := h.ths.AddMemberMessage(ctx, threadId, member.MemberId, reqp.Message)
 	if err != nil {
 		slog.Error("failed to create thread chat message", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -544,7 +622,7 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 	if !thread.AssigneeId.Valid {
 		slog.Info("thread chat not yet assigned", "threadId", thread.ThreadId, "memberId", member.MemberId)
 		t := thread // make a temp copy before assigning
-		thread, err = h.ths.AssignMemberToThread(ctx, thread.ThreadId, member.MemberId)
+		thread, err = h.ths.AssignMember(ctx, thread.ThreadId, member.MemberId)
 		// if error when assigning - revert back
 		if err != nil {
 			slog.Error("(silent) failed to assign member to Thread Chat", slog.Any("error", err))
@@ -555,7 +633,7 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 	if !thread.Replied {
 		slog.Info("thread chat not yet replied", "threadId", thread.ThreadId, "memberId", member.MemberId)
 		t := thread // make a temp copy before marking replied
-		thread, err = h.ths.SetThreadReplyStatus(ctx, thread.ThreadId, true)
+		thread, err = h.ths.SetReplyStatus(ctx, thread.ThreadId, true)
 		if err != nil {
 			slog.Error("(silent) failed to mark thread chat as replied", slog.Any("error", err))
 			thread = t
@@ -588,7 +666,9 @@ func (h *ThreadChatHandler) handleGetThChatMesssages(w http.ResponseWriter, r *h
 	threadId := r.PathValue("threadId")
 
 	ctx := r.Context()
-	thread, err := h.ths.GetWorkspaceThread(ctx, workspaceId, threadId)
+
+	channel := models.ThreadChannel{}.Chat()
+	thread, err := h.ths.GetWorkspaceThread(ctx, workspaceId, threadId, &channel)
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -685,7 +765,7 @@ func (h *ThreadChatHandler) handleSetThChatLabel(w http.ResponseWriter, r *http.
 		return
 	}
 
-	threadLabel, isAdded, err := h.ths.AttachLabelToThread(
+	threadLabel, isAdded, err := h.ths.SetLabel(
 		ctx, threadId, label.LabelId, models.LabelAddedBy{}.User())
 	if err != nil {
 		slog.Error("failed to add label to thread", slog.Any("err", err))
@@ -808,7 +888,7 @@ func (h *ThreadChatHandler) handleGetThreadChatMetrics(w http.ResponseWriter, r 
 		labels = append(labels, label)
 	}
 
-	count := ThreadCountRespPayload{
+	count := ThreadCountResp{
 		ActiveCount:   metrics.ActiveCount,
 		DoneCount:     metrics.DoneCount,
 		TodoCount:     metrics.TodoCount,
@@ -819,7 +899,7 @@ func (h *ThreadChatHandler) handleGetThreadChatMetrics(w http.ResponseWriter, r 
 		Labels:        labels,
 	}
 
-	resp := ThreadMetricsRespPayload{
+	resp := ThreadMetricsResp{
 		Count: count,
 	}
 
@@ -881,6 +961,8 @@ func (h *WorkspaceHandler) handleCreateWidget(w http.ResponseWriter, r *http.Req
 		WidgetId:      widget.WidgetId,
 		Name:          widget.Name,
 		Configuration: widget.Configuration,
+		CreatedAt:     widget.CreatedAt,
+		UpdatedAt:     widget.UpdatedAt,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
