@@ -120,10 +120,10 @@ type ThreadServicer interface {
 	SetLabel(
 		ctx context.Context, threadId string, labelId string, addedBy string) (models.ThreadLabel, bool, error)
 	ListThreadLabels(ctx context.Context, threadChatId string) ([]models.ThreadLabel, error)
-	AddCustomerMessage(
-		ctx context.Context, threadId string, customerId string, message string) (models.Chat, error)
-	AddMemberMessage(
-		ctx context.Context, threadId string, memberId string, message string) (models.Chat, error)
+	AddInboundMessage(
+		ctx context.Context, thread models.Thread, customerId string, message string) (models.Chat, error)
+	AddOutboundMessage(
+		ctx context.Context, thread models.Thread, memberId string, message string) (models.Chat, error)
 	ListThreadChatMessages(
 		ctx context.Context, threadId string) ([]models.Chat, error)
 	GenerateMemberThreadMetrics(
@@ -232,9 +232,10 @@ type ThreadRepositorer interface {
 	SetLabelToThread(
 		ctx context.Context, thl models.ThreadLabel) (models.ThreadLabel, bool, error)
 	RetrieveLabelsByThreadId(ctx context.Context, threadId string) ([]models.ThreadLabel, error)
-	InsertCustomerChat(ctx context.Context, chat models.Chat) (models.Chat, error)
-	InsertThChatMemberMessage(
-		ctx context.Context, chat models.Chat) (models.Chat, error)
+	InsertCustomerChat(
+		ctx context.Context, inboundMessageId *string, chat models.Chat) (models.Chat, error)
+	InsertMemberChat(
+		ctx context.Context, outboundMessageId *string, chat models.Chat) (models.Chat, error)
 	FetchThChatMessagesByThreadId(
 		ctx context.Context, threadId string) ([]models.Chat, error)
 	ComputeStatusMetricsByWorkspaceId(

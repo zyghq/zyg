@@ -40,12 +40,6 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 		FROM ins
 	`
 
-	fmt.Println("**************************")
-	fmt.Println(stmt)
-	fmt.Println("**************************")
-
-	fmt.Println(messageId, inbound.CustomerId)
-
 	err = tx.QueryRow(ctx, stmt, messageId, inbound.CustomerId).Scan(
 		&inbound.MessageId, &inbound.CustomerId,
 		&inbound.FirstSeq, &inbound.LastSeq,
@@ -61,8 +55,6 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 		slog.Error("failed to insert query", slog.Any("err", err))
 		return models.Thread{}, models.Chat{}, ErrQuery
 	}
-
-	fmt.Printf("%v \n", inbound)
 
 	threadId := thread.GenId()
 	stmt = `
@@ -117,26 +109,6 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 		LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
 	`
 
-	fmt.Println("**************************")
-	fmt.Println(stmt)
-	fmt.Println("**************************")
-
-	fmt.Println("threadId", threadId)
-	fmt.Println("workspaceId", thread.WorkspaceId)
-	fmt.Println("customerId", thread.CustomerId)
-	fmt.Println("assigneeId", thread.AssigneeId)
-	fmt.Println("title", thread.Title)
-	fmt.Println("description", thread.Description)
-	fmt.Println("status", thread.Status)
-	fmt.Println("read", thread.Read)
-	fmt.Println("replied", thread.Replied)
-	fmt.Println("priority", thread.Priority)
-	fmt.Println("spam", thread.Spam)
-	fmt.Println("channel", thread.Channel)
-	fmt.Println("previewText", thread.PreviewText)
-	fmt.Println("messageId", inbound.MessageId)
-	fmt.Println("firstSeq", inbound.FirstSeq)
-
 	err = tx.QueryRow(ctx, stmt, threadId, thread.WorkspaceId, thread.CustomerId, thread.AssigneeId,
 		thread.Title, thread.Description, thread.Status, thread.Read, thread.Replied,
 		thread.Priority, thread.Spam, thread.Channel, thread.PreviewText,
@@ -167,12 +139,6 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 		return models.Thread{}, chat, ErrQuery
 	}
 
-	fmt.Println("************ checking thread **************")
-	fmt.Println(thread)
-	fmt.Println("thread.CustomerId", thread.CustomerId)
-	fmt.Println("thread.CustomerName", thread.CustomerName)
-	fmt.Println("************ checking thread **************")
-
 	stmt = `
 		WITH ins AS (
 			INSERT INTO chat (
@@ -199,17 +165,6 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 		LEFT OUTER JOIN customer c ON ins.customer_id = c.customer_id
 		LEFT OUTER JOIN member m ON ins.member_id = m.member_id
 	`
-
-	// stmt = `
-	// 	INSERT INTO chat (
-	// 		chat_id, thread_id, body, sequence,
-	// 		customer_id, member_id, is_head
-	// 	)
-	// 	VALUES ($1, $2, $3, $4, $5, $6, $7)
-	// 	RETURNING
-	// 		chat_id, thread_id, body, sequence,
-	// 		customer_id, member_id, is_head, created_at,
-	// 		updated_at`
 
 	chatId := chat.GenId()
 	err = tx.QueryRow(ctx, stmt, chatId, thread.ThreadId, chat.Body, thread.Sequence,
@@ -394,8 +349,8 @@ func (tc *ThreadChatDB) LookupByWorkspaceThreadId(
 	LEFT OUTER JOIN member m ON th.assignee_id = m.member_id
 	LEFT OUTER JOIN ingress_message ing ON th.ingress_message_id = ing.message_id
 	LEFT OUTER JOIN egress_message eg ON th.egress_message_id = eg.message_id
-	INNER JOIN customer ingc ON ing.customer_id = ingc.customer_id
-	INNER JOIN member egm ON eg.member_id = egm.member_id
+	LEFT OUTER JOIN customer ingc ON ing.customer_id = ingc.customer_id
+	LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
 	WHERE th.workspace_id = $1 AND th.thread_id = $2`
 
 	args = append(args, workspaceId)
@@ -475,8 +430,8 @@ func (tc *ThreadChatDB) FetchThreadsByCustomerId(
 		LEFT OUTER JOIN member m ON th.assignee_id = m.member_id
 		LEFT OUTER JOIN ingress_message ing ON th.ingress_message_id = ing.message_id
 		LEFT OUTER JOIN egress_message eg ON th.egress_message_id = eg.message_id
-		INNER JOIN customer ingc ON ing.customer_id = ingc.customer_id
-		INNER JOIN member egm ON eg.member_id = egm.member_id
+		LEFT OUTER JOIN customer ingc ON ing.customer_id = ingc.customer_id
+		LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
 		WHERE th.customer_id = $1
 	`
 
@@ -541,6 +496,7 @@ func (tc *ThreadChatDB) UpdateAssignee(
 				ingress_message_id, egress_message_id,
 				created_at, updated_at
 		) SELECT
+		 	ups.thread_id AS thread_id,
 			ups.workspace_id AS workspace_id,
 			c.customer_id AS customer_id,
 			c.name AS customer_name,
@@ -573,8 +529,8 @@ func (tc *ThreadChatDB) UpdateAssignee(
 		LEFT OUTER JOIN member m ON ups.assignee_id = m.member_id
 		LEFT OUTER JOIN ingress_message ing ON ups.ingress_message_id = ing.message_id
 		LEFT OUTER JOIN egress_message eg ON ups.egress_message_id = eg.message_id
-		INNER JOIN customer ingc ON ing.customer_id = ingc.customer_id
-		INNER JOIN member egm ON eg.member_id = egm.member_id
+		LEFT OUTER JOIN customer ingc ON ing.customer_id = ingc.customer_id
+		LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
 	`
 
 	err := tc.db.QueryRow(ctx, stmt, assigneeId, threadId).Scan(
@@ -622,6 +578,7 @@ func (tc *ThreadChatDB) UpdateRepliedState(
 				ingress_message_id, egress_message_id,
 				created_at, updated_at
 		) SELECT
+		 	ups.thread_id AS thread_id,
 			ups.workspace_id AS workspace_id,
 			c.customer_id AS customer_id,
 			c.name AS customer_name,
@@ -654,8 +611,8 @@ func (tc *ThreadChatDB) UpdateRepliedState(
 		LEFT OUTER JOIN member m ON ups.assignee_id = m.member_id
 		LEFT OUTER JOIN ingress_message ing ON ups.ingress_message_id = ing.message_id
 		LEFT OUTER JOIN egress_message eg ON ups.egress_message_id = eg.message_id
-		INNER JOIN customer ingc ON ing.customer_id = ingc.customer_id
-		INNER JOIN member egm ON eg.member_id = egm.member_id
+		LEFT OUTER JOIN customer ingc ON ing.customer_id = ingc.customer_id
+		LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
 	`
 
 	err := tc.db.QueryRow(ctx, stmt, replied, threadId).Scan(
@@ -726,8 +683,8 @@ func (tc *ThreadChatDB) FetchThreadsByWorkspaceId(
 		LEFT OUTER JOIN member m ON th.assignee_id = m.member_id
 		LEFT OUTER JOIN ingress_message ing ON th.ingress_message_id = ing.message_id
 		LEFT OUTER JOIN egress_message eg ON th.egress_message_id = eg.message_id
-		INNER JOIN customer ingc ON ing.customer_id = ingc.customer_id
-		INNER JOIN member egm ON eg.member_id = egm.member_id
+		LEFT OUTER JOIN customer ingc ON ing.customer_id = ingc.customer_id
+		LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
 		WHERE th.workspace_id = $1
 	`
 
@@ -816,8 +773,8 @@ func (tc *ThreadChatDB) FetchThreadsByAssignedMemberId(
 		LEFT OUTER JOIN member m ON ins.assignee_id = m.member_id
 		LEFT OUTER JOIN ingress_message ing ON ins.ingress_message_id = ing.message_id
 		LEFT OUTER JOIN egress_message eg ON ins.egress_message_id = eg.message_id
-		INNER JOIN customer ingc ON ing.customer_id = ingc.customer_id
-		INNER JOIN member egm ON eg.member_id = egm.member_id
+		LEFT OUTER JOIN customer ingc ON ing.customer_id = ingc.customer_id
+		LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
 		WHERE th.assignee_id = $1
 	`
 
@@ -906,8 +863,8 @@ func (tc *ThreadChatDB) FetchThreadsByMemberUnassigned(
 		LEFT OUTER JOIN member m ON th.assignee_id = m.member_id
 		LEFT OUTER JOIN ingress_message ing ON th.ingress_message_id = ing.message_id
 		LEFT OUTER JOIN egress_message eg ON th.egress_message_id = eg.message_id
-		INNER JOIN customer ingc ON ing.customer_id = ingc.customer_id
-		INNER JOIN member egm ON eg.member_id = egm.member_id
+		LEFT OUTER JOIN customer ingc ON ing.customer_id = ingc.customer_id
+		LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
 		WHERE th.workspace_id = $1 AND th.assignee_id IS NULL
 	`
 
@@ -992,13 +949,13 @@ func (tc *ThreadChatDB) FetchThreadsByLabelId(
 			th.created_at AS created_at,
 			th.updated_at AS updated_at
 		FROM thread th
-		INNER JOIN customer c ON th.customer_id = c.customer_id
+		INNER JOIN customer c ON th.customer_id = c.customer_id	
+		INNER JOIN thread_label tl ON th.thread_id = tl.thread_id
 		LEFT OUTER JOIN member m ON th.assignee_id = m.member_id
 		LEFT OUTER JOIN ingress_message ing ON th.ingress_message_id = ing.message_id
 		LEFT OUTER JOIN egress_message eg ON th.egress_message_id = eg.message_id
-		INNER JOIN customer ingc ON ing.customer_id = ingc.customer_id
-		INNER JOIN member egm ON eg.member_id = egm.member_id
-		INNER JOIN thread_label tl ON th.thread_id = tl.thread_id
+		LEFT OUTER JOIN customer ingc ON ing.customer_id = ingc.customer_id
+		LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
 		WHERE tl.label_id = $1
 	`
 
@@ -1148,11 +1105,12 @@ func (tc *ThreadChatDB) RetrieveLabelsByThreadId(
 	return labels, nil
 }
 
-func (tc *ThreadChatDB) InsertCustomerChat(ctx context.Context, chat models.Chat) (models.Chat, error) {
+func (tc *ThreadChatDB) InsertCustomerChat(
+	ctx context.Context, inboundMessageId *string, chat models.Chat) (models.Chat, error) {
 	// start transaction
 	tx, err := tc.db.Begin(ctx)
 	if err != nil {
-		slog.Error("failed to start db tx", "error", err)
+		slog.Error("failed to start db tx", slog.Any("err", err))
 		return chat, ErrQuery
 	}
 
@@ -1199,31 +1157,80 @@ func (tc *ThreadChatDB) InsertCustomerChat(ctx context.Context, chat models.Chat
 		return models.Chat{}, ErrQuery
 	}
 
-	// update thread
-	stmt = `UPDATE thread SET
-		message_body = $1,
-		message_sequence = $2,
-		message_customer_id = $3,
-		message_member_id = $4 WHERE thread_id = $5
-	`
-	previewBody := chat.PreviewBody()
-	_, err = tx.Exec(ctx, stmt, previewBody, chat.Sequence, chat.CustomerId, chat.MemberId, chat.ThreadId)
-	if err != nil {
-		slog.Error("failed to update thread", "error", err)
-		return models.Chat{}, ErrQuery
+	// check if inbound message id is provided
+	// if not, create a new one and update the thread
+	// else update the existing one
+	if inboundMessageId != nil {
+		stmt = `UPDATE ingress_message SET
+			last_sequence = $2,
+			updated_at = NOW()
+			WHERE message_id = $1`
+
+		_, err = tx.Exec(ctx, stmt, *inboundMessageId, chat.Sequence)
+		if err != nil {
+			slog.Error("failed to update inbound message", slog.Any("err", err))
+			return models.Chat{}, ErrQuery
+		}
+	} else {
+		var inbound models.IngressMessage
+		messageId := inbound.GenId()
+		stmt := `
+			WITH ins AS (
+				INSERT INTO ingress_message (message_id, customer_id)
+				VALUES ($1, $2)
+				RETURNING
+					message_id, customer_id,
+					first_sequence, last_sequence,
+					created_at, updated_at
+			) SELECT ins.message_id AS message_id,
+				ins.customer_id AS customer_id,
+				ins.first_sequence AS first_sequence,
+				ins.last_sequence AS last_sequence,
+				ins.created_at AS created_at,
+				ins.updated_at AS updated_at
+			FROM ins`
+
+		err = tx.QueryRow(ctx, stmt, messageId, chat.CustomerId).Scan(
+			&inbound.MessageId, &inbound.CustomerId,
+			&inbound.FirstSeq, &inbound.LastSeq,
+			&inbound.CreatedAt, &inbound.UpdatedAt,
+		)
+
+		if errors.Is(err, pgx.ErrNoRows) {
+			slog.Error("no rows returned", slog.Any("err", err))
+			return models.Chat{}, ErrEmpty
+		}
+
+		if err != nil {
+			slog.Error("failed to insert query", slog.Any("err", err))
+			return models.Chat{}, ErrQuery
+		}
+
+		// update thread with inbound message id
+		stmt = `UPDATE thread SET
+			ingress_message_id = $2,
+			updated_at = NOW()
+			WHERE thread_id = $1`
+
+		_, err = tx.Exec(ctx, stmt, chat.ThreadId, inbound.MessageId)
+		if err != nil {
+			slog.Error("failed to update thread", slog.Any("err", err))
+			return models.Chat{}, ErrQuery
+		}
 	}
 
+	// commit transaction
 	err = tx.Commit(ctx)
 	if err != nil {
-		slog.Error("failed to commit query", "error", err)
+		slog.Error("failed to commit query", slog.Any("err", err))
 		return models.Chat{}, ErrTxQuery
 	}
 
 	return chat, nil
 }
 
-func (tc *ThreadChatDB) InsertThChatMemberMessage(
-	ctx context.Context, chat models.Chat) (models.Chat, error) {
+func (tc *ThreadChatDB) InsertMemberChat(
+	ctx context.Context, outboundMessageId *string, chat models.Chat) (models.Chat, error) {
 	// start transaction
 	tx, err := tc.db.Begin(ctx)
 	if err != nil {
@@ -1274,18 +1281,66 @@ func (tc *ThreadChatDB) InsertThChatMemberMessage(
 		return models.Chat{}, ErrQuery
 	}
 
-	// update thread
-	stmt = `UPDATE thread SET
-		message_body = $1,
-		message_sequence = $2,
-		message_customer_id = $3,
-		message_member_id = $4 WHERE thread_id = $5
-	`
-	previewBody := chat.PreviewBody()
-	_, err = tx.Exec(ctx, stmt, previewBody, chat.Sequence, chat.CustomerId, chat.MemberId, chat.ThreadId)
-	if err != nil {
-		slog.Error("failed to update thread", slog.Any("err", err))
-		return models.Chat{}, ErrQuery
+	// check if outbound message id is provided
+	// if not, create a new one and update the thread
+	// else update the existing one
+	if outboundMessageId != nil {
+		stmt = `UPDATE egress_message SET
+		last_sequence = $2,
+		updated_at = NOW()
+		WHERE message_id = $1`
+
+		_, err = tx.Exec(ctx, stmt, *outboundMessageId, chat.Sequence)
+		if err != nil {
+			slog.Error("failed to update outbound message", slog.Any("err", err))
+			return models.Chat{}, ErrQuery
+		}
+	} else {
+		var outbound models.EgressMessage
+		messageId := outbound.GenId()
+		stmt := `
+			WITH ins AS (
+				INSERT INTO egress_message (message_id, member_id)
+				VALUES ($1, $2)
+				RETURNING
+					message_id, member_id,
+					first_sequence, last_sequence,
+					created_at, updated_at
+			) SELECT ins.message_id AS message_id,
+				ins.member_id AS member_id,
+				ins.first_sequence AS first_sequence,
+				ins.last_sequence AS last_sequence,
+				ins.created_at AS created_at,
+				ins.updated_at AS updated_at
+			FROM ins`
+
+		err = tx.QueryRow(ctx, stmt, messageId, chat.MemberId).Scan(
+			&outbound.MessageId, &outbound.MemberId,
+			&outbound.FirstSeq, &outbound.LastSeq,
+			&outbound.CreatedAt, &outbound.UpdatedAt,
+		)
+
+		if errors.Is(err, pgx.ErrNoRows) {
+			slog.Error("no rows returned", slog.Any("err", err))
+			return models.Chat{}, ErrEmpty
+		}
+
+		if err != nil {
+			slog.Error("failed to insert query", slog.Any("err", err))
+			return models.Chat{}, ErrQuery
+		}
+
+		// update thread with outbound message id
+		stmt = `UPDATE thread SET
+			egress_message_id = $2,
+			updated_at = NOW()
+			WHERE thread_id = $1`
+
+		_, err = tx.Exec(ctx, stmt, chat.ThreadId, outbound.MessageId)
+		if err != nil {
+			slog.Error("failed to update thread", slog.Any("err", err))
+			return models.Chat{}, ErrQuery
+		}
 	}
 
 	// commit transaction

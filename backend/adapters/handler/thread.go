@@ -39,12 +39,11 @@ func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.
 	items := make([]ThreadResp, 0, 100)
 
 	for _, thread := range threads {
-		var threadCustomer ThCustomerResp
 		var threadAssignee *ThMemberResp
 		var ingressCustomer *ThCustomerResp
 		var egressMember *ThMemberResp
 
-		threadCustomer = ThCustomerResp{
+		threadCustomer := ThCustomerResp{
 			CustomerId: thread.CustomerId,
 			Name:       thread.CustomerName,
 		}
@@ -84,7 +83,11 @@ func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.
 			Channel:         thread.Channel,
 			PreviewText:     thread.PreviewText,
 			Assignee:        threadAssignee,
+			IngressFirstSeq: thread.IngressFirstSeq,
+			IngressLastSeq:  thread.IngressLastSeq,
 			IngressCustomer: ingressCustomer,
+			EgressFirstSeq:  thread.EgressFirstSeq,
+			EgressLastSeq:   thread.EgressLastSeq,
 			EgressMember:    egressMember,
 			CreatedAt:       thread.CreatedAt,
 			UpdatedAt:       thread.UpdatedAt,
@@ -592,7 +595,7 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 		return
 	}
 
-	chat, err := h.ths.AddMemberMessage(ctx, threadId, member.MemberId, reqp.Message)
+	chat, err := h.ths.AddOutboundMessage(ctx, thread, member.MemberId, reqp.Message)
 	if err != nil {
 		slog.Error("failed to create thread chat message", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -619,26 +622,26 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 	// shall we use go routines for async assignment and replied marking?
 	// also lets check for workspace setttings for auto assignment and replied marking
 	// for now keep it as is.
-	if !thread.AssigneeId.Valid {
-		slog.Info("thread chat not yet assigned", "threadId", thread.ThreadId, "memberId", member.MemberId)
-		t := thread // make a temp copy before assigning
-		thread, err = h.ths.AssignMember(ctx, thread.ThreadId, member.MemberId)
-		// if error when assigning - revert back
-		if err != nil {
-			slog.Error("(silent) failed to assign member to Thread Chat", slog.Any("error", err))
-			thread = t
-		}
-	}
+	// if !thread.AssigneeId.Valid {
+	// 	slog.Info("thread chat not yet assigned", "threadId", thread.ThreadId, "memberId", member.MemberId)
+	// 	t := thread // make a temp copy before assigning
+	// 	thread, err = h.ths.AssignMember(ctx, thread.ThreadId, member.MemberId)
+	// 	// if error when assigning - revert back
+	// 	if err != nil {
+	// 		slog.Error("(silent) failed to assign member to Thread Chat", slog.Any("error", err))
+	// 		thread = t
+	// 	}
+	// }
 
-	if !thread.Replied {
-		slog.Info("thread chat not yet replied", "threadId", thread.ThreadId, "memberId", member.MemberId)
-		t := thread // make a temp copy before marking replied
-		thread, err = h.ths.SetReplyStatus(ctx, thread.ThreadId, true)
-		if err != nil {
-			slog.Error("(silent) failed to mark thread chat as replied", slog.Any("error", err))
-			thread = t
-		}
-	}
+	// if !thread.Replied {
+	// 	slog.Info("thread chat not yet replied", "threadId", thread.ThreadId, "memberId", member.MemberId)
+	// 	t := thread // make a temp copy before marking replied
+	// 	thread, err = h.ths.SetReplyStatus(ctx, thread.ThreadId, true)
+	// 	if err != nil {
+	// 		slog.Error("(silent) failed to mark thread chat as replied", slog.Any("error", err))
+	// 		thread = t
+	// 	}
+	// }
 
 	resp := ChatResp{
 		ThreadId:  thread.ThreadId,

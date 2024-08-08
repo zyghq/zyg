@@ -72,7 +72,7 @@ func NewServer(
 		NewEnsureAuth(wh.handleGetWorkspaceLabel, authService)) // tested
 
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{$}",
-		NewEnsureAuth(th.handleGetThreadChats, authService))
+		NewEnsureAuth(th.handleGetThreadChats, authService)) // tested
 
 	mux.Handle("PATCH /workspaces/{workspaceId}/threads/chat/{threadId}/{$}",
 		NewEnsureAuth(th.handleUpdateThreadChat, authService))
@@ -85,9 +85,9 @@ func NewServer(
 		NewEnsureAuth(th.handleGetLabelledThreadChats, authService))
 
 	mux.Handle("POST /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
-		NewEnsureAuth(th.handleCreateThChatMessage, authService))
+		NewEnsureAuth(th.handleCreateThChatMessage, authService)) // tested
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
-		NewEnsureAuth(th.handleGetThChatMesssages, authService))
+		NewEnsureAuth(th.handleGetThChatMesssages, authService)) // tested
 
 	mux.Handle("PUT /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
 		NewEnsureAuth(th.handleSetThChatLabel, authService))

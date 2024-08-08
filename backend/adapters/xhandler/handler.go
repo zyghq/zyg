@@ -277,7 +277,7 @@ func (h *CustomerHandler) handleGetCustomer(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func (h *CustomerHandler) handleAddCustomerIdentities(w http.ResponseWriter, r *http.Request, customer *models.Customer) {
+func (h *CustomerHandler) handleCustomerIdentities(w http.ResponseWriter, r *http.Request, customer *models.Customer) {
 
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
@@ -425,12 +425,6 @@ func (h *CustomerHandler) handleCreateCustomerThChat(w http.ResponseWriter, r *h
 		return
 	}
 
-	fmt.Println("************ checking API thread **************")
-	fmt.Println(thread)
-	fmt.Println("thread.CustomerId", thread.CustomerId)
-	fmt.Println("thread.CustomerName", thread.CustomerName)
-	fmt.Println("************ checking API thread **************")
-
 	var threadAssignee *ThMemberResp
 	var ingressCustomer *ThCustomerResp
 	var egressMember *ThMemberResp
@@ -468,10 +462,6 @@ func (h *CustomerHandler) handleCreateCustomerThChat(w http.ResponseWriter, r *h
 		Name:       thread.CustomerName,
 	}
 
-	fmt.Println("************ checking  thread customer **************")
-	fmt.Println(threadCustomer)
-	fmt.Println("************ checking  thread customer **************")
-
 	if thread.AssigneeId.Valid {
 		threadAssignee = &ThMemberResp{
 			MemberId: thread.AssigneeId.String,
@@ -507,7 +497,11 @@ func (h *CustomerHandler) handleCreateCustomerThChat(w http.ResponseWriter, r *h
 		Channel:         thread.Channel,
 		PreviewText:     thread.PreviewText,
 		Assignee:        threadAssignee,
+		IngressFirstSeq: thread.IngressFirstSeq,
+		IngressLastSeq:  thread.IngressLastSeq,
 		IngressCustomer: ingressCustomer,
+		EgressFirstSeq:  thread.EgressFirstSeq,
+		EgressLastSeq:   thread.EgressLastSeq,
 		EgressMember:    egressMember,
 		CreatedAt:       thread.CreatedAt,
 		UpdatedAt:       thread.UpdatedAt,
@@ -529,7 +523,6 @@ func (h *CustomerHandler) handleCreateCustomerThChat(w http.ResponseWriter, r *h
 
 func (h *CustomerHandler) handleGetCustomerThChats(w http.ResponseWriter, r *http.Request, customer *models.Customer) {
 	ctx := r.Context()
-
 	threads, err := h.ths.ListCustomerThreadChats(ctx, customer.CustomerId, nil)
 	if err != nil {
 		slog.Error("failed to fetch thread chats", slog.Any("err", err))
@@ -538,14 +531,12 @@ func (h *CustomerHandler) handleGetCustomerThChats(w http.ResponseWriter, r *htt
 	}
 
 	items := make([]ThreadResp, 0, 100)
-
 	for _, thread := range threads {
-		var threadCustomer ThCustomerResp
 		var threadAssignee *ThMemberResp
 		var ingressCustomer *ThCustomerResp
 		var egressMember *ThMemberResp
 
-		threadCustomer = ThCustomerResp{
+		threadCustomer := ThCustomerResp{
 			CustomerId: thread.CustomerId,
 			Name:       thread.CustomerName,
 		}
@@ -585,7 +576,11 @@ func (h *CustomerHandler) handleGetCustomerThChats(w http.ResponseWriter, r *htt
 			Channel:         thread.Channel,
 			PreviewText:     thread.PreviewText,
 			Assignee:        threadAssignee,
+			IngressFirstSeq: thread.IngressFirstSeq,
+			IngressLastSeq:  thread.IngressLastSeq,
 			IngressCustomer: ingressCustomer,
+			EgressFirstSeq:  thread.EgressFirstSeq,
+			EgressLastSeq:   thread.EgressLastSeq,
 			EgressMember:    egressMember,
 			CreatedAt:       thread.CreatedAt,
 			UpdatedAt:       thread.UpdatedAt,
@@ -624,47 +619,23 @@ func (h *CustomerHandler) handleCreateThChatMessage(w http.ResponseWriter, r *ht
 
 	ctx := r.Context()
 
-	workspace, err := h.ws.GetWorkspace(ctx, customer.WorkspaceId)
-
-	if errors.Is(err, services.ErrWorkspaceNotFound) {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-
-	if err != nil {
-		slog.Error(
-			"failed to get workspace by id "+
-				"something went wrong",
-			slog.String("workspaceId", customer.WorkspaceId),
-		)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
 	channel := models.ThreadChannel{}.Chat()
-	thread, err := h.ths.GetWorkspaceThread(ctx, workspace.WorkspaceId, threadId, &channel)
+	thread, err := h.ths.GetWorkspaceThread(ctx, customer.WorkspaceId, threadId, &channel)
 	if errors.Is(err, services.ErrThreadChatNotFound) {
+		fmt.Println("thread not found")
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
 	if err != nil {
-		slog.Error(
-			"failed to get thread chat by id "+
-				"something went wrong",
-			slog.String("threadChatId", threadId),
-		)
+		slog.Error("failed to fetch thread chat", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	chat, err := h.ths.AddCustomerMessage(ctx, thread.ThreadId, customer.CustomerId, message.Message)
+	chat, err := h.ths.AddInboundMessage(ctx, thread, customer.CustomerId, message.Message)
 	if err != nil {
-		slog.Error(
-			"failed to create thread chat message for customer "+
-				"something went wrong",
-			slog.String("threadId", thread.ThreadId),
-		)
+		slog.Error("failed to create thread chat message", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -712,27 +683,10 @@ func (h *CustomerHandler) handleCreateThChatMessage(w http.ResponseWriter, r *ht
 
 func (h *CustomerHandler) handleGetThChatMesssages(w http.ResponseWriter, r *http.Request, customer *models.Customer) {
 	threadId := r.PathValue("threadId")
-
 	ctx := r.Context()
 
-	workspace, err := h.ws.GetWorkspace(ctx, customer.WorkspaceId)
-	if errors.Is(err, services.ErrWorkspaceNotFound) {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-
-	if err != nil {
-		slog.Error(
-			"failed to get workspace by id "+
-				"something went wrong",
-			slog.String("workspaceId", customer.WorkspaceId),
-		)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
 	channel := models.ThreadChannel{}.Chat()
-	thread, err := h.ths.GetWorkspaceThread(ctx, workspace.WorkspaceId, threadId, &channel)
+	thread, err := h.ths.GetWorkspaceThread(ctx, customer.WorkspaceId, threadId, &channel)
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -740,11 +694,7 @@ func (h *CustomerHandler) handleGetThChatMesssages(w http.ResponseWriter, r *htt
 
 	chats, err := h.ths.ListThreadChatMessages(ctx, thread.ThreadId)
 	if err != nil {
-		slog.Error(
-			"failed to get list of thread chat messages for customer "+
-				"something went wrong",
-			slog.String("threadId", thread.ThreadId),
-		)
+		slog.Error("failed to fetch thread chat messages", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -805,15 +755,15 @@ func NewServer(
 
 	mux.HandleFunc("POST /widgets/{widgetId}/init/{$}", ch.handleGetOrCreateCustomer)              // tested
 	mux.Handle("GET /widgets/{widgetId}/me/{$}", NewEnsureAuth(ch.handleGetCustomer, authService)) // tested
-	mux.Handle("POST /widgets/{widgetId}/me/identities/{$}", NewEnsureAuth(ch.handleAddCustomerIdentities, authService))
+	mux.Handle("POST /widgets/{widgetId}/me/identities/{$}", NewEnsureAuth(ch.handleCustomerIdentities, authService))
 
-	mux.Handle("POST /widgets/{widgetId}/threads/chat/{$}", NewEnsureAuth(ch.handleCreateCustomerThChat, authService))
-	mux.Handle("GET /widgets/{widgetId}/threads/chat/{$}", NewEnsureAuth(ch.handleGetCustomerThChats, authService))
+	mux.Handle("POST /widgets/{widgetId}/threads/chat/{$}", NewEnsureAuth(ch.handleCreateCustomerThChat, authService)) // tested
+	mux.Handle("GET /widgets/{widgetId}/threads/chat/{$}", NewEnsureAuth(ch.handleGetCustomerThChats, authService))    // tested
 
 	mux.Handle("POST /widgets/{widgetId}/threads/chat/{threadId}/messages/{$}",
-		NewEnsureAuth(ch.handleCreateThChatMessage, authService))
+		NewEnsureAuth(ch.handleCreateThChatMessage, authService)) // tested
 	mux.Handle("GET /widgets/{widgetId}/threads/chat/{threadId}/messages/{$}",
-		NewEnsureAuth(ch.handleGetThChatMesssages, authService))
+		NewEnsureAuth(ch.handleGetThChatMesssages, authService)) // tested
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},

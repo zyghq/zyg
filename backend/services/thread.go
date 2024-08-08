@@ -84,7 +84,7 @@ func (s *ThreadChatService) AssignMember(
 	ctx context.Context, threadId string, assigneeId string) (models.Thread, error) {
 	thread, err := s.repo.UpdateAssignee(ctx, threadId, assigneeId)
 	if err != nil {
-		return thread, ErrThreadChatAssign
+		return models.Thread{}, ErrThreadChatAssign
 	}
 	return thread, nil
 }
@@ -93,7 +93,7 @@ func (s *ThreadChatService) SetReplyStatus(
 	ctx context.Context, threadChatId string, replied bool) (models.Thread, error) {
 	thread, err := s.repo.UpdateRepliedState(ctx, threadChatId, replied)
 	if err != nil {
-		return thread, ErrThreadChatReplied
+		return models.Thread{}, ErrThreadChatReplied
 	}
 	return thread, nil
 }
@@ -175,15 +175,19 @@ func (s *ThreadChatService) ListThreadLabels(
 	return labels, nil
 }
 
-func (s *ThreadChatService) AddCustomerMessage(
-	ctx context.Context, threadId string, customerId string, message string) (models.Chat, error) {
+func (s *ThreadChatService) AddInboundMessage(
+	ctx context.Context, thread models.Thread, customerId string, message string) (models.Chat, error) {
+	var ingressMessageId *string
+	if thread.IngressMessageId.Valid {
+		ingressMessageId = &thread.IngressMessageId.String
+	}
 	chat := models.Chat{
-		ThreadId:   threadId,
+		ThreadId:   thread.ThreadId,
 		Body:       message,
 		CustomerId: models.NullString(&customerId),
 		IsHead:     false,
 	}
-	chat, err := s.repo.InsertCustomerChat(ctx, chat)
+	chat, err := s.repo.InsertCustomerChat(ctx, ingressMessageId, chat)
 	if err != nil {
 		return models.Chat{}, ErrThChatMessage
 	}
@@ -191,15 +195,19 @@ func (s *ThreadChatService) AddCustomerMessage(
 	return chat, nil
 }
 
-func (s *ThreadChatService) AddMemberMessage(
-	ctx context.Context, threadId string, memberId string, message string) (models.Chat, error) {
+func (s *ThreadChatService) AddOutboundMessage(
+	ctx context.Context, thread models.Thread, memberId string, message string) (models.Chat, error) {
+	var outboundMessageId *string
+	if thread.IngressMessageId.Valid {
+		outboundMessageId = &thread.EgressMessageId.String
+	}
 	chat := models.Chat{
-		ThreadId: threadId,
+		ThreadId: thread.ThreadId,
 		Body:     message,
 		MemberId: models.NullString(&memberId),
 		IsHead:   false,
 	}
-	chat, err := s.repo.InsertThChatMemberMessage(ctx, chat)
+	chat, err := s.repo.InsertMemberChat(ctx, outboundMessageId, chat)
 	if err != nil {
 		return models.Chat{}, ErrThChatMessage
 	}

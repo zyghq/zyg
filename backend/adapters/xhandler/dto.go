@@ -106,7 +106,6 @@ type ThreadResp struct {
 }
 
 func (t ThreadResp) MarshalJSON() ([]byte, error) {
-	var customer ThCustomerResp
 	var assignee *ThMemberResp
 	var ingressCustomer *ThCustomerResp
 	var egressMember *ThMemberResp
@@ -166,7 +165,7 @@ func (t ThreadResp) MarshalJSON() ([]byte, error) {
 		UpdatedAt       string          `json:"updatedAt"`
 	}{
 		ThreadId:        t.ThreadId,
-		Customer:        customer,
+		Customer:        t.Customer,
 		Title:           t.Title,
 		Description:     t.Description,
 		Sequence:        t.Sequence,
@@ -237,11 +236,6 @@ func (ch ChatResp) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(aux)
 }
-
-// type ThreadChatResp struct {
-// 	ThreadResp
-// 	Chat ChatResp `json:"chat"`
-// }
 
 type ThreadChatResp struct {
 	ThreadId        string
