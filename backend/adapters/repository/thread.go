@@ -243,6 +243,7 @@ func (tc *ThreadChatDB) ModifyThreadById(
 			ingress_message_id, egress_message_id,
 			created_at, updated_at
 		) SELECT
+		 	ups.thread_id AS thread_id,
 			ups.workspace_id AS workspace_id,
 			c.customer_id AS customer_id,
 			c.name AS customer_name,
@@ -275,8 +276,8 @@ func (tc *ThreadChatDB) ModifyThreadById(
 		LEFT OUTER JOIN member m ON ups.assignee_id = m.member_id
 		LEFT OUTER JOIN ingress_message ing ON ups.ingress_message_id = ing.message_id
 		LEFT OUTER JOIN egress_message eg ON ups.egress_message_id = eg.message_id
-		INNER JOIN customer ingc ON ing.customer_id = ingc.customer_id
-		INNER JOIN member egm ON eg.member_id = egm.member_id
+		LEFT OUTER JOIN customer ingc ON ing.customer_id = ingc.customer_id
+		LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
 	`
 
 	stmt = fmt.Sprintf(stmt, ups)

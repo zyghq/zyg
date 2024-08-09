@@ -234,12 +234,11 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 		return
 	}
 
-	var threadCustomer ThCustomerResp
 	var threadAssignee *ThMemberResp
 	var ingressCustomer *ThCustomerResp
 	var egressMember *ThMemberResp
 
-	threadCustomer = ThCustomerResp{
+	threadCustomer := ThCustomerResp{
 		CustomerId: thread.CustomerId,
 		Name:       thread.CustomerName,
 	}
@@ -279,7 +278,11 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 		Channel:         thread.Channel,
 		PreviewText:     thread.PreviewText,
 		Assignee:        threadAssignee,
+		IngressFirstSeq: thread.IngressFirstSeq,
+		IngressLastSeq:  thread.IngressLastSeq,
 		IngressCustomer: ingressCustomer,
+		EgressFirstSeq:  thread.EgressFirstSeq,
+		EgressLastSeq:   thread.EgressLastSeq,
 		EgressMember:    egressMember,
 		CreatedAt:       thread.CreatedAt,
 		UpdatedAt:       thread.UpdatedAt,
