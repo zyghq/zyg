@@ -90,7 +90,7 @@ func NewServer(
 		NewEnsureAuth(th.handleGetThChatMesssages, authService)) // tested
 
 	mux.Handle("PUT /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
-		NewEnsureAuth(th.handleSetThChatLabel, authService))
+		NewEnsureAuth(th.handleSetThreadChatLabel, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
 		NewEnsureAuth(th.handleGetThChatLabels, authService))
 

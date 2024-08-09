@@ -1033,24 +1033,36 @@ func (tc *ThreadChatDB) SetLabelToThread(
 			ON CONFLICT (thread_id, label_id) DO NOTHING
 			RETURNING thread_label_id, thread_id, label_id, addedby,
 			created_at, updated_at, TRUE AS is_created
-		) SELECT * FROM ins
+		)
+		SELECT
+			ins.thread_label_id,
+			ins.thread_id,
+			ins.label_id,
+			l.name,
+			l.icon,
+			ins.addedby,
+			ins.created_at,
+			ins.updated_at,
+			ins.is_created
+		FROM ins
+		JOIN label l ON ins.label_id = l.label_id
 		UNION ALL
 		SELECT
-			tl.thread_label_id AS thread_label_id,
-			tl.thread_id AS thread_id,
-			l.label_id AS label_id,
-			l.name AS label_name,
-			tl.addedby AS addedby,
-			tl.created_at AS created_at,
-			tl.updated_at AS updated_at,
+			tl.thread_label_id,
+			tl.thread_id,
+			tl.label_id,
+			l.name,
+			l.icon,
+			tl.addedby,
+			tl.created_at,
+			tl.updated_at,
 			FALSE AS is_created
 		FROM thread_label tl
 		INNER JOIN label l ON tl.label_id = l.label_id
 		WHERE tl.thread_id = $2 AND l.label_id = $3 AND NOT EXISTS (SELECT 1 FROM ins)
 	`
 
-	err := tc.db.QueryRow(ctx, stmt,
-		thLabelId, threadLabel.ThreadId, threadLabel.LabelId, threadLabel.AddedBy).Scan(
+	err := tc.db.QueryRow(ctx, stmt, thLabelId, threadLabel.ThreadId, threadLabel.LabelId, threadLabel.AddedBy).Scan(
 		&threadLabel.ThreadLabelId, &threadLabel.ThreadId, &threadLabel.LabelId,
 		&threadLabel.Name, &threadLabel.Icon, &threadLabel.AddedBy,
 		&threadLabel.CreatedAt, &threadLabel.UpdatedAt, &IsCreated,

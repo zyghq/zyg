@@ -740,7 +740,7 @@ func (h *ThreadChatHandler) handleGetThChatMesssages(w http.ResponseWriter, r *h
 	}
 }
 
-func (h *ThreadChatHandler) handleSetThChatLabel(w http.ResponseWriter, r *http.Request, account *models.Account) {
+func (h *ThreadChatHandler) handleSetThreadChatLabel(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
