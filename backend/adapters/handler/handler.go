@@ -29,78 +29,78 @@ func NewServer(
 	wh := NewWorkspaceHandler(workspaceService, accountService, customerService)
 	th := NewThreadChatHandler(workspaceService, threadChatService)
 
-	mux.HandleFunc("GET /{$}", handleGetIndex)                             // tested
-	mux.HandleFunc("POST /accounts/auth/{$}", ah.handleGetOrCreateAccount) // tested
+	mux.HandleFunc("GET /{$}", handleGetIndex)
+	mux.HandleFunc("POST /accounts/auth/{$}", ah.handleGetOrCreateAccount)
 
 	mux.Handle("POST /pats/{$}", NewEnsureAuth(ah.handleCreatePat, authService))
 	mux.Handle("GET /pats/{$}", NewEnsureAuth(ah.handleGetPatList, authService))
 	mux.Handle("DELETE /pats/{patId}/{$}", NewEnsureAuth(ah.handleDeletePat, authService))
 
-	mux.Handle("POST /workspaces/{$}", NewEnsureAuth(wh.handleCreateWorkspace, authService)) // tested
-	mux.Handle("GET /workspaces/{$}", NewEnsureAuth(wh.handleGetWorkspaces, authService))    // tested
+	mux.Handle("POST /workspaces/{$}", NewEnsureAuth(wh.handleCreateWorkspace, authService))
+	mux.Handle("GET /workspaces/{$}", NewEnsureAuth(wh.handleGetWorkspaces, authService))
 
 	mux.Handle("GET /workspaces/{workspaceId}/{$}",
-		NewEnsureAuth(wh.handleGetWorkspace, authService)) // tested
+		NewEnsureAuth(wh.handleGetWorkspace, authService))
 	mux.Handle("PATCH /workspaces/{workspaceId}/{$}",
-		NewEnsureAuth(wh.handleUpdateWorkspace, authService)) // tested
+		NewEnsureAuth(wh.handleUpdateWorkspace, authService))
 
 	mux.Handle("POST /workspaces/{workspaceId}/sk/{$}",
-		NewEnsureAuth(wh.handleGenerateSecretKey, authService)) // tested
+		NewEnsureAuth(wh.handleGenerateSecretKey, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/sk/{$}",
-		NewEnsureAuth(wh.handleGetWorkspaceSecretKey, authService)) // tested
+		NewEnsureAuth(wh.handleGetWorkspaceSecretKey, authService))
 
 	mux.Handle("GET /workspaces/{workspaceId}/members/{$}",
-		NewEnsureAuth(wh.handleGetWorkspaceMembers, authService)) // tested
+		NewEnsureAuth(wh.handleGetWorkspaceMembers, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/members/me/{$}",
-		NewEnsureAuth(wh.handleGetWorkspaceMembership, authService)) // tested
+		NewEnsureAuth(wh.handleGetWorkspaceMembership, authService))
 
 	mux.Handle("GET /workspaces/{workspaceId}/members/{memberId}/{$}",
-		NewEnsureAuth(wh.handleGetWorkspaceMember, authService)) // tested
+		NewEnsureAuth(wh.handleGetWorkspaceMember, authService))
 
 	mux.Handle("POST /workspaces/{workspaceId}/customers/{$}",
-		NewEnsureAuth(wh.handleCreateWorkspaceCustomer, authService)) // tested
+		NewEnsureAuth(wh.handleCreateWorkspaceCustomer, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/customers/{$}",
-		NewEnsureAuth(wh.handleGetWorkspaceCustomers, authService)) // tested
+		NewEnsureAuth(wh.handleGetWorkspaceCustomers, authService))
 
 	mux.Handle("POST /workspaces/{workspaceId}/labels/{$}",
-		NewEnsureAuth(wh.handleCreateWorkspaceLabel, authService)) // tested
+		NewEnsureAuth(wh.handleCreateWorkspaceLabel, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/labels/{$}",
-		NewEnsureAuth(wh.handleGetWorkspaceLabels, authService)) // tested
+		NewEnsureAuth(wh.handleGetWorkspaceLabels, authService))
 	mux.Handle("PATCH /workspaces/{workspaceId}/labels/{labelId}/{$}",
-		NewEnsureAuth(wh.handleUpdateWorkspaceLabel, authService)) // tested
+		NewEnsureAuth(wh.handleUpdateWorkspaceLabel, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/labels/{labelId}/{$}",
-		NewEnsureAuth(wh.handleGetWorkspaceLabel, authService)) // tested
+		NewEnsureAuth(wh.handleGetWorkspaceLabel, authService))
 
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{$}",
-		NewEnsureAuth(th.handleGetThreadChats, authService)) // tested
+		NewEnsureAuth(th.handleGetThreadChats, authService))
 
 	mux.Handle("PATCH /workspaces/{workspaceId}/threads/chat/{threadId}/{$}",
-		NewEnsureAuth(th.handleUpdateThreadChat, authService)) // tested
+		NewEnsureAuth(th.handleUpdateThreadChat, authService))
 
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/me/{$}",
-		NewEnsureAuth(th.handleGetMyThreadChats, authService)) // tested
+		NewEnsureAuth(th.handleGetMyThreadChats, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/unassigned/{$}",
-		NewEnsureAuth(th.handleGetUnassignedThChats, authService)) // tested
+		NewEnsureAuth(th.handleGetUnassignedThChats, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/labels/{labelId}/{$}",
 		NewEnsureAuth(th.handleGetLabelledThreadChats, authService))
 
 	mux.Handle("POST /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
-		NewEnsureAuth(th.handleCreateThChatMessage, authService)) // tested
+		NewEnsureAuth(th.handleCreateThChatMessage, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
-		NewEnsureAuth(th.handleGetThChatMesssages, authService)) // tested
+		NewEnsureAuth(th.handleGetThChatMesssages, authService))
 
 	mux.Handle("PUT /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
-		NewEnsureAuth(th.handleSetThreadChatLabel, authService)) // tested
+		NewEnsureAuth(th.handleSetThreadChatLabel, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
-		NewEnsureAuth(th.handleGetThChatLabels, authService)) // tested
+		NewEnsureAuth(th.handleGetThChatLabels, authService))
 
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/metrics/{$}",
 		NewEnsureAuth(th.handleGetThreadChatMetrics, authService))
 
 	mux.Handle("POST /workspaces/{workspaceId}/widgets/{$}",
-		NewEnsureAuth(wh.handleCreateWidget, authService)) // tested
+		NewEnsureAuth(wh.handleCreateWidget, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/widgets/{$}",
-		NewEnsureAuth(wh.handleGetWidgets, authService)) // tested
+		NewEnsureAuth(wh.handleGetWidgets, authService))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},

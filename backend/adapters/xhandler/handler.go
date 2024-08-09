@@ -751,19 +751,19 @@ func NewServer(
 
 	ch := NewCustomerHandler(workspaceService, customerService, threadChatService)
 
-	mux.HandleFunc("GET /{$}", handleGetIndex) // tested
+	mux.HandleFunc("GET /{$}", handleGetIndex)
 
-	mux.HandleFunc("POST /widgets/{widgetId}/init/{$}", ch.handleGetOrCreateCustomer)              // tested
-	mux.Handle("GET /widgets/{widgetId}/me/{$}", NewEnsureAuth(ch.handleGetCustomer, authService)) // tested
+	mux.HandleFunc("POST /widgets/{widgetId}/init/{$}", ch.handleGetOrCreateCustomer)
+	mux.Handle("GET /widgets/{widgetId}/me/{$}", NewEnsureAuth(ch.handleGetCustomer, authService))
 	mux.Handle("POST /widgets/{widgetId}/me/identities/{$}", NewEnsureAuth(ch.handleCustomerIdentities, authService))
 
-	mux.Handle("POST /widgets/{widgetId}/threads/chat/{$}", NewEnsureAuth(ch.handleCreateCustomerThChat, authService)) // tested
-	mux.Handle("GET /widgets/{widgetId}/threads/chat/{$}", NewEnsureAuth(ch.handleGetCustomerThChats, authService))    // tested
+	mux.Handle("POST /widgets/{widgetId}/threads/chat/{$}", NewEnsureAuth(ch.handleCreateCustomerThChat, authService))
+	mux.Handle("GET /widgets/{widgetId}/threads/chat/{$}", NewEnsureAuth(ch.handleGetCustomerThChats, authService))
 
 	mux.Handle("POST /widgets/{widgetId}/threads/chat/{threadId}/messages/{$}",
-		NewEnsureAuth(ch.handleCreateThChatMessage, authService)) // tested
+		NewEnsureAuth(ch.handleCreateThChatMessage, authService))
 	mux.Handle("GET /widgets/{widgetId}/threads/chat/{threadId}/messages/{$}",
-		NewEnsureAuth(ch.handleGetThChatMesssages, authService)) // tested
+		NewEnsureAuth(ch.handleGetThChatMesssages, authService))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
