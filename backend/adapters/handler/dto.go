@@ -307,7 +307,7 @@ func (t ThreadResp) MarshalJSON() ([]byte, error) {
 		Spam            bool            `json:"spam"`
 		Channel         string          `json:"channel"`
 		PreviewText     string          `json:"previewText"`
-		Assignee        *ThMemberResp   `json:"assignee,omitempty"`
+		Assignee        *ThMemberResp   `json:"assignee"`
 		IngressFirstSeq *int64          `json:"ingressFirstSeq,omitempty"`
 		IngressLastSeq  *int64          `json:"ingressLastSeq,omitempty"`
 		IngressCustomer *ThCustomerResp `json:"ingressCustomer,omitempty"`

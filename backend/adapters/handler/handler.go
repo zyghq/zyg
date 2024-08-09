@@ -30,7 +30,7 @@ func NewServer(
 	th := NewThreadChatHandler(workspaceService, threadChatService)
 
 	mux.HandleFunc("GET /{$}", handleGetIndex)                             // tested
-	mux.HandleFunc("POST /accounts/auth/{$}", ah.handleGetOrCreateAccount) // tested (indirectly)
+	mux.HandleFunc("POST /accounts/auth/{$}", ah.handleGetOrCreateAccount) // tested
 
 	mux.Handle("POST /pats/{$}", NewEnsureAuth(ah.handleCreatePat, authService))
 	mux.Handle("GET /pats/{$}", NewEnsureAuth(ah.handleGetPatList, authService))
@@ -78,9 +78,9 @@ func NewServer(
 		NewEnsureAuth(th.handleUpdateThreadChat, authService))
 
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/me/{$}",
-		NewEnsureAuth(th.handleGetMyThreadChats, authService))
+		NewEnsureAuth(th.handleGetMyThreadChats, authService)) // tested
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/unassigned/{$}",
-		NewEnsureAuth(th.handleGetUnassignedThChats, authService))
+		NewEnsureAuth(th.handleGetUnassignedThChats, authService)) // tested
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/labels/{labelId}/{$}",
 		NewEnsureAuth(th.handleGetLabelledThreadChats, authService))
 

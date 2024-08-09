@@ -769,10 +769,10 @@ func (tc *ThreadChatDB) FetchThreadsByAssignedMemberId(
 			th.created_at AS created_at,
 			th.updated_at AS updated_at
 		FROM thread th
-		INNER JOIN customer c ON ins.customer_id = c.customer_id
-		LEFT OUTER JOIN member m ON ins.assignee_id = m.member_id
-		LEFT OUTER JOIN ingress_message ing ON ins.ingress_message_id = ing.message_id
-		LEFT OUTER JOIN egress_message eg ON ins.egress_message_id = eg.message_id
+		INNER JOIN customer c ON th.customer_id = c.customer_id
+		LEFT OUTER JOIN member m ON th.assignee_id = m.member_id
+		LEFT OUTER JOIN ingress_message ing ON th.ingress_message_id = ing.message_id
+		LEFT OUTER JOIN egress_message eg ON th.egress_message_id = eg.message_id
 		LEFT OUTER JOIN customer ingc ON ing.customer_id = ingc.customer_id
 		LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
 		WHERE th.assignee_id = $1
