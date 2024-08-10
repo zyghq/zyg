@@ -2,46 +2,37 @@ import { z } from "zod";
 import {
   workspaceResponseSchema,
   workspaceMetricsResponseSchema,
-  threadChatWithMessagesResponseSchema,
+  threadResponseSchema,
   accountResponseSchema,
-  userMemberResponseSchema,
-  workspaceCustomerResponseSchema,
-  workspaceLabelResponseSchema,
-  workspaceMemberResponseSchema,
-  accountPatResponseSchema,
+  authMemberResponseSchema,
+  customerResponseSchema,
+  labelResponseSchema,
+  memberResponseSchema,
+  patResponseSchema,
   threadChatResponseSchema,
 } from "./schema";
 import {
   IWorkspaceEntities,
   IWorkspaceValueObjects,
-  ThreadChatMap,
-  WorkspaceCustomerMap,
-  WorkspaceLabelMap,
-  WorkspaceMemberMap,
-  AccountPatMap,
+  ThreadMap,
+  CustomerMap,
+  LabelMap,
+  MemberMap,
+  PatMap,
 } from "./store";
 
-import {
-  Account,
-  Workspace,
-  UserMember,
-  AccountPat,
-  WorkspaceMetricsResponse,
-  ThreadChatWithMessages,
-  ThreadChatWithRecentMessage,
-  Customer,
-} from "./entities";
+import { Account, Workspace, AuthMember, Pat, Customer } from "./entities";
 
-export type WorkspaceLabelResponseType = z.infer<
-  typeof workspaceLabelResponseSchema
->;
+export type ThreadResponse = z.infer<typeof threadResponseSchema>;
 
-export type WorkspaceMemberResponseType = z.infer<
-  typeof workspaceMemberResponseSchema
->;
+export type ThreadChatResponse = z.infer<typeof threadChatResponseSchema>;
 
-export type ThreadChatLeanResponseType = z.infer<
-  typeof threadChatResponseSchema
+export type LabelResponse = z.infer<typeof labelResponseSchema>;
+
+export type MemberResponse = z.infer<typeof memberResponseSchema>;
+
+export type WorkspaceMetricsResponse = z.infer<
+  typeof workspaceMetricsResponseSchema
 >;
 
 function initialWorkspaceData(): IWorkspaceEntities & IWorkspaceValueObjects {
@@ -61,7 +52,7 @@ function initialWorkspaceData(): IWorkspaceEntities & IWorkspaceValueObjects {
       otherAssigned: 0,
       labels: [],
     },
-    threadChats: null,
+    threads: null,
     customers: null,
     labels: null,
     members: null,
@@ -69,7 +60,6 @@ function initialWorkspaceData(): IWorkspaceEntities & IWorkspaceValueObjects {
   };
 }
 
-// fetch workspace details
 export async function getWorkspace(
   token: string,
   workspaceId: string
@@ -81,7 +71,7 @@ export async function getWorkspace(
       {
         method: "GET",
         headers: {
-          // "Content-Type": "application/json",
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       }
@@ -98,6 +88,7 @@ export async function getWorkspace(
     }
 
     const data = await response.json();
+    console.log(data);
     // parse into schema
     try {
       const workspace = workspaceResponseSchema.parse({ ...data });
@@ -122,11 +113,10 @@ export async function getWorkspace(
   }
 }
 
-// fetch workspace user member
 export async function getWorkspaceMember(
   token: string,
   workspaceId: string
-): Promise<{ data: UserMember | null; error: Error | null }> {
+): Promise<{ data: AuthMember | null; error: Error | null }> {
   try {
     // make a request
     const response = await fetch(
@@ -150,9 +140,10 @@ export async function getWorkspaceMember(
     }
 
     const data = await response.json();
+    console.log(data);
     // parse into schema
     try {
-      const member = userMemberResponseSchema.parse({ ...data });
+      const member = authMemberResponseSchema.parse({ ...data });
       return { error: null, data: member };
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -174,7 +165,6 @@ export async function getWorkspaceMember(
   }
 }
 
-// fetch workspace metrics
 export async function getWorkspaceMetrics(
   token: string,
   workspaceId: string
@@ -224,11 +214,10 @@ export async function getWorkspaceMetrics(
   }
 }
 
-// fetch workspace thread chats
 export async function getWorkspaceThreads(
   token: string,
   workspaceId: string
-): Promise<{ data: ThreadChatWithMessages[] | null; error: Error | null }> {
+): Promise<{ data: ThreadResponse[] | null; error: Error | null }> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/`,
@@ -253,9 +242,10 @@ export async function getWorkspaceThreads(
 
     try {
       const data = await response.json();
+      console.log(data);
       // schema validate for each item
       const threads = data.map((item: any) => {
-        return threadChatWithMessagesResponseSchema.parse({ ...item });
+        return threadResponseSchema.parse({ ...item });
       });
       return { error: null, data: threads };
     } catch (err) {
@@ -278,12 +268,11 @@ export async function getWorkspaceThreads(
   }
 }
 
-// API call to fetch workspace labels
 export async function getWorkspaceLabels(
   token: string,
   workspaceId: string
 ): Promise<{
-  data: WorkspaceLabelResponseType[] | null;
+  data: LabelResponse[] | null;
   error: Error | null;
 }> {
   try {
@@ -310,9 +299,10 @@ export async function getWorkspaceLabels(
 
     try {
       const data = await response.json();
+      console.log(data);
       // schema validate for each item
       const labels = data.map((item: any) => {
-        return workspaceLabelResponseSchema.parse({ ...item });
+        return labelResponseSchema.parse({ ...item });
       });
       return { error: null, data: labels };
     } catch (err) {
@@ -335,8 +325,8 @@ export async function getWorkspaceLabels(
   }
 }
 
-export async function getAccountPats(token: string): Promise<{
-  data: AccountPat[] | null;
+export async function getPats(token: string): Promise<{
+  data: Pat[] | null;
   error: Error | null;
 }> {
   try {
@@ -360,9 +350,10 @@ export async function getAccountPats(token: string): Promise<{
 
     try {
       const data = await response.json();
+      console.log(data);
       // schema validate for each item
       const pats = data.map((item: any) => {
-        return accountPatResponseSchema.parse({ ...item });
+        return patResponseSchema.parse({ ...item });
       });
       return { error: null, data: pats };
     } catch (err) {
@@ -383,11 +374,11 @@ export async function getAccountPats(token: string): Promise<{
   }
 }
 
-export async function createAccountPat(
+export async function createPat(
   token: string,
   body: { name: string; description: string }
 ): Promise<{
-  data: AccountPat | null;
+  data: Pat | null;
   error: Error | null;
 }> {
   try {
@@ -408,7 +399,9 @@ export async function createAccountPat(
     }
     try {
       const data = await response.json();
-      const pat = accountPatResponseSchema.parse({ ...data });
+
+      console.log(data);
+      const pat = patResponseSchema.parse({ ...data });
       return { error: null, data: pat };
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -428,72 +421,47 @@ export async function createAccountPat(
   }
 }
 
-function makeThreadsStoreable(
-  threads: ThreadChatWithMessages[]
-): ThreadChatMap {
-  const mapped: ThreadChatMap = {};
+function makeThreadsStoreable(threads: ThreadResponse[]): ThreadMap {
+  const mapped: ThreadMap = {};
   for (const thread of threads) {
     const {
+      threadId,
       customer,
       assignee,
-      messages,
-      threadChatId,
-      sequence,
-      status,
-      read,
-      replied,
-      priority,
-      createdAt,
-      updatedAt,
+      egressFirstSeq,
+      egressLastSeq,
+      ingressFirstSeq,
+      ingressLastSeq,
+      ingressCustomer,
+      egressMember,
+      ...rest
     } = thread;
-    const newMap: ThreadChatWithRecentMessage = {
-      threadChatId,
-      sequence,
-      status,
-      read,
-      replied,
-      priority,
-      customerId: customer.customerId,
-      assigneeId: assignee ? assignee.memberId : null,
-      createdAt,
-      updatedAt,
-      recentMessage: {
-        threadChatId: "",
-        threadChatMessageId: "",
-        body: "",
-        sequence: 0,
-        customerId: null,
-        memberId: null,
-        createdAt: "",
-        updatedAt: "",
-      },
+    const customerId = customer.customerId;
+    const assigneeId = assignee?.memberId || null;
+    const inboundFirstSeq = ingressFirstSeq || null;
+    const inboundLastSeq = ingressLastSeq || null;
+    const inboundCustomerId = ingressCustomer?.customerId || null;
+    const outboundFirstSeq = egressFirstSeq || null;
+    const outboundLastSeq = egressLastSeq || null;
+    const outboundMemberId = egressMember?.memberId || null;
+    mapped[threadId] = {
+      threadId,
+      ...rest,
+      customerId: customerId,
+      assigneeId: assigneeId,
+      inboundFirstSeq,
+      inboundLastSeq,
+      inboundCustomerId,
+      outboundFirstSeq,
+      outboundLastSeq,
+      outboundMemberId,
     };
-    const message = messages[0] || null;
-    if (message) {
-      const { customer, member, ...rest } = message;
-      if (customer) {
-        newMap.recentMessage = {
-          ...rest,
-          customerId: customer.customerId,
-          memberId: null,
-        };
-      } else if (member) {
-        newMap.recentMessage = {
-          ...rest,
-          customerId: null,
-          memberId: member.memberId,
-        };
-      }
-    }
-    mapped[threadChatId] = newMap;
   }
   return mapped;
 }
 
-function makeLabelsStoreable(
-  labels: WorkspaceLabelResponseType[]
-): WorkspaceLabelMap {
-  const mapped: WorkspaceLabelMap = {};
+function makeLabelsStoreable(labels: LabelResponse[]): LabelMap {
+  const mapped: LabelMap = {};
   for (const label of labels) {
     const { labelId, name, icon, createdAt, updatedAt } = label;
     mapped[labelId] = {
@@ -507,8 +475,8 @@ function makeLabelsStoreable(
   return mapped;
 }
 
-function makeCustomersStoreable(customers: Customer[]): WorkspaceCustomerMap {
-  const mapped: WorkspaceCustomerMap = {};
+function makeCustomersStoreable(customers: Customer[]): CustomerMap {
+  const mapped: CustomerMap = {};
   for (const customer of customers) {
     const { customerId, ...rest } = customer;
     mapped[customerId] = { customerId, ...rest };
@@ -516,10 +484,8 @@ function makeCustomersStoreable(customers: Customer[]): WorkspaceCustomerMap {
   return mapped;
 }
 
-function makeMembersStoreable(
-  members: WorkspaceMemberResponseType[]
-): WorkspaceMemberMap {
-  const mapped: WorkspaceMemberMap = {};
+function makeMembersStoreable(members: MemberResponse[]): MemberMap {
+  const mapped: MemberMap = {};
   for (const member of members) {
     const { memberId, ...rest } = member;
     mapped[memberId] = { memberId, ...rest };
@@ -527,8 +493,8 @@ function makeMembersStoreable(
   return mapped;
 }
 
-function makePatsStoreable(pats: AccountPat[]): AccountPatMap {
-  const mapped: AccountPatMap = {};
+function makePatsStoreable(pats: Pat[]): PatMap {
+  const mapped: PatMap = {};
   for (const pat of pats) {
     const { patId, ...rest } = pat;
     mapped[patId] = { patId, ...rest };
@@ -566,6 +532,8 @@ export async function getOrCreateZygAccount(
 
     try {
       const data = await response.json();
+
+      console.log(data);
       const account = accountResponseSchema.parse({ ...data });
       return { error: null, data: account };
     } catch (err) {
@@ -618,9 +586,11 @@ export async function getWorkspaceCustomers(
 
     try {
       const data = await response.json();
+
+      console.log(data);
       // schema validate for each item
       const customers = data.map((item: any) => {
-        return workspaceCustomerResponseSchema.parse({ ...item });
+        return customerResponseSchema.parse({ ...item });
       });
       return { error: null, data: customers };
     } catch (err) {
@@ -670,6 +640,8 @@ export async function createWorkspace(
       return { error, data: null };
     }
     const data = await response.json();
+
+    console.log(data);
     const { workspaceId, name } = data;
     return {
       error: null,
@@ -712,6 +684,8 @@ export async function updateWorkspace(
       return { error, data: null };
     }
     const data = await response.json();
+
+    console.log(data);
     const { workspaceId: id, name } = data;
     return {
       error: null,
@@ -730,7 +704,7 @@ export async function getWorkspaceMembers(
   token: string,
   workspaceId: string
 ): Promise<{
-  data: WorkspaceMemberResponseType[] | null;
+  data: MemberResponse[] | null;
   error: Error | null;
 }> {
   try {
@@ -756,9 +730,11 @@ export async function getWorkspaceMembers(
 
     try {
       const data = await response.json();
+
+      console.log(data);
       // schema validate for each item
       const members = data.map((item: any) => {
-        return workspaceMemberResponseSchema.parse({ ...item });
+        return memberResponseSchema.parse({ ...item });
       });
       return { error: null, data: members };
     } catch (err) {
@@ -828,7 +804,7 @@ export async function bootstrapWorkspace(
   const getWorkspaceThreadsP = getWorkspaceThreads(token, workspaceId);
   const getWorkspaceLabelsP = getWorkspaceLabels(token, workspaceId);
   const getWorkspaceMembersP = getWorkspaceMembers(token, workspaceId);
-  const getAccountPatsP = getAccountPats(token);
+  const getAccountPatsP = getPats(token);
 
   const [
     workspaceData,
@@ -902,7 +878,7 @@ export async function bootstrapWorkspace(
 
   if (threads && threads.length > 0) {
     const threadsMap = makeThreadsStoreable(threads);
-    data.threadChats = threadsMap;
+    data.threads = threadsMap;
   }
 
   if (labels && labels.length > 0) {
@@ -921,14 +897,14 @@ export async function bootstrapWorkspace(
 export async function getWorkspaceThreadChatMessages(
   token: string,
   workspaceId: string,
-  threadChatId: string
+  threadId: string
 ): Promise<{
-  data: ThreadChatWithMessages | null;
+  data: ThreadChatResponse[] | null;
   error: Error | null;
 }> {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadChatId}/messages/`,
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadId}/messages/`,
       {
         method: "GET",
         headers: {
@@ -949,8 +925,11 @@ export async function getWorkspaceThreadChatMessages(
 
     try {
       const data = await response.json();
-      const parsed = threadChatWithMessagesResponseSchema.parse({ ...data });
-      return { error: null, data: parsed };
+      console.log(data);
+      const messages = data.map((item: any) => {
+        return threadChatResponseSchema.parse({ ...item });
+      });
+      return { error: null, data: messages };
     } catch (err) {
       if (err instanceof z.ZodError) {
         console.error(err.message);
@@ -975,7 +954,7 @@ export async function createWorkspaceLabel(
   token: string,
   workspaceId: string,
   body: { name: string }
-): Promise<{ data: WorkspaceLabelResponseType | null; error: Error | null }> {
+): Promise<{ data: LabelResponse | null; error: Error | null }> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/labels/`,
@@ -997,7 +976,9 @@ export async function createWorkspaceLabel(
     }
     try {
       const data = await response.json();
-      const parsed = workspaceLabelResponseSchema.parse({ ...data });
+
+      console.log(data);
+      const parsed = labelResponseSchema.parse({ ...data });
       return { error: null, data: parsed };
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -1022,7 +1003,7 @@ export async function updateWorkspaceLabel(
   workspaceId: string,
   labelId: string,
   body: { name: string }
-): Promise<{ data: WorkspaceLabelResponseType | null; error: Error | null }> {
+): Promise<{ data: LabelResponse | null; error: Error | null }> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/labels/${labelId}/`,
@@ -1044,7 +1025,9 @@ export async function updateWorkspaceLabel(
     }
     try {
       const data = await response.json();
-      const parsed = workspaceLabelResponseSchema.parse({ ...data });
+
+      console.log(data);
+      const parsed = labelResponseSchema.parse({ ...data });
       return { error: null, data: parsed };
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -1064,15 +1047,15 @@ export async function updateWorkspaceLabel(
   }
 }
 
-export async function updateThreadChat(
+export async function updateThread(
   token: string,
   workspaceId: string,
-  threadChatId: string,
+  threadId: string,
   body: object
-): Promise<{ data: ThreadChatLeanResponseType | null; error: Error | null }> {
+): Promise<{ data: ThreadResponse | null; error: Error | null }> {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadChatId}/`,
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadId}/`,
       {
         method: "PATCH",
         headers: {
@@ -1085,13 +1068,15 @@ export async function updateThreadChat(
     if (!response.ok) {
       const { status, statusText } = response;
       const error = new Error(
-        `error updating thread chat with status: ${status} and statusText: ${statusText}`
+        `error updating thread with status: ${status} and statusText: ${statusText}`
       );
       return { error, data: null };
     }
     try {
       const data = await response.json();
-      const parsed = threadChatResponseSchema.parse({ ...data });
+
+      console.log(data);
+      const parsed = threadResponseSchema.parse({ ...data });
       return { error: null, data: parsed };
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -1105,7 +1090,7 @@ export async function updateThreadChat(
   } catch (err) {
     console.error(err);
     return {
-      error: new Error("error thread chat - something went wrong"),
+      error: new Error("error thread - something went wrong"),
       data: null,
     };
   }
@@ -1117,7 +1102,7 @@ export async function sendThreadChatMessage(
   threadChatId: string,
   body: { message: string }
 ): Promise<{
-  data: ThreadChatWithMessages | null;
+  data: ThreadChatResponse | null;
   error: Error | null;
 }> {
   try {
@@ -1144,7 +1129,9 @@ export async function sendThreadChatMessage(
 
     try {
       const data = await response.json();
-      const parsed = threadChatWithMessagesResponseSchema.parse({ ...data });
+
+      console.log(data);
+      const parsed = threadChatResponseSchema.parse({ ...data });
       return { error: null, data: parsed };
     } catch (err) {
       if (err instanceof z.ZodError) {

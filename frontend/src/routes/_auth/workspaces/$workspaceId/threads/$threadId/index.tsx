@@ -26,17 +26,13 @@ import { WorkspaceStoreState } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
 import { ThreadList } from "@/components/workspace/thread/threads";
 import { formatDistanceToNow } from "date-fns";
-import { getWorkspaceThreadChatMessages } from "@/db/api";
+import { getWorkspaceThreadChatMessages, ThreadChatResponse } from "@/db/api";
 import { NotFound } from "@/components/notfound";
 import { PropertiesForm } from "@/components/workspace/thread/properties-form";
 import { CheckCircleIcon, EclipseIcon, CircleIcon } from "lucide-react";
-import { updateThreadChat } from "@/db/api";
+import { updateThread } from "@/db/api";
 import { useMutation } from "@tanstack/react-query";
-import {
-  ThreadChatMessage,
-  ThreadChatWithMessages,
-  ThreadChatWithRecentMessage,
-} from "@/db/entities";
+import { ThreadChat, Thread } from "@/db/entities";
 
 import { MessageForm } from "@/components/workspace/thread/message-form";
 
@@ -46,14 +42,11 @@ export const Route = createFileRoute(
   component: ThreadDetail,
 });
 
-function getPrevNextFromCurrent(
-  threads: ThreadChatWithRecentMessage[] | null,
-  threadId: string
-) {
+function getPrevNextFromCurrent(threads: Thread[] | null, threadId: string) {
   if (!threads) return { prevItem: null, nextItem: null };
 
   const currentIndex = threads.findIndex(
-    (thread) => thread.threadChatId === threadId
+    (thread) => thread.threadId === threadId
   );
 
   const prevItem = threads[currentIndex - 1] || null;
@@ -62,7 +55,7 @@ function getPrevNextFromCurrent(
   return { prevItem, nextItem };
 }
 
-function Message({ message }: { message: ThreadChatMessage }) {
+function Message({ message }: { message: ThreadChat }) {
   const { createdAt } = message;
   const date = new Date(createdAt);
   const time = date.toLocaleString("en-GB", {
@@ -134,7 +127,7 @@ function ThreadDetail() {
   );
 
   const activeThread = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-    state.getThreadChatItem(state, threadId)
+    state.getThreadItem(state, threadId)
   );
 
   const customerName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
@@ -162,7 +155,7 @@ function ThreadDetail() {
         threadId
       );
       if (error) throw new Error("failed to fetch thread messages");
-      return data as ThreadChatWithMessages;
+      return data as ThreadChatResponse[];
     },
     enabled: !!activeThread,
   });
@@ -178,12 +171,9 @@ function ThreadDetail() {
 
   const statusMutation = useMutation({
     mutationFn: async (values: { status: string }) => {
-      const { error, data } = await updateThreadChat(
-        token,
-        workspaceId,
-        threadId,
-        { ...values }
-      );
+      const { error, data } = await updateThread(token, workspaceId, threadId, {
+        ...values,
+      });
       if (error) {
         throw new Error(error.message);
       }
@@ -196,14 +186,14 @@ function ThreadDetail() {
       console.error(error);
     },
     onSuccess: (data) => {
-      workspaceStore.getState().updateMainThreadChat(data);
+      workspaceStore.getState().updateThread(data);
     },
   });
 
   const { isError: isStatusMutErr, isPending: isStatusMutPending } =
     statusMutation;
 
-  function renderMessages(isPending: boolean, data?: ThreadChatWithMessages) {
+  function renderMessages(isPending: boolean, data?: Thread) {
     if (isPending) {
       return (
         <div className="flex justify-center mt-12">

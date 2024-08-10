@@ -22,7 +22,7 @@ import {
 } from "@radix-ui/react-icons";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { createAccountPat } from "@/db/api";
+import { createPat } from "@/db/api";
 import { useWorkspaceStore } from "@/providers";
 import { ArrowLeftIcon } from "lucide-react";
 import { useCopyToClipboard } from "@uidotdev/usehooks";
@@ -70,7 +70,7 @@ function AddNewPat() {
   const onSubmit: SubmitHandler<FormInputs> = async (inputs) => {
     try {
       const { name, description } = inputs;
-      const { error, data } = await createAccountPat(token, {
+      const { error, data } = await createPat(token, {
         name,
         description,
       });

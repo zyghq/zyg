@@ -119,12 +119,7 @@ function AllThreads() {
         <TabsContent value="todo" className="m-0">
           <ThreadList workspaceId={workspaceId} threads={todoThreads} />
         </TabsContent>
-        <TabsContent value="snoozed" className="m-0">
-          {/* <ThreadList
-          items={threads.filter((item) => !item.read)}
-          className="h-[calc(100dvh-14rem)]"
-        /> */}
-        </TabsContent>
+        <TabsContent value="snoozed" className="m-0"></TabsContent>
         <TabsContent value="done" className="m-0">
           <ThreadList workspaceId={workspaceId} threads={doneThreads} />
         </TabsContent>

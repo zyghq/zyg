@@ -1411,8 +1411,8 @@ func (tc *ThreadChatDB) FetchThChatMessagesByThreadId(
 	return messages, nil
 }
 
-func (tc *ThreadChatDB) ComputeStatusMetricsByWorkspaceId(ctx context.Context, workspaceId string,
-) (models.ThreadMetrics, error) {
+func (tc *ThreadChatDB) ComputeStatusMetricsByWorkspaceId(
+	ctx context.Context, workspaceId string) (models.ThreadMetrics, error) {
 	var metrics models.ThreadMetrics
 	role := models.Customer{}.Engaged()
 	stmt := `SELECT
@@ -1479,21 +1479,20 @@ func (tc *ThreadChatDB) ComputeLabelMetricsByWorkspaceId(
 	var metric models.ThreadLabelMetric
 	metrics := make([]models.ThreadLabelMetric, 0, 100)
 
-	stmt := `SELECT
-		l.label_id,
-		l.name AS label_name,
-		l.icon AS label_icon,
-		COUNT(tl.thread_id) AS count
-	FROM
-		label l
-	LEFT JOIN
-		thread_label tl ON l.label_id = tl.label_id
-	WHERE
-		l.workspace_id = $1
-	GROUP BY
-		l.label_id, l.name
-	ORDER BY MAX(tcl.updated_at) DESC
-	LIMIT 100`
+	stmt := `SELECT l.label_id,
+			l.name AS label_name, l.icon AS label_icon,
+			COUNT(tl.thread_id) AS count
+		FROM
+			label l
+		LEFT JOIN
+			thread_label tl ON l.label_id = tl.label_id
+		WHERE
+			l.workspace_id = $1
+		GROUP BY
+			l.label_id, l.name
+		ORDER BY MAX(tl.updated_at) DESC
+		LIMIT 100
+	`
 
 	rows, _ := tc.db.Query(ctx, stmt, workspaceId)
 

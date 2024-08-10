@@ -56,7 +56,7 @@ import { WorkspaceStoreState } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
 import { useStore } from "zustand";
 import { useMutation } from "@tanstack/react-query";
-import { updateThreadChat } from "@/db/api";
+import { updateThread } from "@/db/api";
 
 const FormSchema = z.object({
   priority: z.string(),
@@ -245,7 +245,7 @@ export function PropertiesForm({
         assignee: memberId,
         priority,
       };
-      const { error, data } = await updateThreadChat(
+      const { error, data } = await updateThread(
         token,
         workspaceId,
         threadId,
@@ -267,7 +267,7 @@ export function PropertiesForm({
       });
     },
     onSuccess: (data) => {
-      workspaceStore.getState().updateMainThreadChat(data);
+      workspaceStore.getState().updateThread(data);
     },
   });
 
