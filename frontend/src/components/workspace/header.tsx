@@ -4,7 +4,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Icons } from "@/components/icons";
 import { ThemeToggler } from "@/components/theme-toggler";
 import { ArrowLeftRightIcon } from "lucide-react";
-import { WorkspaceMetrics } from "@/db/entities";
+import { WorkspaceMetrics } from "@/db/models";
 import SideNavMobile from "@/components/workspace/sidenav-mobile";
 
 export function Header({

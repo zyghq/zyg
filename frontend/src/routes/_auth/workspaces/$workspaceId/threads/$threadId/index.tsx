@@ -26,15 +26,16 @@ import { WorkspaceStoreState } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
 import { ThreadList } from "@/components/workspace/thread/threads";
 import { formatDistanceToNow } from "date-fns";
-import { getWorkspaceThreadChatMessages, ThreadChatResponse } from "@/db/api";
+import { getWorkspaceThreadChatMessages } from "@/db/api";
 import { NotFound } from "@/components/notfound";
 import { PropertiesForm } from "@/components/workspace/thread/properties-form";
 import { CheckCircleIcon, EclipseIcon, CircleIcon } from "lucide-react";
 import { updateThread } from "@/db/api";
 import { useMutation } from "@tanstack/react-query";
-import { ThreadChat, Thread } from "@/db/entities";
+import { Thread, threadTransformer } from "@/db/models";
 
 import { MessageForm } from "@/components/workspace/thread/message-form";
+import { ThreadChatResponse, ThreadResponse } from "@/db/schema";
 
 export const Route = createFileRoute(
   "/_auth/workspaces/$workspaceId/threads/$threadId/"
@@ -55,8 +56,8 @@ function getPrevNextFromCurrent(threads: Thread[] | null, threadId: string) {
   return { prevItem, nextItem };
 }
 
-function Message({ message }: { message: ThreadChat }) {
-  const { createdAt } = message;
+function Chat({ chat }: { chat: ThreadChatResponse }) {
+  const { createdAt } = chat;
   const date = new Date(createdAt);
   const time = date.toLocaleString("en-GB", {
     day: "numeric",
@@ -66,14 +67,14 @@ function Message({ message }: { message: ThreadChat }) {
     minute: "2-digit",
   });
 
-  const isCustomer = message.customer ? true : false;
-  const isMember = message.member ? true : false;
+  const isCustomer = chat.customer ? true : false;
+  const isMember = chat.member ? true : false;
 
-  const customerId = message.customer?.customerId || "";
-  const customerName = message.customer?.name || "";
+  const customerId = chat.customer?.customerId || "";
+  const customerName = chat.customer?.name || "";
 
-  const memberId = message.member?.memberId || "";
-  const memberName = message.member?.name || "";
+  const memberId = chat.member?.memberId || "";
+  const memberName = chat.member?.name || "";
 
   return (
     <div className="flex">
@@ -84,7 +85,7 @@ function Message({ message }: { message: ThreadChat }) {
           )}
           <div className="p-2 rounded-lg bg-gray-100 dark:bg-accent">
             <div className="text-muted-foreground">{`${isMember ? memberName : customerName}`}</div>
-            <p className="text-sm">{message.body}</p>
+            <p className="text-sm">{chat.body}</p>
             <div className="flex text-xs justify-end text-muted-foreground mt-1">
               {time}
             </div>
@@ -147,7 +148,7 @@ function ThreadDetail() {
   const { prevItem, nextItem } = getPrevNextFromCurrent(currentQueue, threadId);
 
   const { isPending, error, data, refetch } = useQuery({
-    queryKey: ["messages", threadId, workspaceId, token],
+    queryKey: ["chats", threadId, workspaceId, token],
     queryFn: async () => {
       const { error, data } = await getWorkspaceThreadChatMessages(
         token,
@@ -180,20 +181,22 @@ function ThreadDetail() {
       if (!data) {
         throw new Error("no data returned");
       }
-      return data;
+      return data as ThreadResponse;
     },
     onError: (error) => {
       console.error(error);
     },
     onSuccess: (data) => {
-      workspaceStore.getState().updateThread(data);
+      const transformer = threadTransformer();
+      const [, thread] = transformer.normalize(data);
+      workspaceStore.getState().updateThread(thread);
     },
   });
 
   const { isError: isStatusMutErr, isPending: isStatusMutPending } =
     statusMutation;
 
-  function renderMessages(isPending: boolean, data?: Thread) {
+  function renderMessages(isPending: boolean, data?: ThreadChatResponse[]) {
     if (isPending) {
       return (
         <div className="flex justify-center mt-12">
@@ -220,13 +223,12 @@ function ThreadDetail() {
         </div>
       );
     }
-    if (data && data.messages.length > 0) {
-      const { messages } = data;
-      const messagesReversed = Array.from(messages).reverse();
+    if (data && data.length > 0) {
+      const chatsReversed = Array.from(data).reverse();
       return (
         <div className="p-4 space-y-2">
-          {messagesReversed.map((message) => (
-            <Message key={message.threadChatMessageId} message={message} />
+          {chatsReversed.map((chat) => (
+            <Chat key={chat.chatId} chat={chat} />
           ))}
           <div ref={bottomRef}></div>
         </div>
@@ -283,7 +285,7 @@ function ThreadDetail() {
                 <Button variant="outline" size="icon" asChild>
                   <Link
                     to="/workspaces/$workspaceId/threads/$threadId"
-                    params={{ workspaceId, threadId: prevItem.threadChatId }}
+                    params={{ workspaceId, threadId: prevItem.threadId }}
                   >
                     <ArrowUpIcon className="h-4 w-4" />
                   </Link>
@@ -293,7 +295,7 @@ function ThreadDetail() {
                 <Button variant="outline" size="icon" asChild>
                   <Link
                     to="/workspaces/$workspaceId/threads/$threadId"
-                    params={{ workspaceId, threadId: nextItem.threadChatId }}
+                    params={{ workspaceId, threadId: nextItem.threadId }}
                   >
                     <ArrowDownIcon className="h-4 w-4" />
                   </Link>

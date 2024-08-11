@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
-import { ThreadChatWithRecentMessage } from "@/db/entities";
+import { Thread } from "@/db/models";
 import { ChatBubbleIcon, ResetIcon } from "@radix-ui/react-icons";
 import Avatar from "boring-avatars";
 import { useStore } from "zustand";
@@ -15,7 +15,7 @@ function ThreadItem({
   variant = "default",
 }: {
   workspaceId: string;
-  item: ThreadChatWithRecentMessage;
+  item: Thread;
   variant?: string;
 }) {
   // const WorkspaceStore = useRouteContext({
@@ -38,7 +38,7 @@ function ThreadItem({
   return (
     <Link
       to={"/workspaces/$workspaceId/threads/$threadId"}
-      params={{ workspaceId, threadId: item.threadChatId }}
+      params={{ workspaceId, threadId: item.threadId }}
       className={cn(
         "flex flex-col items-start gap-2 rounded-lg px-3 py-3 text-left text-sm transition-all hover:bg-accent",
         variant === "compress" && "gap-0 rounded-none py-5 border-b"
@@ -57,19 +57,16 @@ function ThreadItem({
               <span className="flex h-2 w-2 rounded-full bg-blue-600" />
             )}
           </div>
-
-          {item.recentMessage && (
-            <div
-              className={cn(
-                "ml-auto mr-2 text-xs",
-                !item.replied ? "text-foreground" : "text-muted-foreground"
-              )}
-            >
-              {formatDistanceToNow(new Date(item.recentMessage.updatedAt), {
-                addSuffix: true,
-              })}
-            </div>
-          )}
+          <div
+            className={cn(
+              "ml-auto mr-2 text-xs",
+              !item.replied ? "text-foreground" : "text-muted-foreground"
+            )}
+          >
+            {formatDistanceToNow(new Date(item.updatedAt), {
+              addSuffix: true,
+            })}
+          </div>
           {item.assigneeId && (
             <Avatar size={28} name={item.assigneeId} variant="marble" />
           )}
@@ -99,7 +96,7 @@ function ThreadItem({
         {/* {item?.title ? <div className="font-medium">{item?.title}</div> : null} */}
       </div>
       <div className="line-clamp-2 text-muted-foreground">
-        {item.recentMessage?.body}
+        {item.previewText}
       </div>
     </Link>
   );
@@ -111,16 +108,16 @@ export function ThreadList({
   variant = "default",
 }: {
   workspaceId: string;
-  threads: ThreadChatWithRecentMessage[];
+  threads: Thread[];
   variant?: string;
 }) {
   return (
     <div
       className={cn("flex flex-col gap-2", variant === "compress" && "gap-0")}
     >
-      {threads.map((item: ThreadChatWithRecentMessage) => (
+      {threads.map((item: Thread) => (
         <ThreadItem
-          key={item.threadChatId}
+          key={item.threadId}
           workspaceId={workspaceId}
           item={item}
           variant={variant}

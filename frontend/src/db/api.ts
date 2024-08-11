@@ -10,6 +10,11 @@ import {
   memberResponseSchema,
   patResponseSchema,
   threadChatResponseSchema,
+  ThreadResponse,
+  LabelResponse,
+  MemberResponse,
+  ThreadChatResponse,
+  WorkspaceMetricsResponse,
 } from "./schema";
 import {
   IWorkspaceEntities,
@@ -21,19 +26,18 @@ import {
   PatMap,
 } from "./store";
 
-import { Account, Workspace, AuthMember, Pat, Customer } from "./entities";
-
-export type ThreadResponse = z.infer<typeof threadResponseSchema>;
-
-export type ThreadChatResponse = z.infer<typeof threadChatResponseSchema>;
-
-export type LabelResponse = z.infer<typeof labelResponseSchema>;
-
-export type MemberResponse = z.infer<typeof memberResponseSchema>;
-
-export type WorkspaceMetricsResponse = z.infer<
-  typeof workspaceMetricsResponseSchema
->;
+import {
+  Account,
+  Workspace,
+  AuthMember,
+  Pat,
+  Customer,
+  threadTransformer,
+  labelTransformer,
+  customerTransformer,
+  memberTransformer,
+  patTransformer,
+} from "./models";
 
 function initialWorkspaceData(): IWorkspaceEntities & IWorkspaceValueObjects {
   return {
@@ -423,81 +427,50 @@ export async function createPat(
 
 function makeThreadsStoreable(threads: ThreadResponse[]): ThreadMap {
   const mapped: ThreadMap = {};
+  const transfomer = threadTransformer();
   for (const thread of threads) {
-    const {
-      threadId,
-      customer,
-      assignee,
-      egressFirstSeq,
-      egressLastSeq,
-      ingressFirstSeq,
-      ingressLastSeq,
-      ingressCustomer,
-      egressMember,
-      ...rest
-    } = thread;
-    const customerId = customer.customerId;
-    const assigneeId = assignee?.memberId || null;
-    const inboundFirstSeq = ingressFirstSeq || null;
-    const inboundLastSeq = ingressLastSeq || null;
-    const inboundCustomerId = ingressCustomer?.customerId || null;
-    const outboundFirstSeq = egressFirstSeq || null;
-    const outboundLastSeq = egressLastSeq || null;
-    const outboundMemberId = egressMember?.memberId || null;
-    mapped[threadId] = {
-      threadId,
-      ...rest,
-      customerId: customerId,
-      assigneeId: assigneeId,
-      inboundFirstSeq,
-      inboundLastSeq,
-      inboundCustomerId,
-      outboundFirstSeq,
-      outboundLastSeq,
-      outboundMemberId,
-    };
+    const [threadId, normalized] = transfomer.normalize(thread);
+    mapped[threadId] = normalized;
   }
   return mapped;
 }
 
 function makeLabelsStoreable(labels: LabelResponse[]): LabelMap {
   const mapped: LabelMap = {};
+  const transfomer = labelTransformer();
   for (const label of labels) {
-    const { labelId, name, icon, createdAt, updatedAt } = label;
-    mapped[labelId] = {
-      labelId,
-      name,
-      icon,
-      createdAt,
-      updatedAt,
-    };
+    const [labelId, normalized] = transfomer.normalize(label);
+    mapped[labelId] = normalized;
   }
   return mapped;
 }
 
 function makeCustomersStoreable(customers: Customer[]): CustomerMap {
   const mapped: CustomerMap = {};
+  const transformer = customerTransformer();
   for (const customer of customers) {
-    const { customerId, ...rest } = customer;
-    mapped[customerId] = { customerId, ...rest };
+    const [customerId, normalized] = transformer.normalize(customer);
+    mapped[customerId] = normalized;
   }
   return mapped;
 }
 
 function makeMembersStoreable(members: MemberResponse[]): MemberMap {
   const mapped: MemberMap = {};
+  const transfomer = memberTransformer();
   for (const member of members) {
-    const { memberId, ...rest } = member;
-    mapped[memberId] = { memberId, ...rest };
+    const [memberId, normalized] = transfomer.normalize(member);
+    mapped[memberId] = normalized;
   }
   return mapped;
 }
 
 function makePatsStoreable(pats: Pat[]): PatMap {
   const mapped: PatMap = {};
+  const transfomer = patTransformer();
   for (const pat of pats) {
-    const { patId, ...rest } = pat;
-    mapped[patId] = { patId, ...rest };
+    const [patId, normalized] = transfomer.normalize(pat);
+    mapped[patId] = normalized;
   }
   return mapped;
 }
@@ -1099,7 +1072,7 @@ export async function updateThread(
 export async function sendThreadChatMessage(
   token: string,
   workspaceId: string,
-  threadChatId: string,
+  threadId: string,
   body: { message: string }
 ): Promise<{
   data: ThreadChatResponse | null;
@@ -1107,7 +1080,7 @@ export async function sendThreadChatMessage(
 }> {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadChatId}/messages/`,
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadId}/messages/`,
       {
         method: "POST",
         headers: {

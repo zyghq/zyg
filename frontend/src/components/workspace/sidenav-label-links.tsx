@@ -11,7 +11,7 @@ import {
 
 import { TagIcon, TagsIcon } from "lucide-react";
 import { CaretSortIcon } from "@radix-ui/react-icons";
-import { LabelMetrics } from "@/db/entities";
+import { LabelMetrics } from "@/db/models";
 
 const routeApi = getRouteApi("/_auth/workspaces/$workspaceId/_workspace");
 

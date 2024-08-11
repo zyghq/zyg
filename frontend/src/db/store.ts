@@ -12,7 +12,7 @@ import {
   Label,
   Member,
   Customer,
-} from "./entities";
+} from "./models";
 
 // add more entitites as supported by store
 // e.g: Workspace | User | etc.
@@ -483,10 +483,8 @@ export const buildStore = (
           return state;
         });
       },
-      viewThreadAssigneeId: (
-        state: WorkspaceStoreState,
-        threadChatId: string
-      ) => state.threads?.[threadChatId]?.assigneeId || null,
+      viewThreadAssigneeId: (state: WorkspaceStoreState, threadId: string) =>
+        state.threads?.[threadId]?.assigneeId || null,
     }))
   );
 };

@@ -733,11 +733,7 @@ func (h *ThreadChatHandler) handleGetThChatMesssages(w http.ResponseWriter, r *h
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(messages); err != nil {
-		slog.Error(
-			"failed to encode thread chat messages to json "+
-				"check the json encoding defn",
-			slog.String("threadId", thread.ThreadId),
-		)
+		slog.Error("failed to encode thread chat messages to json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}

@@ -151,3 +151,19 @@ export const threadChatResponseSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
 });
+
+export type ThreadResponse = z.infer<typeof threadResponseSchema>;
+
+export type ThreadChatResponse = z.infer<typeof threadChatResponseSchema>;
+
+export type LabelResponse = z.infer<typeof labelResponseSchema>;
+
+export type MemberResponse = z.infer<typeof memberResponseSchema>;
+
+export type WorkspaceMetricsResponse = z.infer<
+  typeof workspaceMetricsResponseSchema
+>;
+
+export type CustomerResponse = z.infer<typeof customerResponseSchema>;
+
+export type PatResponse = z.infer<typeof patResponseSchema>;

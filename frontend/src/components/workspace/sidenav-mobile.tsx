@@ -2,7 +2,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { HamburgerMenuIcon } from "@radix-ui/react-icons";
-import { WorkspaceMetrics } from "@/db/entities";
+import { WorkspaceMetrics } from "@/db/models";
 import SideNavLinks from "@/components/workspace/sidenav-links";
 
 export default function SideNavMobile({

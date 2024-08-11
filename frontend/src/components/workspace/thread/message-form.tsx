@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { sendThreadChatMessage } from "@/db/api";
-import { Thread } from "@/db/entities";
+import { Thread } from "@/db/models";
 
 const formSchema = z.object({
   message: z.string().min(1, "Message is required"),
