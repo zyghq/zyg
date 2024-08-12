@@ -15,6 +15,8 @@ import {
   MemberResponse,
   ThreadChatResponse,
   WorkspaceMetricsResponse,
+  ThreadLabelResponse,
+  threadLabelResponseSchema,
 } from "./schema";
 import {
   IWorkspaceEntities,
@@ -1064,6 +1066,62 @@ export async function updateThread(
     console.error(err);
     return {
       error: new Error("error thread - something went wrong"),
+      data: null,
+    };
+  }
+}
+
+export async function getThreadLabels(
+  token: string,
+  workspaceId: string,
+  threadId: string
+): Promise<{
+  data: ThreadLabelResponse[] | null;
+  error: Error | null;
+}> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadId}/labels/`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    if (!response.ok) {
+      const { status, statusText } = response;
+      return {
+        error: new Error(
+          `error fetching workspace thread labels: ${status} ${statusText}`
+        ),
+        data: null,
+      };
+    }
+
+    try {
+      const data = await response.json();
+      console.log(data);
+      const labels = data.map((item: any) => {
+        return threadLabelResponseSchema.parse({ ...item });
+      });
+      return { error: null, data: labels };
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        console.error(err.message);
+      } else console.log(err);
+      return {
+        error: new Error("error parsing workspace thread label schema"),
+        data: null,
+      };
+    }
+  } catch (err) {
+    console.error(err);
+    return {
+      error: new Error(
+        "error fetching workspace thread labels - something went wrong"
+      ),
       data: null,
     };
   }

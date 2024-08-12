@@ -1416,10 +1416,10 @@ func (tc *ThreadChatDB) ComputeStatusMetricsByWorkspaceId(
 	var metrics models.ThreadMetrics
 	role := models.Customer{}.Engaged()
 	stmt := `SELECT
-		COALESCE(SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END), 0) AS done,
-		COALESCE(SUM(CASE WHEN status = 'todo' THEN 1 ELSE 0 END), 0) AS todo,
-		COALESCE(SUM(CASE WHEN status = 'snoozed' THEN 1 ELSE 0 END), 0) AS snoozed,
-		COALESCE(SUM(CASE WHEN status = 'todo' OR status = 'snoozed' THEN 1 ELSE 0 END), 0) AS active
+		COALESCE(SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END), 0) AS done_count,
+		COALESCE(SUM(CASE WHEN status = 'todo' THEN 1 ELSE 0 END), 0) AS todo_count,
+		COALESCE(SUM(CASE WHEN status = 'snoozed' THEN 1 ELSE 0 END), 0) AS snoozed_count,
+		COALESCE(SUM(CASE WHEN status = 'todo' OR status = 'snoozed' THEN 1 ELSE 0 END), 0) AS active_count
 	FROM 
 		thread th
 	INNER JOIN customer c ON th.customer_id = c.customer_id
@@ -1448,9 +1448,12 @@ func (tc *ThreadChatDB) ComputeAssigneeMetricsByMember(
 	var metrics models.ThreadAssigneeMetrics
 	role := models.Customer{}.Engaged()
 	stmt := `SELECT
-			COALESCE(SUM(CASE WHEN assignee_id = $2 THEN 1 ELSE 0 END), 0) AS member_assigned_count,
-			COALESCE(SUM(CASE WHEN assignee_id IS NULL THEN 1 ELSE 0 END), 0) AS unassigned_count,
-			COALESCE(SUM(CASE WHEN assignee_id IS NOT NULL AND assignee_id <> $2 THEN 1 ELSE 0 END), 0) AS other_assigned_count
+			COALESCE(SUM(
+				CASE WHEN assignee_id = $2 AND status = 'todo' OR status = 'snoozed' THEN 1 ELSE 0 END), 0) AS member_assigned_count,
+			COALESCE(SUM(
+				CASE WHEN assignee_id IS NULL AND status = 'todo' OR status = 'snoozed' THEN 1 ELSE 0 END), 0) AS unassigned_count,
+			COALESCE(SUM(
+				CASE WHEN assignee_id IS NOT NULL AND assignee_id <> $2 AND status = 'todo' OR status = 'snoozed' THEN 1 ELSE 0 END), 0) AS other_assigned_count
 		FROM
 			thread th
 		INNER JOIN customer c ON th.customer_id = c.customer_id

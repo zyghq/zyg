@@ -3,7 +3,6 @@ import { cn } from "@/lib/utils";
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowDownIcon,
@@ -11,6 +10,8 @@ import {
   ChatBubbleIcon,
   ArrowLeftIcon,
   ResetIcon,
+  DotsHorizontalIcon,
+  PlusIcon,
 } from "@radix-ui/react-icons";
 import {
   ResizableHandle,
@@ -19,6 +20,20 @@ import {
 } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { CheckIcon } from "@radix-ui/react-icons";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import Avatar from "boring-avatars";
 import { SidePanelThreadList } from "@/components/workspace/thread/sidepanel-thread-list";
 import { useStore } from "zustand";
@@ -29,13 +44,23 @@ import { formatDistanceToNow } from "date-fns";
 import { getWorkspaceThreadChatMessages } from "@/db/api";
 import { NotFound } from "@/components/notfound";
 import { PropertiesForm } from "@/components/workspace/thread/properties-form";
-import { CheckCircleIcon, EclipseIcon, CircleIcon } from "lucide-react";
+import {
+  CheckCircleIcon,
+  EclipseIcon,
+  CircleIcon,
+  ReceiptRussianRuble,
+} from "lucide-react";
+import { Icons } from "@/components/icons";
 import { updateThread } from "@/db/api";
 import { useMutation } from "@tanstack/react-query";
 import { Thread, threadTransformer } from "@/db/models";
-
 import { MessageForm } from "@/components/workspace/thread/message-form";
-import { ThreadChatResponse, ThreadResponse } from "@/db/schema";
+import { getThreadLabels } from "@/db/api";
+import {
+  ThreadChatResponse,
+  ThreadResponse,
+  ThreadLabelResponse,
+} from "@/db/schema";
 
 export const Route = createFileRoute(
   "/_auth/workspaces/$workspaceId/threads/$threadId/"
@@ -56,42 +81,197 @@ function getPrevNextFromCurrent(threads: Thread[] | null, threadId: string) {
   return { prevItem, nextItem };
 }
 
-function Chat({ chat }: { chat: ThreadChatResponse }) {
+function Chat({
+  chat,
+  memberId,
+}: {
+  chat: ThreadChatResponse;
+  memberId: string;
+}) {
   const { createdAt } = chat;
-  const date = new Date(createdAt);
-  const time = date.toLocaleString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  const when = formatDistanceToNow(new Date(createdAt), {
+    addSuffix: true,
   });
 
-  const isCustomer = chat.customer ? true : false;
-  const isMember = chat.member ? true : false;
+  const customerOrMemberId = chat.customer?.customerId || chat.member?.memberId;
+  const customerOrMemberName = chat.customer?.name || chat.member?.name;
 
-  const customerId = chat.customer?.customerId || "";
-  const customerName = chat.customer?.name || "";
-
-  const memberId = chat.member?.memberId || "";
-  const memberName = chat.member?.name || "";
+  const isMe = chat.member?.memberId === memberId;
 
   return (
-    <div className="flex">
-      <div className={`flex ${isMember ? "ml-auto" : "mr-auto"}`}>
-        <div className="flex space-x-2">
-          {isCustomer && (
-            <Avatar name={customerId} size={32} variant="marble" />
-          )}
-          <div className="p-2 rounded-lg bg-gray-100 dark:bg-accent">
-            <div className="text-muted-foreground">{`${isMember ? memberName : customerName}`}</div>
-            <p className="text-sm">{chat.body}</p>
-            <div className="flex text-xs justify-end text-muted-foreground mt-1">
-              {time}
+    <div className="flex rounded-lg px-3 py-4 space-x-2 bg-white dark:bg-accent">
+      <Avatar name={customerOrMemberId} size={32} variant="marble" />
+      <div className="flex flex-col flex-1">
+        <div className="flex justify-between">
+          <div className="flex items-center">
+            <div className="text-md font-semibold">
+              {isMe ? `You` : customerOrMemberName}
+            </div>
+            <Separator orientation="vertical" className="mx-2 h-3" />
+            <div className="text-muted-foreground text-xs">
+              {`${when} via chat`}
             </div>
           </div>
-          {isMember && <Avatar name={memberId} size={32} variant="marble" />}
+          <Button variant="ghost" size="sm">
+            <DotsHorizontalIcon className="h-4 w-4" />
+          </Button>
         </div>
+        <div className="text-xs text-muted-foreground"></div>
+        <Separator
+          orientation="horizontal"
+          className="mt-3 mb-3 dark:bg-zinc-700"
+        />
+        <div>{chat.body}</div>
+      </div>
+    </div>
+  );
+}
+
+function ThreadPreview({
+  activeThread,
+}: {
+  activeThread: Thread;
+}): JSX.Element {
+  return (
+    <div className="flex flex-col px-4 py-2">
+      {activeThread.title && (
+        <div className="font-semibold text-md">{activeThread.title}</div>
+      )}
+      {activeThread.previewText && (
+        <div className="text-md text-muted-foreground">
+          {activeThread.previewText}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ThreadLabels({
+  token,
+  workspaceId,
+  threadId,
+}: {
+  token: string;
+  workspaceId: string;
+  threadId: string;
+}) {
+  const { isPending, data, error } = useQuery({
+    queryKey: ["threadLabels", workspaceId, threadId, token],
+    queryFn: async () => {
+      const { error, data } = await getThreadLabels(
+        token,
+        workspaceId,
+        threadId
+      );
+      if (error) throw new Error("failed to fetch thread labels");
+      return data as ThreadLabelResponse[];
+    },
+    enabled: !!threadId,
+  });
+  const [attachedLabels, setAttachedLabels] = React.useState<string[]>([]);
+  const labels = [
+    {
+      labelId: "1",
+      name: "Bug",
+      icon: "🐛",
+    },
+    {
+      labelId: "2",
+      name: "Technical",
+      icon: "🧑‍💻",
+    },
+  ];
+
+  const isChecked = (labelId: string) => {
+    return attachedLabels.includes(labelId);
+  };
+
+  function onChecked(labelId: string) {
+    return setAttachedLabels((prev) => [...prev, labelId]);
+  }
+
+  function onUnchecked(labelId: string) {
+    return setAttachedLabels((prev) => prev.filter((l) => l !== labelId));
+  }
+
+  function onSelect(labelId: string) {
+    const isChecked = attachedLabels.includes(labelId);
+    if (isChecked) {
+      onUnchecked(labelId);
+    } else {
+      onChecked(labelId);
+    }
+  }
+
+  const renderLabels = () => {
+    if (isPending) {
+      return null;
+    }
+
+    if (error) {
+      return (
+        <div className="flex items-center gap-1">
+          <Icons.oops className="h-5 w-5" />
+          <div className="text-xs text-red-500">Something went wrong</div>
+        </div>
+      );
+    }
+
+    return (
+      <React.Fragment>
+        {data?.map((label) => (
+          <Badge key={label.labelId} variant="outline">
+            <div className="flex items-center gap-1">
+              <div>{label.icon}</div>
+              <div className="text-muted-foreground">{label.name}</div>
+            </div>
+          </Badge>
+        ))}
+      </React.Fragment>
+    );
+  };
+
+  return (
+    <div className="flex flex-col px-4 py-2 gap-1">
+      <div className="text-muted-foreground font-semibold">Labels</div>
+      <div className="flex gap-1">
+        {renderLabels()}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="border-dashed">
+              <PlusIcon className="mr-1 h-3 w-3" />
+              Add
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="sm:58 w-48" align="start">
+            <Command>
+              <CommandList>
+                <CommandInput placeholder="Filter" />
+                <CommandEmpty>No results</CommandEmpty>
+                <CommandGroup>
+                  {labels.map((label) => (
+                    <CommandItem
+                      key={label.labelId}
+                      onSelect={() => onSelect(label.labelId)}
+                      className="text-sm"
+                    >
+                      <div className="flex gap-2">
+                        <div>{label.icon}</div>
+                        <div>{label.name}</div>
+                      </div>
+                      <CheckIcon
+                        className={cn(
+                          "ml-auto h-4 w-4",
+                          isChecked(label.labelId) ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );
@@ -103,25 +283,6 @@ function ThreadDetail() {
 
   const bottomRef = React.useRef<null | HTMLDivElement>(null);
   const workspaceStore = useWorkspaceStore();
-
-  // const { search } = useRouteContext({
-  //   from: "/_auth/workspaces/$workspaceId/_workspace",
-  //   select: (context) => context.search,
-  // });
-
-  // const { status, reasons, sort, assignees, priorities } = search;
-
-  // const currentQueue = useStore(
-  //   workspaceStore,
-  //   (state: WorkspaceStoreStateType) =>
-  //     state.viewAllTodoThreads(
-  //       state,
-  //       assignees as assigneesFiltersType,
-  //       reasons as reasonsFiltersType,
-  //       priorities as prioritiesFiltersType,
-  //       sort
-  //     )
-  // );
 
   const currentQueue = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.viewCurrentThreadQueue(state)
@@ -135,12 +296,9 @@ function ThreadDetail() {
     state.viewCustomerName(state, activeThread?.customerId || "")
   );
 
-  // const memberId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-  //   state.getMemberId(state)
-  // );
-  // const memberName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-  //   state.getMemberName(state)
-  // );
+  const memberId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.getMemberId(state)
+  );
 
   const threadStatus = activeThread?.status || "";
   const isAwaitingReply = activeThread?.replied === false;
@@ -196,7 +354,7 @@ function ThreadDetail() {
   const { isError: isStatusMutErr, isPending: isStatusMutPending } =
     statusMutation;
 
-  function renderMessages(isPending: boolean, data?: ThreadChatResponse[]) {
+  function renderChats(isPending: boolean, data?: ThreadChatResponse[]) {
     if (isPending) {
       return (
         <div className="flex justify-center mt-12">
@@ -226,9 +384,9 @@ function ThreadDetail() {
     if (data && data.length > 0) {
       const chatsReversed = Array.from(data).reverse();
       return (
-        <div className="p-4 space-y-2">
+        <div className="p-4 space-y-4">
           {chatsReversed.map((chat) => (
-            <Chat key={chat.chatId} chat={chat} />
+            <Chat key={chat.chatId} chat={chat} memberId={memberId} />
           ))}
           <div ref={bottomRef}></div>
         </div>
@@ -373,8 +531,8 @@ function ThreadDetail() {
                         )}
                       </div>
                     </div>
-                    <ScrollArea className="flex h-[calc(100dvh-4rem)] flex-col p-1">
-                      {renderMessages(isPending, data)}
+                    <ScrollArea className="flex h-[calc(100dvh-4rem)] flex-col p-1 bg-gray-100 dark:bg-background">
+                      {renderChats(isPending, data)}
                     </ScrollArea>
                   </div>
                 </ResizablePanel>
@@ -444,17 +602,20 @@ function ThreadDetail() {
               maxSize={30}
               className="hidden sm:block"
             >
-              <div className="flex flex-col p-4">
-                <div className="flex text-muted-foreground text-sm font-semibold">
-                  Properties
-                </div>
-                <div className="flex mt-4">
+              <div className="p-2 bg-gray-50 dark:bg-background">
+                <div className="flex flex-col gap-2 bg-white dark:bg-background rounded-lg">
+                  <ThreadPreview activeThread={activeThread} />
                   <PropertiesForm
                     token={token}
                     workspaceId={workspaceId as string}
                     threadId={threadId as string}
                     priority={priority}
                     assigneeId={assigneeId}
+                  />
+                  <ThreadLabels
+                    token={token}
+                    workspaceId={workspaceId}
+                    threadId={threadId}
                   />
                 </div>
               </div>

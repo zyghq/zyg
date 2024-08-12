@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { sendThreadChatMessage } from "@/db/api";
-import { Thread } from "@/db/models";
+import { ThreadChatResponse } from "@/db/schema";
 
 const formSchema = z.object({
   message: z.string().min(1, "Message is required"),
@@ -65,7 +65,7 @@ export function MessageForm({
       if (!data) {
         throw new Error("no data returned");
       }
-      return data as Thread;
+      return data as ThreadChatResponse;
     },
     onError: (error) => {
       console.error(error);

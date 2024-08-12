@@ -45,6 +45,18 @@ function MyThreads() {
     )
   );
 
+  const doneThreads = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.viewMyThreads(
+      state,
+      "done",
+      memberId,
+      assignees as AssigneesFiltersType,
+      reasons as ReasonsFiltersType,
+      priorities as PrioritiesFiltersType,
+      sort
+    )
+  );
+
   const assignedMembers = useStore(
     workspaceStore,
     (state: WorkspaceStoreState) => state.viewAssignees(state)
@@ -122,10 +134,7 @@ function MyThreads() {
         /> */}
         </TabsContent>
         <TabsContent value="done" className="m-0">
-          {/* <Threads items={threads} /> */}
-          {/* <ScrollArea className="h-[calc(100vh-14rem)] pr-1">
-          <div className="flex flex-col gap-2">...</div>
-        </ScrollArea> */}
+          <ThreadList workspaceId={workspaceId} threads={doneThreads} />
         </TabsContent>
       </Tabs>
     </div>

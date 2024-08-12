@@ -112,7 +112,10 @@ function AllThreads() {
             </TabsTrigger>
           </TabsList>
           <div className="mt-4 flex gap-1 sm:my-auto">
-            <Filters assignedMembers={assignedMembers} />
+            <Filters
+              assignedMembers={assignedMembers}
+              disableAssigneeFilter={assignedMembers.length === 0}
+            />
             <Sorts />
           </div>
         </div>

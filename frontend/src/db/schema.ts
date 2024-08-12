@@ -128,6 +128,17 @@ export const labelResponseSchema = z.object({
   updatedAt: z.string(),
 });
 
+export const threadLabelResponseSchema = z.object({
+  threadLabelId: z.string(),
+  threadId: z.string(),
+  labelId: z.string(),
+  name: z.string(),
+  icon: z.string(),
+  addedBy: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
 export const threadChatResponseSchema = z.object({
   threadId: z.string(),
   chatId: z.string(),
@@ -157,6 +168,7 @@ export type ThreadResponse = z.infer<typeof threadResponseSchema>;
 export type ThreadChatResponse = z.infer<typeof threadChatResponseSchema>;
 
 export type LabelResponse = z.infer<typeof labelResponseSchema>;
+export type ThreadLabelResponse = z.infer<typeof threadLabelResponseSchema>;
 
 export type MemberResponse = z.infer<typeof memberResponseSchema>;
 

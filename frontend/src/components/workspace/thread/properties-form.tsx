@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
+import { ThreadResponse } from "@/db/schema";
+import { threadTransformer } from "@/db/models";
 import {
   Form,
   FormControl,
@@ -257,7 +259,7 @@ export function PropertiesForm({
       if (!data) {
         throw new Error("no data returned");
       }
-      return data;
+      return data as ThreadResponse;
     },
     onError: (error) => {
       console.error(error);
@@ -267,7 +269,9 @@ export function PropertiesForm({
       });
     },
     onSuccess: (data) => {
-      workspaceStore.getState().updateThread(data);
+      const transformer = threadTransformer();
+      const [, thread] = transformer.normalize(data);
+      workspaceStore.getState().updateThread(thread);
     },
   });
 
@@ -293,7 +297,7 @@ export function PropertiesForm({
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="flex flex-col gap-2"
+        className="flex flex-col gap-2 px-4 py-2"
       >
         <div className="flex gap-1">
           <FormField

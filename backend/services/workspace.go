@@ -309,7 +309,7 @@ func (s *WorkspaceService) GetWidget(
 	}
 
 	if err != nil {
-		return models.Widget{}, err
+		return models.Widget{}, ErrWidget
 	}
 
 	return widget, nil

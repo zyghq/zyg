@@ -30,10 +30,21 @@ function UnassignedThreads() {
   const workspaceId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.getWorkspaceId(state)
   );
-  const threads = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+  const todoThreads = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.viewUnassignedThreads(
       state,
       "todo",
+      assignees as AssigneesFiltersType,
+      reasons as ReasonsFiltersType,
+      priorities as PrioritiesFiltersType,
+      sort
+    )
+  );
+
+  const doneThreads = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.viewUnassignedThreads(
+      state,
+      "done",
       assignees as AssigneesFiltersType,
       reasons as ReasonsFiltersType,
       priorities as PrioritiesFiltersType,
@@ -106,7 +117,7 @@ function UnassignedThreads() {
           </div>
         </div>
         <TabsContent value="todo" className="m-0">
-          <ThreadList workspaceId={workspaceId} threads={threads} />
+          <ThreadList workspaceId={workspaceId} threads={todoThreads} />
         </TabsContent>
         <TabsContent value="snoozed" className="m-0">
           {/* <ThreadList
@@ -115,10 +126,7 @@ function UnassignedThreads() {
         /> */}
         </TabsContent>
         <TabsContent value="done" className="m-0">
-          {/* <Threads items={threads} /> */}
-          {/* <ScrollArea className="h-[calc(100vh-14rem)] pr-1">
-          <div className="flex flex-col gap-2">...</div>
-        </ScrollArea> */}
+          <ThreadList workspaceId={workspaceId} threads={doneThreads} />
         </TabsContent>
       </Tabs>
     </div>

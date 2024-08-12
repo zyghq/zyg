@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log/slog"
 
@@ -445,7 +444,7 @@ func (r *WorkspaceDB) LookupWidgetById(
 		&widget.UpdatedAt,
 	)
 
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("err", err))
 		return models.Widget{}, ErrEmpty
 	}
