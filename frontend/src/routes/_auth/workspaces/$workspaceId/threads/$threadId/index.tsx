@@ -41,21 +41,19 @@ import { WorkspaceStoreState } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
 import { ThreadList } from "@/components/workspace/thread/threads";
 import { formatDistanceToNow } from "date-fns";
-import { getWorkspaceThreadChatMessages } from "@/db/api";
+import {
+  getWorkspaceThreadChatMessages,
+  putThreadLabel,
+  getThreadLabels,
+} from "@/db/api";
 import { NotFound } from "@/components/notfound";
 import { PropertiesForm } from "@/components/workspace/thread/properties-form";
-import {
-  CheckCircleIcon,
-  EclipseIcon,
-  CircleIcon,
-  ReceiptRussianRuble,
-} from "lucide-react";
+import { CheckCircleIcon, EclipseIcon, CircleIcon } from "lucide-react";
 import { Icons } from "@/components/icons";
 import { updateThread } from "@/db/api";
 import { useMutation } from "@tanstack/react-query";
 import { Thread, threadTransformer } from "@/db/models";
 import { MessageForm } from "@/components/workspace/thread/message-form";
-import { getThreadLabels } from "@/db/api";
 import {
   ThreadChatResponse,
   ThreadResponse,
@@ -146,6 +144,33 @@ function ThreadPreview({
   );
 }
 
+function SettingThreadLabel() {
+  return (
+    <div className="flex mr-1">
+      <svg
+        className="animate-spin h-3 w-3 text-indigo-500"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          className="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+        ></circle>
+        <path
+          className="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        ></path>
+      </svg>
+    </div>
+  );
+}
+
 function ThreadLabels({
   token,
   workspaceId,
@@ -155,7 +180,18 @@ function ThreadLabels({
   workspaceId: string;
   threadId: string;
 }) {
-  const { isPending, data, error } = useQuery({
+  const workspaceStore = useWorkspaceStore();
+  const workspaceLabels = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.viewLabels(state)
+  );
+
+  const {
+    isPending,
+    data: threadLabels,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["threadLabels", workspaceId, threadId, token],
     queryFn: async () => {
       const { error, data } = await getThreadLabels(
@@ -168,39 +204,38 @@ function ThreadLabels({
     },
     enabled: !!threadId,
   });
-  const [attachedLabels, setAttachedLabels] = React.useState<string[]>([]);
-  const labels = [
-    {
-      labelId: "1",
-      name: "Bug",
-      icon: "🐛",
+
+  const threadLabelMutation = useMutation({
+    mutationFn: async (values: { name: string; icon: string }) => {
+      const { error, data } = await putThreadLabel(
+        token,
+        workspaceId,
+        threadId,
+        values
+      );
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (!data) {
+        throw new Error("no data returned");
+      }
+      return data as ThreadLabelResponse;
     },
-    {
-      labelId: "2",
-      name: "Technical",
-      icon: "🧑‍💻",
+    onError: (error) => {
+      console.error(error);
     },
-  ];
+    onSuccess: () => {
+      refetch();
+    },
+  });
 
   const isChecked = (labelId: string) => {
-    return attachedLabels.includes(labelId);
+    return threadLabels?.some((label) => label.labelId === labelId);
   };
 
-  function onChecked(labelId: string) {
-    return setAttachedLabels((prev) => [...prev, labelId]);
-  }
-
-  function onUnchecked(labelId: string) {
-    return setAttachedLabels((prev) => prev.filter((l) => l !== labelId));
-  }
-
-  function onSelect(labelId: string) {
-    const isChecked = attachedLabels.includes(labelId);
-    if (isChecked) {
-      onUnchecked(labelId);
-    } else {
-      onChecked(labelId);
-    }
+  function onSelect(name: string, icon?: string) {
+    threadLabelMutation.mutate({ name, icon: icon || "" });
   }
 
   const renderLabels = () => {
@@ -219,11 +254,13 @@ function ThreadLabels({
 
     return (
       <React.Fragment>
-        {data?.map((label) => (
+        {threadLabels?.map((label) => (
           <Badge key={label.labelId} variant="outline">
             <div className="flex items-center gap-1">
               <div>{label.icon}</div>
-              <div className="text-muted-foreground">{label.name}</div>
+              <div className="text-muted-foreground capitalize">
+                {label.name}
+              </div>
             </div>
           </Badge>
         ))}
@@ -233,31 +270,36 @@ function ThreadLabels({
 
   return (
     <div className="flex flex-col px-4 py-2 gap-1">
-      <div className="text-muted-foreground font-semibold">Labels</div>
-      <div className="flex gap-1">
-        {renderLabels()}
+      <div className="flex justify-between">
+        <div className="text-muted-foreground font-semibold items-center">
+          Labels
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="border-dashed">
-              <PlusIcon className="mr-1 h-3 w-3" />
+            <Button variant="outline" size="sm" className="border-dashed h-7">
+              {threadLabelMutation.isPending ? (
+                <SettingThreadLabel />
+              ) : (
+                <PlusIcon className="mr-1 h-3 w-3" />
+              )}
               Add
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="sm:58 w-48" align="start">
+          <DropdownMenuContent className="sm:58 w-48" align="end">
             <Command>
               <CommandList>
                 <CommandInput placeholder="Filter" />
                 <CommandEmpty>No results</CommandEmpty>
                 <CommandGroup>
-                  {labels.map((label) => (
+                  {workspaceLabels.map((label) => (
                     <CommandItem
                       key={label.labelId}
-                      onSelect={() => onSelect(label.labelId)}
+                      onSelect={() => onSelect(label.name, label.icon)}
                       className="text-sm"
                     >
                       <div className="flex gap-2">
                         <div>{label.icon}</div>
-                        <div>{label.name}</div>
+                        <div className="capitalize">{label.name}</div>
                       </div>
                       <CheckIcon
                         className={cn(
@@ -273,6 +315,37 @@ function ThreadLabels({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <div className="flex gap-1 flex-wrap">{renderLabels()}</div>
+      {threadLabelMutation.isError && (
+        <div className="text-xs text-red-500">Something went wrong</div>
+      )}
+    </div>
+  );
+}
+
+function ChatLoading() {
+  return (
+    <div className="flex justify-center mt-12">
+      <svg
+        className="animate-spin h-5 w-5 text-indigo-500"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          className="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+        ></circle>
+        <path
+          className="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        ></path>
+      </svg>
     </div>
   );
 }
@@ -305,7 +378,12 @@ function ThreadDetail() {
 
   const { prevItem, nextItem } = getPrevNextFromCurrent(currentQueue, threadId);
 
-  const { isPending, error, data, refetch } = useQuery({
+  const {
+    isPending,
+    error,
+    data: chats,
+    refetch,
+  } = useQuery({
     queryKey: ["chats", threadId, workspaceId, token],
     queryFn: async () => {
       const { error, data } = await getWorkspaceThreadChatMessages(
@@ -326,7 +404,7 @@ function ThreadDetail() {
     if (bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [data]);
+  }, [chats]);
 
   const statusMutation = useMutation({
     mutationFn: async (values: { status: string }) => {
@@ -354,35 +432,9 @@ function ThreadDetail() {
   const { isError: isStatusMutErr, isPending: isStatusMutPending } =
     statusMutation;
 
-  function renderChats(isPending: boolean, data?: ThreadChatResponse[]) {
-    if (isPending) {
-      return (
-        <div className="flex justify-center mt-12">
-          <svg
-            className="animate-spin h-5 w-5 text-indigo-500"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-        </div>
-      );
-    }
-    if (data && data.length > 0) {
-      const chatsReversed = Array.from(data).reverse();
+  function renderChats(chats?: ThreadChatResponse[]) {
+    if (chats && chats.length > 0) {
+      const chatsReversed = Array.from(chats).reverse();
       return (
         <div className="p-4 space-y-4">
           {chatsReversed.map((chat) => (
@@ -532,7 +584,7 @@ function ThreadDetail() {
                       </div>
                     </div>
                     <ScrollArea className="flex h-[calc(100dvh-4rem)] flex-col p-1 bg-gray-100 dark:bg-background">
-                      {renderChats(isPending, data)}
+                      {isPending ? <ChatLoading /> : renderChats(chats)}
                     </ScrollArea>
                   </div>
                 </ResizablePanel>
@@ -600,24 +652,22 @@ function ThreadDetail() {
               defaultSize={25}
               minSize={20}
               maxSize={30}
-              className="hidden sm:block"
+              className="hidden sm:block bg-gray-100 dark:bg-background p-2"
             >
-              <div className="p-2 bg-gray-50 dark:bg-background">
-                <div className="flex flex-col gap-2 bg-white dark:bg-background rounded-lg">
-                  <ThreadPreview activeThread={activeThread} />
-                  <PropertiesForm
-                    token={token}
-                    workspaceId={workspaceId as string}
-                    threadId={threadId as string}
-                    priority={priority}
-                    assigneeId={assigneeId}
-                  />
-                  <ThreadLabels
-                    token={token}
-                    workspaceId={workspaceId}
-                    threadId={threadId}
-                  />
-                </div>
+              <div className="flex flex-col gap-2 bg-white dark:bg-background rounded-lg">
+                <ThreadPreview activeThread={activeThread} />
+                <PropertiesForm
+                  token={token}
+                  workspaceId={workspaceId as string}
+                  threadId={threadId as string}
+                  priority={priority}
+                  assigneeId={assigneeId}
+                />
+                <ThreadLabels
+                  token={token}
+                  workspaceId={workspaceId}
+                  threadId={threadId}
+                />
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>
