@@ -128,6 +128,8 @@ type ThreadServicer interface {
 		ctx context.Context, threadId string) ([]models.Chat, error)
 	GenerateMemberThreadMetrics(
 		ctx context.Context, workspaceId string, memberId string) (models.ThreadMemberMetrics, error)
+	RemoveThreadLabel(
+		ctx context.Context, threadId string, labelId string) error
 }
 
 type AccountRepositorer interface {
@@ -244,4 +246,6 @@ type ThreadRepositorer interface {
 		ctx context.Context, workspaceId string, memberId string) (models.ThreadAssigneeMetrics, error)
 	ComputeLabelMetricsByWorkspaceId(
 		ctx context.Context, workspaceId string) ([]models.ThreadLabelMetric, error)
+	DeleteThreadLabelByCompId(
+		ctx context.Context, threadId string, labelId string) error
 }

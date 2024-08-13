@@ -93,6 +93,8 @@ func NewServer(
 		NewEnsureAuth(th.handleSetThreadChatLabel, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
 		NewEnsureAuth(th.handleGetThChatLabels, authService))
+	mux.Handle("DELETE /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{labelId}/{$}",
+		NewEnsureAuth(th.handleDeleteThChatLabel, authService))
 
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/metrics/{$}",
 		NewEnsureAuth(th.handleGetThreadChatMetrics, authService))

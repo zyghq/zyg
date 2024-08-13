@@ -45,6 +45,7 @@ import {
   getWorkspaceThreadChatMessages,
   putThreadLabel,
   getThreadLabels,
+  deleteThreadLabel,
 } from "@/db/api";
 import { NotFound } from "@/components/notfound";
 import { PropertiesForm } from "@/components/workspace/thread/properties-form";
@@ -230,12 +231,41 @@ function ThreadLabels({
     },
   });
 
+  const deleteThreadLabelMutation = useMutation({
+    mutationFn: async (labelId: string) => {
+      const { error, data } = await deleteThreadLabel(
+        token,
+        workspaceId,
+        threadId,
+        labelId
+      );
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (!data) {
+        throw new Error("no data returned");
+      }
+      return data;
+    },
+    onError: (error) => {
+      console.error(error);
+    },
+    onSuccess: () => {
+      refetch();
+    },
+  });
+
   const isChecked = (labelId: string) => {
     return threadLabels?.some((label) => label.labelId === labelId);
   };
 
-  function onSelect(name: string, icon?: string) {
-    threadLabelMutation.mutate({ name, icon: icon || "" });
+  function onSelect(labelId: string, name: string, icon?: string) {
+    if (isChecked(labelId)) {
+      deleteThreadLabelMutation.mutate(labelId);
+    } else {
+      threadLabelMutation.mutate({ name, icon: icon || "" });
+    }
   }
 
   const renderLabels = () => {
@@ -294,7 +324,9 @@ function ThreadLabels({
                   {workspaceLabels.map((label) => (
                     <CommandItem
                       key={label.labelId}
-                      onSelect={() => onSelect(label.name, label.icon)}
+                      onSelect={() =>
+                        onSelect(label.labelId, label.name, label.icon)
+                      }
                       className="text-sm"
                     >
                       <div className="flex gap-2">

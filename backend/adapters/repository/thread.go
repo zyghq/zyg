@@ -1081,6 +1081,19 @@ func (tc *ThreadChatDB) SetLabelToThread(
 	return threadLabel, IsCreated, nil
 }
 
+func (tc *ThreadChatDB) DeleteThreadLabelByCompId(
+	ctx context.Context, threadId string, labelId string) error {
+	stmt := `
+		DELETE FROM thread_label
+		WHERE thread_id = $1 AND label_id = $2`
+	_, err := tc.db.Exec(ctx, stmt, threadId, labelId)
+	if err != nil {
+		slog.Error("failed to delete query", slog.Any("err", err))
+		return ErrQuery
+	}
+	return nil
+}
+
 func (tc *ThreadChatDB) RetrieveLabelsByThreadId(
 	ctx context.Context, threadId string) ([]models.ThreadLabel, error) {
 	var label models.ThreadLabel

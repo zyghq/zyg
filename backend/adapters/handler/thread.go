@@ -862,6 +862,46 @@ func (h *ThreadChatHandler) handleGetThChatLabels(w http.ResponseWriter, r *http
 	}
 }
 
+func (h *ThreadChatHandler) handleDeleteThChatLabel(w http.ResponseWriter, r *http.Request, account *models.Account) {
+	workspaceId := r.PathValue("workspaceId")
+	threadId := r.PathValue("threadId")
+	labelId := r.PathValue("labelId")
+
+	ctx := r.Context()
+
+	thExist, err := h.ths.ThreadExistsInWorkspace(ctx, workspaceId, threadId)
+	if err != nil {
+		slog.Error("failed checking thread existence in workspace", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if !thExist {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	label, err := h.ws.GetLabel(ctx, workspaceId, labelId)
+	if errors.Is(err, services.ErrLabelNotFound) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		slog.Error("failed to fetch workspace label", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	err = h.ths.RemoveThreadLabel(ctx, threadId, label.LabelId)
+	if err != nil {
+		slog.Error("failed to delete label from thread", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *ThreadChatHandler) handleGetThreadChatMetrics(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	workspaceId := r.PathValue("workspaceId")
 	ctx := r.Context()

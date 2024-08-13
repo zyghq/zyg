@@ -1179,6 +1179,48 @@ export async function putThreadLabel(
   }
 }
 
+export async function deleteThreadLabel(
+  token: string,
+  workspaceId: string,
+  threadId: string,
+  labelId: string
+): Promise<{
+  data: boolean | null;
+  error: Error | null;
+}> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadId}/labels/${labelId}/`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    if (!response.ok) {
+      const { status, statusText } = response;
+      return {
+        error: new Error(
+          `error deleting thread label: ${status} ${statusText}`
+        ),
+        data: null,
+      };
+    }
+    return {
+      error: null,
+      data: true,
+    };
+  } catch (err) {
+    console.error(err);
+    return {
+      error: new Error("error deleting thread label - something went wrong"),
+      data: null,
+    };
+  }
+}
+
 export async function sendThreadChatMessage(
   token: string,
   workspaceId: string,

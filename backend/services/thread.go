@@ -249,3 +249,12 @@ func (s *ThreadChatService) GenerateMemberThreadMetrics(
 
 	return metrics, nil
 }
+
+func (s *ThreadChatService) RemoveThreadLabel(
+	ctx context.Context, threadId string, labelId string) error {
+	err := s.repo.DeleteThreadLabelByCompId(ctx, threadId, labelId)
+	if err != nil {
+		return ErrThChatLabel
+	}
+	return nil
+}
