@@ -11,6 +11,8 @@ import { Icons } from "@/components/icons";
 import Threads from "@/components/threads";
 import { useCustomer } from "@/lib/customer";
 import { useQuery } from "@tanstack/react-query";
+import { threadResponseSchema, ThreadResponse } from "@/lib/thread";
+import { z } from "zod";
 
 interface HomeFeed {
   id: string;
@@ -19,42 +21,42 @@ interface HomeFeed {
   href: string;
 }
 
-interface Thread {
-  threadChatId: string;
-  sequence: number;
-  status: string;
-  read: boolean;
-  replied: boolean;
-  priority: string;
-  customer: {
-    customerId: string;
-    name: string;
-  };
-  assignee: {
-    memberId: string;
-    name: string;
-  } | null;
-  createdAt: string;
-  updatedAt: string;
-  messages: Message[];
-}
+// interface Thread {
+//   threadChatId: string;
+//   sequence: number;
+//   status: string;
+//   read: boolean;
+//   replied: boolean;
+//   priority: string;
+//   customer: {
+//     customerId: string;
+//     name: string;
+//   };
+//   assignee: {
+//     memberId: string;
+//     name: string;
+//   } | null;
+//   createdAt: string;
+//   updatedAt: string;
+//   messages: Message[];
+// }
 
-interface Message {
-  threadChatId: string;
-  threadChatMessageId: string;
-  body: string;
-  sequence: number;
-  customer?: {
-    customerId: string;
-    name: string;
-  } | null;
-  member?: {
-    memberId: string;
-    name: string;
-  } | null;
-  createdAt: string;
-  updatedAt: string;
-}
+// interface Message {
+//   threadChatId: string;
+//   threadChatMessageId: string;
+//   body: string;
+//   sequence: number;
+//   customer?: {
+//     customerId: string;
+//     name: string;
+//   } | null;
+//   member?: {
+//     memberId: string;
+//     name: string;
+//   } | null;
+//   createdAt: string;
+//   updatedAt: string;
+// }
 
 const homeFeeds = [
   {
@@ -104,7 +106,19 @@ export default function Home() {
       if (!response.ok) {
         throw new Error("Not Found");
       }
-      return response.json();
+
+      const data = await response.json();
+      try {
+        const threads = data.map((item: any) => {
+          return threadResponseSchema.parse(item);
+        });
+        return threads;
+      } catch (err) {
+        if (err instanceof z.ZodError) {
+          console.error(err.message);
+        } else console.error(err);
+      }
+      return data as ThreadResponse[];
     },
     enabled: !!customer,
     refetchOnWindowFocus: true,
@@ -139,7 +153,7 @@ export default function Home() {
     );
   };
 
-  const renderThreads = (threads: Thread[]) => {
+  const renderThreads = (threads: ThreadResponse[]) => {
     if (errorThreads) {
       return (
         <div className="w-full flex items-center justify-center mt-24">

@@ -503,7 +503,7 @@ func (c Chat) GenId() string {
 	return "ch" + xid.New().String()
 }
 
-func (c Chat) PreviewBody() string {
+func (c Chat) PreviewText() string {
 	if len(c.Body) > 255 {
 		return c.Body[:255]
 	}

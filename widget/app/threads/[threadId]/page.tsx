@@ -1,6 +1,5 @@
 "use client";
 import * as React from "react";
-import Avatar from "boring-avatars";
 import HomeButton from "@/components/home-btn";
 import CloseButton from "@/components/close-btn";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -9,81 +8,67 @@ import { Icons } from "@/components/icons";
 import { useCustomer } from "@/lib/customer";
 import { useQuery } from "@tanstack/react-query";
 import AskEmailForm from "@/components/ask-email-form";
+import { ThreadChatResponse } from "@/lib/thread";
+import { formatDistanceToNow } from "date-fns";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-interface Thread {
-  threadChatId: string;
-  sequence: number;
-  status: string;
-  read: boolean;
-  replied: boolean;
-  priority: string;
-  customer: {
-    customerId: string;
-    name: string;
-  };
-  assignee: {
-    memberId: string;
-    name: string;
-  } | null;
-  createdAt: string;
-  updatedAt: string;
-  messages: Message[];
-}
-
-interface Message {
-  threadChatId: string;
-  threadChatMessageId: string;
-  body: string;
-  sequence: number;
-  customer?: {
-    customerId: string;
-    name: string;
-  } | null;
-  member?: {
-    memberId: string;
-    name: string;
-  } | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-function Message({ message }: { message: Message }) {
-  const { createdAt } = message;
-  const date = new Date(createdAt);
-  const time = date.toLocaleString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+function Chat({ chat }: { chat: ThreadChatResponse }) {
+  const { createdAt } = chat;
+  const when = formatDistanceToNow(new Date(createdAt), {
+    addSuffix: true,
   });
 
-  const isMe = typeof message.customer === "object";
-
-  const memberId = message?.member?.memberId || "";
-  const memberName = message?.member?.name || "";
+  const memberId = chat?.member?.memberId || "";
+  const memberName = chat?.member?.name || "";
+  const customerId = chat?.customer?.customerId || "";
+  const isMe = chat.customer?.customerId || null;
 
   return (
     <div className="flex">
-      <div className={`flex max-w-sm ${isMe ? "ml-auto" : "mr-auto"}`}>
-        <div className="flex space-x-2">
-          {isMe ? null : <Avatar size={22} name={memberId} variant="marble" />}
-          <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
-            <div className="text-xs text-muted-foreground">{`${
-              isMe ? "Me" : memberName
-            }`}</div>
-            <p className="text-sm">{message.body}</p>
-            <div className="flex text-xs justify-end text-muted-foreground mt-1">
-              {time}
+      <div className={`flex ${isMe ? "ml-auto" : "mr-auto"}`}>
+        <div className="flex space-x-1">
+          {isMe ? (
+            <div className="flex items-start gap-1">
+              <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+                <div className="text-xs text-muted-foreground">{"You"}</div>
+                <p className="text-sm">{chat.body}</p>
+                <div className="flex text-xs justify-end text-muted-foreground mt-1">
+                  {when}
+                </div>
+              </div>
+              <Avatar className="h-8 w-8">
+                <AvatarImage
+                  src={`https://avatar.vercel.sh/${customerId}?w=32&h=32`}
+                />
+                <AvatarFallback>CN</AvatarFallback>
+              </Avatar>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-start gap-1">
+              <Avatar className="h-8 w-8">
+                <AvatarImage
+                  src={`https://avatar.vercel.sh/${memberId}?w=32&h=32`}
+                />
+                <AvatarFallback>CN</AvatarFallback>
+              </Avatar>
+              <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+                <div className="text-xs text-muted-foreground">{`${
+                  isMe ? "You" : memberName
+                }`}</div>
+                <p className="text-sm">{chat.body}</p>
+                <div className="flex text-xs justify-end text-muted-foreground mt-1">
+                  {when}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-export default function ThreadMessages({
+export default function ThreadChats({
   params,
 }: {
   params: { threadId: string };
@@ -97,7 +82,7 @@ export default function ThreadMessages({
     customer?.customerExternalId;
 
   const {
-    data: thread,
+    data: chats,
     isLoading: isLoadingThread,
     error: errorThread,
     refetch,
@@ -127,7 +112,7 @@ export default function ThreadMessages({
         throw new Error("Not Found");
       }
       const thread = await response.json();
-      return thread as Thread;
+      return thread as ThreadChatResponse[];
     },
     enabled: !!customer,
   });
@@ -181,7 +166,7 @@ export default function ThreadMessages({
 
   if (isLoadingThread) return null;
 
-  if (!thread || !thread?.messages?.length) {
+  if (!chats || !chats?.length) {
     return (
       <div className="flex flex-col items-center justify-center space-y-4 mt-24">
         <Icons.nothing className="w-40" />
@@ -201,13 +186,12 @@ export default function ThreadMessages({
     return newArr;
   };
 
-  const { messages } = thread;
   const hasSentMessageWithoutIdentity =
-    messages.length > 0 && !hasIdentity && customer;
+    chats.length > 0 && !hasIdentity && customer;
 
-  const messagesReversed = hasSentMessageWithoutIdentity
-    ? Array.from([messages[0]])
-    : reverse(messages);
+  const chatsReversed = hasSentMessageWithoutIdentity
+    ? Array.from([chats[0]])
+    : reverse(chats);
 
   return (
     <div className="flex min-h-screen flex-col font-sans">
@@ -252,8 +236,8 @@ export default function ThreadMessages({
       <main>
         <ScrollArea className="p-4 h-[calc(100dvh-12rem)]">
           <div className="space-y-2">
-            {messagesReversed.map((message) => (
-              <Message key={message.threadChatMessageId} message={message} />
+            {chatsReversed.map((chat) => (
+              <Chat key={chat.threadChatId} chat={chat} />
             ))}
             {hasSentMessageWithoutIdentity && (
               <div className="flex flex-col px-2">

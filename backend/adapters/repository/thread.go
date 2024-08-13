@@ -1184,6 +1184,18 @@ func (tc *ThreadChatDB) InsertCustomerChat(
 			slog.Error("failed to update inbound message", slog.Any("err", err))
 			return models.Chat{}, ErrQuery
 		}
+
+		// update thread with preview text
+		stmt = `UPDATE thread SET
+			preview_text = $2,
+			updated_at = NOW()
+			WHERE thread_id = $1`
+
+		_, err = tx.Exec(ctx, stmt, chat.ThreadId, chat.PreviewText())
+		if err != nil {
+			slog.Error("failed to update thread", slog.Any("err", err))
+			return models.Chat{}, ErrQuery
+		}
 	} else {
 		var inbound models.IngressMessage
 		messageId := inbound.GenId()
@@ -1219,13 +1231,13 @@ func (tc *ThreadChatDB) InsertCustomerChat(
 			return models.Chat{}, ErrQuery
 		}
 
-		// update thread with inbound message id
+		// update thread with inbound message id and preview text
 		stmt = `UPDATE thread SET
-			ingress_message_id = $2,
+			ingress_message_id = $2, preview_text = $3,
 			updated_at = NOW()
 			WHERE thread_id = $1`
 
-		_, err = tx.Exec(ctx, stmt, chat.ThreadId, inbound.MessageId)
+		_, err = tx.Exec(ctx, stmt, chat.ThreadId, inbound.MessageId, chat.PreviewText())
 		if err != nil {
 			slog.Error("failed to update thread", slog.Any("err", err))
 			return models.Chat{}, ErrQuery
@@ -1308,6 +1320,18 @@ func (tc *ThreadChatDB) InsertMemberChat(
 			slog.Error("failed to update outbound message", slog.Any("err", err))
 			return models.Chat{}, ErrQuery
 		}
+
+		// update thread with outbound message id and preview text
+		stmt = `UPDATE thread SET
+			preview_text = $2,
+			updated_at = NOW()
+			WHERE thread_id = $1`
+
+		_, err = tx.Exec(ctx, stmt, chat.ThreadId, chat.PreviewText())
+		if err != nil {
+			slog.Error("failed to update thread", slog.Any("err", err))
+			return models.Chat{}, ErrQuery
+		}
 	} else {
 		var outbound models.EgressMessage
 		messageId := outbound.GenId()
@@ -1343,13 +1367,13 @@ func (tc *ThreadChatDB) InsertMemberChat(
 			return models.Chat{}, ErrQuery
 		}
 
-		// update thread with outbound message id
+		// update thread with outbound message id and preview text
 		stmt = `UPDATE thread SET
-			egress_message_id = $2,
+			egress_message_id = $2, preview_text = $3,
 			updated_at = NOW()
 			WHERE thread_id = $1`
 
-		_, err = tx.Exec(ctx, stmt, chat.ThreadId, outbound.MessageId)
+		_, err = tx.Exec(ctx, stmt, chat.ThreadId, outbound.MessageId, chat.PreviewText())
 		if err != nil {
 			slog.Error("failed to update thread", slog.Any("err", err))
 			return models.Chat{}, ErrQuery
