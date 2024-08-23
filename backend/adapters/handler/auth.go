@@ -14,6 +14,10 @@ import (
 	"github.com/zyghq/zyg/services"
 )
 
+type AuthenticatedAccountHandler func(http.ResponseWriter, *http.Request, *models.Account)
+
+type AuthenticatedMemberHandler func(http.ResponseWriter, *http.Request, *models.Member)
+
 func CheckAuthCredentials(r *http.Request) (string, string, error) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
@@ -50,25 +54,17 @@ func AuthenticateAccount(
 			return models.Account{}, fmt.Errorf("cannot get subject from parsed token: %v", err)
 		}
 
-		account, err := authz.AuthenticateUser(ctx, sub)
-
+		account, err := authz.AuthenticateUserAccount(ctx, sub)
 		if errors.Is(err, services.ErrAccountNotFound) {
+			slog.Error("auth account not found", slog.Any("error", err))
 			return account, fmt.Errorf("account not found or does not exist")
 		}
 		if errors.Is(err, services.ErrAccount) {
-			slog.Error(
-				"failed to get account by auth user id "+
-					"perhaps a failed query or mapping",
-				slog.String("authUserId", sub),
-			)
+			slog.Error("failed to fetch account by auth user id", slog.Any("error", err))
 			return account, fmt.Errorf("failed to get account by auth user id: %s got error: %v", sub, err)
 		}
 		if err != nil {
-			slog.Error(
-				"failed to get account by auth user id "+
-					"something went wrong",
-				slog.String("authUserId", sub),
-			)
+			slog.Error("something went wrong", slog.Any("error", err))
 			return account, fmt.Errorf("failed to get account by auth user id: %s got error: %v", sub, err)
 		}
 		return account, nil
@@ -77,4 +73,22 @@ func AuthenticateAccount(
 	}
 }
 
-type AuthenticatedHandler func(http.ResponseWriter, *http.Request, *models.Account)
+func AuthenticateMember(
+	ctx context.Context, authz ports.AuthServicer, workspaceId string, scheme string, cred string,
+) (models.Member, error) {
+	if scheme == "bearer" {
+		account, err := AuthenticateAccount(ctx, authz, scheme, cred)
+		if err != nil {
+			return models.Member{}, err
+		}
+
+		member, err := authz.AuthenticateWorkspaceMember(ctx, workspaceId, account.AccountId)
+		if err != nil {
+			return models.Member{}, fmt.Errorf("failed to authenticate workspace member: %v", err)
+		}
+
+		return member, nil
+	} else {
+		return models.Member{}, fmt.Errorf("unsupported scheme `%s` cannot authenticate", scheme)
+	}
+}

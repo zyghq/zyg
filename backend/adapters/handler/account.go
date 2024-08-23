@@ -87,8 +87,6 @@ func (h *AccountHandler) handleGetOrCreateAccount(w http.ResponseWriter, r *http
 			return
 		}
 
-		// @sanchitrk
-		// add CDP event when the account is created
 		if isCreated {
 			slog.Info("created auth account", slog.String("accountId", account.AccountId))
 			w.Header().Set("Content-Type", "application/json")

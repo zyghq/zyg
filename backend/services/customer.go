@@ -67,11 +67,11 @@ func (s *CustomerService) GenerateCustomerJwt(c models.Customer, sk string) (str
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	jwt, err := token.SignedString([]byte(sk))
+	j, err := token.SignedString([]byte(sk))
 	if err != nil {
 		return "", fmt.Errorf("failed to sign JWT token got error: %v", err)
 	}
-	return jwt, nil
+	return j, nil
 }
 
 func (s *CustomerService) VerifyExternalId(sk string, hash string, externalId string) bool {

@@ -22,13 +22,13 @@ func GenToken(length int, prefix string) (string, error) {
 	return prefix + base64.URLEncoding.EncodeToString(buffer)[:length], nil
 }
 
-// taken from Supabase JWT encoding
+// AuthJWTClaims taken from Supabase JWT encoding
 type AuthJWTClaims struct {
 	Email string `json:"email"`
 	jwt.RegisteredClaims
 }
 
-// custom jwt claims for customer
+// CustomerJWTClaims custom jwt claims for customer
 type CustomerJWTClaims struct {
 	WorkspaceId string `json:"workspaceId"`
 	ExternalId  string `json:"externalId"`
@@ -37,7 +37,7 @@ type CustomerJWTClaims struct {
 	jwt.RegisteredClaims
 }
 
-// custom data type wrapper for SQL nullable string
+// NullString custom data type wrapper for SQL nullable string
 func NullString(s *string) sql.NullString {
 	if s == nil {
 		return sql.NullString{String: "", Valid: false}
@@ -45,7 +45,7 @@ func NullString(s *string) sql.NullString {
 	return sql.NullString{String: *s, Valid: true}
 }
 
-// validates if a string is a valid UUID
+// IsValidUUID validates if a string is a valid UUID
 func IsValidUUID(u string) bool {
 	_, err := uuid.Parse(u)
 	return err == nil

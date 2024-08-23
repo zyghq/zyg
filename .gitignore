@@ -79,3 +79,5 @@ db/
 redisdb/
 
 .env.yaml
+
+.idea/

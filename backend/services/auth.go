@@ -13,13 +13,15 @@ import (
 
 const DefaultAuthProvider string = "supabase"
 
-func ParseJWTToken(token string, hmacSecret []byte) (ac models.AuthJWTClaims, err error) {
-	t, err := jwt.ParseWithClaims(token, &models.AuthJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("%v", token.Header["alg"])
-		}
-		return hmacSecret, nil
-	})
+func ParseJWTToken(
+	token string, hmacSecret []byte) (ac models.AuthJWTClaims, err error) {
+	t, err := jwt.ParseWithClaims(
+		token, &models.AuthJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("%v", token.Header["alg"])
+			}
+			return hmacSecret, nil
+		})
 
 	if err != nil {
 		return ac, fmt.Errorf("%v", err)
@@ -29,13 +31,15 @@ func ParseJWTToken(token string, hmacSecret []byte) (ac models.AuthJWTClaims, er
 	return ac, fmt.Errorf("error parsing jwt token")
 }
 
-func ParseCustomerJWTToken(token string, hmacSecret []byte) (cc models.CustomerJWTClaims, err error) {
-	t, err := jwt.ParseWithClaims(token, &models.CustomerJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("%v", token.Header["alg"])
-		}
-		return hmacSecret, nil
-	})
+func ParseCustomerJWTToken(
+	token string, hmacSecret []byte) (cc models.CustomerJWTClaims, err error) {
+	t, err := jwt.ParseWithClaims(
+		token, &models.CustomerJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("%v", token.Header["alg"])
+			}
+			return hmacSecret, nil
+		})
 
 	if err != nil {
 		return cc, fmt.Errorf("%v", err)
@@ -46,18 +50,21 @@ func ParseCustomerJWTToken(token string, hmacSecret []byte) (cc models.CustomerJ
 }
 
 type AuthService struct {
-	repo ports.AccountRepositorer
+	accountRepo ports.AccountRepositorer
+	memberRepo  ports.MemberRepositorer
 }
 
-func NewAuthService(repo ports.AccountRepositorer) *AuthService {
+func NewAuthService(
+	accountRepo ports.AccountRepositorer, memberRepo ports.MemberRepositorer) *AuthService {
 	return &AuthService{
-		repo: repo,
+		accountRepo: accountRepo,
+		memberRepo:  memberRepo,
 	}
 }
 
-func (s *AuthService) AuthenticateUser(
+func (s *AuthService) AuthenticateUserAccount(
 	ctx context.Context, authUserId string) (models.Account, error) {
-	account, err := s.repo.FetchByAuthUserId(ctx, authUserId)
+	account, err := s.accountRepo.FetchByAuthUserId(ctx, authUserId)
 
 	if errors.Is(err, repository.ErrEmpty) {
 		return models.Account{}, ErrAccountNotFound
@@ -70,9 +77,25 @@ func (s *AuthService) AuthenticateUser(
 	return account, nil
 }
 
+// AuthenticateWorkspaceMember authenticates a workspace member by verifying the existence of a member
+// record in the database that matches the provided workspace ID and account ID.
+// Each member is uniquely identified by workspace ID and account ID.
+func (s *AuthService) AuthenticateWorkspaceMember(
+	ctx context.Context, workspaceId string, accountId string,
+) (models.Member, error) {
+	member, err := s.memberRepo.LookupByWorkspaceAccountId(ctx, workspaceId, accountId)
+	if errors.Is(err, repository.ErrEmpty) {
+		return models.Member{}, ErrMemberNotFound
+	}
+	if err != nil {
+		return models.Member{}, ErrMember
+	}
+	return member, nil
+}
+
 func (s *AuthService) ValidatePersonalAccessToken(
 	ctx context.Context, token string) (models.Account, error) {
-	account, err := s.repo.LookupByToken(ctx, token)
+	account, err := s.accountRepo.LookupByToken(ctx, token)
 
 	if errors.Is(err, repository.ErrEmpty) {
 		return models.Account{}, ErrAccountNotFound

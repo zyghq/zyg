@@ -55,7 +55,7 @@ func run(ctx context.Context) error {
 	threadChatStore := repository.NewThreadChatDB(db)
 
 	// init services
-	authService := services.NewAuthService(accountStore)
+	authService := services.NewAuthService(accountStore, memberStore)
 	accountService := services.NewAccountService(accountStore, workspaceStore)
 	workspaceService := services.NewWorkspaceService(workspaceStore, memberStore, customerStore)
 	customerService := services.NewCustomerService(customerStore)
@@ -89,7 +89,10 @@ func main() {
 	flag.Parse()
 	ctx := context.Background()
 	if err := run(ctx); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
+		_, err := fmt.Fprintf(os.Stderr, "%s\n", err)
+		if err != nil {
+			return
+		}
 		os.Exit(1)
 	}
 }

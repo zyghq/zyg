@@ -20,7 +20,12 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 		return models.Thread{}, chat, ErrQuery
 	}
 
-	defer tx.Rollback(ctx)
+	defer func(tx pgx.Tx, ctx context.Context) {
+		err := tx.Rollback(ctx)
+		if err != nil {
+			return
+		}
+	}(tx, ctx)
 
 	messageId := inbound.GenId()
 	stmt := `
@@ -1140,7 +1145,12 @@ func (tc *ThreadChatDB) InsertCustomerChat(
 		return chat, ErrQuery
 	}
 
-	defer tx.Rollback(ctx)
+	defer func(tx pgx.Tx, ctx context.Context) {
+		err := tx.Rollback(ctx)
+		if err != nil {
+			return
+		}
+	}(tx, ctx)
 
 	chatId := chat.GenId()
 	stmt := `
@@ -1276,7 +1286,12 @@ func (tc *ThreadChatDB) InsertMemberChat(
 		return chat, ErrQuery
 	}
 
-	defer tx.Rollback(ctx)
+	defer func(tx pgx.Tx, ctx context.Context) {
+		err := tx.Rollback(ctx)
+		if err != nil {
+			return
+		}
+	}(tx, ctx)
 
 	chatId := chat.GenId()
 	stmt := `

@@ -24,12 +24,11 @@ func NewThreadChatHandler(
 	return &ThreadChatHandler{ws: ws, ths: ths}
 }
 
-func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.Request, account *models.Account) {
-	workspaceId := r.PathValue("workspaceId")
-
+func (h *ThreadChatHandler) handleGetThreadChats(
+	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	ctx := r.Context()
 
-	threads, err := h.ths.ListWorkspaceThreadChats(ctx, workspaceId)
+	threads, err := h.ths.ListWorkspaceThreadChats(ctx, member.WorkspaceId)
 	if err != nil {
 		slog.Error("failed to fetch workspace threads", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -37,7 +36,6 @@ func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.
 	}
 
 	items := make([]ThreadResp, 0, 100)
-
 	for _, thread := range threads {
 		var threadAssignee *ThMemberResp
 		var ingressCustomer *ThCustomerResp
@@ -94,7 +92,6 @@ func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.
 		}
 		items = append(items, resp)
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(items); err != nil {
@@ -104,7 +101,8 @@ func (h *ThreadChatHandler) handleGetThreadChats(w http.ResponseWriter, r *http.
 	}
 }
 
-func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *http.Request, account *models.Account) {
+func (h *ThreadChatHandler) handleUpdateThreadChat(
+	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
@@ -112,9 +110,7 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 
 	ctx := r.Context()
 
-	workspaceId := r.PathValue("workspaceId")
 	threadId := r.PathValue("threadId")
-
 	var reqp map[string]interface{}
 	err := json.NewDecoder(r.Body).Decode(&reqp)
 	if err != nil {
@@ -122,12 +118,11 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 		return
 	}
 	channel := models.ThreadChannel{}.Chat()
-	thread, err := h.ths.GetWorkspaceThread(ctx, workspaceId, threadId, &channel)
+	thread, err := h.ths.GetWorkspaceThread(ctx, member.WorkspaceId, threadId, &channel)
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
-
 	if err != nil {
 		slog.Error("failed to fetch thread", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -135,7 +130,6 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 	}
 
 	fields := make([]string, 0, len(reqp))
-
 	if priority, found := reqp["priority"]; found {
 		if priority == nil {
 			// set default priority
@@ -176,7 +170,7 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 			fields = append(fields, "assignee")
 		} else {
 			assigneeId := assignee.(string)
-			member, err := h.ws.GetMember(ctx, workspaceId, assigneeId)
+			member, err := h.ws.GetMember(ctx, member.WorkspaceId, assigneeId)
 			if errors.Is(err, services.ErrMemberNotFound) {
 				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 				return
@@ -297,23 +291,9 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(w http.ResponseWriter, r *htt
 	}
 }
 
-func (h *ThreadChatHandler) handleGetMyThreadChats(w http.ResponseWriter, r *http.Request, account *models.Account) {
-	workspaceId := r.PathValue("workspaceId")
-
+func (h *ThreadChatHandler) handleGetMyThreadChats(
+	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	ctx := r.Context()
-
-	member, err := h.ws.GetAccountLinkedMember(ctx, workspaceId, account.AccountId)
-	if errors.Is(err, services.ErrMemberNotFound) {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-
-	if err != nil {
-		slog.Error("failed to fetch member", slog.Any("err", err))
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-
-	}
 
 	threads, err := h.ths.ListMemberThreadChats(ctx, member.MemberId)
 	if err != nil {
@@ -323,7 +303,6 @@ func (h *ThreadChatHandler) handleGetMyThreadChats(w http.ResponseWriter, r *htt
 	}
 
 	items := make([]ThreadResp, 0, 100)
-
 	for _, thread := range threads {
 		var threadCustomer ThCustomerResp
 		var threadAssignee *ThMemberResp
@@ -381,7 +360,6 @@ func (h *ThreadChatHandler) handleGetMyThreadChats(w http.ResponseWriter, r *htt
 		}
 		items = append(items, resp)
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(items); err != nil {
@@ -391,12 +369,11 @@ func (h *ThreadChatHandler) handleGetMyThreadChats(w http.ResponseWriter, r *htt
 	}
 }
 
-func (h *ThreadChatHandler) handleGetUnassignedThChats(w http.ResponseWriter, r *http.Request, account *models.Account) {
-	workspaceId := r.PathValue("workspaceId")
-
+func (h *ThreadChatHandler) handleGetUnassignedThChats(
+	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	ctx := r.Context()
 
-	threads, err := h.ths.ListUnassignedThreadChats(ctx, workspaceId)
+	threads, err := h.ths.ListUnassignedThreadChats(ctx, member.WorkspaceId)
 	if err != nil {
 		slog.Error("failed to fetch unassigned threads", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -404,7 +381,6 @@ func (h *ThreadChatHandler) handleGetUnassignedThChats(w http.ResponseWriter, r 
 	}
 
 	items := make([]ThreadResp, 0, 100)
-
 	for _, thread := range threads {
 		var threadCustomer ThCustomerResp
 		var threadAssignee *ThMemberResp
@@ -462,7 +438,6 @@ func (h *ThreadChatHandler) handleGetUnassignedThChats(w http.ResponseWriter, r 
 		}
 		items = append(items, resp)
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(items); err != nil {
@@ -472,19 +447,17 @@ func (h *ThreadChatHandler) handleGetUnassignedThChats(w http.ResponseWriter, r 
 	}
 }
 
-func (h *ThreadChatHandler) handleGetLabelledThreadChats(w http.ResponseWriter, r *http.Request, account *models.Account) {
-	workspaceId := r.PathValue("workspaceId")
-	labelId := r.PathValue("labelId")
-
+func (h *ThreadChatHandler) handleGetLabelledThreadChats(
+	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	ctx := r.Context()
 
-	label, err := h.ws.GetLabel(ctx, workspaceId, labelId)
+	labelId := r.PathValue("labelId")
+	label, err := h.ws.GetLabel(ctx, member.WorkspaceId, labelId)
 	if errors.Is(err, services.ErrLabelNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 
 	}
-
 	if err != nil {
 		slog.Error("failed to fetch workspace label", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -499,7 +472,6 @@ func (h *ThreadChatHandler) handleGetLabelledThreadChats(w http.ResponseWriter, 
 	}
 
 	items := make([]ThreadResp, 0, 100)
-
 	for _, thread := range threads {
 		var threadCustomer ThCustomerResp
 		var threadAssignee *ThMemberResp
@@ -553,7 +525,6 @@ func (h *ThreadChatHandler) handleGetLabelledThreadChats(w http.ResponseWriter, 
 		}
 		items = append(items, resp)
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(items); err != nil {
@@ -563,17 +534,16 @@ func (h *ThreadChatHandler) handleGetLabelledThreadChats(w http.ResponseWriter, 
 	}
 }
 
-func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *http.Request, account *models.Account) {
+func (h *ThreadChatHandler) handleCreateThChatMessage(
+	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
 	}(r.Body)
 
-	workspaceId := r.PathValue("workspaceId")
 	threadId := r.PathValue("threadId")
 
 	var reqp ThChatReq
-
 	err := json.NewDecoder(r.Body).Decode(&reqp)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -582,24 +552,12 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 
 	ctx := r.Context()
 
-	member, err := h.ws.GetAccountLinkedMember(ctx, workspaceId, account.AccountId)
-	if errors.Is(err, services.ErrMemberNotFound) {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-
-	if err != nil {
-		slog.Error("failed to fetch member", slog.Any("err", err))
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
 	channel := models.ThreadChannel{}.Chat()
-	thread, err := h.ths.GetWorkspaceThread(ctx, workspaceId, threadId, &channel)
+	thread, err := h.ths.GetWorkspaceThread(ctx, member.WorkspaceId, threadId, &channel)
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
-
 	if err != nil {
 		slog.Error("failed to fetch thread", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -631,8 +589,8 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 
 	// improvements:
 	// shall we use go routines for async assignment and replied marking?
-	// also lets check for workspace setttings for auto assignment and replied marking
-	// for now keep it as is.
+	// also, let's check for workspace settings for auto assignment and replied marking
+	// for now keep it as it is.
 	// if !thread.AssigneeId.Valid {
 	// 	slog.Info("thread chat not yet assigned", "threadId", thread.ThreadId, "memberId", member.MemberId)
 	// 	t := thread // make a temp copy before assigning
@@ -665,7 +623,6 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 		CreatedAt: chat.CreatedAt,
 		UpdatedAt: chat.UpdatedAt,
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
@@ -675,19 +632,17 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(w http.ResponseWriter, r *
 	}
 }
 
-func (h *ThreadChatHandler) handleGetThChatMesssages(w http.ResponseWriter, r *http.Request, account *models.Account) {
-	workspaceId := r.PathValue("workspaceId")
-	threadId := r.PathValue("threadId")
-
+func (h *ThreadChatHandler) handleGetThChatMessages(
+	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	ctx := r.Context()
 
+	threadId := r.PathValue("threadId")
 	channel := models.ThreadChannel{}.Chat()
-	thread, err := h.ths.GetWorkspaceThread(ctx, workspaceId, threadId, &channel)
+	thread, err := h.ths.GetWorkspaceThread(ctx, member.WorkspaceId, threadId, &channel)
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
-
 	if err != nil {
 		slog.Error("failed to fetch thread", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -729,7 +684,6 @@ func (h *ThreadChatHandler) handleGetThChatMesssages(w http.ResponseWriter, r *h
 		}
 		messages = append(messages, chatResp)
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(messages); err != nil {
@@ -739,16 +693,16 @@ func (h *ThreadChatHandler) handleGetThChatMesssages(w http.ResponseWriter, r *h
 	}
 }
 
-func (h *ThreadChatHandler) handleSetThreadChatLabel(w http.ResponseWriter, r *http.Request, account *models.Account) {
+func (h *ThreadChatHandler) handleSetThreadChatLabel(
+	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
 	}(r.Body)
 
-	workspaceId := r.PathValue("workspaceId")
 	threadId := r.PathValue("threadId")
-	var reqp ThChatLabelReq
 
+	var reqp ThChatLabelReq
 	err := json.NewDecoder(r.Body).Decode(&reqp)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -756,7 +710,7 @@ func (h *ThreadChatHandler) handleSetThreadChatLabel(w http.ResponseWriter, r *h
 	}
 
 	ctx := r.Context()
-	thExist, err := h.ths.ThreadExistsInWorkspace(ctx, workspaceId, threadId)
+	thExist, err := h.ths.ThreadExistsInWorkspace(ctx, member.WorkspaceId, threadId)
 	if err != nil {
 		slog.Error("failed checking thread existence in workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -768,7 +722,7 @@ func (h *ThreadChatHandler) handleSetThreadChatLabel(w http.ResponseWriter, r *h
 		return
 	}
 
-	label, isCreated, err := h.ws.CreateLabel(ctx, workspaceId, reqp.Name, reqp.Icon)
+	label, isCreated, err := h.ws.CreateLabel(ctx, member.WorkspaceId, reqp.Name, reqp.Icon)
 	if err != nil {
 		slog.Error("failed to create label", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -793,7 +747,6 @@ func (h *ThreadChatHandler) handleSetThreadChatLabel(w http.ResponseWriter, r *h
 		CreatedAt:     threadLabel.CreatedAt,
 		UpdatedAt:     threadLabel.UpdatedAt,
 	}
-
 	if isCreated || isAdded {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
@@ -813,13 +766,13 @@ func (h *ThreadChatHandler) handleSetThreadChatLabel(w http.ResponseWriter, r *h
 	}
 }
 
-func (h *ThreadChatHandler) handleGetThChatLabels(w http.ResponseWriter, r *http.Request, account *models.Account) {
-	workspaceId := r.PathValue("workspaceId")
-	threadId := r.PathValue("threadId")
+func (h *ThreadChatHandler) handleGetThChatLabels(
+	w http.ResponseWriter, r *http.Request, member *models.Member) {
 
 	ctx := r.Context()
 
-	thExist, err := h.ths.ThreadExistsInWorkspace(ctx, workspaceId, threadId)
+	threadId := r.PathValue("threadId")
+	thExist, err := h.ths.ThreadExistsInWorkspace(ctx, member.WorkspaceId, threadId)
 	if err != nil {
 		slog.Error("failed checking thread existence in workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -852,7 +805,6 @@ func (h *ThreadChatHandler) handleGetThChatLabels(w http.ResponseWriter, r *http
 		}
 		items = append(items, item)
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(items); err != nil {
@@ -862,37 +814,33 @@ func (h *ThreadChatHandler) handleGetThChatLabels(w http.ResponseWriter, r *http
 	}
 }
 
-func (h *ThreadChatHandler) handleDeleteThChatLabel(w http.ResponseWriter, r *http.Request, account *models.Account) {
-	workspaceId := r.PathValue("workspaceId")
-	threadId := r.PathValue("threadId")
-	labelId := r.PathValue("labelId")
-
+func (h *ThreadChatHandler) handleDeleteThChatLabel(
+	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	ctx := r.Context()
 
-	thExist, err := h.ths.ThreadExistsInWorkspace(ctx, workspaceId, threadId)
+	threadId := r.PathValue("threadId")
+	labelId := r.PathValue("labelId")
+	thExist, err := h.ths.ThreadExistsInWorkspace(ctx, member.WorkspaceId, threadId)
 	if err != nil {
 		slog.Error("failed checking thread existence in workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-
 	if !thExist {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
-	label, err := h.ws.GetLabel(ctx, workspaceId, labelId)
+	label, err := h.ws.GetLabel(ctx, member.WorkspaceId, labelId)
 	if errors.Is(err, services.ErrLabelNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
-
 	if err != nil {
 		slog.Error("failed to fetch workspace label", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-
 	err = h.ths.RemoveThreadLabel(ctx, threadId, label.LabelId)
 	if err != nil {
 		slog.Error("failed to delete label from thread", slog.Any("err", err))
@@ -902,23 +850,10 @@ func (h *ThreadChatHandler) handleDeleteThChatLabel(w http.ResponseWriter, r *ht
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *ThreadChatHandler) handleGetThreadChatMetrics(w http.ResponseWriter, r *http.Request, account *models.Account) {
-	workspaceId := r.PathValue("workspaceId")
+func (h *ThreadChatHandler) handleGetThreadChatMetrics(
+	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	ctx := r.Context()
-
-	member, err := h.ws.GetAccountLinkedMember(ctx, workspaceId, account.AccountId)
-	if errors.Is(err, services.ErrMemberNotFound) {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-
-	if err != nil {
-		slog.Error("failed to fetch member", slog.Any("err", err))
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	metrics, err := h.ths.GenerateMemberThreadMetrics(ctx, workspaceId, member.MemberId)
+	metrics, err := h.ths.GenerateMemberThreadMetrics(ctx, member.WorkspaceId, member.MemberId)
 	if err != nil {
 		slog.Error("failed to generate thread metrics", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -927,7 +862,6 @@ func (h *ThreadChatHandler) handleGetThreadChatMetrics(w http.ResponseWriter, r 
 
 	var label ThreadLabelCountResp
 	labels := make([]ThreadLabelCountResp, 0, 100)
-
 	for _, l := range metrics.ThreadLabelMetrics {
 		label = ThreadLabelCountResp{
 			LabelId: l.LabelId,
@@ -948,11 +882,9 @@ func (h *ThreadChatHandler) handleGetThreadChatMetrics(w http.ResponseWriter, r 
 		OtherAssigned: metrics.OtherAssignedCount,
 		Labels:        labels,
 	}
-
 	resp := ThreadMetricsResp{
 		Count: count,
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
@@ -962,16 +894,14 @@ func (h *ThreadChatHandler) handleGetThreadChatMetrics(w http.ResponseWriter, r 
 	}
 }
 
-func (h *WorkspaceHandler) handleCreateWidget(w http.ResponseWriter, r *http.Request, account *models.Account) {
+func (h *WorkspaceHandler) handleCreateWidget(
+	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
 	}(r.Body)
 
-	workspaceId := r.PathValue("workspaceId")
-
 	var reqp CreateWidgetReq
-
 	err := json.NewDecoder(r.Body).Decode(&reqp)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -979,18 +909,6 @@ func (h *WorkspaceHandler) handleCreateWidget(w http.ResponseWriter, r *http.Req
 	}
 
 	ctx := r.Context()
-
-	workspace, err := h.as.GetAccountLinkedWorkspace(ctx, account.AccountId, workspaceId)
-	if errors.Is(err, services.ErrWorkspaceNotFound) {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-
-	if err != nil {
-		slog.Error("failed to fetch workspace", slog.Any("err", err))
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
 
 	configuration := map[string]interface{}{}
 	if reqp.Configuration != nil {
@@ -1000,7 +918,7 @@ func (h *WorkspaceHandler) handleCreateWidget(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	widget, err := h.ws.CreateWidget(ctx, workspace.WorkspaceId, reqp.Name, configuration)
+	widget, err := h.ws.CreateWidget(ctx, member.WorkspaceId, reqp.Name, configuration)
 	if err != nil {
 		slog.Error("failed to create widget", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -1014,7 +932,6 @@ func (h *WorkspaceHandler) handleCreateWidget(w http.ResponseWriter, r *http.Req
 		CreatedAt:     widget.CreatedAt,
 		UpdatedAt:     widget.UpdatedAt,
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {

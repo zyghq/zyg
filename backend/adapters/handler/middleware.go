@@ -36,19 +36,19 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-type EnsureAuth struct {
-	handler AuthenticatedHandler
+type EnsureAuthAccount struct {
+	handler AuthenticatedAccountHandler
 	authz   ports.AuthServicer
 }
 
-func NewEnsureAuth(handler AuthenticatedHandler, as ports.AuthServicer) *EnsureAuth {
-	return &EnsureAuth{
+func NewEnsureAuthAccount(handler AuthenticatedAccountHandler, as ports.AuthServicer) *EnsureAuthAccount {
+	return &EnsureAuthAccount{
 		handler: handler,
 		authz:   as,
 	}
 }
 
-func (ea *EnsureAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (ea *EnsureAuthAccount) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	scheme, cred, err := CheckAuthCredentials(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -60,4 +60,31 @@ func (ea *EnsureAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ea.handler(w, r, &account)
+}
+
+type EnsureMemberAuth struct {
+	handler AuthenticatedMemberHandler
+	authz   ports.AuthServicer
+}
+
+func NewEnsureMemberAuth(handler AuthenticatedMemberHandler, as ports.AuthServicer) *EnsureMemberAuth {
+	return &EnsureMemberAuth{
+		handler: handler,
+		authz:   as,
+	}
+}
+
+func (em *EnsureMemberAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	workspaceId := r.PathValue("workspaceId")
+	scheme, cred, err := CheckAuthCredentials(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+	member, err := AuthenticateMember(r.Context(), em.authz, workspaceId, scheme, cred)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+	em.handler(w, r, &member)
 }

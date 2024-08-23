@@ -26,8 +26,10 @@ type AccountServicer interface {
 }
 
 type AuthServicer interface {
-	AuthenticateUser(
+	AuthenticateUserAccount(
 		ctx context.Context, authUserId string) (models.Account, error)
+	AuthenticateWorkspaceMember(
+		ctx context.Context, workspaceId string, accountId string) (models.Member, error)
 	ValidatePersonalAccessToken(
 		ctx context.Context, token string) (models.Account, error)
 }

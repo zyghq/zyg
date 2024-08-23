@@ -9,15 +9,20 @@ import (
 	"github.com/zyghq/zyg/models"
 )
 
-func (w *WorkspaceDB) InsertWorkspaceWithMember(
+func (wrk *WorkspaceDB) InsertWorkspaceWithMember(
 	ctx context.Context, workspace models.Workspace, member models.Member) (models.Workspace, error) {
-	tx, err := w.db.Begin(ctx)
+	tx, err := wrk.db.Begin(ctx)
 	if err != nil {
 		slog.Error("failed to start db tx", slog.Any("err", err))
 		return models.Workspace{}, ErrQuery
 	}
 
-	defer tx.Rollback(ctx)
+	defer func(tx pgx.Tx, ctx context.Context) {
+		err := tx.Rollback(ctx)
+		if err != nil {
+			return
+		}
+	}(tx, ctx)
 
 	workspaceId := workspace.GenId()
 	err = tx.QueryRow(ctx, `INSERT INTO workspace(workspace_id, account_id, name)
@@ -69,9 +74,9 @@ func (w *WorkspaceDB) InsertWorkspaceWithMember(
 	return workspace, nil
 }
 
-func (w *WorkspaceDB) ModifyWorkspaceById(
+func (wrk *WorkspaceDB) ModifyWorkspaceById(
 	ctx context.Context, workspace models.Workspace) (models.Workspace, error) {
-	err := w.db.QueryRow(ctx, `UPDATE workspace SET
+	err := wrk.db.QueryRow(ctx, `UPDATE workspace SET
 		name = $1, updated_at = NOW()
 		WHERE workspace_id = $2
 		RETURNING
@@ -89,10 +94,10 @@ func (w *WorkspaceDB) ModifyWorkspaceById(
 	return workspace, nil
 }
 
-func (w *WorkspaceDB) ModifyLabelById(
+func (wrk *WorkspaceDB) ModifyLabelById(
 	ctx context.Context, label models.Label,
 ) (models.Label, error) {
-	err := w.db.QueryRow(ctx, `UPDATE label SET
+	err := wrk.db.QueryRow(ctx, `UPDATE label SET
 		name = $1, icon = $2, updated_at = NOW()
 		WHERE workspace_id = $3 AND label_id = $4
 		RETURNING
@@ -110,10 +115,10 @@ func (w *WorkspaceDB) ModifyLabelById(
 	return label, nil
 }
 
-func (w *WorkspaceDB) FetchByWorkspaceId(
+func (wrk *WorkspaceDB) FetchByWorkspaceId(
 	ctx context.Context, workspaceId string) (models.Workspace, error) {
 	var workspace models.Workspace
-	err := w.db.QueryRow(ctx, `SELECT 
+	err := wrk.db.QueryRow(ctx, `SELECT 
 		workspace_id, account_id, name, created_at, updated_at
 		FROM workspace WHERE workspace_id = $1`, workspaceId).Scan(
 		&workspace.WorkspaceId, &workspace.AccountId,
@@ -133,7 +138,7 @@ func (w *WorkspaceDB) FetchByWorkspaceId(
 	return workspace, nil
 }
 
-func (w *WorkspaceDB) LookupWorkspaceByAccountId(
+func (wrk *WorkspaceDB) LookupWorkspaceByAccountId(
 	ctx context.Context, workspaceId string, accountId string) (models.Workspace, error) {
 	var workspace models.Workspace
 	stmt := `
@@ -152,7 +157,7 @@ func (w *WorkspaceDB) LookupWorkspaceByAccountId(
 			AND ws.workspace_id = $2
 	`
 
-	err := w.db.QueryRow(ctx, stmt, accountId, workspaceId).Scan(
+	err := wrk.db.QueryRow(ctx, stmt, accountId, workspaceId).Scan(
 		&workspace.WorkspaceId, &workspace.AccountId,
 		&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt,
 	)
@@ -170,7 +175,7 @@ func (w *WorkspaceDB) LookupWorkspaceByAccountId(
 	return workspace, nil
 }
 
-func (w *WorkspaceDB) FetchWorkspacesByAccountId(
+func (wrk *WorkspaceDB) FetchWorkspacesByAccountId(
 	ctx context.Context, accountId string) ([]models.Workspace, error) {
 	var workspace models.Workspace
 	workspaces := make([]models.Workspace, 0, 100)
@@ -191,7 +196,7 @@ func (w *WorkspaceDB) FetchWorkspacesByAccountId(
 		LIMIT 100
 	`
 
-	rows, _ := w.db.Query(ctx, stmt, accountId)
+	rows, _ := wrk.db.Query(ctx, stmt, accountId)
 
 	defer rows.Close()
 
@@ -211,7 +216,7 @@ func (w *WorkspaceDB) FetchWorkspacesByAccountId(
 	return workspaces, nil
 }
 
-func (w *WorkspaceDB) InsertLabelByName(
+func (wrk *WorkspaceDB) InsertLabelByName(
 	ctx context.Context, label models.Label) (models.Label, bool, error) {
 	var isCreated bool
 	lId := label.GenId()
@@ -228,7 +233,7 @@ func (w *WorkspaceDB) InsertLabelByName(
 	created_at, updated_at, FALSE AS is_created FROM label
 	WHERE workspace_id = $2 AND name = $3 AND NOT EXISTS (SELECT 1 FROM ins)`
 
-	err := w.db.QueryRow(ctx, stmt, lId, label.WorkspaceId, label.Name, label.Icon).Scan(
+	err := wrk.db.QueryRow(ctx, stmt, lId, label.WorkspaceId, label.Name, label.Icon).Scan(
 		&label.LabelId, &label.WorkspaceId, &label.Name, &label.Icon,
 		&label.CreatedAt, &label.UpdatedAt, &isCreated,
 	)
@@ -246,10 +251,10 @@ func (w *WorkspaceDB) InsertLabelByName(
 	return label, isCreated, nil
 }
 
-func (w *WorkspaceDB) LookupWorkspaceLabelById(
+func (wrk *WorkspaceDB) LookupWorkspaceLabelById(
 	ctx context.Context, workspaceId string, labelId string) (models.Label, error) {
 	var label models.Label
-	err := w.db.QueryRow(ctx, `SELECT
+	err := wrk.db.QueryRow(ctx, `SELECT
 		label_id, workspace_id, name, icon, created_at, updated_at
 		FROM label WHERE workspace_id = $1 AND label_id = $2`, workspaceId, labelId).Scan(
 		&label.LabelId, &label.WorkspaceId, &label.Name,
@@ -269,14 +274,14 @@ func (w *WorkspaceDB) LookupWorkspaceLabelById(
 	return label, nil
 }
 
-func (w *WorkspaceDB) FetchLabelsByWorkspaceId(
+func (wrk *WorkspaceDB) FetchLabelsByWorkspaceId(
 	ctx context.Context, workspaceId string) ([]models.Label, error) {
 	var label models.Label
 	labels := make([]models.Label, 0, 100)
 	stmt := `SELECT label_id, workspace_id, name, icon, created_at, updated_at
 		FROM label WHERE workspace_id = $1`
 
-	rows, _ := w.db.Query(ctx, stmt, workspaceId)
+	rows, _ := wrk.db.Query(ctx, stmt, workspaceId)
 
 	defer rows.Close()
 
@@ -323,10 +328,10 @@ func (w *WorkspaceDB) FetchLabelsByWorkspaceId(
 // 	return m, nil
 // }
 
-func (w *WorkspaceDB) InsertWidget(
+func (wrk *WorkspaceDB) InsertWidget(
 	ctx context.Context, widget models.Widget) (models.Widget, error) {
 	widgetId := widget.GenId()
-	err := w.db.QueryRow(ctx, `INSERT INTO widget(workspace_id, widget_id, name, configuration)
+	err := wrk.db.QueryRow(ctx, `INSERT INTO widget(workspace_id, widget_id, name, configuration)
 		VALUES ($1, $2, $3, $4)
 		RETURNING
 		workspace_id, widget_id, name, configuration, created_at, updated_at`,
@@ -349,7 +354,7 @@ func (w *WorkspaceDB) InsertWidget(
 	return widget, nil
 }
 
-func (w *WorkspaceDB) FetchWidgetsByWorkspaceId(
+func (wrk *WorkspaceDB) FetchWidgetsByWorkspaceId(
 	ctx context.Context, workspaceId string) ([]models.Widget, error) {
 	var widget models.Widget
 	widgets := make([]models.Widget, 0, 100)
@@ -358,7 +363,7 @@ func (w *WorkspaceDB) FetchWidgetsByWorkspaceId(
 		FROM widget WHERE workspace_id = $1
 		ORDER BY created_at DESC LIMIT 100`
 
-	rows, _ := w.db.Query(ctx, stmt, workspaceId)
+	rows, _ := wrk.db.Query(ctx, stmt, workspaceId)
 
 	defer rows.Close()
 
@@ -378,10 +383,10 @@ func (w *WorkspaceDB) FetchWidgetsByWorkspaceId(
 	return widgets, nil
 }
 
-func (w *WorkspaceDB) InsertSecretKey(
+func (wrk *WorkspaceDB) InsertSecretKey(
 	ctx context.Context, workspaceId string, sk string) (models.SecretKey, error) {
 	var secretKey models.SecretKey
-	err := w.db.QueryRow(ctx, `INSERT INTO secret_key(workspace_id, secret_key)
+	err := wrk.db.QueryRow(ctx, `INSERT INTO secret_key(workspace_id, secret_key)
 		VALUES ($1, $2)
 		ON CONFLICT (workspace_id) DO UPDATE SET secret_key = $2
 		RETURNING
@@ -403,10 +408,10 @@ func (w *WorkspaceDB) InsertSecretKey(
 	return secretKey, nil
 }
 
-func (r *WorkspaceDB) FetchSecretKeyByWorkspaceId(
+func (wrk *WorkspaceDB) FetchSecretKeyByWorkspaceId(
 	ctx context.Context, workspaceId string) (models.SecretKey, error) {
 	var secretKey models.SecretKey
-	err := r.db.QueryRow(ctx, `SELECT
+	err := wrk.db.QueryRow(ctx, `SELECT
 		workspace_id,secret_key, created_at, updated_at
 		FROM secret_key WHERE workspace_id = $1`, workspaceId).Scan(
 		&secretKey.WorkspaceId, &secretKey.SecretKey,
@@ -426,7 +431,7 @@ func (r *WorkspaceDB) FetchSecretKeyByWorkspaceId(
 	return secretKey, nil
 }
 
-func (r *WorkspaceDB) LookupWidgetById(
+func (wrk *WorkspaceDB) LookupWidgetById(
 	ctx context.Context, widgetId string) (models.Widget, error) {
 	var widget models.Widget
 
@@ -435,7 +440,7 @@ func (r *WorkspaceDB) LookupWidgetById(
 		created_at, updated_at
 		FROM widget WHERE widget_id = $1`
 
-	err := r.db.QueryRow(ctx, stmt, widgetId).Scan(
+	err := wrk.db.QueryRow(ctx, stmt, widgetId).Scan(
 		&widget.WorkspaceId,
 		&widget.WidgetId,
 		&widget.Name,
