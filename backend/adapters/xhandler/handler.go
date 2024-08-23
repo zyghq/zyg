@@ -34,7 +34,7 @@ func NewCustomerHandler(
 	}
 }
 
-func handleGetIndex(w http.ResponseWriter, r *http.Request) {
+func handleGetIndex(w http.ResponseWriter, _ *http.Request) {
 	tm := time.Now().Format(time.RFC1123)
 	w.Header().Set("x-datetime", tm)
 	w.WriteHeader(http.StatusOK)
@@ -191,7 +191,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 			return
 		}
 	} else {
-		// force client to provide the anonymousId.
+		// force the client to provide the anonymousId.
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
@@ -203,28 +203,25 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		return
 	}
 
-	denonEmail := customer.DeAnonEmail()
-	denonPhone := customer.DeAnonPhone()
-	denonExternalId := customer.DeAnonExternalId()
+	deAnonEmail := customer.DeAnonEmail()
+	deAnonPhone := customer.DeAnonPhone()
+	deAnonExternalId := customer.DeAnonExternalId()
 
 	resp := WidgetInitResp{
 		Jwt:        jwt,
 		Create:     isCreated,
 		IsVerified: isVerified,
 		Name:       customer.Name,
-		Email:      models.NullString(&denonEmail),
-		Phone:      models.NullString(&denonPhone),
-		ExternalId: models.NullString(&denonExternalId),
+		Email:      models.NullString(&deAnonEmail),
+		Phone:      models.NullString(&deAnonPhone),
+		ExternalId: models.NullString(&deAnonExternalId),
 	}
 
 	if isCreated {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			slog.Error(
-				"failed to encode customer to json " +
-					"check the json encoding defn",
-			)
+			slog.Error("failed to encode response", slog.Any("error", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
@@ -232,17 +229,14 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			slog.Error(
-				"failed to encode customer to json " +
-					"check the json encoding defn",
-			)
+			slog.Error("failed to encode response", slog.Any("error", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 	}
 }
 
-func (h *CustomerHandler) handleGetCustomer(w http.ResponseWriter, r *http.Request, customer *models.Customer) {
+func (h *CustomerHandler) handleGetCustomer(w http.ResponseWriter, _ *http.Request, customer *models.Customer) {
 	var email string
 	var phone string
 	var externalId string
@@ -336,19 +330,19 @@ func (h *CustomerHandler) handleCustomerIdentities(w http.ResponseWriter, r *htt
 
 	hasModified := false
 	if reqp.Email != nil {
-		email := widgetCustomer.AddAnonimizedEmail(*reqp.Email)
+		email := widgetCustomer.AddAnonymizedEmail(*reqp.Email)
 		widgetCustomer.Email = models.NullString(&email)
 		hasModified = true
 	}
 
 	if reqp.Phone != nil {
-		phone := widgetCustomer.AddAnonimizedPhone(*reqp.Phone)
+		phone := widgetCustomer.AddAnonymizedPhone(*reqp.Phone)
 		widgetCustomer.Phone = models.NullString(&phone)
 		hasModified = true
 	}
 
 	if reqp.External != nil {
-		externalId := widgetCustomer.AddAnonimizedExternalId(*reqp.External)
+		externalId := widgetCustomer.AddAnonymizedExternalId(*reqp.External)
 		widgetCustomer.ExternalId = models.NullString(&externalId)
 		hasModified = true
 	}
@@ -365,26 +359,22 @@ func (h *CustomerHandler) handleCustomerIdentities(w http.ResponseWriter, r *htt
 			return
 		}
 
-		denonEmail := widgetCustomer.DeAnonEmail()
-		denonPhone := widgetCustomer.DeAnonPhone()
-		denonExternalId := widgetCustomer.DeAnonExternalId()
+		deAnonEmail := widgetCustomer.DeAnonEmail()
+		deAnonPhone := widgetCustomer.DeAnonPhone()
+		deAnonExternalId := widgetCustomer.DeAnonExternalId()
 
 		resp := AddCustomerIdentitiesResp{
 			IsVerified: widgetCustomer.IsVerified,
 			Name:       widgetCustomer.Name,
-			Email:      models.NullString(&denonEmail),
-			Phone:      models.NullString(&denonPhone),
-			ExternalId: models.NullString(&denonExternalId),
+			Email:      models.NullString(&deAnonEmail),
+			Phone:      models.NullString(&deAnonPhone),
+			ExternalId: models.NullString(&deAnonExternalId),
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			slog.Error(
-				"failed to encode customer to json "+
-					"check the json encoding defn",
-				slog.String("customerId", customer.CustomerId),
-			)
+			slog.Error("failed to encode response", slog.Any("error", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
@@ -514,11 +504,7 @@ func (h *CustomerHandler) handleCreateCustomerThChat(w http.ResponseWriter, r *h
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		slog.Error(
-			"failed to encode thread chat to json "+
-				"check the json encoding defn",
-			slog.String("threadId", thread.ThreadId),
-		)
+		slog.Error("failed to encode json", slog.Any("error", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -594,11 +580,7 @@ func (h *CustomerHandler) handleGetCustomerThChats(w http.ResponseWriter, r *htt
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(items); err != nil {
-		slog.Error(
-			"failed to encode thread chats to json "+
-				"check the json encoding defn",
-			slog.String("customerId", customer.CustomerId),
-		)
+		slog.Error("failed to encode json", slog.Any("error", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -674,17 +656,14 @@ func (h *CustomerHandler) handleCreateThChatMessage(w http.ResponseWriter, r *ht
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		slog.Error(
-			"failed to encode thread chat message to json "+
-				"check the json encoding defn",
-			slog.String("threadId", thread.ThreadId),
-		)
+		slog.Error("failed to encode json", slog.Any("error", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 }
 
-func (h *CustomerHandler) handleGetThChatMesssages(w http.ResponseWriter, r *http.Request, customer *models.Customer) {
+func (h *CustomerHandler) handleGetThChatMessages(
+	w http.ResponseWriter, r *http.Request, customer *models.Customer) {
 	threadId := r.PathValue("threadId")
 	ctx := r.Context()
 
@@ -734,11 +713,7 @@ func (h *CustomerHandler) handleGetThChatMesssages(w http.ResponseWriter, r *htt
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(messages); err != nil {
-		slog.Error(
-			"failed to encode thread chat messages to json "+
-				"check the json encoding defn",
-			slog.String("threadId", thread.ThreadId),
-		)
+		slog.Error("failed to encode json", slog.Any("error", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -766,7 +741,7 @@ func NewServer(
 	mux.Handle("POST /widgets/{widgetId}/threads/chat/{threadId}/messages/{$}",
 		NewEnsureAuth(ch.handleCreateThChatMessage, authService))
 	mux.Handle("GET /widgets/{widgetId}/threads/chat/{threadId}/messages/{$}",
-		NewEnsureAuth(ch.handleGetThChatMesssages, authService))
+		NewEnsureAuth(ch.handleGetThChatMessages, authService))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},

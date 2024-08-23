@@ -212,7 +212,7 @@ type CustomerRepositorer interface {
 
 type ThreadRepositorer interface {
 	InsertInboundThreadChat(
-		ctx context.Context, inbound models.IngressMessage,
+		ctx context.Context, inbound models.InboundMessage,
 		thread models.Thread, chat models.Chat) (models.Thread, models.Chat, error)
 	LookupByWorkspaceThreadId(
 		ctx context.Context, workspaceId string, threadId string, channel *string) (models.Thread, error)

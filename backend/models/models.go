@@ -388,15 +388,15 @@ func (c Customer) AnonName() string {
 	return "Anon User"
 }
 
-func (c Customer) AddAnonimizedEmail(email string) string {
+func (c Customer) AddAnonymizedEmail(email string) string {
 	return c.AnonId + "~" + email
 }
 
-func (c Customer) AddAnonimizedPhone(phone string) string {
+func (c Customer) AddAnonymizedPhone(phone string) string {
 	return c.AnonId + "~" + phone
 }
 
-func (c Customer) AddAnonimizedExternalId(externalId string) string {
+func (c Customer) AddAnonymizedExternalId(externalId string) string {
 	return c.AnonId + "~" + externalId
 }
 
@@ -424,7 +424,7 @@ func (c Customer) DeAnonExternalId() string {
 	return c.ExternalId.String
 }
 
-type IngressMessage struct {
+type InboundMessage struct {
 	MessageId  string
 	CustomerId string
 	FirstSeq   int
@@ -433,7 +433,7 @@ type IngressMessage struct {
 	UpdatedAt  time.Time
 }
 
-func (im IngressMessage) GenId() string {
+func (im InboundMessage) GenId() string {
 	return "im" + xid.New().String()
 }
 

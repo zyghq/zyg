@@ -21,7 +21,7 @@ func NewThreadChatService(repo ports.ThreadRepositorer) *ThreadChatService {
 
 func (s *ThreadChatService) CreateInboundThreadChat(
 	ctx context.Context, workspaceId string, customerId string, message string) (models.Thread, models.Chat, error) {
-	inbound := models.IngressMessage{
+	inbound := models.InboundMessage{
 		CustomerId: customerId,
 	}
 	chat := models.Chat{

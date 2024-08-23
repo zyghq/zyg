@@ -11,7 +11,7 @@ import (
 )
 
 func (tc *ThreadChatDB) InsertInboundThreadChat(
-	ctx context.Context, inbound models.IngressMessage,
+	ctx context.Context, inbound models.InboundMessage,
 	thread models.Thread, chat models.Chat) (models.Thread, models.Chat, error) {
 	// start transaction
 	tx, err := tc.db.Begin(ctx)
@@ -1193,7 +1193,7 @@ func (tc *ThreadChatDB) InsertCustomerChat(
 		return models.Chat{}, ErrQuery
 	}
 
-	// check if inbound message id is provided
+	// check if the inbound message id is provided
 	// if not, create a new one and update the thread
 	// else update the existing one
 	if inboundMessageId != nil {
@@ -1220,7 +1220,7 @@ func (tc *ThreadChatDB) InsertCustomerChat(
 			return models.Chat{}, ErrQuery
 		}
 	} else {
-		var inbound models.IngressMessage
+		var inbound models.InboundMessage
 		messageId := inbound.GenId()
 		stmt := `
 			WITH ins AS (

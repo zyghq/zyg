@@ -127,7 +127,7 @@ func (a *AccountDB) FetchPatsByAccountId(
 
 	defer rows.Close()
 
-	// iterate over the each row
+	// iterate over the row
 	// specific to pgx
 	_, err := pgx.ForEachRow(rows, []any{
 		&pat.AccountId, &pat.PatId, &pat.Token,

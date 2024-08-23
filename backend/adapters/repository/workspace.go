@@ -301,33 +301,6 @@ func (wrk *WorkspaceDB) FetchLabelsByWorkspaceId(
 	return labels, nil
 }
 
-// func (w *WorkspaceDB) InsertMember(
-// 	ctx context.Context, member models.Member) (models.Member, error) {
-// 	var m models.Member
-// 	memberId := member.GenId()
-// 	err := w.db.QueryRow(ctx, `INSERT INTO member(workspace_id, account_id, member_id, name, role)
-// 		VALUES ($1, $2, $3, $4, $5)
-// 		RETURNING
-// 		workspace_id, account_id, member_id, name, role, created_at, updated_at`,
-// 		member.WorkspaceId, member.AccountId, memberId, member.Name, member.Role).Scan(
-// 		&m.WorkspaceId, &m.AccountId,
-// 		&m.MemberId, &m.Name, &m.Role,
-// 		&m.CreatedAt, &m.UpdatedAt,
-// 	)
-
-// 	if errors.Is(err, pgx.ErrNoRows) {
-// 		slog.Error("no rows returned", slog.Any("err", err))
-// 		return models.Member{}, ErrEmpty
-// 	}
-
-// 	if err != nil {
-// 		slog.Error("failed to insert query", slog.Any("err", err))
-// 		return models.Member{}, ErrQuery
-// 	}
-
-// 	return m, nil
-// }
-
 func (wrk *WorkspaceDB) InsertWidget(
 	ctx context.Context, widget models.Widget) (models.Widget, error) {
 	widgetId := widget.GenId()

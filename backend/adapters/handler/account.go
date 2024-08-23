@@ -123,11 +123,7 @@ func (h *AccountHandler) handleGetPatList(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(aps); err != nil {
-		slog.Error(
-			"failed to encode pats to json "+
-				"check the json encoding defn",
-			slog.String("accountId", account.AccountId),
-		)
+		slog.Error("failed to encode pat list", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -165,7 +161,8 @@ func (h *AccountHandler) handleCreatePat(w http.ResponseWriter, r *http.Request,
 	}
 }
 
-func (h *AccountHandler) handleDeletePat(w http.ResponseWriter, r *http.Request, account *models.Account) {
+func (h *AccountHandler) handleDeletePat(
+	w http.ResponseWriter, r *http.Request, _ *models.Account) {
 	ctx := r.Context()
 	patId := r.PathValue("patId")
 

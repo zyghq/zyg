@@ -8,7 +8,7 @@ import (
 	"github.com/zyghq/zyg/ports"
 )
 
-func handleGetIndex(w http.ResponseWriter, r *http.Request) {
+func handleGetIndex(w http.ResponseWriter, _ *http.Request) {
 	tm := time.Now().Format(time.RFC1123)
 	w.Header().Set("x-datetime", tm)
 	w.WriteHeader(http.StatusOK)

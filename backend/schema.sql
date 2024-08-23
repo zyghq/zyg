@@ -4,12 +4,12 @@
 
 -- where the suffix is one of the following:
 
--- pkey for a Primary Key constraint
--- key for a Unique constraint
--- excl for an Exclusion constraint
--- idx for any other kind of index
--- fkey for a Foreign key
--- check for a Check constraint
+-- `pkey` for a Primary Key constraint.
+-- `key` for a Unique constraint.
+-- `excl` for an Exclusion constraint.
+-- `idx` for any other of index.
+-- `fkey` for a Foreign key.
+-- `check` for a Check constraint
 
 -- Standard suffix for sequences is
 -- seq for all sequences
@@ -69,7 +69,7 @@ CREATE TABLE workspace (
 -- Represents the member table
 -- This table is used to store the member information linked to the workspace.
 -- Each member is uniquely identified by the combination of `workspace_id` and `account_id`
--- Member has the ability to authenticate to the workspace, hence the link to account
+-- Member ability to authenticate to the workspace, hence the link to account
 CREATE TABLE member (
     member_id VARCHAR(255) NOT NULL, -- primary key
     workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
@@ -251,24 +251,6 @@ CREATE TABLE chat (
 );
 
 
--- Represents the chat message table
--- This table is used to store the chat messages linked to the chat thread.
--- CREATE TABLE thread_chat_message (
---     thread_chat_id VARCHAR(255) NOT NULL,
---     thread_chat_message_id VARCHAR(255) NOT NULL,
---     body TEXT NOT NULL,
---     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
---     customer_id VARCHAR(255) NULL,
---     member_id VARCHAR(255) NULL,
---     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
---     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
---     CONSTRAINT thread_chat_message_thread_chat_message_id_pkey PRIMARY KEY (thread_chat_message_id),
---     CONSTRAINT thread_chat_message_thread_chat_id_fkey FOREIGN KEY (thread_chat_id) REFERENCES thread_chat (thread_chat_id),
---     CONSTRAINT thread_chat_message_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
---     CONSTRAINT thread_chat_message_member_id_fkey FOREIGN KEY (member_id) REFERENCES member (member_id)
--- );
-
 -- Represents the label table
 -- This table is used to store the labels linked to the workspace.
 -- Each label is uniquely identified by the combination of `workspace_id` and `name`
@@ -285,21 +267,7 @@ CREATE TABLE label (
     CONSTRAINT label_workspace_id_name_key UNIQUE (workspace_id, name)
 );
 
--- Represents the thread chat label table
--- This table is used to store the thread chat labels linked to the thread chat.
--- CREATE TABLE thread_chat_label (
---     thread_chat_id VARCHAR(255) NOT NULL,
---     label_id VARCHAR(255) NOT NULL,
---     thread_chat_label_id VARCHAR(255) NOT NULL,
---     addedby VARCHAR(255) NOT NULL,
---     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
---     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
---     CONSTRAINT th_chat_label_th_chat_label_id_pkey PRIMARY KEY (thread_chat_label_id),
---     CONSTRAINT th_chat_label_th_chat_id_fkey FOREIGN KEY (thread_chat_id) REFERENCES thread_chat (thread_chat_id),
---     CONSTRAINT th_chat_label_label_id_fkey FOREIGN KEY (label_id) REFERENCES label (label_id),
---     CONSTRAINT th_chat_label_id_th_chat_id_label_id_key UNIQUE (thread_chat_id, label_id)
--- );
 
 CREATE TABLE thread_label (
     thread_label_id VARCHAR(255) NOT NULL,
@@ -363,7 +331,7 @@ CREATE TABLE event (
     category VARCHAR(127) NOT NULL, -- category of the event e.g. auth, payments, general, etc.
     title VARCHAR(255) NULL, -- title of the event
     body TEXT NOT NULL, -- body of the event
-    customer_id VARCHAR(255) NULL, -- fk to customer if event is customer specific
+    customer_id VARCHAR(255) NULL, -- fk to customer if event is customer
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT event_event_id_pkey PRIMARY KEY (event_id),
@@ -375,7 +343,7 @@ CREATE TABLE event (
 -- Will work on Slack integration later --
 -- ************************************ --
 
--- Represents theh Slack workspace table
+-- Represents the Slack workspace table
 -- There is only one Slack workspace per Workspace
 CREATE TABLE slack_workspace (
     workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
@@ -414,7 +382,7 @@ CREATE TABLE slack_bot (
 CREATE TABLE slack_channel (
     slack_workspace_ref VARCHAR(255) NOT NULL, -- fk to slack_workspace
     channel_id VARCHAR(255) NOT NULL, -- primary key
-    channel_ref VARCHAR(255) NOT NULL, -- reference to Slack channel id
+    channel_ref VARCHAR(255) NOT NULL, -- reference to Slack channel ID.
     is_channel BOOLEAN NOT NULL,
     is_ext_shared BOOLEAN NOT NULL,
     is_general BOOLEAN NOT NULL,
@@ -430,7 +398,7 @@ CREATE TABLE slack_channel (
     name_normalized VARCHAR(255) NOT NULL, -- Slack channel name normalized
     created BIGINT NOT NULL,
     updated BIGINT NOT NULL,
-    status VARCHAR(127) NOT NULL, -- custom status of Slack channel with respect to Slack workspace
+    status VARCHAR(127) NOT NULL, -- custom status of Slack Channel with respect to Slack workspace
     synced_at TIMESTAMP NULL DEFAULT NULL, -- custom timestamp Slack channel was synced defaults to NULL
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
