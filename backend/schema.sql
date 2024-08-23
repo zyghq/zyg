@@ -1,6 +1,6 @@
 -- Please follow the naming convention for consistency.
 
--- {tablename}_{columnname(s)}_{suffix}
+-- {table name}_{column name(s)}_{suffix}
 
 -- where the suffix is one of the following:
 
@@ -37,7 +37,7 @@ CREATE TABLE account (
 -- Represents the account PAT table - Personal Access Token
 -- This table is used to store the account PAT information of the account pertaining to auth.
 -- PAT is used to authenticate the account similar to API key.
--- TODO: rename to PAT
+-- TODO: deprecate it, rather use member token.
 CREATE TABLE account_pat (
     account_id VARCHAR(255) NOT NULL, -- fk to account
     pat_id VARCHAR(255) NOT NULL, -- primary key
@@ -88,6 +88,7 @@ CREATE TABLE member (
 -- Represents the Customer table
 -- There can be multiple customers per workspace
 -- Each customer is uniquely identified by one of `external_id`, `email` and `phone`, each unique to the workspace
+-- noinspection SqlResolve
 CREATE TABLE customer (
     customer_id VARCHAR(255) NOT NULL, -- primary key
     workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
@@ -175,8 +176,7 @@ CREATE TABLE thread_qa_answer (
 --     CONSTRAINT thread_chat_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES member (member_id)
 -- );
 
-
-CREATE TABLE ingress_message (
+CREATE TABLE inbound_message (
     message_id VARCHAR(255) NOT NULL,
     customer_id VARCHAR(255) NOT NULL,
     first_sequence BIGINT NOT NULL DEFAULT fn_next_id(),
@@ -185,11 +185,11 @@ CREATE TABLE ingress_message (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT ingress_message_message_id_pkey PRIMARY KEY (message_id),
-    CONSTRAINT ingress_message_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id)
+    CONSTRAINT inbound_message_message_id_pkey PRIMARY KEY (message_id),
+    CONSTRAINT inbound_message_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id)
 );
 
-CREATE TABLE egress_message (
+CREATE TABLE outbound_message (
     message_id VARCHAR(255) NOT NULL,
     member_id VARCHAR(255) NOT NULL,
     first_sequence BIGINT NOT NULL DEFAULT fn_next_id(),
@@ -198,8 +198,8 @@ CREATE TABLE egress_message (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT egress_message_message_id_pkey PRIMARY KEY (message_id),
-    CONSTRAINT egress_message_member_id_fkey FOREIGN KEY (member_id) REFERENCES member (member_id)
+    CONSTRAINT outbound_message_message_id_pkey PRIMARY KEY (message_id),
+    CONSTRAINT outbound_message_member_id_fkey FOREIGN KEY (member_id) REFERENCES member (member_id)
 );
 
 CREATE TABLE thread (
@@ -217,8 +217,8 @@ CREATE TABLE thread (
     spam BOOLEAN NOT NULL DEFAULT FALSE, -- spam flag
     channel VARCHAR(127) NOT NULL, -- channel of the thread
     preview_text TEXT NOT NULL, -- preview text of the message
-    ingress_message_id VARCHAR(255) NULL, -- fk to ingress_message
-    egress_message_id VARCHAR(255) NULL, -- fk to egress_message
+    inbound_message_id VARCHAR(255) NULL, -- fk to inbound_message
+    outbound_message_id VARCHAR(255) NULL, -- fk to outbound_message
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -227,10 +227,9 @@ CREATE TABLE thread (
     CONSTRAINT thread_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
     CONSTRAINT thread_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
     CONSTRAINT thread_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES member (member_id),
-    CONSTRAINT thread_ingress_message_id_fkey FOREIGN KEY (ingress_message_id) REFERENCES ingress_message (message_id),
-    CONSTRAINT thread_egress_message_id_fkey FOREIGN KEY (egress_message_id) REFERENCES egress_message (message_id)
+    CONSTRAINT thread_inbound_message_id_fkey FOREIGN KEY (inbound_message_id) REFERENCES inbound_message (message_id),
+    CONSTRAINT thread_outbound_message_id_fkey FOREIGN KEY (outbound_message_id) REFERENCES outbound_message (message_id)
 );
-
 
 CREATE TABLE chat (
     chat_id VARCHAR(255) NOT NULL,
@@ -250,7 +249,6 @@ CREATE TABLE chat (
     CONSTRAINT chat_member_id_fkey FOREIGN KEY (member_id) REFERENCES member (member_id)
 );
 
-
 -- Represents the label table
 -- This table is used to store the labels linked to the workspace.
 -- Each label is uniquely identified by the combination of `workspace_id` and `name`
@@ -266,8 +264,6 @@ CREATE TABLE label (
     CONSTRAINT label_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
     CONSTRAINT label_workspace_id_name_key UNIQUE (workspace_id, name)
 );
-
-
 
 CREATE TABLE thread_label (
     thread_label_id VARCHAR(255) NOT NULL,
@@ -309,7 +305,6 @@ CREATE TABLE secret_key (
     CONSTRAINT secret_key_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
     CONSTRAINT secret_key_secret_key_key UNIQUE (secret_key)
 );
-
 
 -- ************************************ --
 -- tables below have been changed or deprecated.

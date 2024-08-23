@@ -29,25 +29,25 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 
 	messageId := inbound.GenId()
 	stmt := `
-		WITH ins AS (
-			INSERT INTO ingress_message (message_id, customer_id)
-			VALUES ($1, $2)
-			RETURNING
+		with ins as (
+			insert into inbound_message (message_id, customer_id)
+			values ($1, $2)
+			returning
 				message_id, customer_id,
 				first_sequence, last_sequence,
 				created_at, updated_at
-		) SELECT ins.message_id AS message_id,
-			ins.customer_id AS customer_id,
-			ins.first_sequence AS first_sequence,
-			ins.last_sequence AS last_sequence,
-			ins.created_at AS created_at,
-			ins.updated_at AS updated_at
-		FROM ins
+		) select ins.message_id as message_id,
+			ins.customer_id as customer_id,
+			ins.first_sequence as first_sequence,
+			ins.last_sequence as last_sequence,
+			ins.created_at as created_at,
+			ins.updated_at as updated_at
+		from ins
 	`
 
 	err = tx.QueryRow(ctx, stmt, messageId, inbound.CustomerId).Scan(
 		&inbound.MessageId, &inbound.CustomerId,
-		&inbound.FirstSeq, &inbound.LastSeq,
+		&inbound.FirstMessageTs, &inbound.LastMessageTs,
 		&inbound.CreatedAt, &inbound.UpdatedAt,
 	)
 
@@ -63,61 +63,61 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 
 	threadId := thread.GenId()
 	stmt = `
-		WITH ins AS (
-			INSERT INTO thread (
+		with ins as (
+			insert into thread (
 				thread_id, workspace_id, customer_id, assignee_id,
 				title, description, status, read, replied,
 				priority, spam, channel, preview_text,
-				ingress_message_id, sequence
+				inbound_message_id, sequence
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-			RETURNING
+			values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+			returning
 				thread_id, workspace_id, customer_id, assignee_id,
 				title, description, sequence, status, read, replied,
 				priority, spam, channel, preview_text,
-				ingress_message_id, egress_message_id,
+				inbound_message_id, outbound_message_id,
 				created_at, updated_at
-		) SELECT ins.thread_id AS thread_id,
-			ins.workspace_id AS workspace_id,
-			c.customer_id AS customer_id,
-			c.name AS customer_name,
-			m.member_id AS assignee_id,
-			m.name AS assignee_name,
-			ins.title AS title,
-			ins.description AS description,
-			ins.sequence AS sequence,
-			ins.status AS status,
-			ins.read AS read,
-			ins.replied AS replied,
-			ins.priority AS priority,
-			ins.spam AS spam,
-			ins.channel AS channel,
-			ins.preview_text AS preview_text,
-			ing.message_id AS ingress_message_id,
-			ing.first_sequence AS ingress_first_seq,
-			ing.last_sequence AS ingress_last_seq,
-			ingc.customer_id AS ingress_customer_id,
-			ingc.name AS ingress_customer_name,
-			eg.message_id AS egress_message_id,
-			eg.first_sequence AS egress_first_seq,
-			eg.last_sequence AS egress_last_seq,
-			egm.member_id AS egress_member_id,
-			egm.name AS egress_member_name,
-			ins.created_at AS created_at,
-			ins.updated_at AS updated_at
-		FROM ins
-		INNER JOIN customer c ON ins.customer_id = c.customer_id
-		LEFT OUTER JOIN member m ON ins.assignee_id = m.member_id
-		LEFT OUTER JOIN ingress_message ing ON ins.ingress_message_id = ing.message_id
-		LEFT OUTER JOIN egress_message eg ON ins.egress_message_id = eg.message_id
-		LEFT OUTER JOIN customer ingc ON ing.customer_id = ingc.customer_id
-		LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
+		) select ins.thread_id as thread_id,
+			ins.workspace_id as workspace_id,
+			c.customer_id as customer_id,
+			c.name as customer_name,
+			m.member_id as assignee_id,
+			m.name as assignee_name,
+			ins.title as title,
+			ins.description as description,
+			ins.sequence as sequence,
+			ins.status as status,
+			ins.read as read,
+			ins.replied as replied,
+			ins.priority as priority,
+			ins.spam as spam,
+			ins.channel as channel,
+			ins.preview_text as preview_text,
+			ing.message_id as inbound_message_id,
+			ing.first_sequence as ingress_first_seq,
+			ing.last_sequence as ingress_last_seq,
+			ingc.customer_id as ingress_customer_id,
+			ingc.name as ingress_customer_name,
+			eg.message_id as outbound_message_id,
+			eg.first_sequence as egress_first_seq,
+			eg.last_sequence as egress_last_seq,
+			egm.member_id as egress_member_id,
+			egm.name as egress_member_name,
+			ins.created_at as created_at,
+			ins.updated_at as updated_at
+		from ins
+		inner join customer c on ins.customer_id = c.customer_id
+		left outer join member m on ins.assignee_id = m.member_id
+		left outer join inbound_message ing on ins.inbound_message_id = ing.message_id
+		left outer join outbound_message eg on ins.outbound_message_id = eg.message_id
+		left outer join customer ingc on ing.customer_id = ingc.customer_id
+		left outer join member egm on eg.member_id = egm.member_id
 	`
 
 	err = tx.QueryRow(ctx, stmt, threadId, thread.WorkspaceId, thread.CustomerId, thread.AssigneeId,
 		thread.Title, thread.Description, thread.Status, thread.Read, thread.Replied,
 		thread.Priority, thread.Spam, thread.Channel, thread.PreviewText,
-		inbound.MessageId, inbound.FirstSeq).Scan(
+		inbound.MessageId, inbound.FirstMessageTs).Scan(
 		&thread.ThreadId, &thread.WorkspaceId,
 		&thread.CustomerId, &thread.CustomerName,
 		&thread.AssigneeId, &thread.AssigneeName,
@@ -245,7 +245,7 @@ func (tc *ThreadChatDB) ModifyThreadById(
 			thread_id, workspace_id, customer_id, assignee_id,
 			title, description, sequence, status, read, replied,
 			priority, spam, channel, preview_text,
-			ingress_message_id, egress_message_id,
+			inbound_message_id, outbound_message_id,
 			created_at, updated_at
 		) SELECT
 		 	ups.thread_id AS thread_id,
@@ -264,12 +264,12 @@ func (tc *ThreadChatDB) ModifyThreadById(
 			ups.spam AS spam,
 			ups.channel AS channel,
 			ups.preview_text AS preview_text,
-			ing.message_id AS ingress_message_id,
+			ing.message_id AS inbound_message_id,
 			ing.first_sequence AS ingress_first_seq,
 			ing.last_sequence AS ingress_last_seq,
 			ingc.customer_id AS ingress_customer_id,
 			ingc.name AS ingress_customer_name,
-			eg.message_id AS egress_message_id,
+			eg.message_id AS outbound_message_id,
 			eg.first_sequence AS egress_first_seq,
 			eg.last_sequence AS egress_last_seq,
 			egm.member_id AS egress_member_id,
@@ -279,8 +279,8 @@ func (tc *ThreadChatDB) ModifyThreadById(
 		FROM ups
 		INNER JOIN customer c ON ups.customer_id = c.customer_id
 		LEFT OUTER JOIN member m ON ups.assignee_id = m.member_id
-		LEFT OUTER JOIN ingress_message ing ON ups.ingress_message_id = ing.message_id
-		LEFT OUTER JOIN egress_message eg ON ups.egress_message_id = eg.message_id
+		LEFT OUTER JOIN inbound_message ing ON ups.inbound_message_id = ing.message_id
+		LEFT OUTER JOIN outbound_message eg ON ups.outbound_message_id = eg.message_id
 		LEFT OUTER JOIN customer ingc ON ing.customer_id = ingc.customer_id
 		LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
 	`
@@ -338,12 +338,12 @@ func (tc *ThreadChatDB) LookupByWorkspaceThreadId(
 		th.spam AS spam,
 		th.channel AS channel,
 		th.preview_text AS preview_text,
-		ing.message_id AS ingress_message_id,
+		ing.message_id AS inbound_message_id,
 		ing.first_sequence AS ingress_first_seq,
 		ing.last_sequence AS ingress_last_seq,
 		ingc.customer_id AS ingress_customer_id,
 		ingc.name AS ingress_customer_name,
-		eg.message_id AS egress_message_id,
+		eg.message_id AS outbound_message_id,
 		eg.first_sequence AS egress_first_seq,
 		eg.last_sequence AS egress_last_seq,
 		egm.member_id AS egress_member_id,
@@ -353,8 +353,8 @@ func (tc *ThreadChatDB) LookupByWorkspaceThreadId(
 	FROM thread th
 	INNER JOIN customer c ON th.customer_id = c.customer_id
 	LEFT OUTER JOIN member m ON th.assignee_id = m.member_id
-	LEFT OUTER JOIN ingress_message ing ON th.ingress_message_id = ing.message_id
-	LEFT OUTER JOIN egress_message eg ON th.egress_message_id = eg.message_id
+	LEFT OUTER JOIN inbound_message ing ON th.inbound_message_id = ing.message_id
+	LEFT OUTER JOIN outbound_message eg ON th.outbound_message_id = eg.message_id
 	LEFT OUTER JOIN customer ingc ON ing.customer_id = ingc.customer_id
 	LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
 	WHERE th.workspace_id = $1 AND th.thread_id = $2`
@@ -419,12 +419,12 @@ func (tc *ThreadChatDB) FetchThreadsByCustomerId(
 			th.spam AS spam,
 			th.channel AS channel,
 			th.preview_text AS preview_text,
-			ing.message_id AS ingress_message_id,
+			ing.message_id AS inbound_message_id,
 			ing.first_sequence AS ingress_first_seq,
 			ing.last_sequence AS ingress_last_seq,
 			ingc.customer_id AS ingress_customer_id,
 			ingc.name AS ingress_customer_name,
-			eg.message_id AS egress_message_id,
+			eg.message_id AS outbound_message_id,
 			eg.first_sequence AS egress_first_seq,
 			eg.last_sequence AS egress_last_seq,
 			egm.member_id AS egress_member_id,
@@ -434,8 +434,8 @@ func (tc *ThreadChatDB) FetchThreadsByCustomerId(
 		FROM thread th
 		INNER JOIN customer c ON th.customer_id = c.customer_id
 		LEFT OUTER JOIN member m ON th.assignee_id = m.member_id
-		LEFT OUTER JOIN ingress_message ing ON th.ingress_message_id = ing.message_id
-		LEFT OUTER JOIN egress_message eg ON th.egress_message_id = eg.message_id
+		LEFT OUTER JOIN inbound_message ing ON th.inbound_message_id = ing.message_id
+		LEFT OUTER JOIN outbound_message eg ON th.outbound_message_id = eg.message_id
 		LEFT OUTER JOIN customer ingc ON ing.customer_id = ingc.customer_id
 		LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
 		WHERE th.customer_id = $1
@@ -499,7 +499,7 @@ func (tc *ThreadChatDB) UpdateAssignee(
 				thread_id, workspace_id, customer_id, assignee_id,
 				title, description, sequence, status, read, replied,
 				priority, spam, channel, preview_text,
-				ingress_message_id, egress_message_id,
+				inbound_message_id, outbound_message_id,
 				created_at, updated_at
 		) SELECT
 		 	ups.thread_id AS thread_id,
@@ -518,12 +518,12 @@ func (tc *ThreadChatDB) UpdateAssignee(
 			ups.spam AS spam,
 			ups.channel AS channel,
 			ups.preview_text AS preview_text,
-			ing.message_id AS ingress_message_id,
+			ing.message_id AS inbound_message_id,
 			ing.first_sequence AS ingress_first_seq,
 			ing.last_sequence AS ingress_last_seq,
 			ingc.customer_id AS ingress_customer_id,
 			ingc.name AS ingress_customer_name,
-			eg.message_id AS egress_message_id,
+			eg.message_id AS outbound_message_id,
 			eg.first_sequence AS egress_first_seq,
 			eg.last_sequence AS egress_last_seq,
 			egm.member_id AS egress_member_id,
@@ -533,8 +533,8 @@ func (tc *ThreadChatDB) UpdateAssignee(
 		FROM ups
 		INNER JOIN customer c ON ups.customer_id = c.customer_id
 		LEFT OUTER JOIN member m ON ups.assignee_id = m.member_id
-		LEFT OUTER JOIN ingress_message ing ON ups.ingress_message_id = ing.message_id
-		LEFT OUTER JOIN egress_message eg ON ups.egress_message_id = eg.message_id
+		LEFT OUTER JOIN inbound_message ing ON ups.inbound_message_id = ing.message_id
+		LEFT OUTER JOIN outbound_message eg ON ups.outbound_message_id = eg.message_id
 		LEFT OUTER JOIN customer ingc ON ing.customer_id = ingc.customer_id
 		LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
 	`
@@ -581,7 +581,7 @@ func (tc *ThreadChatDB) UpdateRepliedState(
 				thread_id, workspace_id, customer_id, assignee_id,
 				title, description, sequence, status, read, replied,
 				priority, spam, channel, preview_text,
-				ingress_message_id, egress_message_id,
+				inbound_message_id, outbound_message_id,
 				created_at, updated_at
 		) SELECT
 		 	ups.thread_id AS thread_id,
@@ -600,12 +600,12 @@ func (tc *ThreadChatDB) UpdateRepliedState(
 			ups.spam AS spam,
 			ups.channel AS channel,
 			ups.preview_text AS preview_text,
-			ing.message_id AS ingress_message_id,
+			ing.message_id AS inbound_message_id,
 			ing.first_sequence AS ingress_first_seq,
 			ing.last_sequence AS ingress_last_seq,
 			ingc.customer_id AS ingress_customer_id,
 			ingc.name AS ingress_customer_name,
-			eg.message_id AS egress_message_id,
+			eg.message_id AS outbound_message_id,
 			eg.first_sequence AS egress_first_seq,
 			eg.last_sequence AS egress_last_seq,
 			egm.member_id AS egress_member_id,
@@ -615,8 +615,8 @@ func (tc *ThreadChatDB) UpdateRepliedState(
 		FROM ups
 		INNER JOIN customer c ON ups.customer_id = c.customer_id
 		LEFT OUTER JOIN member m ON ups.assignee_id = m.member_id
-		LEFT OUTER JOIN ingress_message ing ON ups.ingress_message_id = ing.message_id
-		LEFT OUTER JOIN egress_message eg ON ups.egress_message_id = eg.message_id
+		LEFT OUTER JOIN inbound_message ing ON ups.inbound_message_id = ing.message_id
+		LEFT OUTER JOIN outbound_message eg ON ups.outbound_message_id = eg.message_id
 		LEFT OUTER JOIN customer ingc ON ing.customer_id = ingc.customer_id
 		LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
 	`
@@ -672,12 +672,12 @@ func (tc *ThreadChatDB) FetchThreadsByWorkspaceId(
 			th.spam AS spam,
 			th.channel AS channel,
 			th.preview_text AS preview_text,
-			ing.message_id AS ingress_message_id,
+			ing.message_id AS inbound_message_id,
 			ing.first_sequence AS ingress_first_seq,
 			ing.last_sequence AS ingress_last_seq,
 			ingc.customer_id AS ingress_customer_id,
 			ingc.name AS ingress_customer_name,
-			eg.message_id AS egress_message_id,
+			eg.message_id AS outbound_message_id,
 			eg.first_sequence AS egress_first_seq,
 			eg.last_sequence AS egress_last_seq,
 			egm.member_id AS egress_member_id,
@@ -687,8 +687,8 @@ func (tc *ThreadChatDB) FetchThreadsByWorkspaceId(
 		FROM thread th
 		INNER JOIN customer c ON th.customer_id = c.customer_id
 		LEFT OUTER JOIN member m ON th.assignee_id = m.member_id
-		LEFT OUTER JOIN ingress_message ing ON th.ingress_message_id = ing.message_id
-		LEFT OUTER JOIN egress_message eg ON th.egress_message_id = eg.message_id
+		LEFT OUTER JOIN inbound_message ing ON th.inbound_message_id = ing.message_id
+		LEFT OUTER JOIN outbound_message eg ON th.outbound_message_id = eg.message_id
 		LEFT OUTER JOIN customer ingc ON ing.customer_id = ingc.customer_id
 		LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
 		WHERE th.workspace_id = $1
@@ -762,12 +762,12 @@ func (tc *ThreadChatDB) FetchThreadsByAssignedMemberId(
 			th.spam AS spam,
 			th.channel AS channel,
 			th.preview_text AS preview_text,
-			ing.message_id AS ingress_message_id,
+			ing.message_id AS inbound_message_id,
 			ing.first_sequence AS ingress_first_seq,
 			ing.last_sequence AS ingress_last_seq,
 			ingc.customer_id AS ingress_customer_id,
 			ingc.name AS ingress_customer_name,
-			eg.message_id AS egress_message_id,
+			eg.message_id AS outbound_message_id,
 			eg.first_sequence AS egress_first_seq,
 			eg.last_sequence AS egress_last_seq,
 			egm.member_id AS egress_member_id,
@@ -777,8 +777,8 @@ func (tc *ThreadChatDB) FetchThreadsByAssignedMemberId(
 		FROM thread th
 		INNER JOIN customer c ON th.customer_id = c.customer_id
 		LEFT OUTER JOIN member m ON th.assignee_id = m.member_id
-		LEFT OUTER JOIN ingress_message ing ON th.ingress_message_id = ing.message_id
-		LEFT OUTER JOIN egress_message eg ON th.egress_message_id = eg.message_id
+		LEFT OUTER JOIN inbound_message ing ON th.inbound_message_id = ing.message_id
+		LEFT OUTER JOIN outbound_message eg ON th.outbound_message_id = eg.message_id
 		LEFT OUTER JOIN customer ingc ON ing.customer_id = ingc.customer_id
 		LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
 		WHERE th.assignee_id = $1
@@ -852,12 +852,12 @@ func (tc *ThreadChatDB) FetchThreadsByMemberUnassigned(
 			th.spam AS spam,
 			th.channel AS channel,
 			th.preview_text AS preview_text,
-			ing.message_id AS ingress_message_id,
+			ing.message_id AS inbound_message_id,
 			ing.first_sequence AS ingress_first_seq,
 			ing.last_sequence AS ingress_last_seq,
 			ingc.customer_id AS ingress_customer_id,
 			ingc.name AS ingress_customer_name,
-			eg.message_id AS egress_message_id,
+			eg.message_id AS outbound_message_id,
 			eg.first_sequence AS egress_first_seq,
 			eg.last_sequence AS egress_last_seq,
 			egm.member_id AS egress_member_id,
@@ -867,8 +867,8 @@ func (tc *ThreadChatDB) FetchThreadsByMemberUnassigned(
 		FROM thread th
 		INNER JOIN customer c ON th.customer_id = c.customer_id
 		LEFT OUTER JOIN member m ON th.assignee_id = m.member_id
-		LEFT OUTER JOIN ingress_message ing ON th.ingress_message_id = ing.message_id
-		LEFT OUTER JOIN egress_message eg ON th.egress_message_id = eg.message_id
+		LEFT OUTER JOIN inbound_message ing ON th.inbound_message_id = ing.message_id
+		LEFT OUTER JOIN outbound_message eg ON th.outbound_message_id = eg.message_id
 		LEFT OUTER JOIN customer ingc ON ing.customer_id = ingc.customer_id
 		LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
 		WHERE th.workspace_id = $1 AND th.assignee_id IS NULL
@@ -942,12 +942,12 @@ func (tc *ThreadChatDB) FetchThreadsByLabelId(
 			th.spam AS spam,
 			th.channel AS channel,
 			th.preview_text AS preview_text,
-			ing.message_id AS ingress_message_id,
+			ing.message_id AS inbound_message_id,
 			ing.first_sequence AS ingress_first_seq,
 			ing.last_sequence AS ingress_last_seq,
 			ingc.customer_id AS ingress_customer_id,
 			ingc.name AS ingress_customer_name,
-			eg.message_id AS egress_message_id,
+			eg.message_id AS outbound_message_id,
 			eg.first_sequence AS egress_first_seq,
 			eg.last_sequence AS egress_last_seq,
 			egm.member_id AS egress_member_id,
@@ -958,8 +958,8 @@ func (tc *ThreadChatDB) FetchThreadsByLabelId(
 		INNER JOIN customer c ON th.customer_id = c.customer_id	
 		INNER JOIN thread_label tl ON th.thread_id = tl.thread_id
 		LEFT OUTER JOIN member m ON th.assignee_id = m.member_id
-		LEFT OUTER JOIN ingress_message ing ON th.ingress_message_id = ing.message_id
-		LEFT OUTER JOIN egress_message eg ON th.egress_message_id = eg.message_id
+		LEFT OUTER JOIN inbound_message ing ON th.inbound_message_id = ing.message_id
+		LEFT OUTER JOIN outbound_message eg ON th.outbound_message_id = eg.message_id
 		LEFT OUTER JOIN customer ingc ON ing.customer_id = ingc.customer_id
 		LEFT OUTER JOIN member egm ON eg.member_id = egm.member_id
 		WHERE tl.label_id = $1
@@ -1089,8 +1089,8 @@ func (tc *ThreadChatDB) SetLabelToThread(
 func (tc *ThreadChatDB) DeleteThreadLabelByCompId(
 	ctx context.Context, threadId string, labelId string) error {
 	stmt := `
-		DELETE FROM thread_label
-		WHERE thread_id = $1 AND label_id = $2`
+		delete from thread_label
+		where thread_id = $1 and label_id = $2`
 	_, err := tc.db.Exec(ctx, stmt, threadId, labelId)
 	if err != nil {
 		slog.Error("failed to delete query", slog.Any("err", err))
@@ -1154,26 +1154,26 @@ func (tc *ThreadChatDB) InsertCustomerChat(
 
 	chatId := chat.GenId()
 	stmt := `
-		WITH ins AS (
-			INSERT INTO chat (chat_id, thread_id, body, customer_id, is_head)
-			VALUES ($1, $2, $3, $4, $5)
-			RETURNING
+		with ins as (
+			insert into chat (chat_id, thread_id, body, customer_id, is_head)
+			values ($1, $2, $3, $4, $5)
+			returning
 				chat_id, thread_id, body, sequence, customer_id, member_id, is_head,
 				created_at, updated_at
-		) SELECT ins.chat_id AS chat_id,
-			ins.thread_id AS thread_id,
-			ins.body AS body,
-			ins.sequence AS sequence,
-			c.customer_id AS customer_id,
-			c.name AS customer_name,
-			m.member_id AS member_id,
-			m.name AS member_name,
-			ins.is_head AS is_head,
-			ins.created_at AS created_at,
-			ins.updated_at AS updated_at
-		FROM ins
-		LEFT OUTER JOIN customer c ON ins.customer_id = c.customer_id
-		LEFT OUTER JOIN member m ON ins.member_id = m.member_id
+		) select ins.chat_id as chat_id,
+			ins.thread_id as thread_id,
+			ins.body as body,
+			ins.sequence as sequence,
+			c.customer_id as customer_id,
+			c.name as customer_name,
+			m.member_id as member_id,
+			m.name as member_name,
+			ins.is_head as is_head,
+			ins.created_at as created_at,
+			ins.updated_at as updated_at
+		from ins
+		left outer join customer c on ins.customer_id = c.customer_id
+		left outer join member m on ins.member_id = m.member_id
 	`
 
 	err = tx.QueryRow(ctx, stmt, chatId, chat.ThreadId, chat.Body, chat.CustomerId, chat.IsHead).Scan(
@@ -1197,10 +1197,10 @@ func (tc *ThreadChatDB) InsertCustomerChat(
 	// if not, create a new one and update the thread
 	// else update the existing one
 	if inboundMessageId != nil {
-		stmt = `UPDATE ingress_message SET
+		stmt = `update inbound_message set
 			last_sequence = $2,
-			updated_at = NOW()
-			WHERE message_id = $1`
+			updated_at = now()
+			where message_id = $1`
 
 		_, err = tx.Exec(ctx, stmt, *inboundMessageId, chat.Sequence)
 		if err != nil {
@@ -1209,10 +1209,10 @@ func (tc *ThreadChatDB) InsertCustomerChat(
 		}
 
 		// update thread with preview text
-		stmt = `UPDATE thread SET
+		stmt = `update thread set
 			preview_text = $2,
-			updated_at = NOW()
-			WHERE thread_id = $1`
+			updated_at = now()
+			where thread_id = $1`
 
 		_, err = tx.Exec(ctx, stmt, chat.ThreadId, chat.PreviewText())
 		if err != nil {
@@ -1223,24 +1223,24 @@ func (tc *ThreadChatDB) InsertCustomerChat(
 		var inbound models.InboundMessage
 		messageId := inbound.GenId()
 		stmt := `
-			WITH ins AS (
-				INSERT INTO ingress_message (message_id, customer_id)
-				VALUES ($1, $2)
-				RETURNING
+			with ins as (
+				insert into inbound_message (message_id, customer_id)
+				values ($1, $2)
+				returning
 					message_id, customer_id,
 					first_sequence, last_sequence,
 					created_at, updated_at
-			) SELECT ins.message_id AS message_id,
-				ins.customer_id AS customer_id,
-				ins.first_sequence AS first_sequence,
-				ins.last_sequence AS last_sequence,
-				ins.created_at AS created_at,
-				ins.updated_at AS updated_at
-			FROM ins`
+			) select ins.message_id as message_id,
+				ins.customer_id as customer_id,
+				ins.first_sequence as first_sequence,
+				ins.last_sequence as last_sequence,
+				ins.created_at as created_at,
+				ins.updated_at as updated_at
+			from ins`
 
 		err = tx.QueryRow(ctx, stmt, messageId, chat.CustomerId).Scan(
 			&inbound.MessageId, &inbound.CustomerId,
-			&inbound.FirstSeq, &inbound.LastSeq,
+			&inbound.FirstMessageTs, &inbound.LastMessageTs,
 			&inbound.CreatedAt, &inbound.UpdatedAt,
 		)
 
@@ -1255,10 +1255,10 @@ func (tc *ThreadChatDB) InsertCustomerChat(
 		}
 
 		// update thread with inbound message id and preview text
-		stmt = `UPDATE thread SET
-			ingress_message_id = $2, preview_text = $3,
-			updated_at = NOW()
-			WHERE thread_id = $1`
+		stmt = `update thread set
+			inbound_message_id = $2, preview_text = $3,
+			updated_at = now()
+			where thread_id = $1`
 
 		_, err = tx.Exec(ctx, stmt, chat.ThreadId, inbound.MessageId, chat.PreviewText())
 		if err != nil {
@@ -1295,26 +1295,26 @@ func (tc *ThreadChatDB) InsertMemberChat(
 
 	chatId := chat.GenId()
 	stmt := `
-		WITH ins AS (
-			INSERT INTO chat (chat_id, thread_id, body, member_id, is_head)
-			VALUES ($1, $2, $3, $4, $5)
-			RETURNING
+		with ins as (
+			insert into chat (chat_id, thread_id, body, member_id, is_head)
+			values ($1, $2, $3, $4, $5)
+			returning
 				chat_id, thread_id, body, sequence, customer_id, member_id, is_head,
 				created_at, updated_at
-		) SELECT ins.chat_id AS chat_id,
-			ins.thread_id AS thread_id,
-			ins.body AS body,
-			ins.sequence AS sequence,
-			c.customer_id AS customer_id,
-			c.name AS customer_name,
-			m.member_id AS member_id,
-			m.name AS member_name,
-			ins.is_head AS is_head,
-			ins.created_at AS created_at,
-			ins.updated_at AS updated_at
-		FROM ins
-		LEFT OUTER JOIN customer c ON ins.customer_id = c.customer_id
-		LEFT OUTER JOIN member m ON ins.member_id = m.member_id
+		) select ins.chat_id as chat_id,
+			ins.thread_id as thread_id,
+			ins.body as body,
+			ins.sequence as sequence,
+			c.customer_id as customer_id,
+			c.name as customer_name,
+			m.member_id as member_id,
+			m.name as member_name,
+			ins.is_head as is_head,
+			ins.created_at as created_at,
+			ins.updated_at as updated_at
+		from ins
+		left outer join customer c on ins.customer_id = c.customer_id
+		left outer join member m on ins.member_id = m.member_id
 	`
 
 	err = tx.QueryRow(ctx, stmt, chatId, chat.ThreadId, chat.Body, chat.MemberId, chat.IsHead).Scan(
@@ -1338,10 +1338,10 @@ func (tc *ThreadChatDB) InsertMemberChat(
 	// if not, create a new one and update the thread
 	// else update the existing one
 	if outboundMessageId != nil {
-		stmt = `UPDATE egress_message SET
+		stmt = `update outbound_message set
 		last_sequence = $2,
-		updated_at = NOW()
-		WHERE message_id = $1`
+		updated_at = now()
+		where message_id = $1`
 
 		_, err = tx.Exec(ctx, stmt, *outboundMessageId, chat.Sequence)
 		if err != nil {
@@ -1350,10 +1350,10 @@ func (tc *ThreadChatDB) InsertMemberChat(
 		}
 
 		// update thread with outbound message id and preview text
-		stmt = `UPDATE thread SET
+		stmt = `update thread set
 			preview_text = $2,
-			updated_at = NOW()
-			WHERE thread_id = $1`
+			updated_at = now()
+			where thread_id = $1`
 
 		_, err = tx.Exec(ctx, stmt, chat.ThreadId, chat.PreviewText())
 		if err != nil {
@@ -1361,11 +1361,11 @@ func (tc *ThreadChatDB) InsertMemberChat(
 			return models.Chat{}, ErrQuery
 		}
 	} else {
-		var outbound models.EgressMessage
+		var outbound models.OutboundMessage
 		messageId := outbound.GenId()
 		stmt := `
 			WITH ins AS (
-				INSERT INTO egress_message (message_id, member_id)
+				INSERT INTO outbound_message (message_id, member_id)
 				VALUES ($1, $2)
 				RETURNING
 					message_id, member_id,
@@ -1381,7 +1381,7 @@ func (tc *ThreadChatDB) InsertMemberChat(
 
 		err = tx.QueryRow(ctx, stmt, messageId, chat.MemberId).Scan(
 			&outbound.MessageId, &outbound.MemberId,
-			&outbound.FirstSeq, &outbound.LastSeq,
+			&outbound.FirstMessageTs, &outbound.LastMessageTs,
 			&outbound.CreatedAt, &outbound.UpdatedAt,
 		)
 
@@ -1396,10 +1396,10 @@ func (tc *ThreadChatDB) InsertMemberChat(
 		}
 
 		// update thread with outbound message id and preview text
-		stmt = `UPDATE thread SET
-			egress_message_id = $2, preview_text = $3,
-			updated_at = NOW()
-			WHERE thread_id = $1`
+		stmt = `update thread set
+			outbound_message_id = $2, preview_text = $3,
+			updated_at = now()
+			where thread_id = $1`
 
 		_, err = tx.Exec(ctx, stmt, chat.ThreadId, outbound.MessageId, chat.PreviewText())
 		if err != nil {

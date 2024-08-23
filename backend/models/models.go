@@ -425,28 +425,30 @@ func (c Customer) DeAnonExternalId() string {
 }
 
 type InboundMessage struct {
-	MessageId  string
-	CustomerId string
-	FirstSeq   int
-	LastSeq    int
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	MessageId      string
+	CustomerId     string
+	PreviewText    string
+	FirstMessageTs int
+	LastMessageTs  int
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 func (im InboundMessage) GenId() string {
 	return "im" + xid.New().String()
 }
 
-type EgressMessage struct {
-	MessageId string
-	MemberId  string
-	FirstSeq  int
-	LastSeq   int
-	CreatedAt time.Time
-	UpdatedAt time.Time
+type OutboundMessage struct {
+	MessageId      string
+	MemberId       string
+	PreviewText    string
+	FirstMessageTs int
+	LastMessageTs  int
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
-func (em EgressMessage) GenId() string {
+func (em OutboundMessage) GenId() string {
 	return "em" + xid.New().String()
 }
 
