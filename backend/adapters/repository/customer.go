@@ -232,31 +232,27 @@ func (c *CustomerDB) FetchCustomersByWorkspaceId(
 }
 
 func (c *CustomerDB) LookupSecretKeyByWidgetId(
-	ctx context.Context, widgetId string) (models.SecretKey, error) {
-	var sk models.SecretKey
-	stmt := `SELECT sk.workspace_id as workspace_id,
-		sk.secret_key as secret_key,
-		sk.created_at as created_at,
-		sk.updated_at as updated_at
-		FROM widget w
-		INNER JOIN secret_key sk ON sk.workspace_id = w.workspace_id
-		WHERE w.widget_id = $1`
+	ctx context.Context, widgetId string) (models.WorkspaceSecret, error) {
+	var sk models.WorkspaceSecret
+	stmt := `select sk.workspace_id as workspace_id,
+		sk.hmac as hmac, sk.created_at, sk.updated_at
+		from widget w
+		inner join workspace_secret sk on sk.workspace_id = w.workspace_id
+		where w.widget_id = $1`
 
 	err := c.db.QueryRow(ctx, stmt, widgetId).Scan(
-		&sk.WorkspaceId, &sk.SecretKey,
+		&sk.WorkspaceId, &sk.Hmac,
 		&sk.CreatedAt, &sk.UpdatedAt,
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("error", err))
-		return models.SecretKey{}, ErrEmpty
+		return models.WorkspaceSecret{}, ErrEmpty
 	}
-
 	if err != nil {
 		slog.Error("failed to query", slog.Any("error", err))
-		return models.SecretKey{}, ErrQuery
+		return models.WorkspaceSecret{}, ErrQuery
 	}
-
 	return sk, nil
 }
 
@@ -308,12 +304,12 @@ func (c *CustomerDB) UpsertCustomerByAnonId(
 
 func (c *CustomerDB) ModifyCustomerById(
 	ctx context.Context, customer models.Customer) (models.Customer, error) {
-	stmt := `UPDATE customer SET
+	stmt := `update customer set
 		external_id = $2, email = $3, phone = $4, name = $5, is_verified = $6, role = $7,
-		updated_at = NOW()
-		WHERE
+		updated_at = now()
+		where
 		customer_id = $1
-		RETURNING customer_id, workspace_id,
+		returning customer_id, workspace_id,
 		external_id, email, phone,
 		name,
 		anonymous_id, is_verified, role,

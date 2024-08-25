@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
-import { ThreadResponse } from "@/lib/thread";
+import { ThreadResponseItem } from "@/lib/thread";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-function ThreadItem({ thread }: { thread: ThreadResponse }) {
-  const { egressMember } = thread;
+function ThreadItem({ thread }: { thread: ThreadResponseItem }) {
+  const { customer, egressMember } = thread;
 
   const memberName = egressMember?.name || null;
   const memberId = egressMember?.memberId || null;
   const hasMember = memberId && memberName;
-  const customerId = thread.customer.customerId;
+  const customerId = customer.customerId;
 
   return (
     <Link
@@ -62,7 +62,11 @@ function ThreadItem({ thread }: { thread: ThreadResponse }) {
   );
 }
 
-export default function Threads({ threads }: { threads: ThreadResponse[] }) {
+export default function Threads({
+  threads,
+}: {
+  threads: ThreadResponseItem[];
+}) {
   return (
     <div className="flex flex-col gap-2">
       {threads.map((thread) => (

@@ -25,9 +25,9 @@ func (wrk *WorkspaceDB) InsertWorkspaceWithMember(
 	}(tx, ctx)
 
 	workspaceId := workspace.GenId()
-	err = tx.QueryRow(ctx, `INSERT INTO workspace(workspace_id, account_id, name)
-		VALUES ($1, $2, $3)
-		RETURNING
+	err = tx.QueryRow(ctx, `insert into workspace(workspace_id, account_id, name)
+		values ($1, $2, $3)
+		returning
 		workspace_id, account_id, name, created_at, updated_at`, workspaceId, workspace.AccountId, workspace.Name).Scan(
 		&workspace.WorkspaceId, &workspace.AccountId,
 		&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt,
@@ -44,9 +44,9 @@ func (wrk *WorkspaceDB) InsertWorkspaceWithMember(
 	}
 
 	memberId := member.GenId()
-	err = tx.QueryRow(ctx, `INSERT INTO member(workspace_id, account_id, member_id, name, role)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING
+	err = tx.QueryRow(ctx, `insert into member(workspace_id, account_id, member_id, name, role)
+		values ($1, $2, $3, $4, $5)
+		returning
 		workspace_id, account_id, member_id, name, role, created_at, updated_at`,
 		workspaceId, workspace.AccountId, memberId, member.Name, member.Role).Scan(
 		&member.WorkspaceId, &member.AccountId,
@@ -76,10 +76,10 @@ func (wrk *WorkspaceDB) InsertWorkspaceWithMember(
 
 func (wrk *WorkspaceDB) ModifyWorkspaceById(
 	ctx context.Context, workspace models.Workspace) (models.Workspace, error) {
-	err := wrk.db.QueryRow(ctx, `UPDATE workspace SET
-		name = $1, updated_at = NOW()
-		WHERE workspace_id = $2
-		RETURNING
+	err := wrk.db.QueryRow(ctx, `update workspace set
+		name = $1, updated_at = now()
+		where workspace_id = $2
+		returning
 		workspace_id, account_id, name, created_at, updated_at`,
 		workspace.Name, workspace.WorkspaceId).Scan(
 		&workspace.WorkspaceId, &workspace.AccountId,
@@ -97,10 +97,10 @@ func (wrk *WorkspaceDB) ModifyWorkspaceById(
 func (wrk *WorkspaceDB) ModifyLabelById(
 	ctx context.Context, label models.Label,
 ) (models.Label, error) {
-	err := wrk.db.QueryRow(ctx, `UPDATE label SET
-		name = $1, icon = $2, updated_at = NOW()
-		WHERE workspace_id = $3 AND label_id = $4
-		RETURNING
+	err := wrk.db.QueryRow(ctx, `update label set
+		name = $1, icon = $2, updated_at = now()
+		where workspace_id = $3 and label_id = $4
+		returning
 		label_id, workspace_id, name, icon, created_at, updated_at`,
 		label.Name, label.Icon, label.WorkspaceId, label.LabelId).Scan(
 		&label.LabelId, &label.WorkspaceId,
@@ -304,9 +304,9 @@ func (wrk *WorkspaceDB) FetchLabelsByWorkspaceId(
 func (wrk *WorkspaceDB) InsertWidget(
 	ctx context.Context, widget models.Widget) (models.Widget, error) {
 	widgetId := widget.GenId()
-	err := wrk.db.QueryRow(ctx, `INSERT INTO widget(workspace_id, widget_id, name, configuration)
-		VALUES ($1, $2, $3, $4)
-		RETURNING
+	err := wrk.db.QueryRow(ctx, `insert into widget(workspace_id, widget_id, name, configuration)
+		values ($1, $2, $3, $4)
+		returning
 		workspace_id, widget_id, name, configuration, created_at, updated_at`,
 		widget.WorkspaceId, widgetId, widget.Name, widget.Configuration).Scan(
 		&widget.WorkspaceId, &widget.WidgetId,
@@ -356,51 +356,52 @@ func (wrk *WorkspaceDB) FetchWidgetsByWorkspaceId(
 	return widgets, nil
 }
 
-func (wrk *WorkspaceDB) InsertSecretKey(
-	ctx context.Context, workspaceId string, sk string) (models.SecretKey, error) {
-	var secretKey models.SecretKey
-	err := wrk.db.QueryRow(ctx, `INSERT INTO secret_key(workspace_id, secret_key)
-		VALUES ($1, $2)
-		ON CONFLICT (workspace_id) DO UPDATE SET secret_key = $2
-		RETURNING
-		workspace_id, secret_key, created_at, updated_at`, workspaceId, sk).Scan(
-		&secretKey.WorkspaceId, &secretKey.SecretKey,
+func (wrk *WorkspaceDB) InsertWorkspaceSecret(
+	ctx context.Context, workspaceId string, sk string) (models.WorkspaceSecret, error) {
+	var secretKey models.WorkspaceSecret
+	stmt := `
+		insert into workspace_secret(workspace_id, hmac)
+		values ($1, $2)
+		on conflict (workspace_id) do update set hmac = $2
+		returning
+		workspace_id, hmac, created_at, updated_at
+	`
+	err := wrk.db.QueryRow(ctx, stmt, workspaceId, sk).Scan(
+		&secretKey.WorkspaceId, &secretKey.Hmac,
 		&secretKey.CreatedAt, &secretKey.UpdatedAt,
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("err", err))
-		return models.SecretKey{}, ErrEmpty
+		return models.WorkspaceSecret{}, ErrEmpty
 	}
 
 	if err != nil {
 		slog.Error("failed to insert query", slog.Any("err", err))
-		return models.SecretKey{}, ErrQuery
+		return models.WorkspaceSecret{}, ErrQuery
 	}
 
 	return secretKey, nil
 }
 
 func (wrk *WorkspaceDB) FetchSecretKeyByWorkspaceId(
-	ctx context.Context, workspaceId string) (models.SecretKey, error) {
-	var secretKey models.SecretKey
-	err := wrk.db.QueryRow(ctx, `SELECT
-		workspace_id,secret_key, created_at, updated_at
-		FROM secret_key WHERE workspace_id = $1`, workspaceId).Scan(
-		&secretKey.WorkspaceId, &secretKey.SecretKey,
+	ctx context.Context, workspaceId string) (models.WorkspaceSecret, error) {
+	var secretKey models.WorkspaceSecret
+	err := wrk.db.QueryRow(ctx, `select
+		workspace_id, hmac, created_at, updated_at
+		from workspace_secret where workspace_id = $1`, workspaceId).Scan(
+		&secretKey.WorkspaceId, &secretKey.Hmac,
 		&secretKey.CreatedAt, &secretKey.UpdatedAt,
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("err", err))
-		return models.SecretKey{}, ErrEmpty
+		return models.WorkspaceSecret{}, ErrEmpty
 	}
-
 	if err != nil {
 		slog.Error("failed to query", slog.Any("err", err))
-		return models.SecretKey{}, ErrQuery
+		return models.WorkspaceSecret{}, ErrQuery
 	}
-
 	return secretKey, nil
 }
 
@@ -426,11 +427,9 @@ func (wrk *WorkspaceDB) LookupWidgetById(
 		slog.Error("no rows returned", slog.Any("err", err))
 		return models.Widget{}, ErrEmpty
 	}
-
 	if err != nil {
 		slog.Error("failed to query", slog.Any("err", err))
 		return models.Widget{}, ErrQuery
 	}
-
 	return widget, nil
 }

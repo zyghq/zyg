@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { createThreadResponseSchema, CreateThreadResponse } from "@/lib/thread";
 
 interface CreateThreadBody {
   message: string;
@@ -14,7 +16,10 @@ export async function createThreadActionAPI(
   widgetId: string,
   jwt: string,
   body: CreateThreadBody
-) {
+): Promise<{
+  error: { message: string } | null;
+  data: CreateThreadResponse | null;
+}> {
   try {
     const response = await fetch(
       `${process.env.ZYG_XAPI_URL}/widgets/${widgetId}/threads/chat/`,
@@ -39,10 +44,26 @@ export async function createThreadActionAPI(
       };
     }
     const data = await response.json();
-    return {
-      error: null,
-      data,
-    };
+    try {
+      const thread = createThreadResponseSchema.parse(data);
+      return {
+        error: null,
+        data: thread,
+      };
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        console.error(
+          "Failed response schema validation, update threadResponseSchema"
+        );
+        console.error(err.message);
+      } else console.error(err);
+      return {
+        error: {
+          message: "Failed response schema validation",
+        },
+        data: null,
+      };
+    }
   } catch (err) {
     console.error("Something went wrong", err);
     return {
@@ -54,11 +75,15 @@ export async function createThreadActionAPI(
   }
 }
 
+// required, as we cannot have try..catch due to next.js revalidatePath.
 export async function createThreadAction(
   widgetId: string,
   jwt: string,
   body: CreateThreadBody
-) {
+): Promise<{
+  error: { message: string } | null;
+  data: CreateThreadResponse | null;
+}> {
   const { error, data } = await createThreadActionAPI(widgetId, jwt, body);
   if (error) {
     return {

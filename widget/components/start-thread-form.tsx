@@ -3,8 +3,6 @@
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { SendHorizonalIcon } from "lucide-react";
-import { revalidatePath } from "next/cache";
-
 import {
   Form,
   FormControl,
@@ -82,8 +80,13 @@ export default function StartThreadForm({
       });
       return;
     }
-    const { threadChatId } = data;
-    return router.push(`/threads/${threadChatId}`);
+    if (data) {
+      const { threadId } = data;
+      return router.push(`/threads/${threadId}`);
+    }
+    form.setError("root.serverError", {
+      message: "Please try again later.",
+    });
   };
 
   const isDisabled = isSubmitting || isSubmitSuccessful;

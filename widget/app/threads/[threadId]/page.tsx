@@ -237,7 +237,7 @@ export default function ThreadChats({
         <ScrollArea className="p-4 h-[calc(100dvh-12rem)]">
           <div className="space-y-2">
             {chatsReversed.map((chat) => (
-              <Chat key={chat.threadChatId} chat={chat} />
+              <Chat key={chat.threadId} chat={chat} />
             ))}
             {hasSentMessageWithoutIdentity && (
               <div className="flex flex-col px-2">

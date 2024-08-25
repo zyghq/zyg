@@ -425,13 +425,14 @@ func (c Customer) DeAnonExternalId() string {
 }
 
 type InboundMessage struct {
-	MessageId      string
-	CustomerId     string
-	PreviewText    string
-	FirstMessageTs int
-	LastMessageTs  int
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	MessageId    string
+	CustomerId   string
+	CustomerName string
+	PreviewText  string
+	FirstSeqId   string
+	LastSeqId    string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 func (im InboundMessage) GenId() string {
@@ -439,13 +440,13 @@ func (im InboundMessage) GenId() string {
 }
 
 type OutboundMessage struct {
-	MessageId      string
-	MemberId       string
-	PreviewText    string
-	FirstMessageTs int
-	LastMessageTs  int
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	MessageId   string
+	MemberId    string
+	FirstSeqId  string
+	LastSeqId   string
+	PreviewText string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 func (em OutboundMessage) GenId() string {
@@ -453,38 +454,59 @@ func (em OutboundMessage) GenId() string {
 }
 
 type Thread struct {
-	WorkspaceId         string
-	ThreadId            string
-	CustomerId          string
-	CustomerName        string
-	AssigneeId          sql.NullString
-	AssigneeName        sql.NullString
-	Title               string
-	Description         string
-	Sequence            int
-	Status              string
-	Read                bool
-	Replied             bool
-	Priority            string
-	Spam                bool
-	Channel             string
-	PreviewText         string
-	IngressMessageId    sql.NullString
-	IngressFirstSeq     sql.NullInt64
-	IngressLastSeq      sql.NullInt64
-	IngressCustomerId   sql.NullString
-	IngressCustomerName sql.NullString
-	EgressMessageId     sql.NullString
-	EgressFirstSeq      sql.NullInt64
-	EgressLastSeq       sql.NullInt64
-	EgressMemberId      sql.NullString
-	EgressMemberName    sql.NullString
-	CreatedAt           time.Time
-	UpdatedAt           time.Time
+	WorkspaceId    string
+	ThreadId       string
+	CustomerId     string
+	CustomerName   string
+	AssigneeId     sql.NullString
+	AssigneeName   sql.NullString
+	Title          string
+	Description    string
+	Sequence       int
+	Status         string
+	Read           bool
+	Replied        bool
+	Priority       string
+	Spam           bool
+	Channel        string
+	PreviewText    string
+	InboundMessage *InboundMessage
+	//IngressMessageId    sql.NullString
+	//IngressFirstSeq     sql.NullInt64
+	//IngressLastSeq      sql.NullInt64
+	//IngressCustomerId   sql.NullString
+	//IngressCustomerName sql.NullString
+	EgressMessageId  sql.NullString
+	EgressFirstSeq   sql.NullInt64
+	EgressLastSeq    sql.NullInt64
+	EgressMemberId   sql.NullString
+	EgressMemberName sql.NullString
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
-func (t Thread) GenId() string {
+func (th *Thread) GenId() string {
 	return "th" + xid.New().String()
+}
+
+func (th *Thread) AddInboundMessage(
+	messageId string,
+	customerId string, customerName string,
+	previewText string,
+	firstSeqId string, lastSeqId string,
+	createdAt time.Time, updatedAt time.Time,
+) {
+	th.InboundMessage = &InboundMessage{
+		MessageId: messageId, CustomerId: customerId, CustomerName: customerName,
+		PreviewText: previewText,
+		FirstSeqId:  firstSeqId, LastSeqId: lastSeqId,
+		CreatedAt: createdAt,
+		UpdatedAt: updatedAt,
+	}
+}
+
+func (th *Thread) ClearInboundMessage() {
+	th.InboundMessage = nil
 }
 
 type Chat struct {
@@ -622,22 +644,22 @@ func (w Widget) GenId() string {
 	return "wd" + xid.New().String()
 }
 
-type SecretKey struct {
+type WorkspaceSecret struct {
 	WorkspaceId string
-	SecretKey   string
+	Hmac        string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
 
-func (sk SecretKey) MarshalJSON() ([]byte, error) {
+func (sk WorkspaceSecret) MarshalJSON() ([]byte, error) {
 	aux := &struct {
 		WorkspaceId string `json:"workspaceId"`
-		SecretKey   string `json:"secretKey"`
+		Hmac        string `json:"hmac"`
 		CreatedAt   string `json:"createdAt"`
 		UpdatedAt   string `json:"updatedAt"`
 	}{
 		WorkspaceId: sk.WorkspaceId,
-		SecretKey:   sk.SecretKey,
+		Hmac:        sk.Hmac,
 		CreatedAt:   sk.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:   sk.UpdatedAt.Format(time.RFC3339),
 	}

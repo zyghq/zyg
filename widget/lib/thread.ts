@@ -1,13 +1,13 @@
 import { z } from "zod";
 
-export const threadResponseSchema = z.object({
+export const createThreadResponseSchema = z.object({
   threadId: z.string(),
   customer: z.object({
     customerId: z.string(),
     name: z.string(),
   }),
-  title: z.string(),
-  description: z.string(),
+  title: z.string().optional(),
+  description: z.string().optional(),
   sequence: z.number(),
   status: z.string(),
   read: z.boolean(),
@@ -16,16 +16,50 @@ export const threadResponseSchema = z.object({
   spam: z.boolean(),
   channel: z.string(),
   previewText: z.string(),
-  assignee: z
-    .object({
-      memberId: z.string(),
+  inboundFirstSeqId: z.string(),
+  inboundLastSeqId: z.string(),
+  inboundCustomer: z.object({
+    customerId: z.string(),
+    name: z.string(),
+  }),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  chat: z.object({
+    threadId: z.string(),
+    chatId: z.string(),
+    body: z.string(),
+    sequence: z.number(),
+    isHead: z.boolean(),
+    customer: z.object({
+      customerId: z.string(),
       name: z.string(),
-    })
-    .nullable()
-    .default(null),
-  ingressFirstSeq: z.number().nullable().default(null),
-  ingressLastSeq: z.number().nullable().default(null),
-  ingressCustomer: z
+    }),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  }),
+});
+
+export type CreateThreadResponse = z.infer<typeof createThreadResponseSchema>;
+
+export const threadResponseItemSchema = z.object({
+  threadId: z.string(),
+  customer: z.object({
+    customerId: z.string(),
+    name: z.string(),
+  }),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  sequence: z.number(),
+  status: z.string(),
+  read: z.boolean(),
+  replied: z.boolean(),
+  priority: z.string(),
+  spam: z.boolean(),
+  channel: z.string(),
+  previewText: z.string(),
+  inboundFirstSeqId: z.string(),
+  inboundLastSeqId: z.string(),
+  inboundCustomer: z
     .object({
       customerId: z.string(),
       name: z.string(),
@@ -45,7 +79,7 @@ export const threadResponseSchema = z.object({
   updatedAt: z.string(),
 });
 
-export type ThreadResponse = z.infer<typeof threadResponseSchema>;
+export type ThreadResponseItem = z.infer<typeof threadResponseItemSchema>;
 
 export const threadChatResponseSchema = z.object({
   threadId: z.string(),

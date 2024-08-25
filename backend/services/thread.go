@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"github.com/segmentio/ksuid"
 
 	"github.com/zyghq/zyg/adapters/repository"
 	"github.com/zyghq/zyg/models"
@@ -19,15 +20,21 @@ func NewThreadChatService(repo ports.ThreadRepositorer) *ThreadChatService {
 	}
 }
 
+// CreateInboundThreadChat creates a new thread chat from an inbound message.
 func (s *ThreadChatService) CreateInboundThreadChat(
 	ctx context.Context, workspaceId string, customerId string, message string) (models.Thread, models.Chat, error) {
-	inbound := models.InboundMessage{
-		CustomerId: customerId,
-	}
 	chat := models.Chat{
 		Body:       message,
 		CustomerId: models.NullString(&customerId),
 		IsHead:     true,
+	}
+	// create a new inbound message
+	seqId := ksuid.New().String()
+	inbound := models.InboundMessage{
+		CustomerId:  customerId,
+		PreviewText: chat.PreviewText(),
+		FirstSeqId:  seqId,
+		LastSeqId:   seqId,
 	}
 	thread := models.Thread{
 		WorkspaceId: workspaceId,
@@ -175,30 +182,46 @@ func (s *ThreadChatService) ListThreadLabels(
 	return labels, nil
 }
 
+// AddInboundMessage adds an inbound message to the existing thread.
+// Checks if the thread already has an inbound message reference otherwise creates a new one.
 func (s *ThreadChatService) AddInboundMessage(
-	ctx context.Context, thread models.Thread, customerId string, message string) (models.Chat, error) {
-	var ingressMessageId *string
-	if thread.IngressMessageId.Valid {
-		ingressMessageId = &thread.IngressMessageId.String
-	}
+	ctx context.Context, thread models.Thread, message string) (models.Chat, error) {
+	var inboundMessage models.InboundMessage
 	chat := models.Chat{
 		ThreadId:   thread.ThreadId,
 		Body:       message,
-		CustomerId: models.NullString(&customerId),
+		CustomerId: models.NullString(&thread.CustomerId),
 		IsHead:     false,
 	}
-	chat, err := s.repo.InsertCustomerChat(ctx, ingressMessageId, chat)
+	// If an existing inbound message already exists, then update
+	// the existing inbound message with the latest value of last sequence ID.
+	// Else create a new inbound message for the thread.
+	if thread.InboundMessage != nil {
+		inboundMessage = *thread.InboundMessage
+		lastSeqId := ksuid.New().String()
+		inboundMessage.LastSeqId = lastSeqId
+		inboundMessage.PreviewText = chat.PreviewText()
+	} else {
+		seqId := ksuid.New().String()
+		inboundMessage = models.InboundMessage{
+			MessageId:   inboundMessage.GenId(),
+			CustomerId:  thread.CustomerId,
+			FirstSeqId:  seqId,
+			LastSeqId:   seqId,
+			PreviewText: chat.PreviewText(),
+		}
+	}
+	chat, err := s.repo.InsertCustomerChat(ctx, inboundMessage, chat)
 	if err != nil {
 		return models.Chat{}, ErrThChatMessage
 	}
-
 	return chat, nil
 }
 
 func (s *ThreadChatService) AddOutboundMessage(
 	ctx context.Context, thread models.Thread, memberId string, message string) (models.Chat, error) {
 	var outboundMessageId *string
-	if thread.IngressMessageId.Valid {
+	if thread.EgressMessageId.Valid {
 		outboundMessageId = &thread.EgressMessageId.String
 	}
 	chat := models.Chat{
@@ -211,7 +234,6 @@ func (s *ThreadChatService) AddOutboundMessage(
 	if err != nil {
 		return models.Chat{}, ErrThChatMessage
 	}
-
 	return chat, nil
 }
 

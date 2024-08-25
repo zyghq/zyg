@@ -3,7 +3,6 @@ package xhandler
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -51,7 +50,6 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 	}(r.Body)
 
 	var reqp WidgetInitReq
-
 	err := json.NewDecoder(r.Body).Decode(&reqp)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -59,8 +57,8 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 	}
 
 	ctx := r.Context()
-	widgetId := r.PathValue("widgetId")
 
+	widgetId := r.PathValue("widgetId")
 	widget, err := h.ws.GetWidget(ctx, widgetId)
 	if errors.Is(err, services.ErrWidgetNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
@@ -75,7 +73,8 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 
 	sk, err := h.ws.GetSecretKey(ctx, widget.WorkspaceId)
 	if errors.Is(err, services.ErrSecretKeyNotFound) {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		// if the secret key is not found, then the widget cannot be authorized.
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
 
@@ -116,7 +115,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 
 	if customerHash.Valid {
 		if customerExternalId.Valid {
-			if h.cs.VerifyExternalId(sk.SecretKey, customerHash.String, customerExternalId.String) {
+			if h.cs.VerifyExternalId(sk.Hmac, customerHash.String, customerExternalId.String) {
 				isVerified = true
 				customer, isCreated, err = h.ws.CreateCustomerWithExternalId(
 					ctx, widget.WorkspaceId,
@@ -134,7 +133,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 				return
 			}
 		} else if customerEmail.Valid {
-			if h.cs.VerifyEmail(sk.SecretKey, customerHash.String, customerEmail.String) {
+			if h.cs.VerifyEmail(sk.Hmac, customerHash.String, customerEmail.String) {
 				isVerified = true
 				customer, isCreated, err = h.ws.CreateCustomerWithEmail(
 					ctx, widget.WorkspaceId,
@@ -152,7 +151,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 				return
 			}
 		} else if customerPhone.Valid {
-			if h.cs.VerifyPhone(sk.SecretKey, customerHash.String, customerPhone.String) {
+			if h.cs.VerifyPhone(sk.Hmac, customerHash.String, customerPhone.String) {
 				isVerified = true
 				customer, isCreated, err = h.ws.CreateCustomerWithPhone(
 					ctx, widget.WorkspaceId,
@@ -196,7 +195,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		return
 	}
 
-	jwt, err := h.cs.GenerateCustomerJwt(customer, sk.SecretKey)
+	jwt, err := h.cs.GenerateCustomerJwt(customer, sk.Hmac)
 	if err != nil {
 		slog.Error("failed to make jwt token with error", slog.Any("error", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -383,14 +382,14 @@ func (h *CustomerHandler) handleCustomerIdentities(w http.ResponseWriter, r *htt
 	}
 }
 
-func (h *CustomerHandler) handleCreateCustomerThChat(w http.ResponseWriter, r *http.Request, customer *models.Customer) {
+func (h *CustomerHandler) handleCreateCustomerThChat(
+	w http.ResponseWriter, r *http.Request, customer *models.Customer) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
 	}(r.Body)
 
 	var message ThChatReq
-
 	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -404,26 +403,23 @@ func (h *CustomerHandler) handleCreateCustomerThChat(w http.ResponseWriter, r *h
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
-
 	if err != nil {
 		slog.Error("failed to fetch workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	thread, chat, err := h.ths.CreateInboundThreadChat(ctx, workspace.WorkspaceId, customer.CustomerId, message.Message)
+	thread, chat, err := h.ths.CreateInboundThreadChat(
+		ctx, workspace.WorkspaceId, customer.CustomerId, message.Message)
 	if err != nil {
 		slog.Error("failed to create thread chat", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	var threadAssignee *ThMemberResp
-	var ingressCustomer *ThCustomerResp
-	var egressMember *ThMemberResp
-
-	var chatCustomer *ThCustomerResp
-	var chatMember *ThMemberResp
+	var threadAssignee, egressMember, chatMember *ThMemberResp
+	var inboundCustomer, chatCustomer *ThCustomerResp
+	var inboundFirstSeqId, inboundLastSeqId *string
 
 	// for chat - either of them
 	if chat.CustomerId.Valid {
@@ -435,6 +431,34 @@ func (h *CustomerHandler) handleCreateCustomerThChat(w http.ResponseWriter, r *h
 		chatMember = &ThMemberResp{
 			MemberId: chat.MemberId.String,
 			Name:     chat.MemberName.String,
+		}
+	}
+
+	threadCustomer := ThCustomerResp{
+		CustomerId: thread.CustomerId,
+		Name:       thread.CustomerName,
+	}
+
+	if thread.AssigneeId.Valid {
+		threadAssignee = &ThMemberResp{
+			MemberId: thread.AssigneeId.String,
+			Name:     thread.AssigneeName.String,
+		}
+	}
+
+	if thread.InboundMessage != nil {
+		inboundCustomer = &ThCustomerResp{
+			CustomerId: thread.InboundMessage.CustomerId,
+			Name:       thread.InboundMessage.CustomerName,
+		}
+		inboundFirstSeqId = &thread.InboundMessage.FirstSeqId
+		inboundLastSeqId = &thread.InboundMessage.LastSeqId
+	}
+
+	if thread.EgressMessageId.Valid {
+		egressMember = &ThMemberResp{
+			MemberId: thread.EgressMemberId.String,
+			Name:     thread.EgressMemberName.String,
 		}
 	}
 
@@ -450,57 +474,30 @@ func (h *CustomerHandler) handleCreateCustomerThChat(w http.ResponseWriter, r *h
 		UpdatedAt: chat.UpdatedAt,
 	}
 
-	threadCustomer := ThCustomerResp{
-		CustomerId: thread.CustomerId,
-		Name:       thread.CustomerName,
-	}
-
-	if thread.AssigneeId.Valid {
-		threadAssignee = &ThMemberResp{
-			MemberId: thread.AssigneeId.String,
-			Name:     thread.AssigneeName.String,
-		}
-	}
-
-	if thread.IngressMessageId.Valid {
-		ingressCustomer = &ThCustomerResp{
-			CustomerId: thread.IngressCustomerId.String,
-			Name:       thread.IngressCustomerName.String,
-		}
-	}
-
-	if thread.EgressMessageId.Valid {
-		egressMember = &ThMemberResp{
-			MemberId: thread.EgressMemberId.String,
-			Name:     thread.EgressMemberName.String,
-		}
-	}
-
 	resp := ThreadChatResp{
-		ThreadId:        thread.ThreadId,
-		Customer:        threadCustomer,
-		Title:           thread.Title,
-		Description:     thread.Description,
-		Sequence:        thread.Sequence,
-		Status:          thread.Status,
-		Read:            thread.Read,
-		Replied:         thread.Replied,
-		Priority:        thread.Priority,
-		Spam:            thread.Spam,
-		Channel:         thread.Channel,
-		PreviewText:     thread.PreviewText,
-		Assignee:        threadAssignee,
-		IngressFirstSeq: thread.IngressFirstSeq,
-		IngressLastSeq:  thread.IngressLastSeq,
-		IngressCustomer: ingressCustomer,
-		EgressFirstSeq:  thread.EgressFirstSeq,
-		EgressLastSeq:   thread.EgressLastSeq,
-		EgressMember:    egressMember,
-		CreatedAt:       thread.CreatedAt,
-		UpdatedAt:       thread.UpdatedAt,
-		Chat:            chatResp,
+		ThreadId:          thread.ThreadId,
+		Customer:          threadCustomer,
+		Title:             thread.Title,
+		Description:       thread.Description,
+		Sequence:          thread.Sequence,
+		Status:            thread.Status,
+		Read:              thread.Read,
+		Replied:           thread.Replied,
+		Priority:          thread.Priority,
+		Spam:              thread.Spam,
+		Channel:           thread.Channel,
+		PreviewText:       thread.PreviewText,
+		Assignee:          threadAssignee,
+		InboundFirstSeqId: inboundFirstSeqId,
+		InboundLastSeqId:  inboundLastSeqId,
+		InboundCustomer:   inboundCustomer,
+		EgressFirstSeq:    thread.EgressFirstSeq,
+		EgressLastSeq:     thread.EgressLastSeq,
+		EgressMember:      egressMember,
+		CreatedAt:         thread.CreatedAt,
+		UpdatedAt:         thread.UpdatedAt,
+		Chat:              chatResp,
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
@@ -510,8 +507,10 @@ func (h *CustomerHandler) handleCreateCustomerThChat(w http.ResponseWriter, r *h
 	}
 }
 
-func (h *CustomerHandler) handleGetCustomerThChats(w http.ResponseWriter, r *http.Request, customer *models.Customer) {
+func (h *CustomerHandler) handleGetCustomerThChats(
+	w http.ResponseWriter, r *http.Request, customer *models.Customer) {
 	ctx := r.Context()
+
 	threads, err := h.ths.ListCustomerThreadChats(ctx, customer.CustomerId, nil)
 	if err != nil {
 		slog.Error("failed to fetch thread chats", slog.Any("err", err))
@@ -521,9 +520,9 @@ func (h *CustomerHandler) handleGetCustomerThChats(w http.ResponseWriter, r *htt
 
 	items := make([]ThreadResp, 0, 100)
 	for _, thread := range threads {
-		var threadAssignee *ThMemberResp
-		var ingressCustomer *ThCustomerResp
-		var egressMember *ThMemberResp
+		var threadAssignee, egressMember *ThMemberResp
+		var inboundCustomer *ThCustomerResp
+		var inboundFirstSeqId, inboundLastSeqId *string
 
 		threadCustomer := ThCustomerResp{
 			CustomerId: thread.CustomerId,
@@ -537,11 +536,13 @@ func (h *CustomerHandler) handleGetCustomerThChats(w http.ResponseWriter, r *htt
 			}
 		}
 
-		if thread.IngressMessageId.Valid {
-			ingressCustomer = &ThCustomerResp{
-				CustomerId: thread.IngressCustomerId.String,
-				Name:       thread.IngressCustomerName.String,
+		if thread.InboundMessage != nil {
+			inboundCustomer = &ThCustomerResp{
+				CustomerId: thread.InboundMessage.CustomerId,
+				Name:       thread.InboundMessage.CustomerName,
 			}
+			inboundFirstSeqId = &thread.InboundMessage.FirstSeqId
+			inboundLastSeqId = &thread.InboundMessage.LastSeqId
 		}
 
 		if thread.EgressMessageId.Valid {
@@ -552,31 +553,30 @@ func (h *CustomerHandler) handleGetCustomerThChats(w http.ResponseWriter, r *htt
 		}
 
 		resp := ThreadResp{
-			ThreadId:        thread.ThreadId,
-			Customer:        threadCustomer,
-			Title:           thread.Title,
-			Description:     thread.Description,
-			Sequence:        thread.Sequence,
-			Status:          thread.Status,
-			Read:            thread.Read,
-			Replied:         thread.Replied,
-			Priority:        thread.Priority,
-			Spam:            thread.Spam,
-			Channel:         thread.Channel,
-			PreviewText:     thread.PreviewText,
-			Assignee:        threadAssignee,
-			IngressFirstSeq: thread.IngressFirstSeq,
-			IngressLastSeq:  thread.IngressLastSeq,
-			IngressCustomer: ingressCustomer,
-			EgressFirstSeq:  thread.EgressFirstSeq,
-			EgressLastSeq:   thread.EgressLastSeq,
-			EgressMember:    egressMember,
-			CreatedAt:       thread.CreatedAt,
-			UpdatedAt:       thread.UpdatedAt,
+			ThreadId:          thread.ThreadId,
+			Customer:          threadCustomer,
+			Title:             thread.Title,
+			Description:       thread.Description,
+			Sequence:          thread.Sequence,
+			Status:            thread.Status,
+			Read:              thread.Read,
+			Replied:           thread.Replied,
+			Priority:          thread.Priority,
+			Spam:              thread.Spam,
+			Channel:           thread.Channel,
+			PreviewText:       thread.PreviewText,
+			Assignee:          threadAssignee,
+			InboundFirstSeqId: inboundFirstSeqId,
+			InboundLastSeqId:  inboundLastSeqId,
+			InboundCustomer:   inboundCustomer,
+			EgressFirstSeq:    thread.EgressFirstSeq,
+			EgressLastSeq:     thread.EgressLastSeq,
+			EgressMember:      egressMember,
+			CreatedAt:         thread.CreatedAt,
+			UpdatedAt:         thread.UpdatedAt,
 		}
 		items = append(items, resp)
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(items); err != nil {
@@ -586,7 +586,8 @@ func (h *CustomerHandler) handleGetCustomerThChats(w http.ResponseWriter, r *htt
 	}
 }
 
-func (h *CustomerHandler) handleCreateThChatMessage(w http.ResponseWriter, r *http.Request, customer *models.Customer) {
+func (h *CustomerHandler) handleCreateThChatMessage(
+	w http.ResponseWriter, r *http.Request, customer *models.Customer) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
@@ -595,7 +596,6 @@ func (h *CustomerHandler) handleCreateThChatMessage(w http.ResponseWriter, r *ht
 	threadId := r.PathValue("threadId")
 
 	var message ThChatReq
-
 	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -607,18 +607,16 @@ func (h *CustomerHandler) handleCreateThChatMessage(w http.ResponseWriter, r *ht
 	channel := models.ThreadChannel{}.Chat()
 	thread, err := h.ths.GetWorkspaceThread(ctx, customer.WorkspaceId, threadId, &channel)
 	if errors.Is(err, services.ErrThreadChatNotFound) {
-		fmt.Println("thread not found")
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
-
 	if err != nil {
 		slog.Error("failed to fetch thread chat", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	chat, err := h.ths.AddInboundMessage(ctx, thread, customer.CustomerId, message.Message)
+	chat, err := h.ths.AddInboundMessage(ctx, thread, message.Message)
 	if err != nil {
 		slog.Error("failed to create thread chat message", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -726,7 +724,6 @@ func NewServer(
 	threadChatService ports.ThreadServicer,
 ) http.Handler {
 	mux := http.NewServeMux()
-
 	ch := NewCustomerHandler(workspaceService, customerService, threadChatService)
 
 	mux.HandleFunc("GET /{$}", handleGetIndex)
@@ -735,8 +732,10 @@ func NewServer(
 	mux.Handle("GET /widgets/{widgetId}/me/{$}", NewEnsureAuth(ch.handleGetCustomer, authService))
 	mux.Handle("POST /widgets/{widgetId}/me/identities/{$}", NewEnsureAuth(ch.handleCustomerIdentities, authService))
 
-	mux.Handle("POST /widgets/{widgetId}/threads/chat/{$}", NewEnsureAuth(ch.handleCreateCustomerThChat, authService))
-	mux.Handle("GET /widgets/{widgetId}/threads/chat/{$}", NewEnsureAuth(ch.handleGetCustomerThChats, authService))
+	mux.Handle("POST /widgets/{widgetId}/threads/chat/{$}",
+		NewEnsureAuth(ch.handleCreateCustomerThChat, authService))
+	mux.Handle("GET /widgets/{widgetId}/threads/chat/{$}",
+		NewEnsureAuth(ch.handleGetCustomerThChats, authService))
 
 	mux.Handle("POST /widgets/{widgetId}/threads/chat/{threadId}/messages/{$}",
 		NewEnsureAuth(ch.handleCreateThChatMessage, authService))

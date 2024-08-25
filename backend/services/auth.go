@@ -133,15 +133,15 @@ func (s *CustomerAuthService) AuthenticateWorkspaceCustomer(
 }
 
 func (s *CustomerAuthService) GetWidgetLinkedSecretKey(
-	ctx context.Context, widgetId string) (models.SecretKey, error) {
+	ctx context.Context, widgetId string) (models.WorkspaceSecret, error) {
 	sk, err := s.repo.LookupSecretKeyByWidgetId(ctx, widgetId)
 
 	if errors.Is(err, repository.ErrEmpty) {
-		return models.SecretKey{}, ErrSecretKeyNotFound
+		return models.WorkspaceSecret{}, ErrSecretKeyNotFound
 	}
 
 	if err != nil {
-		return models.SecretKey{}, ErrSecretKey
+		return models.WorkspaceSecret{}, ErrSecretKey
 	}
 	return sk, nil
 }

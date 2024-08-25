@@ -8,7 +8,8 @@ import (
 
 type AccountServicer interface {
 	CreateAuthAccount(
-		ctx context.Context, authUserId string, email string, name string, provider string) (models.Account, bool, error)
+		ctx context.Context, authUserId string, email string, name string, provider string,
+	) (models.Account, bool, error)
 	GeneratePersonalAccessToken(
 		ctx context.Context, accountId string, name string, description string) (models.AccountPAT, error)
 	ListPersonalAccessTokens(
@@ -38,7 +39,7 @@ type CustomerAuthServicer interface {
 	AuthenticateWorkspaceCustomer(
 		ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error)
 	GetWidgetLinkedSecretKey(
-		ctx context.Context, widgetId string) (models.SecretKey, error)
+		ctx context.Context, widgetId string) (models.WorkspaceSecret, error)
 }
 
 type WorkspaceServicer interface {
@@ -63,20 +64,25 @@ type WorkspaceServicer interface {
 	ListCustomers(
 		ctx context.Context, workspaceId string) ([]models.Customer, error)
 	CreateCustomerWithExternalId(
-		ctx context.Context, workspaceId string, externalId string, isVerified bool, name string) (models.Customer, bool, error)
+		ctx context.Context, workspaceId string, externalId string, isVerified bool, name string,
+	) (models.Customer, bool, error)
 	CreateCustomerWithEmail(
-		ctx context.Context, workspaceId string, email string, isVerified bool, name string) (models.Customer, bool, error)
+		ctx context.Context, workspaceId string, email string, isVerified bool, name string,
+	) (models.Customer, bool, error)
 	CreateCustomerWithPhone(
-		ctx context.Context, workspaceId string, phone string, isVerified bool, name string) (models.Customer, bool, error)
+		ctx context.Context, workspaceId string, phone string, isVerified bool, name string,
+	) (models.Customer, bool, error)
 	CreateAnonymousCustomer(
-		ctx context.Context, workspaceId string, anonId string, isVerified bool, name string) (models.Customer, bool, error)
+		ctx context.Context, workspaceId string, anonId string, isVerified bool, name string,
+	) (models.Customer, bool, error)
 	CreateWidget(
-		ctx context.Context, workspaceId string, name string, configuration map[string]interface{}) (models.Widget, error)
+		ctx context.Context, workspaceId string, name string, configuration map[string]interface{},
+	) (models.Widget, error)
 	ListWidgets(ctx context.Context, workspaceId string) ([]models.Widget, error)
-	GenerateSecretKey(
-		ctx context.Context, workspaceId string, length int) (models.SecretKey, error)
+	GenerateWorkspaceSecret(
+		ctx context.Context, workspaceId string, length int) (models.WorkspaceSecret, error)
 	GetSecretKey(
-		ctx context.Context, workspaceId string) (models.SecretKey, error)
+		ctx context.Context, workspaceId string) (models.WorkspaceSecret, error)
 	GetWidget(
 		ctx context.Context, widgetId string) (models.Widget, error)
 	GetCustomer(
@@ -98,7 +104,8 @@ type CustomerServicer interface {
 
 type ThreadServicer interface {
 	CreateInboundThreadChat(
-		ctx context.Context, workspaceId string, customerId string, message string) (models.Thread, models.Chat, error)
+		ctx context.Context, workspaceId string, customerId string, message string,
+	) (models.Thread, models.Chat, error)
 	GetWorkspaceThread(
 		ctx context.Context, workspaceId string, threadId string, channel *string) (models.Thread, error)
 	UpdateThread(
@@ -123,7 +130,7 @@ type ThreadServicer interface {
 		ctx context.Context, threadId string, labelId string, addedBy string) (models.ThreadLabel, bool, error)
 	ListThreadLabels(ctx context.Context, threadChatId string) ([]models.ThreadLabel, error)
 	AddInboundMessage(
-		ctx context.Context, thread models.Thread, customerId string, message string) (models.Chat, error)
+		ctx context.Context, thread models.Thread, message string) (models.Chat, error)
 	AddOutboundMessage(
 		ctx context.Context, thread models.Thread, memberId string, message string) (models.Chat, error)
 	ListThreadChatMessages(
@@ -174,10 +181,10 @@ type WorkspaceRepositorer interface {
 		ctx context.Context, widget models.Widget) (models.Widget, error)
 	FetchWidgetsByWorkspaceId(
 		ctx context.Context, workspaceId string) ([]models.Widget, error)
-	InsertSecretKey(
-		ctx context.Context, workspaceId string, sk string) (models.SecretKey, error)
+	InsertWorkspaceSecret(
+		ctx context.Context, workspaceId string, sk string) (models.WorkspaceSecret, error)
 	FetchSecretKeyByWorkspaceId(
-		ctx context.Context, workspaceId string) (models.SecretKey, error)
+		ctx context.Context, workspaceId string) (models.WorkspaceSecret, error)
 	LookupWidgetById(
 		ctx context.Context, widgetId string) (models.Widget, error)
 }
@@ -205,14 +212,14 @@ type CustomerRepositorer interface {
 	FetchCustomersByWorkspaceId(
 		ctx context.Context, workspaceId string, role *string) ([]models.Customer, error)
 	LookupSecretKeyByWidgetId(
-		ctx context.Context, widgetId string) (models.SecretKey, error)
+		ctx context.Context, widgetId string) (models.WorkspaceSecret, error)
 	ModifyCustomerById(
 		ctx context.Context, customer models.Customer) (models.Customer, error)
 }
 
 type ThreadRepositorer interface {
 	InsertInboundThreadChat(
-		ctx context.Context, inbound models.InboundMessage,
+		ctx context.Context, inboundMessage models.InboundMessage,
 		thread models.Thread, chat models.Chat) (models.Thread, models.Chat, error)
 	LookupByWorkspaceThreadId(
 		ctx context.Context, workspaceId string, threadId string, channel *string) (models.Thread, error)
@@ -237,7 +244,7 @@ type ThreadRepositorer interface {
 		ctx context.Context, thl models.ThreadLabel) (models.ThreadLabel, bool, error)
 	RetrieveLabelsByThreadId(ctx context.Context, threadId string) ([]models.ThreadLabel, error)
 	InsertCustomerChat(
-		ctx context.Context, inboundMessageId *string, chat models.Chat) (models.Chat, error)
+		ctx context.Context, inboundMessage models.InboundMessage, chat models.Chat) (models.Chat, error)
 	InsertMemberChat(
 		ctx context.Context, outboundMessageId *string, chat models.Chat) (models.Chat, error)
 	FetchThChatMessagesByThreadId(

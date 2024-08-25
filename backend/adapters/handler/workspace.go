@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"github.com/zyghq/zyg"
 	"io"
 	"log/slog"
 	"net/http"
@@ -651,15 +652,17 @@ func (h *WorkspaceHandler) handleGenerateSecretKey(
 		return
 	}
 
-	sk, err := h.ws.GenerateSecretKey(ctx, workspace.WorkspaceId, 64)
+	// generate secret key for the workspace for the given length.
+	// required for hashing secret or jwt.
+	sk, err := h.ws.GenerateWorkspaceSecret(ctx, workspace.WorkspaceId, zyg.DefaultSecretKeyLength)
 	if err != nil {
 		slog.Error("failed to generate workspace secret key", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	resp := SKResp{
-		SecretKey: sk.SecretKey,
+	resp := WorkspaceSecretResp{
+		Hmac:      sk.Hmac,
 		CreatedAt: sk.CreatedAt,
 		UpdatedAt: sk.UpdatedAt,
 	}
@@ -687,8 +690,8 @@ func (h *WorkspaceHandler) handleGetWorkspaceSecretKey(
 		return
 	}
 
-	resp := SKResp{
-		SecretKey: sk.SecretKey,
+	resp := WorkspaceSecretResp{
+		Hmac:      sk.Hmac,
 		CreatedAt: sk.CreatedAt,
 		UpdatedAt: sk.UpdatedAt,
 	}

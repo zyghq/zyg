@@ -213,7 +213,8 @@ func (s *WorkspaceService) CreateCustomerWithPhone(
 }
 
 func (s *WorkspaceService) CreateAnonymousCustomer(
-	ctx context.Context, workspaceId string, anonId string, isVerified bool, name string) (models.Customer, bool, error) {
+	ctx context.Context, workspaceId string, anonId string, isVerified bool, name string,
+) (models.Customer, bool, error) {
 	if name == "" {
 		name = models.Customer{}.AnonName()
 	}
@@ -254,8 +255,8 @@ func (s *WorkspaceService) ListWidgets(
 	return widgets, nil
 }
 
-func (s *WorkspaceService) GenerateSecretKey(
-	ctx context.Context, workspaceId string, length int) (models.SecretKey, error) {
+func (s *WorkspaceService) GenerateWorkspaceSecret(
+	ctx context.Context, workspaceId string, length int) (models.WorkspaceSecret, error) {
 	// Create a buffer to store our entropy sources
 	entropy := make([]byte, 0, 1024)
 	// Add current timestamp
@@ -267,7 +268,7 @@ func (s *WorkspaceService) GenerateSecretKey(
 	_, err := rand.Read(randomBytes)
 
 	if err != nil {
-		return models.SecretKey{}, err
+		return models.WorkspaceSecret{}, err
 	}
 
 	entropy = append(entropy, randomBytes...)
@@ -279,23 +280,23 @@ func (s *WorkspaceService) GenerateSecretKey(
 	// Return the first 'length' characters of the encoded hash
 	slicedHash := "sk" + encodedHash[:length]
 
-	sk, err := s.workspaceRepo.InsertSecretKey(ctx, workspaceId, slicedHash)
+	sk, err := s.workspaceRepo.InsertWorkspaceSecret(ctx, workspaceId, slicedHash)
 	if err != nil {
-		return models.SecretKey{}, err
+		return models.WorkspaceSecret{}, err
 	}
 	return sk, nil
 }
 
 func (s *WorkspaceService) GetSecretKey(
-	ctx context.Context, workspaceId string) (models.SecretKey, error) {
+	ctx context.Context, workspaceId string) (models.WorkspaceSecret, error) {
 	sk, err := s.workspaceRepo.FetchSecretKeyByWorkspaceId(ctx, workspaceId)
 
 	if errors.Is(err, repository.ErrEmpty) {
-		return models.SecretKey{}, ErrSecretKeyNotFound
+		return models.WorkspaceSecret{}, ErrSecretKeyNotFound
 	}
 
 	if err != nil {
-		return models.SecretKey{}, ErrSecretKey
+		return models.WorkspaceSecret{}, ErrSecretKey
 	}
 	return sk, nil
 }
@@ -303,15 +304,12 @@ func (s *WorkspaceService) GetSecretKey(
 func (s *WorkspaceService) GetWidget(
 	ctx context.Context, widgetId string) (models.Widget, error) {
 	widget, err := s.workspaceRepo.LookupWidgetById(ctx, widgetId)
-
 	if errors.Is(err, repository.ErrEmpty) {
 		return models.Widget{}, ErrWidgetNotFound
 	}
-
 	if err != nil {
 		return models.Widget{}, ErrWidget
 	}
-
 	return widget, nil
 }
 

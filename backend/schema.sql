@@ -1,3 +1,4 @@
+--
 -- Please follow the naming convention for consistency.
 
 -- {table name}_{column name(s)}_{suffix}
@@ -153,34 +154,14 @@ CREATE TABLE thread_qa_answer (
     CONSTRAINT thread_qa_answer_thread_qa_id_fkey FOREIGN KEY (thread_qa_id) REFERENCES thread_qa (thread_id)
 );
 
--- Represents the chat thread table
--- This table is used to store the chat information linked to the workspace.
--- CREATE TABLE thread_chat (
---     workspace_id VARCHAR(255) NOT NULL,
---     customer_id VARCHAR(255) NOT NULL,
---     assignee_id VARCHAR(255) NULL,
---     thread_chat_id VARCHAR(255) NOT NULL,
---     title TEXT NOT NULL,
---     summary TEXT NOT NULL,
---     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
---     status VARCHAR(127) NOT NULL,
---     read BOOLEAN NOT NULL DEFAULT FALSE,  -- read by the member
---     replied BOOLEAN NOT NULL DEFAULT FALSE,  -- replied by the member
---     priority VARCHAR(255) NOT NULL, -- priority of the thread
---     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
---     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
---     CONSTRAINT thread_chat_thread_chat_id_pkey PRIMARY KEY (thread_chat_id),
---     CONSTRAINT thread_chat_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
---     CONSTRAINT thread_chat_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
---     CONSTRAINT thread_chat_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES member (member_id)
--- );
-
 CREATE TABLE inbound_message (
     message_id VARCHAR(255) NOT NULL,
     customer_id VARCHAR(255) NOT NULL,
-    first_sequence BIGINT NOT NULL DEFAULT fn_next_id(),
-    last_sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+    first_sequence BIGINT NOT NULL DEFAULT fn_next_id(), -- deprecate
+    last_sequence BIGINT NOT NULL DEFAULT fn_next_id(), -- deprecate
+    first_seq_id VARCHAR(255) NOT NULL,
+    last_seq_id VARCHAR(255) NOT NULL,
+    preview_text TEXT NOT NULL,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -295,15 +276,15 @@ CREATE TABLE widget (
 
 -- Represents the secret key table
 -- This table is used to store the secret key linked to the workspace.
-CREATE TABLE secret_key (
+CREATE TABLE workspace_secret (
     workspace_id VARCHAR(255) NOT NULL,
-    secret_key VARCHAR(255) NOT NULL,
+    hmac VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    CONSTRAINT secret_key_workspace_id_pkey PRIMARY KEY (workspace_id),
-    CONSTRAINT secret_key_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
-    CONSTRAINT secret_key_secret_key_key UNIQUE (secret_key)
+
+    CONSTRAINT workspace_secret_workspace_id_pkey PRIMARY KEY (workspace_id),
+    CONSTRAINT workspace_secret_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
+    CONSTRAINT workspace_secret_hmac_key UNIQUE (hmac)
 );
 
 -- ************************************ --

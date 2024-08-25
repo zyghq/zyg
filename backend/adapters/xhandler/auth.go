@@ -37,7 +37,7 @@ func AuthenticateCustomer(
 			return customer, fmt.Errorf("%v", err)
 		}
 
-		cc, err := services.ParseCustomerJWTToken(cred, []byte(sk.SecretKey))
+		cc, err := services.ParseCustomerJWTToken(cred, []byte(sk.Hmac))
 		if err != nil {
 			return customer, fmt.Errorf("%v", err)
 		}

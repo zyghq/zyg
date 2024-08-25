@@ -5,6 +5,8 @@ import (
 	"os"
 )
 
+const DefaultSecretKeyLength = 64
+
 func GetEnv(key string) (string, error) {
 	value, status := os.LookupEnv(key)
 	if !status {
