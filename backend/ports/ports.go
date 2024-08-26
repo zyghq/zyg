@@ -87,6 +87,8 @@ type WorkspaceServicer interface {
 		ctx context.Context, widgetId string) (models.Widget, error)
 	GetCustomer(
 		ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error)
+	DoesEmailConflict(
+		ctx context.Context, workspaceId string, email string) (bool, error)
 }
 
 type CustomerServicer interface {
@@ -100,6 +102,8 @@ type CustomerServicer interface {
 		sk string, hash string, phone string) bool
 	UpdateCustomer(
 		ctx context.Context, customer models.Customer) (models.Customer, error)
+	AddCustomerEmailIdentity(
+		ctx context.Context, emailIdentity models.EmailIdentity) (models.EmailIdentity, error)
 }
 
 type ThreadServicer interface {
@@ -215,6 +219,9 @@ type CustomerRepositorer interface {
 		ctx context.Context, widgetId string) (models.WorkspaceSecret, error)
 	ModifyCustomerById(
 		ctx context.Context, customer models.Customer) (models.Customer, error)
+	CheckEmailExists(
+		ctx context.Context, workspaceId string, email string) (bool, error)
+	InsertEmailIdentity(ctx context.Context, identity models.EmailIdentity) (models.EmailIdentity, error)
 }
 
 type ThreadRepositorer interface {

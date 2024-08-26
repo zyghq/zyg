@@ -14,14 +14,14 @@ func (c *CustomerDB) LookupWorkspaceCustomerById(
 	var customer models.Customer
 
 	args := []any{workspaceId, customerId}
-	stmt := `SELECT
+	stmt := `select
 		workspace_id, customer_id, external_id, email, phone,
 		name, anonymous_id,
 		is_verified, role,
 		created_at, updated_at
-		FROM customer
-		WHERE
-		workspace_id = $1 AND customer_id = $2`
+		from customer
+		where
+		workspace_id = $1 and customer_id = $2`
 
 	if role != nil {
 		stmt += " AND role = $3"
@@ -40,12 +40,10 @@ func (c *CustomerDB) LookupWorkspaceCustomerById(
 		slog.Error("no rows returned", slog.Any("error", err))
 		return models.Customer{}, ErrEmpty
 	}
-
 	if err != nil {
 		slog.Error("failed to query", slog.Any("error", err))
 		return models.Customer{}, ErrQuery
 	}
-
 	return customer, nil
 }
 
@@ -338,4 +336,45 @@ func (c *CustomerDB) ModifyCustomerById(
 	}
 
 	return customer, nil
+}
+
+func (c *CustomerDB) CheckEmailExists(
+	ctx context.Context, workspaceId string, email string) (bool, error) {
+	var exists bool
+	stmt := `select exists (
+        select 1
+        from customer
+        where workspace_id = $1 and email = $2
+    ) as exists`
+
+	err := c.db.QueryRow(ctx, stmt, workspaceId, email).Scan(&exists)
+	if err != nil {
+		slog.Error("failed to query", slog.Any("error", err))
+		return exists, ErrQuery
+	}
+	return exists, nil
+}
+
+func (c *CustomerDB) InsertEmailIdentity(
+	ctx context.Context, identity models.EmailIdentity) (models.EmailIdentity, error) {
+	identityId := identity.GenId()
+
+	stmt := `insert into email_identity (email_identity_id, customer_id, email, is_verified, has_conflict)
+	values ($1, $2, $3, $4, $5)
+		returning email_identity_id, customer_id, email, is_verified, has_conflict,
+	created_at, updated_at
+	`
+
+	err := c.db.QueryRow(
+		ctx, stmt, identityId, identity.CustomerId, identity.Email, identity.IsVerified, identity.HasConflict,
+	).Scan(
+		&identity.EmailIdentityId, &identity.CustomerId,
+		&identity.Email, &identity.IsVerified, &identity.HasConflict,
+		&identity.CreatedAt, &identity.UpdatedAt,
+	)
+	if err != nil {
+		slog.Error("failed to query", slog.Any("error", err))
+		return identity, ErrQuery
+	}
+	return identity, nil
 }

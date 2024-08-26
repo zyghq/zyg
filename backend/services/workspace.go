@@ -319,10 +319,19 @@ func (s *WorkspaceService) GetCustomer(
 	if errors.Is(err, repository.ErrEmpty) {
 		return models.Customer{}, ErrCustomerNotFound
 	}
-
 	if err != nil {
 		return models.Customer{}, ErrCustomer
 	}
-
 	return customer, nil
+}
+
+func (s *WorkspaceService) DoesEmailConflict(
+	ctx context.Context, workspaceId string, email string) (bool, error) {
+	exists, err := s.customerRepo.CheckEmailExists(ctx, workspaceId, email)
+	if err != nil {
+		// Be pessimistic when checking for email conflict, let us assume email already exists;
+		// hence there is conflict.
+		return true, ErrCustomer
+	}
+	return exists, nil
 }

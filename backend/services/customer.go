@@ -106,3 +106,12 @@ func (s *CustomerService) UpdateCustomer(
 	}
 	return customer, nil
 }
+
+func (s *CustomerService) AddCustomerEmailIdentity(
+	ctx context.Context, emailIdentity models.EmailIdentity) (models.EmailIdentity, error) {
+	identity, err := s.repo.InsertEmailIdentity(ctx, emailIdentity)
+	if err != nil {
+		return models.EmailIdentity{}, ErrCustomer
+	}
+	return identity, nil
+}

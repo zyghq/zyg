@@ -202,20 +202,15 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		return
 	}
 
-	deAnonEmail := customer.DeAnonEmail()
-	deAnonPhone := customer.DeAnonPhone()
-	deAnonExternalId := customer.DeAnonExternalId()
-
 	resp := WidgetInitResp{
 		Jwt:        jwt,
 		Create:     isCreated,
 		IsVerified: isVerified,
 		Name:       customer.Name,
-		Email:      models.NullString(&deAnonEmail),
-		Phone:      models.NullString(&deAnonPhone),
-		ExternalId: models.NullString(&deAnonExternalId),
+		Email:      customer.Email,
+		Phone:      customer.Phone,
+		ExternalId: customer.ExternalId,
 	}
-
 	if isCreated {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
@@ -273,7 +268,8 @@ func (h *CustomerHandler) handleGetCustomer(w http.ResponseWriter, _ *http.Reque
 	}
 }
 
-func (h *CustomerHandler) handleCustomerIdentities(w http.ResponseWriter, r *http.Request, customer *models.Customer) {
+func (h *CustomerHandler) handleCustomerIdentities(
+	w http.ResponseWriter, r *http.Request, customer *models.Customer) {
 
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
@@ -290,86 +286,63 @@ func (h *CustomerHandler) handleCustomerIdentities(w http.ResponseWriter, r *htt
 
 	ctx := r.Context()
 	widgetId := r.PathValue("widgetId")
-
 	widget, err := h.ws.GetWidget(ctx, widgetId)
-
 	if errors.Is(err, services.ErrWidgetNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
-
 	if err != nil {
 		slog.Error("failed to get workspace widget", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
+	// get the customer at the widget.
 	widgetCustomer, err := h.ws.GetCustomer(ctx, widget.WorkspaceId, customer.CustomerId, nil)
 	if errors.Is(err, services.ErrCustomerNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
-
 	if err != nil {
-		slog.Error(
-			"failed to get workspace customer by id "+
-				"something went wrong",
-			slog.String("customerId", customer.CustomerId),
-		)
+		slog.Error("failed to get workspace customer", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
+	// TODO:
+	//  - update the customer data model with `is_anonymous`
+	//  - do not go for update if the `is_anonymous` flag is is false.
 	// don't want to modify a verified customer
 	// from the external widget.
 	if widgetCustomer.IsVerified {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
-
-	hasModified := false
+	// create email identity.
 	if reqp.Email != nil {
-		email := widgetCustomer.AddAnonymizedEmail(*reqp.Email)
-		widgetCustomer.Email = models.NullString(&email)
-		hasModified = true
-	}
-
-	if reqp.Phone != nil {
-		phone := widgetCustomer.AddAnonymizedPhone(*reqp.Phone)
-		widgetCustomer.Phone = models.NullString(&phone)
-		hasModified = true
-	}
-
-	if reqp.External != nil {
-		externalId := widgetCustomer.AddAnonymizedExternalId(*reqp.External)
-		widgetCustomer.ExternalId = models.NullString(&externalId)
-		hasModified = true
-	}
-
-	if hasModified {
-		widgetCustomer, err = h.cs.UpdateCustomer(ctx, widgetCustomer)
+		// check if email already exists for a customer, if then there is a conflict.
+		hasConflict, err := h.ws.DoesEmailConflict(ctx, customer.WorkspaceId, *reqp.Email)
 		if err != nil {
-			slog.Error(
-				"failed to update customer "+
-					"something went wrong",
-				slog.String("customerId", customer.CustomerId),
-			)
+			slog.Error("failed to check email conflict", slog.Any("err", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
-
-		deAnonEmail := widgetCustomer.DeAnonEmail()
-		deAnonPhone := widgetCustomer.DeAnonPhone()
-		deAnonExternalId := widgetCustomer.DeAnonExternalId()
-
-		resp := AddCustomerIdentitiesResp{
-			IsVerified: widgetCustomer.IsVerified,
-			Name:       widgetCustomer.Name,
-			Email:      models.NullString(&deAnonEmail),
-			Phone:      models.NullString(&deAnonPhone),
-			ExternalId: models.NullString(&deAnonExternalId),
+		emailIdentity := models.EmailIdentity{
+			CustomerId:  customer.CustomerId,
+			Email:       *reqp.Email,
+			IsVerified:  false,
+			HasConflict: hasConflict,
 		}
-
+		emailIdentity, err = h.cs.AddCustomerEmailIdentity(ctx, emailIdentity)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+		resp := AddCustomerIdentitiesResp{
+			CustomerId:       emailIdentity.CustomerId,
+			Email:            &emailIdentity.Email,
+			HasEmailConflict: &emailIdentity.HasConflict,
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
@@ -730,7 +703,8 @@ func NewServer(
 
 	mux.HandleFunc("POST /widgets/{widgetId}/init/{$}", ch.handleGetOrCreateCustomer)
 	mux.Handle("GET /widgets/{widgetId}/me/{$}", NewEnsureAuth(ch.handleGetCustomer, authService))
-	mux.Handle("POST /widgets/{widgetId}/me/identities/{$}", NewEnsureAuth(ch.handleCustomerIdentities, authService))
+	mux.Handle("POST /widgets/{widgetId}/me/identities/{$}",
+		NewEnsureAuth(ch.handleCustomerIdentities, authService))
 
 	mux.Handle("POST /widgets/{widgetId}/threads/chat/{$}",
 		NewEnsureAuth(ch.handleCreateCustomerThChat, authService))

@@ -335,43 +335,11 @@ type CustomerIdentitiesReq struct {
 }
 
 type AddCustomerIdentitiesResp struct {
-	IsVerified bool           `json:"isVerified"`
-	Name       string         `json:"name"`
-	Email      sql.NullString `json:"email"`
-	Phone      sql.NullString `json:"phone"`
-	ExternalId sql.NullString `json:"externalId"`
-}
-
-func (w AddCustomerIdentitiesResp) MarshalJSON() ([]byte, error) {
-	var email *string
-	if w.Email.Valid {
-		email = &w.Email.String
-	}
-
-	var phone *string
-	if w.Phone.Valid {
-		phone = &w.Phone.String
-	}
-
-	var externalId *string
-	if w.ExternalId.Valid {
-		externalId = &w.ExternalId.String
-	}
-
-	aux := &struct {
-		IsVerified bool    `json:"isVerified"`
-		Name       string  `json:"name"`
-		Email      *string `json:"email"`
-		Phone      *string `json:"phone"`
-		ExternalId *string `json:"externalId"`
-	}{
-		IsVerified: w.IsVerified,
-		Name:       w.Name,
-		Email:      email,
-		Phone:      phone,
-		ExternalId: externalId,
-	}
-	return json.Marshal(aux)
+	CustomerId       string  `json:"customerId"`
+	Email            *string `json:"email,omitempty"`
+	Phone            *string `json:"phone,omitempty"`
+	HasEmailConflict *bool   `json:"hasEmailConflict,omitempty"`
+	HasPhoneConflict *bool   `json:"hasPhoneConflict,omitempty"`
 }
 
 type CustomerResp struct {

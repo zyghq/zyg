@@ -51,12 +51,10 @@ func AuthenticateCustomer(
 		if errors.Is(err, services.ErrCustomerNotFound) {
 			return customer, fmt.Errorf("customer not found or does not exist")
 		}
-
 		if err != nil {
 			slog.Error("failed to fetch customer", slog.Any("err", err))
 			return customer, fmt.Errorf("failed to validate customer with customer id: %s got error: %v", sub, err)
 		}
-
 		return customer, nil
 	} else {
 		return customer, fmt.Errorf("unsupported scheme: `%s` cannot authenticate", scheme)

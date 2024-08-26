@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
-	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -388,41 +387,41 @@ func (c Customer) AnonName() string {
 	return "Anon User"
 }
 
-func (c Customer) AddAnonymizedEmail(email string) string {
-	return c.AnonId + "~" + email
-}
+//func (c Customer) AddAnonymizedEmail(email string) string {
+//	return c.AnonId + "~" + email
+//}
+//
+//func (c Customer) AddAnonymizedPhone(phone string) string {
+//	return c.AnonId + "~" + phone
+//}
+//
+//func (c Customer) AddAnonymizedExternalId(externalId string) string {
+//	return c.AnonId + "~" + externalId
+//}
 
-func (c Customer) AddAnonymizedPhone(phone string) string {
-	return c.AnonId + "~" + phone
-}
-
-func (c Customer) AddAnonymizedExternalId(externalId string) string {
-	return c.AnonId + "~" + externalId
-}
-
-func (c Customer) DeAnonEmail() string {
-	splits := strings.Split(c.Email.String, "~")
-	if len(splits) == 2 {
-		return splits[1]
-	}
-	return c.Email.String
-}
-
-func (c Customer) DeAnonPhone() string {
-	splits := strings.Split(c.Phone.String, "~")
-	if len(splits) == 2 {
-		return splits[1]
-	}
-	return c.Phone.String
-}
-
-func (c Customer) DeAnonExternalId() string {
-	splits := strings.Split(c.ExternalId.String, "~")
-	if len(splits) == 2 {
-		return splits[1]
-	}
-	return c.ExternalId.String
-}
+//func (c Customer) DeAnonEmail() string {
+//	splits := strings.Split(c.Email.String, "~")
+//	if len(splits) == 2 {
+//		return splits[1]
+//	}
+//	return c.Email.String
+//}
+//
+//func (c Customer) DeAnonPhone() string {
+//	splits := strings.Split(c.Phone.String, "~")
+//	if len(splits) == 2 {
+//		return splits[1]
+//	}
+//	return c.Phone.String
+//}
+//
+//func (c Customer) DeAnonExternalId() string {
+//	splits := strings.Split(c.ExternalId.String, "~")
+//	if len(splits) == 2 {
+//		return splits[1]
+//	}
+//	return c.ExternalId.String
+//}
 
 type InboundMessage struct {
 	MessageId    string
@@ -664,4 +663,26 @@ func (sk WorkspaceSecret) MarshalJSON() ([]byte, error) {
 		UpdatedAt:   sk.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
+}
+
+type EmailCustomerConflict struct {
+	Email      string
+	CustomerId string
+	Name       string
+	AvatarUrl  string
+}
+
+type EmailIdentity struct {
+	EmailIdentityId string
+	CustomerId      string
+	Email           string
+	IsVerified      bool
+	HasConflict     bool
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	Conflicts       []EmailCustomerConflict
+}
+
+func (ei EmailIdentity) GenId() string {
+	return "ei" + xid.New().String()
 }

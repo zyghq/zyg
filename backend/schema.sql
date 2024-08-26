@@ -114,6 +114,21 @@ CREATE TABLE customer (
     CONSTRAINT customer_anonymous_id_key UNIQUE (anonymous_id)
 );
 
+
+CREATE TABLE email_identity (
+    email_identity_id VARCHAR(255) NOT NULL,
+    customer_id VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    has_conflict BOOLEAN NOT NULL DEFAULT FALSE,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT email_identity_id_pkey PRIMARY KEY (email_identity_id),
+    CONSTRAINT email_identity_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer
+);
+
 -- @sanchitrk: changed usage?
 -- Represents the workspace Thread QA table
 -- This table is used to store the QA thread information linked to the workspace.
