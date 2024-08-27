@@ -179,6 +179,7 @@ export async function updateEmailActionAPI(
   jwt: string,
   body: UpdateEmailBody
 ) {
+  console.log("jwt", jwt);
   try {
     const response = await fetch(
       `${process.env.ZYG_XAPI_URL}/widgets/${widgetId}/me/identities/`,

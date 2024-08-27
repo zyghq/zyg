@@ -173,8 +173,6 @@ CREATE TABLE thread_qa_answer (
 CREATE TABLE inbound_message (
     message_id VARCHAR(255) NOT NULL,
     customer_id VARCHAR(255) NOT NULL,
-    first_sequence BIGINT NOT NULL DEFAULT fn_next_id(), -- deprecate
-    last_sequence BIGINT NOT NULL DEFAULT fn_next_id(), -- deprecate
     first_seq_id VARCHAR(255) NOT NULL,
     last_seq_id VARCHAR(255) NOT NULL,
     preview_text TEXT NOT NULL,
@@ -189,8 +187,9 @@ CREATE TABLE inbound_message (
 CREATE TABLE outbound_message (
     message_id VARCHAR(255) NOT NULL,
     member_id VARCHAR(255) NOT NULL,
-    first_sequence BIGINT NOT NULL DEFAULT fn_next_id(),
-    last_sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+    first_seq_id VARCHAR(255) NOT NULL,
+    last_seq_id VARCHAR(255) NOT NULL,
+    preview_text TEXT NOT NULL,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

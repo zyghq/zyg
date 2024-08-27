@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+
 	"github.com/segmentio/ksuid"
 
 	"github.com/zyghq/zyg/adapters/repository"
@@ -211,26 +212,43 @@ func (s *ThreadChatService) AddInboundMessage(
 			PreviewText: chat.PreviewText(),
 		}
 	}
-	chat, err := s.repo.InsertCustomerChat(ctx, inboundMessage, chat)
+	chat, err := s.repo.InsertCustomerChat(ctx, thread, inboundMessage, chat)
 	if err != nil {
 		return models.Chat{}, ErrThChatMessage
 	}
 	return chat, nil
 }
 
+// AddOutboundMessage adds an outbound message to the existing thread.
+// Checks if the thread already has an outbound message reference otherwise creates a new one.
 func (s *ThreadChatService) AddOutboundMessage(
 	ctx context.Context, thread models.Thread, memberId string, message string) (models.Chat, error) {
-	var outboundMessageId *string
-	if thread.EgressMessageId.Valid {
-		outboundMessageId = &thread.EgressMessageId.String
-	}
+	var outboundMessage models.OutboundMessage
 	chat := models.Chat{
 		ThreadId: thread.ThreadId,
 		Body:     message,
 		MemberId: models.NullString(&memberId),
 		IsHead:   false,
 	}
-	chat, err := s.repo.InsertMemberChat(ctx, outboundMessageId, chat)
+	// If an existing outbound message already exists, then update
+	// the existing outbound message with the latest value of last sequence ID.
+	// Else create a new outbound message for the thread.
+	if thread.OutboundMessage != nil {
+		outboundMessage = *thread.OutboundMessage
+		lastSeqId := ksuid.New().String()
+		outboundMessage.LastSeqId = lastSeqId
+		outboundMessage.PreviewText = chat.PreviewText()
+	} else {
+		seqId := ksuid.New().String()
+		outboundMessage = models.OutboundMessage{
+			MessageId:   outboundMessage.GenId(),
+			MemberId:    memberId,
+			FirstSeqId:  seqId,
+			LastSeqId:   seqId,
+			PreviewText: chat.PreviewText(),
+		}
+	}
+	chat, err := s.repo.InsertMemberChat(ctx, thread, outboundMessage, chat)
 	if err != nil {
 		return models.Chat{}, ErrThChatMessage
 	}

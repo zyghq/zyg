@@ -421,9 +421,10 @@ func (im InboundMessage) GenId() string {
 type OutboundMessage struct {
 	MessageId   string
 	MemberId    string
+	MemberName  string
+	PreviewText string
 	FirstSeqId  string
 	LastSeqId   string
-	PreviewText string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -433,35 +434,26 @@ func (em OutboundMessage) GenId() string {
 }
 
 type Thread struct {
-	WorkspaceId    string
-	ThreadId       string
-	CustomerId     string
-	CustomerName   string
-	AssigneeId     sql.NullString
-	AssigneeName   sql.NullString
-	Title          string
-	Description    string
-	Sequence       int
-	Status         string
-	Read           bool
-	Replied        bool
-	Priority       string
-	Spam           bool
-	Channel        string
-	PreviewText    string
-	InboundMessage *InboundMessage
-	//IngressMessageId    sql.NullString
-	//IngressFirstSeq     sql.NullInt64
-	//IngressLastSeq      sql.NullInt64
-	//IngressCustomerId   sql.NullString
-	//IngressCustomerName sql.NullString
-	EgressMessageId  sql.NullString
-	EgressFirstSeq   sql.NullInt64
-	EgressLastSeq    sql.NullInt64
-	EgressMemberId   sql.NullString
-	EgressMemberName sql.NullString
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	WorkspaceId     string
+	ThreadId        string
+	CustomerId      string
+	CustomerName    string
+	AssigneeId      sql.NullString
+	AssigneeName    sql.NullString
+	Title           string
+	Description     string
+	Sequence        int
+	Status          string
+	Read            bool
+	Replied         bool
+	Priority        string
+	Spam            bool
+	Channel         string
+	PreviewText     string
+	InboundMessage  *InboundMessage
+	OutboundMessage *OutboundMessage
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 func (th *Thread) GenId() string {
@@ -486,6 +478,29 @@ func (th *Thread) AddInboundMessage(
 
 func (th *Thread) ClearInboundMessage() {
 	th.InboundMessage = nil
+}
+
+func (th *Thread) AddOutboundMessage(
+	messageId string,
+	memberId string, memberName string,
+	previewText string,
+	firstSeqId string, lastSeqId string,
+	createdAt time.Time, updatedAt time.Time,
+) {
+	th.OutboundMessage = &OutboundMessage{
+		MessageId:   messageId,
+		MemberId:    memberId,
+		MemberName:  memberName,
+		PreviewText: previewText,
+		FirstSeqId:  firstSeqId,
+		LastSeqId:   lastSeqId,
+		CreatedAt:   createdAt,
+		UpdatedAt:   updatedAt,
+	}
+}
+
+func (th *Thread) ClearOutboundMessage() {
+	th.OutboundMessage = nil
 }
 
 type Chat struct {
