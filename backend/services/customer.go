@@ -26,28 +26,23 @@ func NewCustomerService(repo ports.CustomerRepositorer) *CustomerService {
 }
 
 func (s *CustomerService) GenerateCustomerJwt(c models.Customer, sk string) (string, error) {
-	var externalId string
-	var email string
-	var phone string
+	var externalId, email, phone *string
 
 	audience := []string{"customer"}
-
-	if !c.ExternalId.Valid {
-		externalId = ""
-	} else {
-		externalId = c.ExternalId.String
+	if c.IsAnonymous {
+		audience = append(audience, "anonymous")
 	}
 
-	if !c.Email.Valid {
-		email = ""
-	} else {
-		email = c.Email.String
+	if c.ExternalId.Valid {
+		externalId = &c.ExternalId.String
 	}
 
-	if !c.Phone.Valid {
-		phone = ""
-	} else {
-		phone = c.Phone.String
+	if c.Email.Valid {
+		email = &c.Email.String
+	}
+
+	if c.Phone.Valid {
+		phone = &c.Phone.String
 	}
 
 	claims := models.CustomerJWTClaims{
@@ -55,6 +50,7 @@ func (s *CustomerService) GenerateCustomerJwt(c models.Customer, sk string) (str
 		ExternalId:  externalId,
 		Email:       email,
 		Phone:       phone,
+		IsAnonymous: c.IsAnonymous,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "auth.zyg.ai",
 			Subject:   c.CustomerId,
@@ -65,7 +61,6 @@ func (s *CustomerService) GenerateCustomerJwt(c models.Customer, sk string) (str
 			ID:        c.WorkspaceId + ":" + c.CustomerId,
 		},
 	}
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	j, err := token.SignedString([]byte(sk))
 	if err != nil {

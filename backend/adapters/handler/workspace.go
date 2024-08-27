@@ -3,10 +3,11 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"github.com/zyghq/zyg"
 	"io"
 	"log/slog"
 	"net/http"
+
+	"github.com/zyghq/zyg"
 
 	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
@@ -487,15 +488,16 @@ func (h *WorkspaceHandler) handleCreateWorkspaceCustomer(
 	}
 
 	resp := CustomerResp{
-		CustomerId: customer.CustomerId,
-		Name:       customer.Name,
-		IsVerified: customer.IsVerified,
-		Role:       customer.Role,
-		ExternalId: customer.ExternalId,
-		Email:      customer.Email,
-		Phone:      customer.Phone,
-		CreatedAt:  customer.CreatedAt,
-		UpdatedAt:  customer.UpdatedAt,
+		CustomerId:  customer.CustomerId,
+		Name:        customer.Name,
+		AvatarUrl:   customer.AvatarUrl,
+		IsAnonymous: customer.IsAnonymous,
+		Role:        customer.Role,
+		ExternalId:  customer.ExternalId,
+		Email:       customer.Email,
+		Phone:       customer.Phone,
+		CreatedAt:   customer.CreatedAt,
+		UpdatedAt:   customer.UpdatedAt,
 	}
 
 	if isCreated {
@@ -581,15 +583,15 @@ func (h *WorkspaceHandler) handleGetWorkspaceCustomers(
 	items := make([]CustomerResp, 0, len(customers))
 	for _, c := range customers {
 		items = append(items, CustomerResp{
-			CustomerId: c.CustomerId,
-			ExternalId: c.ExternalId,
-			Email:      c.Email,
-			Phone:      c.Phone,
-			Name:       c.Name,
-			IsVerified: c.IsVerified,
-			Role:       c.Role,
-			CreatedAt:  c.CreatedAt,
-			UpdatedAt:  c.UpdatedAt,
+			CustomerId:  c.CustomerId,
+			ExternalId:  c.ExternalId,
+			Email:       c.Email,
+			Phone:       c.Phone,
+			Name:        c.Name,
+			IsAnonymous: c.IsAnonymous,
+			Role:        c.Role,
+			CreatedAt:   c.CreatedAt,
+			UpdatedAt:   c.UpdatedAt,
 		})
 	}
 	w.Header().Set("Content-Type", "application/json")

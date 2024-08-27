@@ -5,11 +5,13 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/rs/xid"
+	"github.com/zyghq/zyg"
 )
 
 func GenToken(length int, prefix string) (string, error) {
@@ -29,10 +31,11 @@ type AuthJWTClaims struct {
 
 // CustomerJWTClaims custom jwt claims for customer
 type CustomerJWTClaims struct {
-	WorkspaceId string `json:"workspaceId"`
-	ExternalId  string `json:"externalId"`
-	Email       string `json:"email"`
-	Phone       string `json:"phone"`
+	WorkspaceId string  `json:"workspaceId"`
+	ExternalId  *string `json:"externalId"`
+	Email       *string `json:"email"`
+	Phone       *string `json:"phone"`
+	IsAnonymous bool    `json:"isAnonymous"`
 	jwt.RegisteredClaims
 }
 
@@ -320,8 +323,9 @@ type Customer struct {
 	Email       sql.NullString
 	Phone       sql.NullString
 	Name        string
+	AvatarUrl   string
 	AnonId      string
-	IsVerified  bool
+	IsAnonymous bool
 	Role        string
 	UpdatedAt   time.Time
 	CreatedAt   time.Time
@@ -362,8 +366,9 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 		Email       *string `json:"email"`
 		Phone       *string `json:"phone"`
 		Name        string  `json:"name"`
+		AvatarUrl   string  `json:"avatarUrl"`
 		AnonId      string  `json:"anonId"`
-		IsVerified  bool    `json:"isVerified"`
+		IsAnonymous bool    `json:"isAnonymous"`
 		Role        string  `json:"role"`
 		CreatedAt   string  `json:"createdAt"`
 		UpdatedAt   string  `json:"updatedAt"`
@@ -374,8 +379,9 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 		Email:       email,
 		Phone:       phone,
 		Name:        c.Name,
+		AvatarUrl:   c.AvatarUrl,
 		AnonId:      c.AnonId,
-		IsVerified:  c.IsVerified,
+		IsAnonymous: c.IsAnonymous,
 		Role:        c.Role,
 		CreatedAt:   c.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:   c.UpdatedAt.Format(time.RFC3339),
@@ -387,41 +393,15 @@ func (c Customer) AnonName() string {
 	return "Anon User"
 }
 
-//func (c Customer) AddAnonymizedEmail(email string) string {
-//	return c.AnonId + "~" + email
-//}
-//
-//func (c Customer) AddAnonymizedPhone(phone string) string {
-//	return c.AnonId + "~" + phone
-//}
-//
-//func (c Customer) AddAnonymizedExternalId(externalId string) string {
-//	return c.AnonId + "~" + externalId
-//}
-
-//func (c Customer) DeAnonEmail() string {
-//	splits := strings.Split(c.Email.String, "~")
-//	if len(splits) == 2 {
-//		return splits[1]
-//	}
-//	return c.Email.String
-//}
-//
-//func (c Customer) DeAnonPhone() string {
-//	splits := strings.Split(c.Phone.String, "~")
-//	if len(splits) == 2 {
-//		return splits[1]
-//	}
-//	return c.Phone.String
-//}
-//
-//func (c Customer) DeAnonExternalId() string {
-//	splits := strings.Split(c.ExternalId.String, "~")
-//	if len(splits) == 2 {
-//		return splits[1]
-//	}
-//	return c.ExternalId.String
-//}
+func (c Customer) GenerateAvatar(s string) string {
+	url := zyg.GetAvatarBaseURL()
+	// url may or may not have a trailing slash
+	// add a trailing slash if it doesn't have one
+	if !strings.HasSuffix(url, "/") {
+		url = url + "/"
+	}
+	return url + s
+}
 
 type InboundMessage struct {
 	MessageId    string

@@ -85,7 +85,6 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 	}
 
 	var isCreated bool
-	var isVerified bool
 	var customer models.Customer
 
 	customerHash := models.NullString(reqp.CustomerHash)
@@ -96,6 +95,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 	anonId := models.NullString(reqp.AnonId)
 	customerName := models.Customer{}.AnonName()
 
+	// if the customer traits are provided, then check for name in traits.
 	if reqp.Traits != nil {
 		if reqp.Traits.Name != nil {
 			customerName = *reqp.Traits.Name
@@ -116,7 +116,6 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 	if customerHash.Valid {
 		if customerExternalId.Valid {
 			if h.cs.VerifyExternalId(sk.Hmac, customerHash.String, customerExternalId.String) {
-				isVerified = true
 				customer, isCreated, err = h.ws.CreateCustomerWithExternalId(
 					ctx, widget.WorkspaceId,
 					customerExternalId.String,
@@ -134,7 +133,6 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 			}
 		} else if customerEmail.Valid {
 			if h.cs.VerifyEmail(sk.Hmac, customerHash.String, customerEmail.String) {
-				isVerified = true
 				customer, isCreated, err = h.ws.CreateCustomerWithEmail(
 					ctx, widget.WorkspaceId,
 					customerEmail.String,
@@ -152,7 +150,6 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 			}
 		} else if customerPhone.Valid {
 			if h.cs.VerifyPhone(sk.Hmac, customerHash.String, customerPhone.String) {
-				isVerified = true
 				customer, isCreated, err = h.ws.CreateCustomerWithPhone(
 					ctx, widget.WorkspaceId,
 					customerPhone.String,
@@ -160,10 +157,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 					customerName,
 				)
 				if err != nil {
-					slog.Error(
-						"failed to create customer by phone " +
-							"something went wrong",
-					)
+					slog.Error("failed to create customer by phone", slog.Any("err", err))
 					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 					return
 				}
@@ -181,7 +175,6 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		customer, isCreated, err = h.ws.CreateAnonymousCustomer(
 			ctx, widget.WorkspaceId,
 			anonId.String,
-			false,
 			customerName,
 		)
 		if err != nil {
@@ -203,13 +196,14 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 	}
 
 	resp := WidgetInitResp{
-		Jwt:        jwt,
-		Create:     isCreated,
-		IsVerified: isVerified,
-		Name:       customer.Name,
-		Email:      customer.Email,
-		Phone:      customer.Phone,
-		ExternalId: customer.ExternalId,
+		Jwt:         jwt,
+		Create:      isCreated,
+		IsAnonymous: customer.IsAnonymous,
+		Name:        customer.Name,
+		AvatarUrl:   customer.AvatarUrl,
+		Email:       customer.Email,
+		Phone:       customer.Phone,
+		ExternalId:  customer.ExternalId,
 	}
 	if isCreated {
 		w.Header().Set("Content-Type", "application/json")
@@ -248,15 +242,16 @@ func (h *CustomerHandler) handleGetCustomer(w http.ResponseWriter, _ *http.Reque
 	}
 
 	resp := CustomerResp{
-		CustomerId: customer.CustomerId,
-		Name:       customer.Name,
-		Email:      models.NullString(&email),
-		Phone:      models.NullString(&phone),
-		ExternalId: models.NullString(&externalId),
-		IsVerified: customer.IsVerified,
-		Role:       customer.Role,
-		CreatedAt:  customer.CreatedAt,
-		UpdatedAt:  customer.UpdatedAt,
+		CustomerId:  customer.CustomerId,
+		Name:        customer.Name,
+		AvatarUrl:   customer.AvatarUrl,
+		Email:       models.NullString(&email),
+		Phone:       models.NullString(&phone),
+		ExternalId:  models.NullString(&externalId),
+		IsAnonymous: customer.IsAnonymous,
+		Role:        customer.Role,
+		CreatedAt:   customer.CreatedAt,
+		UpdatedAt:   customer.UpdatedAt,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -309,12 +304,9 @@ func (h *CustomerHandler) handleCustomerIdentities(
 		return
 	}
 
-	// TODO:
-	//  - update the customer data model with `is_anonymous`
-	//  - do not go for update if the `is_anonymous` flag is is false.
-	// don't want to modify a verified customer
+	// modify only if the customer is anonymous.
 	// from the external widget.
-	if widgetCustomer.IsVerified {
+	if !widgetCustomer.IsAnonymous {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}

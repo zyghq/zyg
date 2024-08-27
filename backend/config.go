@@ -14,3 +14,11 @@ func GetEnv(key string) (string, error) {
 	}
 	return value, nil
 }
+
+func GetAvatarBaseURL() string {
+	value, ok := os.LookupEnv("AVATAR_BASE_URL")
+	if !ok {
+		return "https://avatar.vercel.sh/" // probably self-host?
+	}
+	return value
+}
