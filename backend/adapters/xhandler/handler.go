@@ -200,7 +200,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		Create:      isCreated,
 		IsAnonymous: customer.IsAnonymous,
 		Name:        customer.Name,
-		AvatarUrl:   customer.AvatarUrl,
+		AvatarUrl:   customer.AvatarUrl(),
 		Email:       customer.Email,
 		Phone:       customer.Phone,
 		ExternalId:  customer.ExternalId,
@@ -244,7 +244,7 @@ func (h *CustomerHandler) handleGetCustomer(w http.ResponseWriter, _ *http.Reque
 	resp := CustomerResp{
 		CustomerId:  customer.CustomerId,
 		Name:        customer.Name,
-		AvatarUrl:   customer.AvatarUrl,
+		AvatarUrl:   customer.AvatarUrl(),
 		Email:       models.NullString(&email),
 		Phone:       models.NullString(&phone),
 		ExternalId:  models.NullString(&externalId),

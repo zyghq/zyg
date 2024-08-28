@@ -323,7 +323,6 @@ type Customer struct {
 	Email       sql.NullString
 	Phone       sql.NullString
 	Name        string
-	AvatarUrl   string
 	AnonId      string
 	IsAnonymous bool
 	Role        string
@@ -379,7 +378,7 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 		Email:       email,
 		Phone:       phone,
 		Name:        c.Name,
-		AvatarUrl:   c.AvatarUrl,
+		AvatarUrl:   c.AvatarUrl(), // generate avatar url
 		AnonId:      c.AnonId,
 		IsAnonymous: c.IsAnonymous,
 		Role:        c.Role,
@@ -393,14 +392,14 @@ func (c Customer) AnonName() string {
 	return "Anon User"
 }
 
-func (c Customer) GenerateAvatar(s string) string {
+func (c Customer) AvatarUrl() string {
 	url := zyg.GetAvatarBaseURL()
 	// url may or may not have a trailing slash
 	// add a trailing slash if it doesn't have one
 	if !strings.HasSuffix(url, "/") {
 		url = url + "/"
 	}
-	return url + s
+	return url + c.CustomerId
 }
 
 type InboundMessage struct {
