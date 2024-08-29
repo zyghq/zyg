@@ -343,22 +343,16 @@ func (ws *WorkspaceService) ValidateWidgetSession(
 	// fetch widget session for the provided widget session ID.
 	session, err := ws.workspaceRepo.LookupWidgetSessionById(ctx, widgetId, sessionId)
 	if errors.Is(err, repository.ErrEmpty) {
-		fmt.Println("session id and widget id not found!!! *********************************")
 		return models.Customer{}, ErrWidgetSessionInvalid
 	}
 	if err != nil {
-		fmt.Println("********* something went wrong lookup widget session ************")
 		return models.Customer{}, ErrWidgetSession
 	}
-
-	fmt.Println("*************************")
-	fmt.Println(session)
 
 	// decode data from the widget session.
 	// if there is an error, we assume the widget session is invalid.
 	data, err := session.Decode(sk)
 	if err != nil {
-		fmt.Println("***************** decode error ***********************")
 		fmt.Println(err)
 		return models.Customer{}, ErrWidgetSessionInvalid
 	}
@@ -369,9 +363,6 @@ func (ws *WorkspaceService) ValidateWidgetSession(
 	}
 	// check the calculated identity hash against the one in the widget session.
 	if customer.IdentityHash() != data.IdentityHash {
-		fmt.Println("&&&&&&&&&&&& customer identity has invalid ")
-		fmt.Println(customer.IdentityHash())
-		fmt.Println(data.IdentityHash)
 		return models.Customer{}, ErrWidgetSessionInvalid
 	}
 	return customer, nil

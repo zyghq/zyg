@@ -3,7 +3,6 @@ package xhandler
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -176,7 +175,6 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 		// Otherwise, create a new session with an anonymous customer.
 		customer, err = h.ws.ValidateWidgetSession(ctx, sk.Hmac, widget.WidgetId, sessionId.String)
 		if errors.Is(err, services.ErrWidgetSessionInvalid) {
-			fmt.Println("******************* widget session invalid *********************")
 			customer, isCreated, err = h.ws.CreateWidgetSession(
 				ctx, sk.Hmac, widget.WorkspaceId, widget.WidgetId, sessionId.String, customerName)
 		}
