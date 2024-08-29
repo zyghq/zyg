@@ -93,15 +93,12 @@ CREATE TABLE member (
 CREATE TABLE customer (
     customer_id VARCHAR(255) NOT NULL, -- primary key
     workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
-    
     external_id VARCHAR(255) NULL, -- external id of the customer
     email VARCHAR(255) NULL, -- email of the customer
     phone VARCHAR(255) NULL, -- phone of the customer
     name VARCHAR(255)  NOT NULL, -- name of the customer
-    
     role VARCHAR(255) NOT NULL, -- role of the customer
     is_anonymous BOOLEAN NOT NULL DEFAULT FALSE, -- anonymous status of the customer
-    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -120,7 +117,6 @@ CREATE TABLE email_identity (
     email VARCHAR(255) NOT NULL,
     is_verified BOOLEAN NOT NULL DEFAULT FALSE,
     has_conflict BOOLEAN NOT NULL DEFAULT FALSE,
-
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -140,7 +136,6 @@ CREATE TABLE thread_qa (
     title TEXT NOT NULL,
     summary TEXT NOT NULL,
     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
-    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -159,7 +154,6 @@ CREATE TABLE thread_qa_answer (
     answer TEXT NOT NULL,
     eval INT NULL DEFAULT NULL,
     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
-    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -174,7 +168,6 @@ CREATE TABLE inbound_message (
     first_seq_id VARCHAR(255) NOT NULL,
     last_seq_id VARCHAR(255) NOT NULL,
     preview_text TEXT NOT NULL,
-    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -188,7 +181,6 @@ CREATE TABLE outbound_message (
     first_seq_id VARCHAR(255) NOT NULL,
     last_seq_id VARCHAR(255) NOT NULL,
     preview_text TEXT NOT NULL,
-    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -213,7 +205,6 @@ CREATE TABLE thread (
     preview_text TEXT NOT NULL, -- preview text of the message
     inbound_message_id VARCHAR(255) NULL, -- fk to inbound_message
     outbound_message_id VARCHAR(255) NULL, -- fk to outbound_message
-    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -233,7 +224,6 @@ CREATE TABLE chat (
     customer_id VARCHAR(255) NULL,
     member_id VARCHAR(255) NULL,
     is_head BOOLEAN NOT NULL DEFAULT FALSE,
-
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -337,6 +327,7 @@ CREATE TABLE event (
     customer_id VARCHAR(255) NULL, -- fk to customer if event is customer
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
     CONSTRAINT event_event_id_pkey PRIMARY KEY (event_id),
     CONSTRAINT event_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
     CONSTRAINT event_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id)

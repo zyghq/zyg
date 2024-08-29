@@ -326,7 +326,7 @@ type Customer struct {
 	Email       sql.NullString
 	Phone       sql.NullString
 	Name        string
-	AnonId      string // deprecate
+	// AnonId      string // deprecate
 	IsAnonymous bool
 	Role        string
 	UpdatedAt   time.Time
@@ -369,7 +369,6 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 		Phone       *string `json:"phone"`
 		Name        string  `json:"name"`
 		AvatarUrl   string  `json:"avatarUrl"`
-		AnonId      string  `json:"anonId"`
 		IsAnonymous bool    `json:"isAnonymous"`
 		Role        string  `json:"role"`
 		CreatedAt   string  `json:"createdAt"`
@@ -382,7 +381,6 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 		Phone:       phone,
 		Name:        c.Name,
 		AvatarUrl:   c.AvatarUrl(), // generate avatar url
-		AnonId:      c.AnonId,
 		IsAnonymous: c.IsAnonymous,
 		Role:        c.Role,
 		CreatedAt:   c.CreatedAt.Format(time.RFC3339),

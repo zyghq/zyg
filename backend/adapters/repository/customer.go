@@ -16,8 +16,7 @@ func (c *CustomerDB) LookupWorkspaceCustomerById(
 	args := []any{workspaceId, customerId}
 	stmt := `select
 		workspace_id, customer_id, external_id, email, phone,
-		name, anonymous_id,
-		is_anonymous, role,
+		name, is_anonymous, role,
 		created_at, updated_at
 		from customer
 		where
@@ -31,9 +30,8 @@ func (c *CustomerDB) LookupWorkspaceCustomerById(
 	err := c.db.QueryRow(ctx, stmt, args...).Scan(
 		&customer.WorkspaceId, &customer.CustomerId,
 		&customer.ExternalId, &customer.Email, &customer.Phone,
-		&customer.Name, &customer.AnonId,
-		&customer.IsAnonymous, &customer.Role,
-		&customer.CreatedAt, &customer.UpdatedAt,
+		&customer.Name, &customer.IsAnonymous,
+		&customer.Role, &customer.CreatedAt, &customer.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("error", err))
@@ -55,7 +53,7 @@ func (c *CustomerDB) UpsertCustomerByExtId(
 		ON CONFLICT (workspace_id, external_id) DO NOTHING
 		RETURNING
 		customer_id, workspace_id,
-		external_id, email, phone, name, anonymous_id,
+		external_id, email, phone, name,
 		is_anonymous, role,
 		created_at, updated_at,
 		TRUE AS is_created
@@ -63,7 +61,7 @@ func (c *CustomerDB) UpsertCustomerByExtId(
 	SELECT * FROM ins
 	UNION ALL
 	SELECT customer_id, workspace_id, external_id, email, phone, name,
-	anonymous_id, is_anonymous, role, created_at, updated_at, FALSE AS is_created FROM customer
+	is_anonymous, role, created_at, updated_at, FALSE AS is_created FROM customer
 	WHERE (workspace_id, external_id) = ($2, $3) AND NOT EXISTS (SELECT 1 FROM ins)`
 
 	var isCreated bool
@@ -73,7 +71,7 @@ func (c *CustomerDB) UpsertCustomerByExtId(
 	).Scan(
 		&customer.CustomerId, &customer.WorkspaceId,
 		&customer.ExternalId, &customer.Email,
-		&customer.Phone, &customer.Name, &customer.AnonId,
+		&customer.Phone, &customer.Name,
 		&customer.IsAnonymous, &customer.Role,
 		&customer.CreatedAt, &customer.UpdatedAt, &isCreated,
 	)
@@ -98,7 +96,7 @@ func (c *CustomerDB) UpsertCustomerByEmail(
 		ON CONFLICT (workspace_id, email) DO NOTHING
 		RETURNING
 		customer_id, workspace_id,
-		external_id, email, phone, name, anonymous_id,
+		external_id, email, phone, name,
 		is_anonymous, role,
 		created_at, updated_at,
 		TRUE AS is_created
@@ -106,7 +104,7 @@ func (c *CustomerDB) UpsertCustomerByEmail(
 	SELECT * FROM ins
 	UNION ALL
 	SELECT customer_id, workspace_id, external_id, email, phone, name,
-	anonymous_id, is_anonymous, role, created_at, updated_at, FALSE AS is_created FROM customer
+	is_anonymous, role, created_at, updated_at, FALSE AS is_created FROM customer
 	WHERE (workspace_id, email) = ($2, $4) AND NOT EXISTS (SELECT 1 FROM ins)`
 
 	var isCreated bool
@@ -116,10 +114,9 @@ func (c *CustomerDB) UpsertCustomerByEmail(
 	).Scan(
 		&customer.CustomerId, &customer.WorkspaceId,
 		&customer.ExternalId, &customer.Email,
-		&customer.Phone, &customer.Name, &customer.AnonId,
+		&customer.Phone, &customer.Name,
 		&customer.IsAnonymous, &customer.Role,
-		&customer.CreatedAt,
-		&customer.UpdatedAt, &isCreated,
+		&customer.CreatedAt, &customer.UpdatedAt, &isCreated,
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -142,7 +139,7 @@ func (c *CustomerDB) UpsertCustomerByPhone(
 		ON CONFLICT (workspace_id, phone) DO NOTHING
 		RETURNING
 		customer_id, workspace_id,
-		external_id, email, phone, name, anonymous_id,
+		external_id, email, phone, name,
 		is_anonymous, role,
 		created_at, updated_at,
 		TRUE AS is_created
@@ -150,7 +147,7 @@ func (c *CustomerDB) UpsertCustomerByPhone(
 	SELECT * FROM ins
 	UNION ALL
 	SELECT customer_id, workspace_id, external_id, email, phone, name,
-	anonymous_id, is_anonymous, role, created_at, updated_at, FALSE AS is_created FROM customer
+	is_anonymous, role, created_at, updated_at, FALSE AS is_created FROM customer
 	WHERE (workspace_id, phone) = ($2, $5) AND NOT EXISTS (SELECT 1 FROM ins)`
 
 	var isCreated bool
@@ -160,10 +157,9 @@ func (c *CustomerDB) UpsertCustomerByPhone(
 	).Scan(
 		&customer.CustomerId, &customer.WorkspaceId,
 		&customer.ExternalId, &customer.Email,
-		&customer.Phone, &customer.Name, &customer.AnonId,
+		&customer.Phone, &customer.Name,
 		&customer.IsAnonymous, &customer.Role,
-		&customer.CreatedAt,
-		&customer.UpdatedAt, &isCreated,
+		&customer.CreatedAt, &customer.UpdatedAt, &isCreated,
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -185,7 +181,7 @@ func (c *CustomerDB) FetchCustomersByWorkspaceId(
 	args := []any{workspaceId}
 
 	stmt := `SELECT workspace_id, customer_id, external_id, email, phone,
-		name, anonymous_id, is_anonymous, role,
+		name, is_anonymous, role,
 		created_at, updated_at
 		FROM customer
 		WHERE
@@ -205,7 +201,7 @@ func (c *CustomerDB) FetchCustomersByWorkspaceId(
 	_, err := pgx.ForEachRow(rows, []any{
 		&customer.WorkspaceId, &customer.CustomerId,
 		&customer.ExternalId, &customer.Email, &customer.Phone,
-		&customer.Name, &customer.AnonId,
+		&customer.Name,
 		&customer.IsAnonymous, &customer.Role,
 		&customer.CreatedAt, &customer.UpdatedAt,
 	}, func() error {
@@ -305,18 +301,16 @@ func (c *CustomerDB) ModifyCustomerById(
 		customer_id = $1
 		returning customer_id, workspace_id,
 		external_id, email, phone,
-		name, anonymous_id, is_anonymous, role,
+		name, is_anonymous, role,
 		created_at, updated_at`
 	err := c.db.QueryRow(ctx, stmt, customer.CustomerId,
 		customer.ExternalId, customer.Email, customer.Phone,
 		customer.Name, customer.IsAnonymous, customer.Role).Scan(
 		&customer.CustomerId, &customer.WorkspaceId,
 		&customer.ExternalId, &customer.Email,
-		&customer.Phone, &customer.Name, &customer.AnonId,
-		&customer.AnonId,
+		&customer.Phone, &customer.Name,
 		&customer.IsAnonymous, &customer.Role,
-		&customer.CreatedAt,
-		&customer.UpdatedAt,
+		&customer.CreatedAt, &customer.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("error", err))

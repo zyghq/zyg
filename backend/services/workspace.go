@@ -175,7 +175,8 @@ func (ws *WorkspaceService) CreateCustomerWithExternalId(
 }
 
 func (ws *WorkspaceService) CreateCustomerWithEmail(
-	ctx context.Context, workspaceId string, email string, isAnonymous bool, name string) (models.Customer, bool, error) {
+	ctx context.Context, workspaceId string, email string, isAnonymous bool, name string,
+) (models.Customer, bool, error) {
 	if name == "" {
 		name = models.Customer{}.AnonName()
 	}
@@ -194,7 +195,8 @@ func (ws *WorkspaceService) CreateCustomerWithEmail(
 }
 
 func (ws *WorkspaceService) CreateCustomerWithPhone(
-	ctx context.Context, workspaceId string, phone string, isAnonymous bool, name string) (models.Customer, bool, error) {
+	ctx context.Context, workspaceId string, phone string, isAnonymous bool, name string,
+) (models.Customer, bool, error) {
 	if name == "" {
 		name = models.Customer{}.AnonName()
 	}
