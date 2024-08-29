@@ -1,15 +1,18 @@
 package models
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	"github.com/rs/xid"
 	"github.com/zyghq/zyg"
 )
@@ -48,10 +51,10 @@ func NullString(s *string) sql.NullString {
 }
 
 // IsValidUUID validates if a string is a valid UUID
-func IsValidUUID(u string) bool {
-	_, err := uuid.Parse(u)
-	return err == nil
-}
+//func IsValidUUID(u string) bool {
+//	_, err := uuid.Parse(u)
+//	return err == nil
+//}
 
 type Workspace struct {
 	WorkspaceId string
@@ -323,7 +326,7 @@ type Customer struct {
 	Email       sql.NullString
 	Phone       sql.NullString
 	Name        string
-	AnonId      string
+	AnonId      string // deprecate
 	IsAnonymous bool
 	Role        string
 	UpdatedAt   time.Time
@@ -400,6 +403,25 @@ func (c Customer) AvatarUrl() string {
 		url = url + "/"
 	}
 	return url + c.CustomerId
+}
+func (c Customer) IdentityHash() string {
+	h := sha256.New()
+	// Combine all fields into a single string
+	identityString := fmt.Sprintf("%s:%s:%s:%s:%s:%t:%s",
+		c.WorkspaceId,
+		c.CustomerId,
+		c.ExternalId.String,
+		c.Email.String,
+		c.Phone.String,
+		c.IsAnonymous,
+		c.Role,
+	)
+
+	// Write the combined string to the hash
+	h.Write([]byte(identityString))
+
+	// Return the hash as a base64 encoded string
+	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }
 
 type InboundMessage struct {
@@ -679,4 +701,116 @@ type EmailIdentity struct {
 
 func (ei EmailIdentity) GenId() string {
 	return "ei" + xid.New().String()
+}
+
+type WidgetSessionData struct {
+	WorkspaceId  string `json:"workspaceId"`
+	CustomerId   string `json:"customerId"`
+	IdentityHash string `json:"identityHash"`
+}
+
+type WidgetSession struct {
+	SessionId string
+	WidgetId  string
+	Data      string
+	ExpireAt  time.Time
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func (ws *WidgetSession) GenId() string {
+	return "ws" + xid.New().String()
+}
+
+func (ws *WidgetSession) CreateSession(sessionId string, widgetId string) WidgetSession {
+	return WidgetSession{
+		SessionId: sessionId,
+		WidgetId:  widgetId,
+		ExpireAt:  time.Now().Add(time.Hour * 24), // 24 hours
+	}
+}
+
+// CreateSessionData creates the widget session data
+func (ws *WidgetSession) CreateSessionData(
+	workspaceId string, customerId string, identityHash string) WidgetSessionData {
+	return WidgetSessionData{
+		WorkspaceId:  workspaceId,
+		CustomerId:   customerId,
+		IdentityHash: identityHash,
+	}
+}
+
+// Encode encodes the session data and returns the encoded data
+// The secret key is specific to each workspace and is used to verify the integrity of the session data.
+func (ws *WidgetSession) Encode(sk string, session WidgetSessionData) (string, error) {
+	// jsonify the session data
+	sessJson, err := json.Marshal(session)
+	if err != nil {
+		return "", err
+	}
+
+	// stringify the JSON data
+	sessionData := string(sessJson)
+	encodedSessionData := base64.URLEncoding.EncodeToString([]byte(sessionData))
+
+	// create HMAC-SHA256 signature
+	h := hmac.New(sha256.New, []byte(sk))
+	h.Write([]byte(encodedSessionData))
+	signature := h.Sum(nil)
+
+	// Base64 encode the signature
+	encodedSignature := base64.URLEncoding.EncodeToString(signature)
+
+	// combine the session data and the signature
+	signedSession := fmt.Sprintf("%s:%s", encodedSessionData, encodedSignature)
+	return signedSession, nil
+}
+
+// SetEncodeData encodes the session data and sets the encoded data to the session
+// The secret key is specific to each workspace and is used to verify the integrity of the session data.
+func (ws *WidgetSession) SetEncodeData(sk string, session WidgetSessionData) error {
+	encoded, err := ws.Encode(sk, session)
+	if err != nil {
+		return err
+	}
+	ws.Data = encoded
+	return nil
+}
+
+// Decode splits the signed session string, verifies it, and decodes the session data
+// The secret key is specific to each workspace and is used to verify the integrity of the session data.
+func (ws *WidgetSession) Decode(sk string) (WidgetSessionData, error) {
+	var session WidgetSessionData
+
+	parts := strings.Split(ws.Data, ":")
+	if len(parts) != 2 {
+		return WidgetSessionData{}, errors.New("invalid signed session format")
+	}
+
+	encodedSessionData := parts[0]
+	signature := parts[1]
+
+	h := hmac.New(sha256.New, []byte(sk))
+	h.Write([]byte(encodedSessionData))
+	expectedSignature := h.Sum(nil)
+
+	receivedSignature, err := base64.URLEncoding.DecodeString(signature)
+	if err != nil {
+		return WidgetSessionData{}, err
+	}
+
+	if !hmac.Equal(receivedSignature, expectedSignature) {
+		return WidgetSessionData{}, errors.New(
+			"invalid signature: perhaps the data is tampered or the secret keys updated")
+	}
+
+	sessionData, err := base64.URLEncoding.DecodeString(encodedSessionData)
+	if err != nil {
+		return WidgetSessionData{}, err
+	}
+	err = json.Unmarshal(sessionData, &session)
+	if err != nil {
+		return WidgetSessionData{}, err
+	}
+	return session, nil
 }

@@ -73,8 +73,7 @@ type WorkspaceServicer interface {
 		ctx context.Context, workspaceId string, phone string, isAnonymous bool, name string,
 	) (models.Customer, bool, error)
 	CreateAnonymousCustomer(
-		ctx context.Context, workspaceId string, anonId string, name string,
-	) (models.Customer, bool, error)
+		ctx context.Context, workspaceId string, name string) (models.Customer, error)
 	CreateWidget(
 		ctx context.Context, workspaceId string, name string, configuration map[string]interface{},
 	) (models.Widget, error)
@@ -89,6 +88,11 @@ type WorkspaceServicer interface {
 		ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error)
 	DoesEmailConflict(
 		ctx context.Context, workspaceId string, email string) (bool, error)
+	ValidateWidgetSession(
+		ctx context.Context, sk string, widgetId string, sessionId string) (models.Customer, error)
+	CreateWidgetSession(
+		ctx context.Context, sk string, workspaceId string, widgetId string,
+		sessionId string, name string) (models.Customer, bool, error)
 }
 
 type CustomerServicer interface {
@@ -191,6 +195,10 @@ type WorkspaceRepositorer interface {
 		ctx context.Context, workspaceId string) (models.WorkspaceSecret, error)
 	LookupWidgetById(
 		ctx context.Context, widgetId string) (models.Widget, error)
+	LookupWidgetSessionById(
+		ctx context.Context, widgetId string, sessionId string) (models.WidgetSession, error)
+	UpsertWidgetSessionById(
+		ctx context.Context, session models.WidgetSession) (models.WidgetSession, bool, error)
 }
 
 type MemberRepositorer interface {
@@ -211,7 +219,7 @@ type CustomerRepositorer interface {
 		ctx context.Context, customer models.Customer) (models.Customer, bool, error)
 	UpsertCustomerByPhone(
 		ctx context.Context, customer models.Customer) (models.Customer, bool, error)
-	UpsertCustomerByAnonId(
+	UpsertCustomerById(
 		ctx context.Context, customer models.Customer) (models.Customer, bool, error)
 	FetchCustomersByWorkspaceId(
 		ctx context.Context, workspaceId string, role *string) ([]models.Customer, error)

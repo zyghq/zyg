@@ -3,6 +3,7 @@ package xhandler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -43,7 +44,7 @@ func handleGetIndex(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
-func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *http.Request) {
+func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Request) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
@@ -64,20 +65,20 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
-
 	if err != nil {
 		slog.Error("failed to fetch workspace widget", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
+	// fetch the secret key for the widget workspace.
+	// TODO: @sanchitrk shall we do getOrCreate here?
 	sk, err := h.ws.GetSecretKey(ctx, widget.WorkspaceId)
 	if errors.Is(err, services.ErrSecretKeyNotFound) {
 		// if the secret key is not found, then the widget cannot be authorized.
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
-
 	if err != nil {
 		slog.Error("failed to fetch workspace secret key", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -92,7 +93,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 	customerEmail := models.NullString(reqp.CustomerEmail)
 	customerPhone := models.NullString(reqp.CustomerPhone)
 
-	anonId := models.NullString(reqp.AnonId)
+	sessionId := models.NullString(reqp.SessionId)
 	customerName := models.Customer{}.AnonName()
 
 	// if the customer traits are provided, then check for name in traits.
@@ -113,6 +114,10 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		}
 	}
 
+	// The client provides customer hash, to verify the end customer.
+	// Creates the customer if not found.
+	// Priority is externalId, then email, then phone.
+	// Other values are ignored.
 	if customerHash.Valid {
 		if customerExternalId.Valid {
 			if h.cs.VerifyExternalId(sk.Hmac, customerHash.String, customerExternalId.String) {
@@ -166,20 +171,21 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 				return
 			}
 		}
-	} else if anonId.Valid {
-		isValid := models.IsValidUUID(anonId.String)
-		if !isValid {
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+	} else if sessionId.Valid {
+		// Check if the session with the session ID is already created and verify the session.
+		// Otherwise, create a new session with an anonymous customer.
+		customer, err = h.ws.ValidateWidgetSession(ctx, sk.Hmac, widget.WidgetId, sessionId.String)
+		if errors.Is(err, services.ErrWidgetSessionInvalid) {
+			fmt.Println("******************* widget session invalid *********************")
+			customer, isCreated, err = h.ws.CreateWidgetSession(
+				ctx, sk.Hmac, widget.WorkspaceId, widget.WidgetId, sessionId.String, customerName)
+		}
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
-		customer, isCreated, err = h.ws.CreateAnonymousCustomer(
-			ctx, widget.WorkspaceId,
-			anonId.String,
-			customerName,
-		)
-		if err != nil {
-			slog.Error("failed to create anonymous customer", slog.Any("err", err))
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		if errors.Is(err, services.ErrWidgetSession) {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 	} else {
@@ -187,7 +193,6 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
-
 	jwt, err := h.cs.GenerateCustomerJwt(customer, sk.Hmac)
 	if err != nil {
 		slog.Error("failed to make jwt token with error", slog.Any("error", err))
@@ -696,7 +701,7 @@ func NewServer(
 
 	mux.HandleFunc("GET /{$}", handleGetIndex)
 
-	mux.HandleFunc("POST /widgets/{widgetId}/init/{$}", ch.handleGetOrCreateCustomer)
+	mux.HandleFunc("POST /widgets/{widgetId}/init/{$}", ch.handleInitWidget)
 	mux.Handle("GET /widgets/{widgetId}/me/{$}", NewEnsureAuth(ch.handleGetCustomer, authService))
 	mux.Handle("POST /widgets/{widgetId}/me/identities/{$}",
 		NewEnsureAuth(ch.handleCustomerIdentities, authService))

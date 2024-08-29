@@ -244,37 +244,41 @@ func (c *CustomerDB) LookupSecretKeyByWidgetId(
 	return sk, nil
 }
 
-func (c *CustomerDB) UpsertCustomerByAnonId(
+func (c *CustomerDB) UpsertCustomerById(
 	ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
-	cId := customer.GenId()
 	stmt := `WITH ins AS (
-		INSERT INTO customer (customer_id, workspace_id, anonymous_id, is_anonymous, name, role)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		ON CONFLICT (anonymous_id) DO NOTHING
-		RETURNING
-		customer_id, workspace_id,
-		external_id, email, phone, name, anonymous_id,
-		is_anonymous, role,
+		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name, role, is_anonymous)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		ON CONFLICT (customer_id) DO UPDATE SET
+			external_id = $3,
+			email = $4,
+			phone = $5,
+			name = $6,
+			role = $7,
+			is_anonymous = $8,
+			updated_at = now()
+		RETURNING customer_id, workspace_id,
+		external_id, email, phone, name, role,
+		is_anonymous,
 		created_at, updated_at,
 		TRUE AS is_created
 	)
 	SELECT * FROM ins
 	UNION ALL
-	SELECT customer_id, workspace_id, external_id, email, phone, name,
-	anonymous_id, is_anonymous, role, created_at, updated_at, FALSE AS is_created FROM customer
-	WHERE anonymous_id = $3 AND NOT EXISTS (SELECT 1 FROM ins)`
+	SELECT customer_id, workspace_id, external_id, email, phone, name, role,
+	is_anonymous, created_at, updated_at, FALSE AS is_created FROM customer
+	WHERE customer_id = $1 AND NOT EXISTS (SELECT 1 FROM ins)`
 
 	var isCreated bool
 	err := c.db.QueryRow(
-		ctx, stmt, cId, customer.WorkspaceId, customer.AnonId, customer.IsAnonymous,
-		customer.Name, customer.Role,
+		ctx, stmt, customer.CustomerId, customer.WorkspaceId, customer.ExternalId, customer.Email, customer.Phone,
+		customer.Name, customer.Role, customer.IsAnonymous,
 	).Scan(
 		&customer.CustomerId, &customer.WorkspaceId,
 		&customer.ExternalId, &customer.Email,
-		&customer.Phone, &customer.Name, &customer.AnonId,
-		&customer.IsAnonymous, &customer.Role,
-		&customer.CreatedAt,
-		&customer.UpdatedAt, &isCreated,
+		&customer.Phone, &customer.Name,
+		&customer.Role, &customer.IsAnonymous,
+		&customer.CreatedAt, &customer.UpdatedAt, &isCreated,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("error", err))

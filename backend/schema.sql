@@ -100,7 +100,6 @@ CREATE TABLE customer (
     name VARCHAR(255)  NOT NULL, -- name of the customer
     
     role VARCHAR(255) NOT NULL, -- role of the customer
-    anonymous_id UUID DEFAULT gen_random_uuid(), -- anonymous id of the customer
     is_anonymous BOOLEAN NOT NULL DEFAULT FALSE, -- anonymous status of the customer
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -299,6 +298,20 @@ CREATE TABLE workspace_secret (
     CONSTRAINT workspace_secret_workspace_id_pkey PRIMARY KEY (workspace_id),
     CONSTRAINT workspace_secret_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
     CONSTRAINT workspace_secret_hmac_key UNIQUE (hmac)
+);
+
+-- Represents the widget session table
+-- This table is used to store the widget session linked to the widget.
+CREATE TABLE widget_session (
+    session_id VARCHAR(255) NOT NULL,
+    widget_id VARCHAR(255) NOT NULL,
+    data TEXT NOT NULL,
+    expire_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT widget_session_session_id_pkey PRIMARY KEY (session_id),
+    CONSTRAINT widget_session_widget_id_fkey FOREIGN KEY (widget_id) REFERENCES widget (widget_id)
 );
 
 -- ************************************ --

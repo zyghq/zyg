@@ -13,7 +13,7 @@ type CustomerTraits struct {
 }
 
 type WidgetInitReq struct {
-	AnonId             *string         `json:"anonId"`
+	SessionId          *string         `json:"sessionId"`
 	CustomerHash       *string         `json:"customerHash"`
 	CustomerExternalId *string         `json:"customerExternalId"`
 	CustomerEmail      *string         `json:"customerEmail"`

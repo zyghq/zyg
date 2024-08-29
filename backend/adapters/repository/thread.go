@@ -1669,7 +1669,7 @@ func (tc *ThreadChatDB) InsertCustomerChat(
 	}
 
 	// check if the thread has the reference to inbound message,
-	// if not then update thread with lastest inbound message ID.
+	// if not then update thread with the latest inbound message ID.
 	if thread.InboundMessage == nil {
 		stmt = `update thread set
 			inbound_message_id = $2, updated_at = now()
@@ -1789,7 +1789,7 @@ func (tc *ThreadChatDB) InsertMemberChat(
 	}
 
 	// check if the thread has the reference to outbound message,
-	// if not then update thread with lastest outbound message ID.
+	// if not then update thread with the latest outbound message ID.
 	if thread.OutboundMessage == nil {
 		stmt = `update thread set
 			outbound_message_id = $2, updated_at = now()
