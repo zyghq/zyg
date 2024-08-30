@@ -38,7 +38,7 @@ type CustomerJWTClaims struct {
 	ExternalId  *string `json:"externalId"`
 	Email       *string `json:"email"`
 	Phone       *string `json:"phone"`
-	IsAnonymous bool    `json:"isAnonymous"`
+	IsVerified  bool    `json:"isVerified"`
 	jwt.RegisteredClaims
 }
 
@@ -326,8 +326,7 @@ type Customer struct {
 	Email       sql.NullString
 	Phone       sql.NullString
 	Name        string
-	// AnonId      string // deprecate
-	IsAnonymous bool
+	IsVerified  bool
 	Role        string
 	UpdatedAt   time.Time
 	CreatedAt   time.Time
@@ -369,7 +368,7 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 		Phone       *string `json:"phone"`
 		Name        string  `json:"name"`
 		AvatarUrl   string  `json:"avatarUrl"`
-		IsAnonymous bool    `json:"isAnonymous"`
+		IsVerified  bool    `json:"isVerified"`
 		Role        string  `json:"role"`
 		CreatedAt   string  `json:"createdAt"`
 		UpdatedAt   string  `json:"updatedAt"`
@@ -381,7 +380,7 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 		Phone:       phone,
 		Name:        c.Name,
 		AvatarUrl:   c.AvatarUrl(), // generate avatar url
-		IsAnonymous: c.IsAnonymous,
+		IsVerified:  c.IsVerified,
 		Role:        c.Role,
 		CreatedAt:   c.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:   c.UpdatedAt.Format(time.RFC3339),
@@ -402,6 +401,10 @@ func (c Customer) AvatarUrl() string {
 	}
 	return url + c.CustomerId
 }
+
+// IdentityHash is a hash of the customer's identity
+// Combined these fields create a unique hash for the customer
+// You might have to update this if you plan to add more identity fields
 func (c Customer) IdentityHash() string {
 	h := sha256.New()
 	// Combine all fields into a single string
@@ -411,7 +414,7 @@ func (c Customer) IdentityHash() string {
 		c.ExternalId.String,
 		c.Email.String,
 		c.Phone.String,
-		c.IsAnonymous,
+		c.IsVerified,
 		c.Role,
 	)
 
@@ -420,6 +423,12 @@ func (c Customer) IdentityHash() string {
 
 	// Return the hash as a base64 encoded string
 	return base64.StdEncoding.EncodeToString(h.Sum(nil))
+}
+
+// HasNaturalIdentity returns true if the customer has any of the following identities:
+// email, phone, externalId are valid.
+func (c Customer) HasNaturalIdentity() bool {
+	return c.Email.Valid || c.Phone.Valid || c.ExternalId.Valid
 }
 
 type InboundMessage struct {

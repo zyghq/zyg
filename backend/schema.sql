@@ -88,8 +88,8 @@ CREATE TABLE member (
 
 -- Represents the Customer table
 -- There can be multiple customers per workspace
--- Each customer is uniquely identified by one of `external_id`, `email` and `phone`, each unique to the workspace
--- noinspection SqlResolve
+-- Each customer is uniquely identified by one of
+-- `external_id`, `email` and `phone`, each unique to the workspace
 CREATE TABLE customer (
     customer_id VARCHAR(255) NOT NULL, -- primary key
     workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
@@ -98,7 +98,7 @@ CREATE TABLE customer (
     phone VARCHAR(255) NULL, -- phone of the customer
     name VARCHAR(255)  NOT NULL, -- name of the customer
     role VARCHAR(255) NOT NULL, -- role of the customer
-    is_anonymous BOOLEAN NOT NULL DEFAULT FALSE, -- anonymous status of the customer
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE, -- verification status of the customer
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -106,10 +106,8 @@ CREATE TABLE customer (
     CONSTRAINT customer_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
     CONSTRAINT customer_workspace_id_external_id_key UNIQUE (workspace_id, external_id),
     CONSTRAINT customer_workspace_id_email_key UNIQUE (workspace_id, email),
-    CONSTRAINT customer_workspace_id_phone_key UNIQUE (workspace_id, phone),
-    CONSTRAINT customer_anonymous_id_key UNIQUE (anonymous_id)
+    CONSTRAINT customer_workspace_id_phone_key UNIQUE (workspace_id, phone)
 );
-
 
 CREATE TABLE email_identity (
     email_identity_id VARCHAR(255) NOT NULL,

@@ -92,6 +92,11 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 	customerEmail := models.NullString(reqp.CustomerEmail)
 	customerPhone := models.NullString(reqp.CustomerPhone)
 
+	var isVerified bool
+	if reqp.IsVerified != nil {
+		isVerified = *reqp.IsVerified
+	}
+
 	sessionId := models.NullString(reqp.SessionId)
 	customerName := models.Customer{}.AnonName()
 
@@ -123,7 +128,7 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 				customer, isCreated, err = h.ws.CreateCustomerWithExternalId(
 					ctx, widget.WorkspaceId,
 					customerExternalId.String,
-					true,
+					isVerified,
 					customerName,
 				)
 				if err != nil {
@@ -140,7 +145,7 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 				customer, isCreated, err = h.ws.CreateCustomerWithEmail(
 					ctx, widget.WorkspaceId,
 					customerEmail.String,
-					true,
+					isVerified,
 					customerName,
 				)
 				if err != nil {
@@ -157,7 +162,7 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 				customer, isCreated, err = h.ws.CreateCustomerWithPhone(
 					ctx, widget.WorkspaceId,
 					customerPhone.String,
-					true,
+					isVerified,
 					customerName,
 				)
 				if err != nil {
@@ -198,15 +203,34 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// Check if the customer needs to provide additional identities.
+	// Ask for identities if the customer doesn't have a natural identity and isn't verified yet.
+	//
+	// Note: We can configure the workspace settings to have this enabled or disabled?
+	RequireIdentities := make([]string, 0, 3) // email, phone, externalId
+	if !customer.HasNaturalIdentity() && !customer.IsVerified {
+		hasEmailIdentity, err := h.cs.HasProvidedEmailIdentity(ctx, customer.CustomerId)
+		if err != nil {
+			slog.Error("Failed to check customer email identity", slog.Any("err", err))
+			// If there's an error, we'll ask for email to be safe
+			RequireIdentities = append(RequireIdentities, "email")
+		} else if !hasEmailIdentity {
+			RequireIdentities = append(RequireIdentities, "email")
+		}
+		// Here you could add checks for other identity types if needed,
+		// For example, phone, external ID, etc.
+	}
+
 	resp := WidgetInitResp{
-		Jwt:         jwt,
-		Create:      isCreated,
-		IsAnonymous: customer.IsAnonymous,
-		Name:        customer.Name,
-		AvatarUrl:   customer.AvatarUrl(),
-		Email:       customer.Email,
-		Phone:       customer.Phone,
-		ExternalId:  customer.ExternalId,
+		Jwt:               jwt,
+		Create:            isCreated,
+		IsVerified:        customer.IsVerified,
+		Name:              customer.Name,
+		AvatarUrl:         customer.AvatarUrl(),
+		Email:             customer.Email,
+		Phone:             customer.Phone,
+		ExternalId:        customer.ExternalId,
+		RequireIdentities: RequireIdentities,
 	}
 	if isCreated {
 		w.Header().Set("Content-Type", "application/json")
@@ -227,36 +251,32 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (h *CustomerHandler) handleGetCustomer(w http.ResponseWriter, _ *http.Request, customer *models.Customer) {
-	var email string
-	var phone string
-	var externalId string
+func (h *CustomerHandler) handleGetCustomer(
+	w http.ResponseWriter, _ *http.Request, customer *models.Customer) {
+	var externalId, email, phone string
 
 	if customer.Email.Valid {
 		email = customer.Email.String
 	}
-
 	if customer.Phone.Valid {
 		phone = customer.Phone.String
 	}
-
 	if customer.ExternalId.Valid {
 		externalId = customer.ExternalId.String
 	}
 
 	resp := CustomerResp{
-		CustomerId:  customer.CustomerId,
-		Name:        customer.Name,
-		AvatarUrl:   customer.AvatarUrl(),
-		Email:       models.NullString(&email),
-		Phone:       models.NullString(&phone),
-		ExternalId:  models.NullString(&externalId),
-		IsAnonymous: customer.IsAnonymous,
-		Role:        customer.Role,
-		CreatedAt:   customer.CreatedAt,
-		UpdatedAt:   customer.UpdatedAt,
+		CustomerId: customer.CustomerId,
+		Name:       customer.Name,
+		AvatarUrl:  customer.AvatarUrl(),
+		Email:      models.NullString(&email),
+		Phone:      models.NullString(&phone),
+		ExternalId: models.NullString(&externalId),
+		IsVerified: customer.IsVerified,
+		Role:       customer.Role,
+		CreatedAt:  customer.CreatedAt,
+		UpdatedAt:  customer.UpdatedAt,
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
@@ -306,9 +326,9 @@ func (h *CustomerHandler) handleCustomerIdentities(
 		return
 	}
 
-	// modify only if the customer is anonymous.
+	// modify only if the customer is not verified
 	// from the external widget.
-	if !widgetCustomer.IsAnonymous {
+	if widgetCustomer.IsVerified {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}

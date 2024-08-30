@@ -155,7 +155,7 @@ func (ws *WorkspaceService) ListLabels(
 }
 
 func (ws *WorkspaceService) CreateCustomerWithExternalId(
-	ctx context.Context, workspaceId string, externalId string, isAnonymous bool, name string,
+	ctx context.Context, workspaceId string, externalId string, isVerified bool, name string,
 ) (models.Customer, bool, error) {
 	if name == "" {
 		name = models.Customer{}.AnonName()
@@ -163,7 +163,7 @@ func (ws *WorkspaceService) CreateCustomerWithExternalId(
 	customer := models.Customer{
 		WorkspaceId: workspaceId,
 		ExternalId:  models.NullString(&externalId),
-		IsAnonymous: isAnonymous,
+		IsVerified:  isVerified,
 		Name:        name,
 		Role:        models.Customer{}.Engaged(),
 	}
@@ -175,7 +175,7 @@ func (ws *WorkspaceService) CreateCustomerWithExternalId(
 }
 
 func (ws *WorkspaceService) CreateCustomerWithEmail(
-	ctx context.Context, workspaceId string, email string, isAnonymous bool, name string,
+	ctx context.Context, workspaceId string, email string, isVerified bool, name string,
 ) (models.Customer, bool, error) {
 	if name == "" {
 		name = models.Customer{}.AnonName()
@@ -183,7 +183,7 @@ func (ws *WorkspaceService) CreateCustomerWithEmail(
 	customer := models.Customer{
 		WorkspaceId: workspaceId,
 		Email:       models.NullString(&email),
-		IsAnonymous: isAnonymous,
+		IsVerified:  isVerified,
 		Name:        name,
 		Role:        models.Customer{}.Engaged(),
 	}
@@ -195,7 +195,7 @@ func (ws *WorkspaceService) CreateCustomerWithEmail(
 }
 
 func (ws *WorkspaceService) CreateCustomerWithPhone(
-	ctx context.Context, workspaceId string, phone string, isAnonymous bool, name string,
+	ctx context.Context, workspaceId string, phone string, isVerified bool, name string,
 ) (models.Customer, bool, error) {
 	if name == "" {
 		name = models.Customer{}.AnonName()
@@ -203,7 +203,7 @@ func (ws *WorkspaceService) CreateCustomerWithPhone(
 	customer := models.Customer{
 		WorkspaceId: workspaceId,
 		Phone:       models.NullString(&phone),
-		IsAnonymous: isAnonymous,
+		IsVerified:  isVerified,
 		Name:        name,
 		Role:        models.Customer{}.Engaged(),
 	}
@@ -214,7 +214,7 @@ func (ws *WorkspaceService) CreateCustomerWithPhone(
 	return customer, created, nil
 }
 
-func (ws *WorkspaceService) CreateAnonymousCustomer(
+func (ws *WorkspaceService) CreateUnverifiedCustomer(
 	ctx context.Context, workspaceId string, name string) (models.Customer, error) {
 	if name == "" {
 		name = models.Customer{}.AnonName()
@@ -223,11 +223,10 @@ func (ws *WorkspaceService) CreateAnonymousCustomer(
 	customer := models.Customer{
 		CustomerId:  customerId,
 		WorkspaceId: workspaceId,
-		IsAnonymous: true,
+		IsVerified:  false,
 		Name:        name,
 		Role:        models.Customer{}.Visitor(),
 	}
-	// Modify, insert function, just save it to the db.
 	customer, _, err := ws.customerRepo.UpsertCustomerById(ctx, customer)
 	if err != nil {
 		return models.Customer{}, err
@@ -375,8 +374,8 @@ func (ws *WorkspaceService) CreateWidgetSession(
 	sessionId string, name string) (models.Customer, bool, error) {
 	var created bool
 
-	// create a new customer with the provided name.
-	customer, err := ws.CreateAnonymousCustomer(ctx, workspaceId, name)
+	// create a new unverified customer with the provided name.
+	customer, err := ws.CreateUnverifiedCustomer(ctx, workspaceId, name)
 	if err != nil {
 		return models.Customer{}, created, ErrWidgetSession
 	}
