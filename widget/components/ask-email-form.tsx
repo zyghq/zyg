@@ -83,30 +83,29 @@ export default function AskEmailForm({
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="flex justify-between items-center"
-      >
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem className="space-y-2 w-full">
-              <FormControl>
-                <Input
-                  placeholder="you@example.com"
-                  title="Email"
-                  required
-                  {...field}
-                />
-              </FormControl>
-              {errors?.root?.serverError && (
-                <FormMessage>{errors?.root?.serverError?.message}</FormMessage>
-              )}
-            </FormItem>
-          )}
-        />
-        <SubmitButton isDisabled={isSubmitting} />
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col">
+        <div className="flex w-full justify-between items-center">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem className="space-y-2 w-full">
+                <FormControl>
+                  <Input
+                    placeholder="you@example.com"
+                    title="Email"
+                    required
+                    {...field}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          <SubmitButton isDisabled={isSubmitting} />
+        </div>
+        {errors?.root?.serverError && (
+          <FormMessage>{errors?.root?.serverError?.message}</FormMessage>
+        )}
       </form>
     </Form>
   );

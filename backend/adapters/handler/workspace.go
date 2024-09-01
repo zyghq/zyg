@@ -490,7 +490,7 @@ func (h *WorkspaceHandler) handleCreateWorkspaceCustomer(
 	resp := CustomerResp{
 		CustomerId:  customer.CustomerId,
 		Name:        customer.Name,
-		AvatarUrl:   customer.AvatarUrl,
+		AvatarUrl:   customer.AvatarUrl(),
 		IsAnonymous: customer.IsAnonymous,
 		Role:        customer.Role,
 		ExternalId:  customer.ExternalId,
@@ -499,7 +499,6 @@ func (h *WorkspaceHandler) handleCreateWorkspaceCustomer(
 		CreatedAt:   customer.CreatedAt,
 		UpdatedAt:   customer.UpdatedAt,
 	}
-
 	if isCreated {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)

@@ -323,7 +323,6 @@ type Customer struct {
 	Email       sql.NullString
 	Phone       sql.NullString
 	Name        string
-	AvatarUrl   string
 	AnonId      string
 	IsAnonymous bool
 	Role        string
@@ -379,7 +378,7 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 		Email:       email,
 		Phone:       phone,
 		Name:        c.Name,
-		AvatarUrl:   c.AvatarUrl,
+		AvatarUrl:   c.AvatarUrl(), // generate avatar url
 		AnonId:      c.AnonId,
 		IsAnonymous: c.IsAnonymous,
 		Role:        c.Role,
@@ -393,14 +392,14 @@ func (c Customer) AnonName() string {
 	return "Anon User"
 }
 
-func (c Customer) GenerateAvatar(s string) string {
+func (c Customer) AvatarUrl() string {
 	url := zyg.GetAvatarBaseURL()
 	// url may or may not have a trailing slash
 	// add a trailing slash if it doesn't have one
 	if !strings.HasSuffix(url, "/") {
 		url = url + "/"
 	}
-	return url + s
+	return url + c.CustomerId
 }
 
 type InboundMessage struct {
@@ -421,9 +420,10 @@ func (im InboundMessage) GenId() string {
 type OutboundMessage struct {
 	MessageId   string
 	MemberId    string
+	MemberName  string
+	PreviewText string
 	FirstSeqId  string
 	LastSeqId   string
-	PreviewText string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -433,35 +433,26 @@ func (em OutboundMessage) GenId() string {
 }
 
 type Thread struct {
-	WorkspaceId    string
-	ThreadId       string
-	CustomerId     string
-	CustomerName   string
-	AssigneeId     sql.NullString
-	AssigneeName   sql.NullString
-	Title          string
-	Description    string
-	Sequence       int
-	Status         string
-	Read           bool
-	Replied        bool
-	Priority       string
-	Spam           bool
-	Channel        string
-	PreviewText    string
-	InboundMessage *InboundMessage
-	//IngressMessageId    sql.NullString
-	//IngressFirstSeq     sql.NullInt64
-	//IngressLastSeq      sql.NullInt64
-	//IngressCustomerId   sql.NullString
-	//IngressCustomerName sql.NullString
-	EgressMessageId  sql.NullString
-	EgressFirstSeq   sql.NullInt64
-	EgressLastSeq    sql.NullInt64
-	EgressMemberId   sql.NullString
-	EgressMemberName sql.NullString
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	WorkspaceId     string
+	ThreadId        string
+	CustomerId      string
+	CustomerName    string
+	AssigneeId      sql.NullString
+	AssigneeName    sql.NullString
+	Title           string
+	Description     string
+	Sequence        int
+	Status          string
+	Read            bool
+	Replied         bool
+	Priority        string
+	Spam            bool
+	Channel         string
+	PreviewText     string
+	InboundMessage  *InboundMessage
+	OutboundMessage *OutboundMessage
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 func (th *Thread) GenId() string {
@@ -486,6 +477,29 @@ func (th *Thread) AddInboundMessage(
 
 func (th *Thread) ClearInboundMessage() {
 	th.InboundMessage = nil
+}
+
+func (th *Thread) AddOutboundMessage(
+	messageId string,
+	memberId string, memberName string,
+	previewText string,
+	firstSeqId string, lastSeqId string,
+	createdAt time.Time, updatedAt time.Time,
+) {
+	th.OutboundMessage = &OutboundMessage{
+		MessageId:   messageId,
+		MemberId:    memberId,
+		MemberName:  memberName,
+		PreviewText: previewText,
+		FirstSeqId:  firstSeqId,
+		LastSeqId:   lastSeqId,
+		CreatedAt:   createdAt,
+		UpdatedAt:   updatedAt,
+	}
+}
+
+func (th *Thread) ClearOutboundMessage() {
+	th.OutboundMessage = nil
 }
 
 type Chat struct {

@@ -98,8 +98,7 @@ CREATE TABLE customer (
     email VARCHAR(255) NULL, -- email of the customer
     phone VARCHAR(255) NULL, -- phone of the customer
     name VARCHAR(255)  NOT NULL, -- name of the customer
-    avatar_url VARCHAR(255) NOT NULL, -- avatar url of the customer
-
+    
     role VARCHAR(255) NOT NULL, -- role of the customer
     anonymous_id UUID DEFAULT gen_random_uuid(), -- anonymous id of the customer
     is_anonymous BOOLEAN NOT NULL DEFAULT FALSE, -- anonymous status of the customer
@@ -173,8 +172,6 @@ CREATE TABLE thread_qa_answer (
 CREATE TABLE inbound_message (
     message_id VARCHAR(255) NOT NULL,
     customer_id VARCHAR(255) NOT NULL,
-    first_sequence BIGINT NOT NULL DEFAULT fn_next_id(), -- deprecate
-    last_sequence BIGINT NOT NULL DEFAULT fn_next_id(), -- deprecate
     first_seq_id VARCHAR(255) NOT NULL,
     last_seq_id VARCHAR(255) NOT NULL,
     preview_text TEXT NOT NULL,
@@ -189,8 +186,9 @@ CREATE TABLE inbound_message (
 CREATE TABLE outbound_message (
     message_id VARCHAR(255) NOT NULL,
     member_id VARCHAR(255) NOT NULL,
-    first_sequence BIGINT NOT NULL DEFAULT fn_next_id(),
-    last_sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+    first_seq_id VARCHAR(255) NOT NULL,
+    last_seq_id VARCHAR(255) NOT NULL,
+    preview_text TEXT NOT NULL,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

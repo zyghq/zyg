@@ -251,9 +251,9 @@ type ThreadRepositorer interface {
 		ctx context.Context, thl models.ThreadLabel) (models.ThreadLabel, bool, error)
 	RetrieveLabelsByThreadId(ctx context.Context, threadId string) ([]models.ThreadLabel, error)
 	InsertCustomerChat(
-		ctx context.Context, inboundMessage models.InboundMessage, chat models.Chat) (models.Chat, error)
+		ctx context.Context, thread models.Thread, inboundMessage models.InboundMessage, chat models.Chat) (models.Chat, error)
 	InsertMemberChat(
-		ctx context.Context, outboundMessageId *string, chat models.Chat) (models.Chat, error)
+		ctx context.Context, thread models.Thread, outboundMessage models.OutboundMessage, chat models.Chat) (models.Chat, error)
 	FetchThChatMessagesByThreadId(
 		ctx context.Context, threadId string) ([]models.Chat, error)
 	ComputeStatusMetricsByWorkspaceId(
