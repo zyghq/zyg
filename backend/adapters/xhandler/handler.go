@@ -70,14 +70,8 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// fetch the secret key for the widget workspace.
-	// TODO: @sanchitrk shall we do getOrCreate here?
-	sk, err := h.ws.GetSecretKey(ctx, widget.WorkspaceId)
-	if errors.Is(err, services.ErrSecretKeyNotFound) {
-		// if the secret key is not found, then the widget cannot be authorized.
-		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-		return
-	}
+	// Get or generate a new secret key for the workspace.
+	sk, err := h.ws.GetOrGenerateSecretKey(ctx, widget.WorkspaceId)
 	if err != nil {
 		slog.Error("failed to fetch workspace secret key", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -118,7 +112,7 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	var skipIdentityCheck bool // don't want redundant identity check if valid identity is provided.
+	var skipIdentityCheck bool // don't want redundant identity check if a valid identity is provided.
 
 	// The client provides customer hash, to verify the end customer.
 	//
@@ -126,7 +120,7 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 	// Priority is externalId, then email, then phone.
 	// Other values are ignored.
 	if customerHash.Valid {
-		skipIdentityCheck = true // if the customer has was provided skip the identity check.
+		skipIdentityCheck = true // if the customer has been provided, skip the identity check.
 		if customerExternalId.Valid {
 			if h.cs.VerifyExternalId(sk.Hmac, customerHash.String, customerExternalId.String) {
 				customer, isCreated, err = h.ws.CreateCustomerWithExternalId(
@@ -351,7 +345,7 @@ func (h *CustomerHandler) handleCustomerIdentities(
 	// Find other api that do that.
 	if reqp.Email != nil {
 		// Check if email already exists for a customer, if then there is a conflict.
-		// Having a conflict doesn't mean we can't add the multiple email identities.
+		// Having a conflict doesn't mean we can't add multiple email identities.
 		hasConflict, err := h.ws.DoesEmailConflict(ctx, customer.WorkspaceId, *reqp.Email)
 		if err != nil {
 			slog.Error("failed to check email conflict", slog.Any("err", err))
