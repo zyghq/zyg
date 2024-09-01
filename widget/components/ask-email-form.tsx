@@ -13,7 +13,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { updateEmailAction } from "@/app/threads/_actions";
-import { Identities } from "@/lib/customer";
+import { CustomerRefreshable } from "@/lib/customer";
+import { customerSchema } from "@/lib/customer";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -39,11 +40,11 @@ function SubmitButton({ isDisabled }: { isDisabled: boolean }) {
 export default function AskEmailForm({
   widgetId,
   jwt,
-  setIdentities,
+  setUpdates,
 }: {
   widgetId: string;
   jwt: string;
-  setIdentities: (identities: Identities) => void;
+  setUpdates: (updates: CustomerRefreshable) => void;
 }) {
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -69,14 +70,28 @@ export default function AskEmailForm({
       return;
     }
     if (data) {
-      const { email, externalId, phone, name, isVerified } = data;
-      setIdentities({
-        name,
-        customerEmail: email,
-        customerPhone: phone,
-        customerExternalId: externalId,
-        isVerified,
-      });
+      try {
+        const updates = customerSchema.parse(data);
+        setUpdates({
+          externalId: updates.externalId,
+          email: updates.email,
+          phone: updates.phone,
+          name: updates.name,
+          avatarUrl: updates.avatarUrl,
+          isVerified: updates.isVerified,
+          role: updates.role,
+          requireIdentities: updates.requireIdentities,
+          createdAt: updates.createdAt,
+          updatedAt: updates.updatedAt,
+        });
+      } catch (err) {
+        console.error("Failed to parse customer", err);
+        if (err instanceof z.ZodError) {
+          form.setError("root.serverError", {
+            message: "Please try again later.",
+          });
+        }
+      }
     }
     form.reset({ email: "" });
   };
