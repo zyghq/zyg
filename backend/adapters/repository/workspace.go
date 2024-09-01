@@ -433,3 +433,66 @@ func (wrk *WorkspaceDB) LookupWidgetById(
 	}
 	return widget, nil
 }
+
+func (wrk *WorkspaceDB) LookupWidgetSessionById(
+	ctx context.Context, widgetId string, sessionId string) (models.WidgetSession, error) {
+	var session models.WidgetSession
+
+	stmt := `SELECT
+		session_id, widget_id, data, expire_at,
+		created_at, updated_at
+		FROM widget_session WHERE widget_id = $1 AND session_id = $2`
+
+	err := wrk.db.QueryRow(ctx, stmt, widgetId, sessionId).Scan(
+		&session.SessionId, &session.WidgetId,
+		&session.Data, &session.ExpireAt,
+		&session.CreatedAt, &session.UpdatedAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
+		return models.WidgetSession{}, ErrEmpty
+	}
+
+	if err != nil {
+		slog.Error("failed to query", slog.Any("err", err))
+		return models.WidgetSession{}, ErrQuery
+	}
+
+	return session, nil
+}
+
+func (wrk *WorkspaceDB) UpsertWidgetSessionById(
+	ctx context.Context, session models.WidgetSession) (models.WidgetSession, bool, error) {
+	stmt := `WITH ins AS (
+		INSERT INTO widget_session (session_id, widget_id, data, expire_at)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (session_id) DO UPDATE SET
+			data = $3,
+			expire_at = $4,
+			updated_at = now()
+		RETURNING session_id, widget_id, data, expire_at, created_at, updated_at, TRUE AS is_created
+	)
+	SELECT * FROM ins
+	UNION ALL
+	SELECT session_id, widget_id, data, expire_at, created_at, updated_at, FALSE AS is_created FROM widget_session
+	WHERE session_id = $1 AND NOT EXISTS (SELECT 1 FROM ins)`
+
+	var isCreated bool
+	err := wrk.db.QueryRow(ctx, stmt, session.SessionId, session.WidgetId, session.Data, session.ExpireAt).Scan(
+		&session.SessionId, &session.WidgetId, &session.Data, &session.ExpireAt,
+		&session.CreatedAt, &session.UpdatedAt, &isCreated,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
+		return models.WidgetSession{}, isCreated, ErrEmpty
+	}
+
+	if err != nil {
+		slog.Error("failed to insert query", slog.Any("err", err))
+		return models.WidgetSession{}, isCreated, ErrQuery
+	}
+
+	return session, isCreated, nil
+}
