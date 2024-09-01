@@ -37,9 +37,9 @@ func (h *ThreadChatHandler) handleGetThreadChats(
 
 	items := make([]ThreadResp, 0, 100)
 	for _, thread := range threads {
-		var threadAssignee, egressMember *ThMemberResp
+		var threadAssignee, outboundMember *ThMemberResp
 		var inboundCustomer *ThCustomerResp
-		var inboundFirstSeqId, inboundLastSeqId *string
+		var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string
 
 		threadCustomer := ThCustomerResp{
 			CustomerId: thread.CustomerId,
@@ -62,35 +62,37 @@ func (h *ThreadChatHandler) handleGetThreadChats(
 			inboundLastSeqId = &thread.InboundMessage.LastSeqId
 		}
 
-		if thread.EgressMessageId.Valid {
-			egressMember = &ThMemberResp{
-				MemberId: thread.EgressMemberId.String,
-				Name:     thread.EgressMemberName.String,
+		if thread.OutboundMessage != nil {
+			outboundMember = &ThMemberResp{
+				MemberId: thread.OutboundMessage.MemberId,
+				Name:     thread.OutboundMessage.MemberName,
 			}
+			outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
+			outboundLastSeqId = &thread.OutboundMessage.LastSeqId
 		}
 
 		resp := ThreadResp{
-			ThreadId:          thread.ThreadId,
-			Customer:          threadCustomer,
-			Title:             thread.Title,
-			Description:       thread.Description,
-			Sequence:          thread.Sequence,
-			Status:            thread.Status,
-			Read:              thread.Read,
-			Replied:           thread.Replied,
-			Priority:          thread.Priority,
-			Spam:              thread.Spam,
-			Channel:           thread.Channel,
-			PreviewText:       thread.PreviewText,
-			Assignee:          threadAssignee,
-			InboundFirstSeqId: inboundFirstSeqId,
-			InboundLastSeqId:  inboundLastSeqId,
-			InboundCustomer:   inboundCustomer,
-			EgressFirstSeq:    thread.EgressFirstSeq,
-			EgressLastSeq:     thread.EgressLastSeq,
-			EgressMember:      egressMember,
-			CreatedAt:         thread.CreatedAt,
-			UpdatedAt:         thread.UpdatedAt,
+			ThreadId:           thread.ThreadId,
+			Customer:           threadCustomer,
+			Title:              thread.Title,
+			Description:        thread.Description,
+			Sequence:           thread.Sequence,
+			Status:             thread.Status,
+			Read:               thread.Read,
+			Replied:            thread.Replied,
+			Priority:           thread.Priority,
+			Spam:               thread.Spam,
+			Channel:            thread.Channel,
+			PreviewText:        thread.PreviewText,
+			Assignee:           threadAssignee,
+			InboundFirstSeqId:  inboundFirstSeqId,
+			InboundLastSeqId:   inboundLastSeqId,
+			InboundCustomer:    inboundCustomer,
+			OutboundFirstSeqId: outboundFirstSeqId,
+			OutboundLastSeqId:  outboundLastSeqId,
+			OutboundMember:     outboundMember,
+			CreatedAt:          thread.CreatedAt,
+			UpdatedAt:          thread.UpdatedAt,
 		}
 		items = append(items, resp)
 	}
@@ -230,9 +232,9 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(
 		return
 	}
 
-	var threadAssignee, egressMember *ThMemberResp
+	var threadAssignee, outboundMember *ThMemberResp
 	var inboundCustomer *ThCustomerResp
-	var inboundFirstSeqId, inboundLastSeqId *string
+	var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string
 
 	threadCustomer := ThCustomerResp{
 		CustomerId: thread.CustomerId,
@@ -255,35 +257,37 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(
 		inboundLastSeqId = &thread.InboundMessage.LastSeqId
 	}
 
-	if thread.EgressMessageId.Valid {
-		egressMember = &ThMemberResp{
-			MemberId: thread.EgressMemberId.String,
-			Name:     thread.EgressMemberName.String,
+	if thread.OutboundMessage != nil {
+		outboundMember = &ThMemberResp{
+			MemberId: thread.OutboundMessage.MemberId,
+			Name:     thread.OutboundMessage.MemberName,
 		}
+		outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
+		outboundLastSeqId = &thread.OutboundMessage.LastSeqId
 	}
 
 	resp := ThreadResp{
-		ThreadId:          thread.ThreadId,
-		Customer:          threadCustomer,
-		Title:             thread.Title,
-		Description:       thread.Description,
-		Sequence:          thread.Sequence,
-		Status:            thread.Status,
-		Read:              thread.Read,
-		Replied:           thread.Replied,
-		Priority:          thread.Priority,
-		Spam:              thread.Spam,
-		Channel:           thread.Channel,
-		PreviewText:       thread.PreviewText,
-		Assignee:          threadAssignee,
-		InboundFirstSeqId: inboundFirstSeqId,
-		InboundLastSeqId:  inboundLastSeqId,
-		InboundCustomer:   inboundCustomer,
-		EgressFirstSeq:    thread.EgressFirstSeq,
-		EgressLastSeq:     thread.EgressLastSeq,
-		EgressMember:      egressMember,
-		CreatedAt:         thread.CreatedAt,
-		UpdatedAt:         thread.UpdatedAt,
+		ThreadId:           thread.ThreadId,
+		Customer:           threadCustomer,
+		Title:              thread.Title,
+		Description:        thread.Description,
+		Sequence:           thread.Sequence,
+		Status:             thread.Status,
+		Read:               thread.Read,
+		Replied:            thread.Replied,
+		Priority:           thread.Priority,
+		Spam:               thread.Spam,
+		Channel:            thread.Channel,
+		PreviewText:        thread.PreviewText,
+		Assignee:           threadAssignee,
+		InboundFirstSeqId:  inboundFirstSeqId,
+		InboundLastSeqId:   inboundLastSeqId,
+		InboundCustomer:    inboundCustomer,
+		OutboundFirstSeqId: outboundFirstSeqId,
+		OutboundLastSeqId:  outboundLastSeqId,
+		OutboundMember:     outboundMember,
+		CreatedAt:          thread.CreatedAt,
+		UpdatedAt:          thread.UpdatedAt,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -307,9 +311,9 @@ func (h *ThreadChatHandler) handleGetMyThreadChats(
 
 	items := make([]ThreadResp, 0, 100)
 	for _, thread := range threads {
-		var threadAssignee, egressMember *ThMemberResp
+		var threadAssignee, outboundMember *ThMemberResp
 		var inboundCustomer *ThCustomerResp
-		var inboundFirstSeqId, inboundLastSeqId *string
+		var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string
 
 		threadCustomer := ThCustomerResp{
 			CustomerId: thread.CustomerId,
@@ -332,35 +336,37 @@ func (h *ThreadChatHandler) handleGetMyThreadChats(
 			inboundLastSeqId = &thread.InboundMessage.LastSeqId
 		}
 
-		if thread.EgressMessageId.Valid {
-			egressMember = &ThMemberResp{
-				MemberId: thread.EgressMemberId.String,
-				Name:     thread.EgressMemberName.String,
+		if thread.OutboundMessage != nil {
+			outboundMember = &ThMemberResp{
+				MemberId: thread.OutboundMessage.MemberId,
+				Name:     thread.OutboundMessage.MemberName,
 			}
+			outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
+			outboundLastSeqId = &thread.OutboundMessage.LastSeqId
 		}
 
 		resp := ThreadResp{
-			ThreadId:          thread.ThreadId,
-			Customer:          threadCustomer,
-			Title:             thread.Title,
-			Description:       thread.Description,
-			Sequence:          thread.Sequence,
-			Status:            thread.Status,
-			Read:              thread.Read,
-			Replied:           thread.Replied,
-			Priority:          thread.Priority,
-			Spam:              thread.Spam,
-			Channel:           thread.Channel,
-			PreviewText:       thread.PreviewText,
-			Assignee:          threadAssignee,
-			InboundFirstSeqId: inboundFirstSeqId,
-			InboundLastSeqId:  inboundLastSeqId,
-			InboundCustomer:   inboundCustomer,
-			EgressFirstSeq:    thread.EgressFirstSeq,
-			EgressLastSeq:     thread.EgressLastSeq,
-			EgressMember:      egressMember,
-			CreatedAt:         thread.CreatedAt,
-			UpdatedAt:         thread.UpdatedAt,
+			ThreadId:           thread.ThreadId,
+			Customer:           threadCustomer,
+			Title:              thread.Title,
+			Description:        thread.Description,
+			Sequence:           thread.Sequence,
+			Status:             thread.Status,
+			Read:               thread.Read,
+			Replied:            thread.Replied,
+			Priority:           thread.Priority,
+			Spam:               thread.Spam,
+			Channel:            thread.Channel,
+			PreviewText:        thread.PreviewText,
+			Assignee:           threadAssignee,
+			InboundFirstSeqId:  inboundFirstSeqId,
+			InboundLastSeqId:   inboundLastSeqId,
+			InboundCustomer:    inboundCustomer,
+			OutboundFirstSeqId: outboundFirstSeqId,
+			OutboundLastSeqId:  outboundLastSeqId,
+			OutboundMember:     outboundMember,
+			CreatedAt:          thread.CreatedAt,
+			UpdatedAt:          thread.UpdatedAt,
 		}
 		items = append(items, resp)
 	}
@@ -386,9 +392,9 @@ func (h *ThreadChatHandler) handleGetUnassignedThChats(
 
 	items := make([]ThreadResp, 0, 100)
 	for _, thread := range threads {
-		var threadAssignee, egressMember *ThMemberResp
+		var threadAssignee, outboundMember *ThMemberResp
 		var inboundCustomer *ThCustomerResp
-		var inboundFirstSeqId, inboundLastSeqId *string
+		var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string
 
 		threadCustomer := ThCustomerResp{
 			CustomerId: thread.CustomerId,
@@ -411,35 +417,37 @@ func (h *ThreadChatHandler) handleGetUnassignedThChats(
 			inboundLastSeqId = &thread.InboundMessage.LastSeqId
 		}
 
-		if thread.EgressMessageId.Valid {
-			egressMember = &ThMemberResp{
-				MemberId: thread.EgressMemberId.String,
-				Name:     thread.EgressMemberName.String,
+		if thread.OutboundMessage != nil {
+			outboundMember = &ThMemberResp{
+				MemberId: thread.OutboundMessage.MemberId,
+				Name:     thread.OutboundMessage.MemberName,
 			}
+			outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
+			outboundLastSeqId = &thread.OutboundMessage.LastSeqId
 		}
 
 		resp := ThreadResp{
-			ThreadId:          thread.ThreadId,
-			Customer:          threadCustomer,
-			Title:             thread.Title,
-			Description:       thread.Description,
-			Sequence:          thread.Sequence,
-			Status:            thread.Status,
-			Read:              thread.Read,
-			Replied:           thread.Replied,
-			Priority:          thread.Priority,
-			Spam:              thread.Spam,
-			Channel:           thread.Channel,
-			PreviewText:       thread.PreviewText,
-			Assignee:          threadAssignee,
-			InboundFirstSeqId: inboundFirstSeqId,
-			InboundLastSeqId:  inboundLastSeqId,
-			InboundCustomer:   inboundCustomer,
-			EgressFirstSeq:    thread.EgressFirstSeq,
-			EgressLastSeq:     thread.EgressLastSeq,
-			EgressMember:      egressMember,
-			CreatedAt:         thread.CreatedAt,
-			UpdatedAt:         thread.UpdatedAt,
+			ThreadId:           thread.ThreadId,
+			Customer:           threadCustomer,
+			Title:              thread.Title,
+			Description:        thread.Description,
+			Sequence:           thread.Sequence,
+			Status:             thread.Status,
+			Read:               thread.Read,
+			Replied:            thread.Replied,
+			Priority:           thread.Priority,
+			Spam:               thread.Spam,
+			Channel:            thread.Channel,
+			PreviewText:        thread.PreviewText,
+			Assignee:           threadAssignee,
+			InboundFirstSeqId:  inboundFirstSeqId,
+			InboundLastSeqId:   inboundLastSeqId,
+			InboundCustomer:    inboundCustomer,
+			OutboundFirstSeqId: outboundFirstSeqId,
+			OutboundLastSeqId:  outboundLastSeqId,
+			OutboundMember:     outboundMember,
+			CreatedAt:          thread.CreatedAt,
+			UpdatedAt:          thread.UpdatedAt,
 		}
 		items = append(items, resp)
 	}
@@ -478,9 +486,9 @@ func (h *ThreadChatHandler) handleGetLabelledThreadChats(
 
 	items := make([]ThreadResp, 0, 100)
 	for _, thread := range threads {
-		var threadAssignee, egressMember *ThMemberResp
+		var threadAssignee, outboundMember *ThMemberResp
 		var inboundCustomer *ThCustomerResp
-		var inboundFirstSeqId, inboundLastSeqId *string
+		var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string
 
 		threadCustomer := ThCustomerResp{
 			CustomerId: thread.CustomerId,
@@ -503,38 +511,39 @@ func (h *ThreadChatHandler) handleGetLabelledThreadChats(
 			inboundLastSeqId = &thread.InboundMessage.LastSeqId
 		}
 
-		if thread.EgressMessageId.Valid {
-			egressMember = &ThMemberResp{
-				MemberId: thread.EgressMemberId.String,
-				Name:     thread.EgressMemberName.String,
+		if thread.OutboundMessage != nil {
+			outboundMember = &ThMemberResp{
+				MemberId: thread.OutboundMessage.MemberId,
+				Name:     thread.OutboundMessage.MemberName,
 			}
+			outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
+			outboundLastSeqId = &thread.OutboundMessage.LastSeqId
 		}
 
 		resp := ThreadResp{
-			ThreadId:          thread.ThreadId,
-			Customer:          threadCustomer,
-			Title:             thread.Title,
-			Description:       thread.Description,
-			Sequence:          thread.Sequence,
-			Status:            thread.Status,
-			Read:              thread.Read,
-			Replied:           thread.Replied,
-			Priority:          thread.Priority,
-			Spam:              thread.Spam,
-			Channel:           thread.Channel,
-			PreviewText:       thread.PreviewText,
-			Assignee:          threadAssignee,
-			InboundFirstSeqId: inboundFirstSeqId,
-			InboundLastSeqId:  inboundLastSeqId,
-			InboundCustomer:   inboundCustomer,
-			EgressFirstSeq:    thread.EgressFirstSeq,
-			EgressLastSeq:     thread.EgressLastSeq,
-			EgressMember:      egressMember,
-			CreatedAt:         thread.CreatedAt,
-			UpdatedAt:         thread.UpdatedAt,
+			ThreadId:           thread.ThreadId,
+			Customer:           threadCustomer,
+			Title:              thread.Title,
+			Description:        thread.Description,
+			Sequence:           thread.Sequence,
+			Status:             thread.Status,
+			Read:               thread.Read,
+			Replied:            thread.Replied,
+			Priority:           thread.Priority,
+			Spam:               thread.Spam,
+			Channel:            thread.Channel,
+			PreviewText:        thread.PreviewText,
+			Assignee:           threadAssignee,
+			InboundFirstSeqId:  inboundFirstSeqId,
+			InboundLastSeqId:   inboundLastSeqId,
+			InboundCustomer:    inboundCustomer,
+			OutboundFirstSeqId: outboundFirstSeqId,
+			OutboundLastSeqId:  outboundLastSeqId,
+			OutboundMember:     outboundMember,
+			CreatedAt:          thread.CreatedAt,
+			UpdatedAt:          thread.UpdatedAt,
 		}
 		items = append(items, resp)
-
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

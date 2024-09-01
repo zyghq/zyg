@@ -43,7 +43,7 @@ func handleGetIndex(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
-func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *http.Request) {
+func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Request) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
@@ -64,20 +64,20 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
-
 	if err != nil {
 		slog.Error("failed to fetch workspace widget", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
+	// fetch the secret key for the widget workspace.
+	// TODO: @sanchitrk shall we do getOrCreate here?
 	sk, err := h.ws.GetSecretKey(ctx, widget.WorkspaceId)
 	if errors.Is(err, services.ErrSecretKeyNotFound) {
 		// if the secret key is not found, then the widget cannot be authorized.
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
-
 	if err != nil {
 		slog.Error("failed to fetch workspace secret key", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -92,7 +92,12 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 	customerEmail := models.NullString(reqp.CustomerEmail)
 	customerPhone := models.NullString(reqp.CustomerPhone)
 
-	anonId := models.NullString(reqp.AnonId)
+	var isVerified bool
+	if reqp.IsVerified != nil {
+		isVerified = *reqp.IsVerified
+	}
+
+	sessionId := models.NullString(reqp.SessionId)
 	customerName := models.Customer{}.AnonName()
 
 	// if the customer traits are provided, then check for name in traits.
@@ -113,13 +118,21 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		}
 	}
 
+	var skipIdentityCheck bool // don't want redundant identity check if valid identity is provided.
+
+	// The client provides customer hash, to verify the end customer.
+	//
+	// Creates the customer if not found.
+	// Priority is externalId, then email, then phone.
+	// Other values are ignored.
 	if customerHash.Valid {
+		skipIdentityCheck = true // if the customer has was provided skip the identity check.
 		if customerExternalId.Valid {
 			if h.cs.VerifyExternalId(sk.Hmac, customerHash.String, customerExternalId.String) {
 				customer, isCreated, err = h.ws.CreateCustomerWithExternalId(
 					ctx, widget.WorkspaceId,
 					customerExternalId.String,
-					true,
+					isVerified,
 					customerName,
 				)
 				if err != nil {
@@ -136,7 +149,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 				customer, isCreated, err = h.ws.CreateCustomerWithEmail(
 					ctx, widget.WorkspaceId,
 					customerEmail.String,
-					true,
+					isVerified,
 					customerName,
 				)
 				if err != nil {
@@ -153,7 +166,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 				customer, isCreated, err = h.ws.CreateCustomerWithPhone(
 					ctx, widget.WorkspaceId,
 					customerPhone.String,
-					true,
+					isVerified,
 					customerName,
 				)
 				if err != nil {
@@ -166,20 +179,20 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 				return
 			}
 		}
-	} else if anonId.Valid {
-		isValid := models.IsValidUUID(anonId.String)
-		if !isValid {
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+	} else if sessionId.Valid {
+		// Check if the session with the session ID is already created and verify the session.
+		// Otherwise, create a new session with an anonymous customer.
+		customer, err = h.ws.ValidateWidgetSession(ctx, sk.Hmac, widget.WidgetId, sessionId.String)
+		if errors.Is(err, services.ErrWidgetSessionInvalid) {
+			customer, isCreated, err = h.ws.CreateWidgetSession(
+				ctx, sk.Hmac, widget.WorkspaceId, widget.WidgetId, sessionId.String, customerName)
+		}
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
-		customer, isCreated, err = h.ws.CreateAnonymousCustomer(
-			ctx, widget.WorkspaceId,
-			anonId.String,
-			customerName,
-		)
-		if err != nil {
-			slog.Error("failed to create anonymous customer", slog.Any("err", err))
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		if errors.Is(err, services.ErrWidgetSession) {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 	} else {
@@ -188,6 +201,7 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		return
 	}
 
+	// Generate JWT token for the customer and secret key.
 	jwt, err := h.cs.GenerateCustomerJwt(customer, sk.Hmac)
 	if err != nil {
 		slog.Error("failed to make jwt token with error", slog.Any("error", err))
@@ -195,15 +209,40 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 		return
 	}
 
+	// Check if the customer needs to provide additional identities.
+	// Ask for identities if the customer doesn't have a natural identity and isn't verified yet.
+	//
+	// Note: We can configure the workspace settings to have this enabled or disabled?
+	RequireIdentities := make([]string, 0, 3) // email, phone, externalId
+	if !customer.HasNaturalIdentity() && !customer.IsVerified && !skipIdentityCheck {
+		hasEmailIdentity, err := h.cs.HasProvidedEmailIdentity(ctx, customer.CustomerId)
+		if err != nil {
+			slog.Error("Failed to check customer email identity", slog.Any("err", err))
+			// If there's an error, we'll ask for email to be safe
+			RequireIdentities = append(RequireIdentities, "email")
+		} else if !hasEmailIdentity {
+			RequireIdentities = append(RequireIdentities, "email")
+		}
+		// Here you could add checks for other identity types if needed,
+		// For example, phone, external ID, etc.
+	}
+
 	resp := WidgetInitResp{
-		Jwt:         jwt,
-		Create:      isCreated,
-		IsAnonymous: customer.IsAnonymous,
-		Name:        customer.Name,
-		AvatarUrl:   customer.AvatarUrl,
-		Email:       customer.Email,
-		Phone:       customer.Phone,
-		ExternalId:  customer.ExternalId,
+		Jwt:    jwt,
+		Create: isCreated,
+		CustomerResp: CustomerResp{
+			CustomerId:        customer.CustomerId,
+			Name:              customer.Name,
+			AvatarUrl:         customer.AvatarUrl(),
+			Email:             customer.Email,
+			Phone:             customer.Phone,
+			ExternalId:        customer.ExternalId,
+			IsVerified:        customer.IsVerified,
+			Role:              customer.Role,
+			CreatedAt:         customer.CreatedAt,
+			UpdatedAt:         customer.UpdatedAt,
+			RequireIdentities: RequireIdentities,
+		},
 	}
 	if isCreated {
 		w.Header().Set("Content-Type", "application/json")
@@ -224,36 +263,53 @@ func (h *CustomerHandler) handleGetOrCreateCustomer(w http.ResponseWriter, r *ht
 	}
 }
 
-func (h *CustomerHandler) handleGetCustomer(w http.ResponseWriter, _ *http.Request, customer *models.Customer) {
-	var email string
-	var phone string
-	var externalId string
+func (h *CustomerHandler) handleGetCustomer(
+	w http.ResponseWriter, r *http.Request, customer *models.Customer) {
+	var externalId, email, phone string
 
 	if customer.Email.Valid {
 		email = customer.Email.String
 	}
-
 	if customer.Phone.Valid {
 		phone = customer.Phone.String
 	}
-
 	if customer.ExternalId.Valid {
 		externalId = customer.ExternalId.String
 	}
 
-	resp := CustomerResp{
-		CustomerId:  customer.CustomerId,
-		Name:        customer.Name,
-		AvatarUrl:   customer.AvatarUrl,
-		Email:       models.NullString(&email),
-		Phone:       models.NullString(&phone),
-		ExternalId:  models.NullString(&externalId),
-		IsAnonymous: customer.IsAnonymous,
-		Role:        customer.Role,
-		CreatedAt:   customer.CreatedAt,
-		UpdatedAt:   customer.UpdatedAt,
+	ctx := r.Context()
+
+	// Check if the customer needs to provide additional identities.
+	// Ask for identities if the customer doesn't have a natural identity and isn't verified yet.
+	//
+	// Note: We can configure the workspace settings to have this enabled or disabled?
+	RequireIdentities := make([]string, 0, 3) // email, phone, externalId
+	if !customer.HasNaturalIdentity() && !customer.IsVerified {
+		hasEmailIdentity, err := h.cs.HasProvidedEmailIdentity(ctx, customer.CustomerId)
+		if err != nil {
+			slog.Error("Failed to check customer email identity", slog.Any("err", err))
+			// If there's an error, we'll ask for email to be safe
+			RequireIdentities = append(RequireIdentities, "email")
+		} else if !hasEmailIdentity {
+			RequireIdentities = append(RequireIdentities, "email")
+		}
+		// Here you could add checks for other identity types if needed,
+		// For example, phone, external ID, etc.
 	}
 
+	resp := CustomerResp{
+		CustomerId:        customer.CustomerId,
+		Name:              customer.Name,
+		AvatarUrl:         customer.AvatarUrl(),
+		Email:             models.NullString(&email),
+		Phone:             models.NullString(&phone),
+		ExternalId:        models.NullString(&externalId),
+		IsVerified:        customer.IsVerified,
+		Role:              customer.Role,
+		CreatedAt:         customer.CreatedAt,
+		UpdatedAt:         customer.UpdatedAt,
+		RequireIdentities: RequireIdentities,
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
@@ -272,7 +328,6 @@ func (h *CustomerHandler) handleCustomerIdentities(
 	}(r.Body)
 
 	var reqp CustomerIdentitiesReq
-
 	err := json.NewDecoder(r.Body).Decode(&reqp)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -280,39 +335,23 @@ func (h *CustomerHandler) handleCustomerIdentities(
 	}
 
 	ctx := r.Context()
-	widgetId := r.PathValue("widgetId")
-	widget, err := h.ws.GetWidget(ctx, widgetId)
-	if errors.Is(err, services.ErrWidgetNotFound) {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-	if err != nil {
-		slog.Error("failed to get workspace widget", slog.Any("err", err))
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
 
-	// get the customer at the widget.
-	widgetCustomer, err := h.ws.GetCustomer(ctx, widget.WorkspaceId, customer.CustomerId, nil)
-	if errors.Is(err, services.ErrCustomerNotFound) {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-	if err != nil {
-		slog.Error("failed to get workspace customer", slog.Any("err", err))
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	// modify only if the customer is anonymous.
+	// Allow modification only if the customer is not verified
 	// from the external widget.
-	if !widgetCustomer.IsAnonymous {
+	// Don't want to allow modification of verified customer externally.
+	if customer.IsVerified {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
-	// create email identity.
+
+	// Add Email identity if provided for now, as it is more common.
+	// Add other identities if needed.
+	//
+	// Intentionally don't want to modify the primary email identifier from external widget api.
+	// Find other api that do that.
 	if reqp.Email != nil {
-		// check if email already exists for a customer, if then there is a conflict.
+		// Check if email already exists for a customer, if then there is a conflict.
+		// Having a conflict doesn't mean we can't add the multiple email identities.
 		hasConflict, err := h.ws.DoesEmailConflict(ctx, customer.WorkspaceId, *reqp.Email)
 		if err != nil {
 			slog.Error("failed to check email conflict", slog.Any("err", err))
@@ -330,10 +369,19 @@ func (h *CustomerHandler) handleCustomerIdentities(
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
-		resp := AddCustomerIdentitiesResp{
-			CustomerId:       emailIdentity.CustomerId,
-			Email:            &emailIdentity.Email,
-			HasEmailConflict: &emailIdentity.HasConflict,
+		// Respond with customer details, with empty requireIdentities.
+		resp := CustomerResp{
+			CustomerId:        emailIdentity.CustomerId,
+			ExternalId:        customer.ExternalId,
+			Email:             customer.Email,
+			Phone:             customer.Phone,
+			Name:              customer.Name,
+			AvatarUrl:         customer.AvatarUrl(),
+			IsVerified:        customer.IsVerified,
+			Role:              customer.Role,
+			CreatedAt:         customer.CreatedAt,
+			UpdatedAt:         customer.UpdatedAt,
+			RequireIdentities: []string{},
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -382,9 +430,9 @@ func (h *CustomerHandler) handleCreateCustomerThChat(
 		return
 	}
 
-	var threadAssignee, egressMember, chatMember *ThMemberResp
+	var threadAssignee, outboundMember, chatMember *ThMemberResp
 	var inboundCustomer, chatCustomer *ThCustomerResp
-	var inboundFirstSeqId, inboundLastSeqId *string
+	var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string
 
 	// for chat - either of them
 	if chat.CustomerId.Valid {
@@ -420,11 +468,13 @@ func (h *CustomerHandler) handleCreateCustomerThChat(
 		inboundLastSeqId = &thread.InboundMessage.LastSeqId
 	}
 
-	if thread.EgressMessageId.Valid {
-		egressMember = &ThMemberResp{
-			MemberId: thread.EgressMemberId.String,
-			Name:     thread.EgressMemberName.String,
+	if thread.OutboundMessage != nil {
+		outboundMember = &ThMemberResp{
+			MemberId: thread.OutboundMessage.MemberId,
+			Name:     thread.OutboundMessage.MemberName,
 		}
+		outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
+		outboundLastSeqId = &thread.OutboundMessage.LastSeqId
 	}
 
 	chatResp := ChatResp{
@@ -440,28 +490,28 @@ func (h *CustomerHandler) handleCreateCustomerThChat(
 	}
 
 	resp := ThreadChatResp{
-		ThreadId:          thread.ThreadId,
-		Customer:          threadCustomer,
-		Title:             thread.Title,
-		Description:       thread.Description,
-		Sequence:          thread.Sequence,
-		Status:            thread.Status,
-		Read:              thread.Read,
-		Replied:           thread.Replied,
-		Priority:          thread.Priority,
-		Spam:              thread.Spam,
-		Channel:           thread.Channel,
-		PreviewText:       thread.PreviewText,
-		Assignee:          threadAssignee,
-		InboundFirstSeqId: inboundFirstSeqId,
-		InboundLastSeqId:  inboundLastSeqId,
-		InboundCustomer:   inboundCustomer,
-		EgressFirstSeq:    thread.EgressFirstSeq,
-		EgressLastSeq:     thread.EgressLastSeq,
-		EgressMember:      egressMember,
-		CreatedAt:         thread.CreatedAt,
-		UpdatedAt:         thread.UpdatedAt,
-		Chat:              chatResp,
+		ThreadId:           thread.ThreadId,
+		Customer:           threadCustomer,
+		Title:              thread.Title,
+		Description:        thread.Description,
+		Sequence:           thread.Sequence,
+		Status:             thread.Status,
+		Read:               thread.Read,
+		Replied:            thread.Replied,
+		Priority:           thread.Priority,
+		Spam:               thread.Spam,
+		Channel:            thread.Channel,
+		PreviewText:        thread.PreviewText,
+		Assignee:           threadAssignee,
+		InboundFirstSeqId:  inboundFirstSeqId,
+		InboundLastSeqId:   inboundLastSeqId,
+		InboundCustomer:    inboundCustomer,
+		OutboundFirstSeqId: outboundFirstSeqId,
+		OutboundLastSeqId:  outboundLastSeqId,
+		OutboundMember:     outboundMember,
+		CreatedAt:          thread.CreatedAt,
+		UpdatedAt:          thread.UpdatedAt,
+		Chat:               chatResp,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -485,9 +535,9 @@ func (h *CustomerHandler) handleGetCustomerThChats(
 
 	items := make([]ThreadResp, 0, 100)
 	for _, thread := range threads {
-		var threadAssignee, egressMember *ThMemberResp
+		var threadAssignee, outboundMember *ThMemberResp
 		var inboundCustomer *ThCustomerResp
-		var inboundFirstSeqId, inboundLastSeqId *string
+		var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string
 
 		threadCustomer := ThCustomerResp{
 			CustomerId: thread.CustomerId,
@@ -510,35 +560,37 @@ func (h *CustomerHandler) handleGetCustomerThChats(
 			inboundLastSeqId = &thread.InboundMessage.LastSeqId
 		}
 
-		if thread.EgressMessageId.Valid {
-			egressMember = &ThMemberResp{
-				MemberId: thread.EgressMemberId.String,
-				Name:     thread.EgressMemberName.String,
+		if thread.OutboundMessage != nil {
+			outboundMember = &ThMemberResp{
+				MemberId: thread.OutboundMessage.MemberId,
+				Name:     thread.OutboundMessage.MemberName,
 			}
+			outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
+			outboundLastSeqId = &thread.OutboundMessage.LastSeqId
 		}
 
 		resp := ThreadResp{
-			ThreadId:          thread.ThreadId,
-			Customer:          threadCustomer,
-			Title:             thread.Title,
-			Description:       thread.Description,
-			Sequence:          thread.Sequence,
-			Status:            thread.Status,
-			Read:              thread.Read,
-			Replied:           thread.Replied,
-			Priority:          thread.Priority,
-			Spam:              thread.Spam,
-			Channel:           thread.Channel,
-			PreviewText:       thread.PreviewText,
-			Assignee:          threadAssignee,
-			InboundFirstSeqId: inboundFirstSeqId,
-			InboundLastSeqId:  inboundLastSeqId,
-			InboundCustomer:   inboundCustomer,
-			EgressFirstSeq:    thread.EgressFirstSeq,
-			EgressLastSeq:     thread.EgressLastSeq,
-			EgressMember:      egressMember,
-			CreatedAt:         thread.CreatedAt,
-			UpdatedAt:         thread.UpdatedAt,
+			ThreadId:           thread.ThreadId,
+			Customer:           threadCustomer,
+			Title:              thread.Title,
+			Description:        thread.Description,
+			Sequence:           thread.Sequence,
+			Status:             thread.Status,
+			Read:               thread.Read,
+			Replied:            thread.Replied,
+			Priority:           thread.Priority,
+			Spam:               thread.Spam,
+			Channel:            thread.Channel,
+			PreviewText:        thread.PreviewText,
+			Assignee:           threadAssignee,
+			InboundFirstSeqId:  inboundFirstSeqId,
+			InboundLastSeqId:   inboundLastSeqId,
+			InboundCustomer:    inboundCustomer,
+			OutboundFirstSeqId: outboundFirstSeqId,
+			OutboundLastSeqId:  outboundLastSeqId,
+			OutboundMember:     outboundMember,
+			CreatedAt:          thread.CreatedAt,
+			UpdatedAt:          thread.UpdatedAt,
 		}
 		items = append(items, resp)
 	}
@@ -693,7 +745,7 @@ func NewServer(
 
 	mux.HandleFunc("GET /{$}", handleGetIndex)
 
-	mux.HandleFunc("POST /widgets/{widgetId}/init/{$}", ch.handleGetOrCreateCustomer)
+	mux.HandleFunc("POST /widgets/{widgetId}/init/{$}", ch.handleInitWidget)
 	mux.Handle("GET /widgets/{widgetId}/me/{$}", NewEnsureAuth(ch.handleGetCustomer, authService))
 	mux.Handle("POST /widgets/{widgetId}/me/identities/{$}",
 		NewEnsureAuth(ch.handleCustomerIdentities, authService))

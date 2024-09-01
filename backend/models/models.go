@@ -1,15 +1,18 @@
 package models
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	"github.com/rs/xid"
 	"github.com/zyghq/zyg"
 )
@@ -35,7 +38,7 @@ type CustomerJWTClaims struct {
 	ExternalId  *string `json:"externalId"`
 	Email       *string `json:"email"`
 	Phone       *string `json:"phone"`
-	IsAnonymous bool    `json:"isAnonymous"`
+	IsVerified  bool    `json:"isVerified"`
 	jwt.RegisteredClaims
 }
 
@@ -48,10 +51,10 @@ func NullString(s *string) sql.NullString {
 }
 
 // IsValidUUID validates if a string is a valid UUID
-func IsValidUUID(u string) bool {
-	_, err := uuid.Parse(u)
-	return err == nil
-}
+//func IsValidUUID(u string) bool {
+//	_, err := uuid.Parse(u)
+//	return err == nil
+//}
 
 type Workspace struct {
 	WorkspaceId string
@@ -323,9 +326,7 @@ type Customer struct {
 	Email       sql.NullString
 	Phone       sql.NullString
 	Name        string
-	AvatarUrl   string
-	AnonId      string
-	IsAnonymous bool
+	IsVerified  bool
 	Role        string
 	UpdatedAt   time.Time
 	CreatedAt   time.Time
@@ -367,8 +368,7 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 		Phone       *string `json:"phone"`
 		Name        string  `json:"name"`
 		AvatarUrl   string  `json:"avatarUrl"`
-		AnonId      string  `json:"anonId"`
-		IsAnonymous bool    `json:"isAnonymous"`
+		IsVerified  bool    `json:"isVerified"`
 		Role        string  `json:"role"`
 		CreatedAt   string  `json:"createdAt"`
 		UpdatedAt   string  `json:"updatedAt"`
@@ -379,9 +379,8 @@ func (c Customer) MarshalJSON() ([]byte, error) {
 		Email:       email,
 		Phone:       phone,
 		Name:        c.Name,
-		AvatarUrl:   c.AvatarUrl,
-		AnonId:      c.AnonId,
-		IsAnonymous: c.IsAnonymous,
+		AvatarUrl:   c.AvatarUrl(), // generate avatar url
+		IsVerified:  c.IsVerified,
 		Role:        c.Role,
 		CreatedAt:   c.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:   c.UpdatedAt.Format(time.RFC3339),
@@ -393,14 +392,43 @@ func (c Customer) AnonName() string {
 	return "Anon User"
 }
 
-func (c Customer) GenerateAvatar(s string) string {
+func (c Customer) AvatarUrl() string {
 	url := zyg.GetAvatarBaseURL()
 	// url may or may not have a trailing slash
 	// add a trailing slash if it doesn't have one
 	if !strings.HasSuffix(url, "/") {
 		url = url + "/"
 	}
-	return url + s
+	return url + c.CustomerId
+}
+
+// IdentityHash is a hash of the customer's identity
+// Combined these fields create a unique hash for the customer
+// You might have to update this if you plan to add more identity fields
+func (c Customer) IdentityHash() string {
+	h := sha256.New()
+	// Combine all fields into a single string
+	identityString := fmt.Sprintf("%s:%s:%s:%s:%s:%t:%s",
+		c.WorkspaceId,
+		c.CustomerId,
+		c.ExternalId.String,
+		c.Email.String,
+		c.Phone.String,
+		c.IsVerified,
+		c.Role,
+	)
+
+	// Write the combined string to the hash
+	h.Write([]byte(identityString))
+
+	// Return the hash as a base64 encoded string
+	return base64.StdEncoding.EncodeToString(h.Sum(nil))
+}
+
+// HasNaturalIdentity returns true if the customer has any of the following identities:
+// email, phone, externalId are valid.
+func (c Customer) HasNaturalIdentity() bool {
+	return c.Email.Valid || c.Phone.Valid || c.ExternalId.Valid
 }
 
 type InboundMessage struct {
@@ -421,9 +449,10 @@ func (im InboundMessage) GenId() string {
 type OutboundMessage struct {
 	MessageId   string
 	MemberId    string
+	MemberName  string
+	PreviewText string
 	FirstSeqId  string
 	LastSeqId   string
-	PreviewText string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -433,35 +462,26 @@ func (em OutboundMessage) GenId() string {
 }
 
 type Thread struct {
-	WorkspaceId    string
-	ThreadId       string
-	CustomerId     string
-	CustomerName   string
-	AssigneeId     sql.NullString
-	AssigneeName   sql.NullString
-	Title          string
-	Description    string
-	Sequence       int
-	Status         string
-	Read           bool
-	Replied        bool
-	Priority       string
-	Spam           bool
-	Channel        string
-	PreviewText    string
-	InboundMessage *InboundMessage
-	//IngressMessageId    sql.NullString
-	//IngressFirstSeq     sql.NullInt64
-	//IngressLastSeq      sql.NullInt64
-	//IngressCustomerId   sql.NullString
-	//IngressCustomerName sql.NullString
-	EgressMessageId  sql.NullString
-	EgressFirstSeq   sql.NullInt64
-	EgressLastSeq    sql.NullInt64
-	EgressMemberId   sql.NullString
-	EgressMemberName sql.NullString
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	WorkspaceId     string
+	ThreadId        string
+	CustomerId      string
+	CustomerName    string
+	AssigneeId      sql.NullString
+	AssigneeName    sql.NullString
+	Title           string
+	Description     string
+	Sequence        int
+	Status          string
+	Read            bool
+	Replied         bool
+	Priority        string
+	Spam            bool
+	Channel         string
+	PreviewText     string
+	InboundMessage  *InboundMessage
+	OutboundMessage *OutboundMessage
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 func (th *Thread) GenId() string {
@@ -486,6 +506,29 @@ func (th *Thread) AddInboundMessage(
 
 func (th *Thread) ClearInboundMessage() {
 	th.InboundMessage = nil
+}
+
+func (th *Thread) AddOutboundMessage(
+	messageId string,
+	memberId string, memberName string,
+	previewText string,
+	firstSeqId string, lastSeqId string,
+	createdAt time.Time, updatedAt time.Time,
+) {
+	th.OutboundMessage = &OutboundMessage{
+		MessageId:   messageId,
+		MemberId:    memberId,
+		MemberName:  memberName,
+		PreviewText: previewText,
+		FirstSeqId:  firstSeqId,
+		LastSeqId:   lastSeqId,
+		CreatedAt:   createdAt,
+		UpdatedAt:   updatedAt,
+	}
+}
+
+func (th *Thread) ClearOutboundMessage() {
+	th.OutboundMessage = nil
 }
 
 type Chat struct {
@@ -665,4 +708,116 @@ type EmailIdentity struct {
 
 func (ei EmailIdentity) GenId() string {
 	return "ei" + xid.New().String()
+}
+
+type WidgetSessionData struct {
+	WorkspaceId  string `json:"workspaceId"`
+	CustomerId   string `json:"customerId"`
+	IdentityHash string `json:"identityHash"`
+}
+
+type WidgetSession struct {
+	SessionId string
+	WidgetId  string
+	Data      string
+	ExpireAt  time.Time
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func (ws *WidgetSession) GenId() string {
+	return "ws" + xid.New().String()
+}
+
+func (ws *WidgetSession) CreateSession(sessionId string, widgetId string) WidgetSession {
+	return WidgetSession{
+		SessionId: sessionId,
+		WidgetId:  widgetId,
+		ExpireAt:  time.Now().Add(time.Hour * 24), // 24 hours
+	}
+}
+
+// CreateSessionData creates the widget session data
+func (ws *WidgetSession) CreateSessionData(
+	workspaceId string, customerId string, identityHash string) WidgetSessionData {
+	return WidgetSessionData{
+		WorkspaceId:  workspaceId,
+		CustomerId:   customerId,
+		IdentityHash: identityHash,
+	}
+}
+
+// Encode encodes the session data and returns the encoded data
+// The secret key is specific to each workspace and is used to verify the integrity of the session data.
+func (ws *WidgetSession) Encode(sk string, session WidgetSessionData) (string, error) {
+	// jsonify the session data
+	sessJson, err := json.Marshal(session)
+	if err != nil {
+		return "", err
+	}
+
+	// stringify the JSON data
+	sessionData := string(sessJson)
+	encodedSessionData := base64.URLEncoding.EncodeToString([]byte(sessionData))
+
+	// create HMAC-SHA256 signature
+	h := hmac.New(sha256.New, []byte(sk))
+	h.Write([]byte(encodedSessionData))
+	signature := h.Sum(nil)
+
+	// Base64 encode the signature
+	encodedSignature := base64.URLEncoding.EncodeToString(signature)
+
+	// combine the session data and the signature
+	signedSession := fmt.Sprintf("%s:%s", encodedSessionData, encodedSignature)
+	return signedSession, nil
+}
+
+// SetEncodeData encodes the session data and sets the encoded data to the session
+// The secret key is specific to each workspace and is used to verify the integrity of the session data.
+func (ws *WidgetSession) SetEncodeData(sk string, session WidgetSessionData) error {
+	encoded, err := ws.Encode(sk, session)
+	if err != nil {
+		return err
+	}
+	ws.Data = encoded
+	return nil
+}
+
+// Decode splits the signed session string, verifies it, and decodes the session data
+// The secret key is specific to each workspace and is used to verify the integrity of the session data.
+func (ws *WidgetSession) Decode(sk string) (WidgetSessionData, error) {
+	var session WidgetSessionData
+
+	parts := strings.Split(ws.Data, ":")
+	if len(parts) != 2 {
+		return WidgetSessionData{}, errors.New("invalid signed session format")
+	}
+
+	encodedSessionData := parts[0]
+	signature := parts[1]
+
+	h := hmac.New(sha256.New, []byte(sk))
+	h.Write([]byte(encodedSessionData))
+	expectedSignature := h.Sum(nil)
+
+	receivedSignature, err := base64.URLEncoding.DecodeString(signature)
+	if err != nil {
+		return WidgetSessionData{}, err
+	}
+
+	if !hmac.Equal(receivedSignature, expectedSignature) {
+		return WidgetSessionData{}, errors.New(
+			"invalid signature: perhaps the data is tampered or the secret keys updated")
+	}
+
+	sessionData, err := base64.URLEncoding.DecodeString(encodedSessionData)
+	if err != nil {
+		return WidgetSessionData{}, err
+	}
+	err = json.Unmarshal(sessionData, &session)
+	if err != nil {
+		return WidgetSessionData{}, err
+	}
+	return session, nil
 }

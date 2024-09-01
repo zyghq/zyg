@@ -27,20 +27,14 @@ func NewCustomerService(repo ports.CustomerRepositorer) *CustomerService {
 
 func (s *CustomerService) GenerateCustomerJwt(c models.Customer, sk string) (string, error) {
 	var externalId, email, phone *string
-
 	audience := []string{"customer"}
-	if c.IsAnonymous {
-		audience = append(audience, "anonymous")
-	}
 
 	if c.ExternalId.Valid {
 		externalId = &c.ExternalId.String
 	}
-
 	if c.Email.Valid {
 		email = &c.Email.String
 	}
-
 	if c.Phone.Valid {
 		phone = &c.Phone.String
 	}
@@ -50,7 +44,7 @@ func (s *CustomerService) GenerateCustomerJwt(c models.Customer, sk string) (str
 		ExternalId:  externalId,
 		Email:       email,
 		Phone:       phone,
-		IsAnonymous: c.IsAnonymous,
+		IsVerified:  c.IsVerified,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "auth.zyg.ai",
 			Subject:   c.CustomerId,
@@ -109,4 +103,12 @@ func (s *CustomerService) AddCustomerEmailIdentity(
 		return models.EmailIdentity{}, ErrCustomer
 	}
 	return identity, nil
+}
+
+func (s *CustomerService) HasProvidedEmailIdentity(ctx context.Context, customerId string) (bool, error) {
+	exists, err := s.repo.EmailIdentityExists(ctx, customerId)
+	if err != nil {
+		return false, ErrEmailIdentityCheck
+	}
+	return exists, nil
 }

@@ -64,17 +64,16 @@ type WorkspaceServicer interface {
 	ListCustomers(
 		ctx context.Context, workspaceId string) ([]models.Customer, error)
 	CreateCustomerWithExternalId(
-		ctx context.Context, workspaceId string, externalId string, isAnonymous bool, name string,
+		ctx context.Context, workspaceId string, externalId string, isVerified bool, name string,
 	) (models.Customer, bool, error)
 	CreateCustomerWithEmail(
-		ctx context.Context, workspaceId string, email string, isAnonymous bool, name string,
+		ctx context.Context, workspaceId string, email string, isVerified bool, name string,
 	) (models.Customer, bool, error)
 	CreateCustomerWithPhone(
-		ctx context.Context, workspaceId string, phone string, isAnonymous bool, name string,
+		ctx context.Context, workspaceId string, phone string, isVerified bool, name string,
 	) (models.Customer, bool, error)
-	CreateAnonymousCustomer(
-		ctx context.Context, workspaceId string, anonId string, name string,
-	) (models.Customer, bool, error)
+	CreateUnverifiedCustomer(
+		ctx context.Context, workspaceId string, name string) (models.Customer, error)
 	CreateWidget(
 		ctx context.Context, workspaceId string, name string, configuration map[string]interface{},
 	) (models.Widget, error)
@@ -89,6 +88,11 @@ type WorkspaceServicer interface {
 		ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error)
 	DoesEmailConflict(
 		ctx context.Context, workspaceId string, email string) (bool, error)
+	ValidateWidgetSession(
+		ctx context.Context, sk string, widgetId string, sessionId string) (models.Customer, error)
+	CreateWidgetSession(
+		ctx context.Context, sk string, workspaceId string, widgetId string,
+		sessionId string, name string) (models.Customer, bool, error)
 }
 
 type CustomerServicer interface {
@@ -104,6 +108,7 @@ type CustomerServicer interface {
 		ctx context.Context, customer models.Customer) (models.Customer, error)
 	AddCustomerEmailIdentity(
 		ctx context.Context, emailIdentity models.EmailIdentity) (models.EmailIdentity, error)
+	HasProvidedEmailIdentity(ctx context.Context, customerId string) (bool, error)
 }
 
 type ThreadServicer interface {
@@ -191,6 +196,10 @@ type WorkspaceRepositorer interface {
 		ctx context.Context, workspaceId string) (models.WorkspaceSecret, error)
 	LookupWidgetById(
 		ctx context.Context, widgetId string) (models.Widget, error)
+	LookupWidgetSessionById(
+		ctx context.Context, widgetId string, sessionId string) (models.WidgetSession, error)
+	UpsertWidgetSessionById(
+		ctx context.Context, session models.WidgetSession) (models.WidgetSession, bool, error)
 }
 
 type MemberRepositorer interface {
@@ -211,7 +220,7 @@ type CustomerRepositorer interface {
 		ctx context.Context, customer models.Customer) (models.Customer, bool, error)
 	UpsertCustomerByPhone(
 		ctx context.Context, customer models.Customer) (models.Customer, bool, error)
-	UpsertCustomerByAnonId(
+	UpsertCustomerById(
 		ctx context.Context, customer models.Customer) (models.Customer, bool, error)
 	FetchCustomersByWorkspaceId(
 		ctx context.Context, workspaceId string, role *string) ([]models.Customer, error)
@@ -222,6 +231,7 @@ type CustomerRepositorer interface {
 	CheckEmailExists(
 		ctx context.Context, workspaceId string, email string) (bool, error)
 	InsertEmailIdentity(ctx context.Context, identity models.EmailIdentity) (models.EmailIdentity, error)
+	EmailIdentityExists(ctx context.Context, customerId string) (bool, error)
 }
 
 type ThreadRepositorer interface {
@@ -251,9 +261,9 @@ type ThreadRepositorer interface {
 		ctx context.Context, thl models.ThreadLabel) (models.ThreadLabel, bool, error)
 	RetrieveLabelsByThreadId(ctx context.Context, threadId string) ([]models.ThreadLabel, error)
 	InsertCustomerChat(
-		ctx context.Context, inboundMessage models.InboundMessage, chat models.Chat) (models.Chat, error)
+		ctx context.Context, thread models.Thread, inboundMessage models.InboundMessage, chat models.Chat) (models.Chat, error)
 	InsertMemberChat(
-		ctx context.Context, outboundMessageId *string, chat models.Chat) (models.Chat, error)
+		ctx context.Context, thread models.Thread, outboundMessage models.OutboundMessage, chat models.Chat) (models.Chat, error)
 	FetchThChatMessagesByThreadId(
 		ctx context.Context, threadId string) ([]models.Chat, error)
 	ComputeStatusMetricsByWorkspaceId(

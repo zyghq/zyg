@@ -31,15 +31,14 @@ func AuthenticateCustomer(
 	scheme string, cred string, widgetId string) (models.Customer, error) {
 	var customer models.Customer
 	if scheme == "bearer" {
-
 		sk, err := authz.GetWidgetLinkedSecretKey(ctx, widgetId)
 		if err != nil {
-			return customer, fmt.Errorf("%v", err)
+			return customer, fmt.Errorf("got no secret key for workspace widget %s: %v", widgetId, err)
 		}
 
 		cc, err := services.ParseCustomerJWTToken(cred, []byte(sk.Hmac))
 		if err != nil {
-			return customer, fmt.Errorf("%v", err)
+			return customer, fmt.Errorf("customer jwt invalid: %v", err)
 		}
 
 		sub, err := cc.RegisteredClaims.GetSubject()
@@ -49,7 +48,7 @@ func AuthenticateCustomer(
 
 		customer, err = authz.AuthenticateWorkspaceCustomer(ctx, cc.WorkspaceId, sub, nil)
 		if errors.Is(err, services.ErrCustomerNotFound) {
-			return customer, fmt.Errorf("customer not found or does not exist")
+			return customer, fmt.Errorf("authenticated sub customer not found")
 		}
 		if err != nil {
 			slog.Error("failed to fetch customer", slog.Any("err", err))
