@@ -92,6 +92,11 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 	customerEmail := models.NullString(reqp.CustomerEmail)
 	customerPhone := models.NullString(reqp.CustomerPhone)
 
+	var isVerified bool
+	if reqp.IsVerified != nil {
+		isVerified = *reqp.IsVerified
+	}
+
 	sessionId := models.NullString(reqp.SessionId)
 	customerName := models.Customer{}.AnonName()
 
@@ -113,17 +118,21 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
+	var skipIdentityCheck bool // don't want redundant identity check if valid identity is provided.
+
 	// The client provides customer hash, to verify the end customer.
+	//
 	// Creates the customer if not found.
 	// Priority is externalId, then email, then phone.
 	// Other values are ignored.
 	if customerHash.Valid {
+		skipIdentityCheck = true // if the customer has was provided skip the identity check.
 		if customerExternalId.Valid {
 			if h.cs.VerifyExternalId(sk.Hmac, customerHash.String, customerExternalId.String) {
 				customer, isCreated, err = h.ws.CreateCustomerWithExternalId(
 					ctx, widget.WorkspaceId,
 					customerExternalId.String,
-					true,
+					isVerified,
 					customerName,
 				)
 				if err != nil {
@@ -140,7 +149,7 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 				customer, isCreated, err = h.ws.CreateCustomerWithEmail(
 					ctx, widget.WorkspaceId,
 					customerEmail.String,
-					true,
+					isVerified,
 					customerName,
 				)
 				if err != nil {
@@ -157,7 +166,7 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 				customer, isCreated, err = h.ws.CreateCustomerWithPhone(
 					ctx, widget.WorkspaceId,
 					customerPhone.String,
-					true,
+					isVerified,
 					customerName,
 				)
 				if err != nil {
@@ -191,6 +200,8 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
+
+	// Generate JWT token for the customer and secret key.
 	jwt, err := h.cs.GenerateCustomerJwt(customer, sk.Hmac)
 	if err != nil {
 		slog.Error("failed to make jwt token with error", slog.Any("error", err))
@@ -198,15 +209,40 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// Check if the customer needs to provide additional identities.
+	// Ask for identities if the customer doesn't have a natural identity and isn't verified yet.
+	//
+	// Note: We can configure the workspace settings to have this enabled or disabled?
+	RequireIdentities := make([]string, 0, 3) // email, phone, externalId
+	if !customer.HasNaturalIdentity() && !customer.IsVerified && !skipIdentityCheck {
+		hasEmailIdentity, err := h.cs.HasProvidedEmailIdentity(ctx, customer.CustomerId)
+		if err != nil {
+			slog.Error("Failed to check customer email identity", slog.Any("err", err))
+			// If there's an error, we'll ask for email to be safe
+			RequireIdentities = append(RequireIdentities, "email")
+		} else if !hasEmailIdentity {
+			RequireIdentities = append(RequireIdentities, "email")
+		}
+		// Here you could add checks for other identity types if needed,
+		// For example, phone, external ID, etc.
+	}
+
 	resp := WidgetInitResp{
-		Jwt:         jwt,
-		Create:      isCreated,
-		IsAnonymous: customer.IsAnonymous,
-		Name:        customer.Name,
-		AvatarUrl:   customer.AvatarUrl(),
-		Email:       customer.Email,
-		Phone:       customer.Phone,
-		ExternalId:  customer.ExternalId,
+		Jwt:    jwt,
+		Create: isCreated,
+		CustomerResp: CustomerResp{
+			CustomerId:        customer.CustomerId,
+			Name:              customer.Name,
+			AvatarUrl:         customer.AvatarUrl(),
+			Email:             customer.Email,
+			Phone:             customer.Phone,
+			ExternalId:        customer.ExternalId,
+			IsVerified:        customer.IsVerified,
+			Role:              customer.Role,
+			CreatedAt:         customer.CreatedAt,
+			UpdatedAt:         customer.UpdatedAt,
+			RequireIdentities: RequireIdentities,
+		},
 	}
 	if isCreated {
 		w.Header().Set("Content-Type", "application/json")
@@ -227,36 +263,53 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (h *CustomerHandler) handleGetCustomer(w http.ResponseWriter, _ *http.Request, customer *models.Customer) {
-	var email string
-	var phone string
-	var externalId string
+func (h *CustomerHandler) handleGetCustomer(
+	w http.ResponseWriter, r *http.Request, customer *models.Customer) {
+	var externalId, email, phone string
 
 	if customer.Email.Valid {
 		email = customer.Email.String
 	}
-
 	if customer.Phone.Valid {
 		phone = customer.Phone.String
 	}
-
 	if customer.ExternalId.Valid {
 		externalId = customer.ExternalId.String
 	}
 
-	resp := CustomerResp{
-		CustomerId:  customer.CustomerId,
-		Name:        customer.Name,
-		AvatarUrl:   customer.AvatarUrl(),
-		Email:       models.NullString(&email),
-		Phone:       models.NullString(&phone),
-		ExternalId:  models.NullString(&externalId),
-		IsAnonymous: customer.IsAnonymous,
-		Role:        customer.Role,
-		CreatedAt:   customer.CreatedAt,
-		UpdatedAt:   customer.UpdatedAt,
+	ctx := r.Context()
+
+	// Check if the customer needs to provide additional identities.
+	// Ask for identities if the customer doesn't have a natural identity and isn't verified yet.
+	//
+	// Note: We can configure the workspace settings to have this enabled or disabled?
+	RequireIdentities := make([]string, 0, 3) // email, phone, externalId
+	if !customer.HasNaturalIdentity() && !customer.IsVerified {
+		hasEmailIdentity, err := h.cs.HasProvidedEmailIdentity(ctx, customer.CustomerId)
+		if err != nil {
+			slog.Error("Failed to check customer email identity", slog.Any("err", err))
+			// If there's an error, we'll ask for email to be safe
+			RequireIdentities = append(RequireIdentities, "email")
+		} else if !hasEmailIdentity {
+			RequireIdentities = append(RequireIdentities, "email")
+		}
+		// Here you could add checks for other identity types if needed,
+		// For example, phone, external ID, etc.
 	}
 
+	resp := CustomerResp{
+		CustomerId:        customer.CustomerId,
+		Name:              customer.Name,
+		AvatarUrl:         customer.AvatarUrl(),
+		Email:             models.NullString(&email),
+		Phone:             models.NullString(&phone),
+		ExternalId:        models.NullString(&externalId),
+		IsVerified:        customer.IsVerified,
+		Role:              customer.Role,
+		CreatedAt:         customer.CreatedAt,
+		UpdatedAt:         customer.UpdatedAt,
+		RequireIdentities: RequireIdentities,
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
@@ -282,39 +335,23 @@ func (h *CustomerHandler) handleCustomerIdentities(
 	}
 
 	ctx := r.Context()
-	widgetId := r.PathValue("widgetId")
-	widget, err := h.ws.GetWidget(ctx, widgetId)
-	if errors.Is(err, services.ErrWidgetNotFound) {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-	if err != nil {
-		slog.Error("failed to get workspace widget", slog.Any("err", err))
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
 
-	// get the customer at the widget.
-	widgetCustomer, err := h.ws.GetCustomer(ctx, widget.WorkspaceId, customer.CustomerId, nil)
-	if errors.Is(err, services.ErrCustomerNotFound) {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-	if err != nil {
-		slog.Error("failed to get workspace customer", slog.Any("err", err))
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	// modify only if the customer is anonymous.
+	// Allow modification only if the customer is not verified
 	// from the external widget.
-	if !widgetCustomer.IsAnonymous {
+	// Don't want to allow modification of verified customer externally.
+	if customer.IsVerified {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
-	// create email identity.
+
+	// Add Email identity if provided for now, as it is more common.
+	// Add other identities if needed.
+	//
+	// Intentionally don't want to modify the primary email identifier from external widget api.
+	// Find other api that do that.
 	if reqp.Email != nil {
-		// check if email already exists for a customer, if then there is a conflict.
+		// Check if email already exists for a customer, if then there is a conflict.
+		// Having a conflict doesn't mean we can't add the multiple email identities.
 		hasConflict, err := h.ws.DoesEmailConflict(ctx, customer.WorkspaceId, *reqp.Email)
 		if err != nil {
 			slog.Error("failed to check email conflict", slog.Any("err", err))
@@ -332,10 +369,19 @@ func (h *CustomerHandler) handleCustomerIdentities(
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
-		resp := CustomerIdentitiesResp{
-			CustomerId:       emailIdentity.CustomerId,
-			Email:            &emailIdentity.Email,
-			HasEmailConflict: &emailIdentity.HasConflict,
+		// Respond with customer details, with empty requireIdentities.
+		resp := CustomerResp{
+			CustomerId:        emailIdentity.CustomerId,
+			ExternalId:        customer.ExternalId,
+			Email:             customer.Email,
+			Phone:             customer.Phone,
+			Name:              customer.Name,
+			AvatarUrl:         customer.AvatarUrl(),
+			IsVerified:        customer.IsVerified,
+			Role:              customer.Role,
+			CreatedAt:         customer.CreatedAt,
+			UpdatedAt:         customer.UpdatedAt,
+			RequireIdentities: []string{},
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)

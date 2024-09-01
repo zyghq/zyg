@@ -6,6 +6,60 @@ import (
 	"time"
 )
 
+type CustomerResp struct {
+	CustomerId        string
+	ExternalId        sql.NullString
+	Email             sql.NullString
+	Phone             sql.NullString
+	Name              string
+	AvatarUrl         string
+	IsVerified        bool
+	Role              string
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	RequireIdentities []string
+}
+
+func (c CustomerResp) MarshalJSON() ([]byte, error) {
+	var externalId, email, phone *string
+	if c.ExternalId.Valid {
+		externalId = &c.ExternalId.String
+	}
+	if c.Email.Valid {
+		email = &c.Email.String
+	}
+	if c.Phone.Valid {
+		phone = &c.Phone.String
+	}
+
+	aux := &struct {
+		CustomerId        string   `json:"customerId"`
+		ExternalId        *string  `json:"externalId"`
+		Email             *string  `json:"email"`
+		Phone             *string  `json:"phone"`
+		Name              string   `json:"name"`
+		AvatarUrl         string   `json:"avatarUrl"`
+		IsVerified        bool     `json:"isVerified"`
+		Role              string   `json:"role"`
+		CreatedAt         string   `json:"createdAt"`
+		UpdatedAt         string   `json:"updatedAt"`
+		RequireIdentities []string `json:"requireIdentities"`
+	}{
+		CustomerId:        c.CustomerId,
+		ExternalId:        externalId,
+		Email:             email,
+		Phone:             phone,
+		Name:              c.Name,
+		AvatarUrl:         c.AvatarUrl,
+		IsVerified:        c.IsVerified,
+		Role:              c.Role,
+		CreatedAt:         c.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:         c.UpdatedAt.Format(time.RFC3339),
+		RequireIdentities: c.RequireIdentities,
+	}
+	return json.Marshal(aux)
+}
+
 type CustomerTraits struct {
 	FirstName *string `json:"firstName"`
 	LastName  *string `json:"lastName"`
@@ -14,6 +68,7 @@ type CustomerTraits struct {
 
 type WidgetInitReq struct {
 	SessionId          *string         `json:"sessionId"`
+	IsVerified         *bool           `json:"isVerified"`
 	CustomerHash       *string         `json:"customerHash"`
 	CustomerExternalId *string         `json:"customerExternalId"`
 	CustomerEmail      *string         `json:"customerEmail"`
@@ -22,50 +77,26 @@ type WidgetInitReq struct {
 }
 
 type WidgetInitResp struct {
-	Jwt         string         `json:"jwt"`
-	Create      bool           `json:"create"`
-	IsAnonymous bool           `json:"isAnonymous"`
-	Name        string         `json:"name"`
-	AvatarUrl   string         `json:"avatarUrl"`
-	Email       sql.NullString `json:"email"`
-	Phone       sql.NullString `json:"phone"`
-	ExternalId  sql.NullString `json:"externalId"`
+	Jwt    string `json:"jwt"`
+	Create bool   `json:"create"`
+	CustomerResp
 }
 
 func (w WidgetInitResp) MarshalJSON() ([]byte, error) {
-	var email *string
-	if w.Email.Valid {
-		email = &w.Email.String
+	customerJson, err := json.Marshal(w.CustomerResp)
+	if err != nil {
+		return nil, err
 	}
 
-	var phone *string
-	if w.Phone.Valid {
-		phone = &w.Phone.String
+	var mergedMap map[string]interface{}
+	err = json.Unmarshal(customerJson, &mergedMap)
+	if err != nil {
+		return nil, err
 	}
 
-	var externalId *string
-	if w.ExternalId.Valid {
-		externalId = &w.ExternalId.String
-	}
-
-	aux := &struct {
-		Jwt         string  `json:"jwt"`
-		Create      bool    `json:"create"`
-		IsAnonymous bool    `json:"isAnonymous"`
-		Name        string  `json:"name"`
-		Email       *string `json:"email"`
-		Phone       *string `json:"phone"`
-		ExternalId  *string `json:"externalId"`
-	}{
-		Jwt:         w.Jwt,
-		Create:      w.Create,
-		IsAnonymous: w.IsAnonymous,
-		Name:        w.Name,
-		Email:       email,
-		Phone:       phone,
-		ExternalId:  externalId,
-	}
-	return json.Marshal(aux)
+	mergedMap["jwt"] = w.Jwt
+	mergedMap["create"] = w.Create
+	return json.Marshal(mergedMap)
 }
 
 type ThChatReq struct {
@@ -280,64 +311,7 @@ func (t ThreadChatResp) MarshalJSON() ([]byte, error) {
 }
 
 type CustomerIdentitiesReq struct {
-	Email    *string `json:"email"`
-	Phone    *string `json:"phone"`
-	External *string `json:"external"`
-}
-
-type CustomerIdentitiesResp struct {
-	CustomerId       string  `json:"customerId"`
-	Email            *string `json:"email,omitempty"`
-	Phone            *string `json:"phone,omitempty"`
-	HasEmailConflict *bool   `json:"hasEmailConflict,omitempty"`
-	HasPhoneConflict *bool   `json:"hasPhoneConflict,omitempty"`
-}
-
-type CustomerResp struct {
-	CustomerId  string
-	ExternalId  sql.NullString
-	Email       sql.NullString
-	Phone       sql.NullString
-	Name        string
-	AvatarUrl   string
-	IsAnonymous bool
-	Role        string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
-func (c CustomerResp) MarshalJSON() ([]byte, error) {
-	var externalId, email, phone *string
-	if c.ExternalId.Valid {
-		externalId = &c.ExternalId.String
-	}
-	if c.Email.Valid {
-		email = &c.Email.String
-	}
-	if c.Phone.Valid {
-		phone = &c.Phone.String
-	}
-
-	aux := &struct {
-		CustomerId  string  `json:"customerId"`
-		ExternalId  *string `json:"externalId"`
-		Email       *string `json:"email"`
-		Phone       *string `json:"phone"`
-		Name        string  `json:"name"`
-		IsAnonymous bool    `json:"isAnonymous"`
-		Role        string  `json:"role"`
-		CreatedAt   string  `json:"createdAt"`
-		UpdatedAt   string  `json:"updatedAt"`
-	}{
-		CustomerId:  c.CustomerId,
-		ExternalId:  externalId,
-		Email:       email,
-		Phone:       phone,
-		Name:        c.Name,
-		IsAnonymous: c.IsAnonymous,
-		Role:        c.Role,
-		CreatedAt:   c.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:   c.UpdatedAt.Format(time.RFC3339),
-	}
-	return json.Marshal(aux)
+	Email      *string `json:"email"`
+	Phone      *string `json:"phone"`
+	ExternalId *string `json:"externalId"`
 }

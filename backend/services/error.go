@@ -32,4 +32,5 @@ const (
 	ErrWidgetNotFound       = serviceErr("widget not found")
 	ErrWidgetSession        = serviceErr("widget session error")
 	ErrWidgetSessionInvalid = serviceErr("widget session invalid")
+	ErrEmailIdentityCheck   = serviceErr("email identity check error")
 )

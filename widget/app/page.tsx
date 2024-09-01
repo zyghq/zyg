@@ -71,7 +71,6 @@ export default function Home() {
       }
 
       const data = await response.json();
-      console.log("********** data after listing.... thread", data);
       try {
         const threads = data.map((item: any) => {
           return threadResponseItemSchema.parse(item);
@@ -251,7 +250,7 @@ export default function Home() {
             <Tabs defaultValue="home" className="">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="home">Home</TabsTrigger>
-                <TabsTrigger value="threads">Threads</TabsTrigger>
+                <TabsTrigger value="threads">Conversations</TabsTrigger>
               </TabsList>
               <TabsContent value="home">
                 {renderHomeFeeds(homeFeeds)}
