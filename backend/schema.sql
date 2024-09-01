@@ -88,21 +88,17 @@ CREATE TABLE member (
 
 -- Represents the Customer table
 -- There can be multiple customers per workspace
--- Each customer is uniquely identified by one of `external_id`, `email` and `phone`, each unique to the workspace
--- noinspection SqlResolve
+-- Each customer is uniquely identified by one of
+-- `external_id`, `email` and `phone`, each unique to the workspace
 CREATE TABLE customer (
     customer_id VARCHAR(255) NOT NULL, -- primary key
     workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
-    
     external_id VARCHAR(255) NULL, -- external id of the customer
     email VARCHAR(255) NULL, -- email of the customer
     phone VARCHAR(255) NULL, -- phone of the customer
     name VARCHAR(255)  NOT NULL, -- name of the customer
-    
     role VARCHAR(255) NOT NULL, -- role of the customer
-    anonymous_id UUID DEFAULT gen_random_uuid(), -- anonymous id of the customer
-    is_anonymous BOOLEAN NOT NULL DEFAULT FALSE, -- anonymous status of the customer
-    
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE, -- verification status of the customer
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -110,10 +106,8 @@ CREATE TABLE customer (
     CONSTRAINT customer_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
     CONSTRAINT customer_workspace_id_external_id_key UNIQUE (workspace_id, external_id),
     CONSTRAINT customer_workspace_id_email_key UNIQUE (workspace_id, email),
-    CONSTRAINT customer_workspace_id_phone_key UNIQUE (workspace_id, phone),
-    CONSTRAINT customer_anonymous_id_key UNIQUE (anonymous_id)
+    CONSTRAINT customer_workspace_id_phone_key UNIQUE (workspace_id, phone)
 );
-
 
 CREATE TABLE email_identity (
     email_identity_id VARCHAR(255) NOT NULL,
@@ -121,7 +115,6 @@ CREATE TABLE email_identity (
     email VARCHAR(255) NOT NULL,
     is_verified BOOLEAN NOT NULL DEFAULT FALSE,
     has_conflict BOOLEAN NOT NULL DEFAULT FALSE,
-
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -141,7 +134,6 @@ CREATE TABLE thread_qa (
     title TEXT NOT NULL,
     summary TEXT NOT NULL,
     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
-    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -160,7 +152,6 @@ CREATE TABLE thread_qa_answer (
     answer TEXT NOT NULL,
     eval INT NULL DEFAULT NULL,
     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
-    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -175,7 +166,6 @@ CREATE TABLE inbound_message (
     first_seq_id VARCHAR(255) NOT NULL,
     last_seq_id VARCHAR(255) NOT NULL,
     preview_text TEXT NOT NULL,
-    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -189,7 +179,6 @@ CREATE TABLE outbound_message (
     first_seq_id VARCHAR(255) NOT NULL,
     last_seq_id VARCHAR(255) NOT NULL,
     preview_text TEXT NOT NULL,
-    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -214,7 +203,6 @@ CREATE TABLE thread (
     preview_text TEXT NOT NULL, -- preview text of the message
     inbound_message_id VARCHAR(255) NULL, -- fk to inbound_message
     outbound_message_id VARCHAR(255) NULL, -- fk to outbound_message
-    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -234,7 +222,6 @@ CREATE TABLE chat (
     customer_id VARCHAR(255) NULL,
     member_id VARCHAR(255) NULL,
     is_head BOOLEAN NOT NULL DEFAULT FALSE,
-
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -301,6 +288,20 @@ CREATE TABLE workspace_secret (
     CONSTRAINT workspace_secret_hmac_key UNIQUE (hmac)
 );
 
+-- Represents the widget session table
+-- This table is used to store the widget session linked to the widget.
+CREATE TABLE widget_session (
+    session_id VARCHAR(255) NOT NULL,
+    widget_id VARCHAR(255) NOT NULL,
+    data TEXT NOT NULL,
+    expire_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT widget_session_session_id_pkey PRIMARY KEY (session_id),
+    CONSTRAINT widget_session_widget_id_fkey FOREIGN KEY (widget_id) REFERENCES widget (widget_id)
+);
+
 -- ************************************ --
 -- tables below have been changed or deprecated.
 -- ************************************ --
@@ -324,6 +325,7 @@ CREATE TABLE event (
     customer_id VARCHAR(255) NULL, -- fk to customer if event is customer
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
     CONSTRAINT event_event_id_pkey PRIMARY KEY (event_id),
     CONSTRAINT event_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
     CONSTRAINT event_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id)
