@@ -74,12 +74,11 @@ export default function ThreadChats({
   params: { threadId: string };
 }) {
   const { threadId } = params;
-  const { isLoading, hasError, customer, setIdentities } = useCustomer();
 
-  const hasIdentity =
-    customer?.customerEmail ||
-    customer?.customerPhone ||
-    customer?.customerExternalId;
+  const customerContext = useCustomer();
+  const { customer, hasError, isLoading, setUpdates } = customerContext;
+
+  const requireIdentity = customer?.requireIdentities?.length ?? 0 > 0;
 
   const {
     data: chats,
@@ -94,7 +93,11 @@ export default function ThreadChats({
         console.error("No JWT found");
         return null;
       }
-      const { widgetId } = customer;
+      const widgetId = customer?.widgetId;
+      if (!widgetId) {
+        console.error("No widgetId found");
+        return null;
+      }
       const response = await fetch(
         `/api/widgets/${widgetId}/threads/${threadId}`,
         {
@@ -107,7 +110,6 @@ export default function ThreadChats({
           }),
         }
       );
-
       if (!response.ok) {
         throw new Error("Not Found");
       }
@@ -166,6 +168,10 @@ export default function ThreadChats({
 
   if (isLoadingThread) return null;
 
+  if (!customer) {
+    return null;
+  }
+
   if (!chats || !chats?.length) {
     return (
       <div className="flex flex-col items-center justify-center space-y-4 mt-24">
@@ -187,7 +193,7 @@ export default function ThreadChats({
   };
 
   const hasSentMessageWithoutIdentity =
-    chats.length > 0 && !hasIdentity && customer;
+    chats.length > 0 && requireIdentity && customer;
 
   const chatsReversed = hasSentMessageWithoutIdentity
     ? Array.from([chats[0]])
@@ -237,9 +243,9 @@ export default function ThreadChats({
         <ScrollArea className="p-4 h-[calc(100dvh-12rem)]">
           <div className="space-y-2">
             {chatsReversed.map((chat) => (
-              <Chat key={chat.threadId} chat={chat} />
+              <Chat key={chat.chatId} chat={chat} />
             ))}
-            {hasSentMessageWithoutIdentity && (
+            {hasSentMessageWithoutIdentity ? (
               <div className="flex flex-col px-2">
                 <div className="text-sm max-w-xs font-semibold mb-1">
                   Please provide your email address so we can reach you.
@@ -247,10 +253,10 @@ export default function ThreadChats({
                 <AskEmailForm
                   widgetId={customer.widgetId}
                   jwt={customer.jwt}
-                  setIdentities={setIdentities}
+                  setUpdates={setUpdates}
                 />
               </div>
-            )}
+            ) : null}
             <div ref={bottomRef}></div>
           </div>
         </ScrollArea>
