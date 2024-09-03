@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/zyghq/zyg"
 	"github.com/zyghq/zyg/adapters/repository"
 	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
@@ -297,7 +298,18 @@ func (ws *WorkspaceService) GetSecretKey(
 	if errors.Is(err, repository.ErrEmpty) {
 		return models.WorkspaceSecret{}, ErrSecretKeyNotFound
 	}
+	if err != nil {
+		return models.WorkspaceSecret{}, ErrSecretKey
+	}
+	return sk, nil
+}
 
+func (ws *WorkspaceService) GetOrGenerateSecretKey(
+	ctx context.Context, workspaceId string) (models.WorkspaceSecret, error) {
+	sk, err := ws.GetSecretKey(ctx, workspaceId)
+	if errors.Is(err, ErrSecretKeyNotFound) {
+		return ws.GenerateWorkspaceSecret(ctx, workspaceId, zyg.DefaultSecretKeyLength)
+	}
 	if err != nil {
 		return models.WorkspaceSecret{}, ErrSecretKey
 	}

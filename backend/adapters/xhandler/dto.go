@@ -66,6 +66,15 @@ type CustomerTraits struct {
 	Name      *string `json:"name"`
 }
 
+type WidgetConfig struct {
+	DomainsOnly    bool     `json:"domainsOnly"`
+	Domains        []string `json:"domains"`
+	BubblePosition string   `json:"bubblePosition"`
+	HeaderColor    string   `json:"headerColor"`
+	ProfilePicture string   `json:"profilePicture"`
+	IconColor      string   `json:"iconColor"`
+}
+
 type WidgetInitReq struct {
 	SessionId          *string         `json:"sessionId"`
 	IsVerified         *bool           `json:"isVerified"`

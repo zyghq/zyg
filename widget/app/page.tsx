@@ -12,37 +12,40 @@ import Threads from "@/components/threads";
 import { useCustomer } from "@/lib/customer";
 import { useQuery } from "@tanstack/react-query";
 import { threadResponseItemSchema, ThreadResponseItem } from "@/lib/thread";
+import { HomeLink } from "@/lib/widget";
 import { z } from "zod";
 
-interface HomeFeed {
-  id: string;
-  title: string;
-  previewText?: string;
-  href: string;
-}
+// interface HomeFeed {
+//   id: string;
+//   title: string;
+//   previewText?: string;
+//   href: string;
+// }
 
-const homeFeeds = [
-  {
-    id: "1",
-    title: "What is Zyg?",
-    previewText: "Check how Zyg can help you",
-    href: "https://www.zyg.ai/",
-  },
-  {
-    id: "3",
-    title: "Read the Docs",
-    href: "https://www.zyg.ai/",
-  },
-  {
-    id: "4",
-    title: "Book a Demo",
-    previewText: "Get a 10 min demo of Zyg",
-    href: "https://www.zyg.ai/",
-  },
-];
+// const homeFeeds = [
+//   {
+//     id: "1",
+//     title: "What is Zyg?",
+//     previewText: "Check how Zyg can help you",
+//     href: "https://www.zyg.ai/",
+//   },
+//   {
+//     id: "3",
+//     title: "Read the Docs",
+//     href: "https://www.zyg.ai/",
+//   },
+//   {
+//     id: "4",
+//     title: "Book a Demo",
+//     previewText: "Get a 10 min demo of Zyg",
+//     href: "https://www.zyg.ai/",
+//   },
+// ];
 
 export default function Home() {
-  const { isLoading, hasError, customer } = useCustomer();
+  const { isLoading, hasError, customer, widgetLayout } = useCustomer();
+  const { homeLinks = [] } = widgetLayout;
+
   const {
     data: threads,
     isLoading: isLoadingThreads,
@@ -88,10 +91,32 @@ export default function Home() {
     refetchOnMount: "always",
   });
 
-  const renderHomeFeeds = (feeds: HomeFeed[]) => {
+  const renderContent = () => {
+    if (widgetLayout.tabs.length > 1) {
+      const { defaultTab } = widgetLayout;
+      return (
+        <Tabs defaultValue={defaultTab} className="">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="home">Home</TabsTrigger>
+            <TabsTrigger value="threads">Conversations</TabsTrigger>
+          </TabsList>
+          <TabsContent value="home">{renderHomeLinks(homeLinks)}</TabsContent>
+          <TabsContent value="threads">{renderThreads(threads)}</TabsContent>
+        </Tabs>
+      );
+    }
+    if (widgetLayout.tabs.includes("home")) {
+      return renderHomeLinks(homeLinks);
+    }
+    if (widgetLayout.tabs.includes("conversations")) {
+      return renderThreads(threads);
+    }
+  };
+
+  const renderHomeLinks = (links: HomeLink[]) => {
     return (
       <div className="flex flex-col gap-2">
-        {feeds.map((feed) => (
+        {links.map((feed) => (
           <Link
             target="_blank"
             href={feed.href}
@@ -165,7 +190,7 @@ export default function Home() {
       <div className="flex flex-col items-center justify-center space-y-4 mt-24">
         <Icons.nothing className="w-40" />
         <p className="text-center text-muted-foreground">
-          Nothing to see here yet.
+          No conversations yet.
         </p>
       </div>
     );
@@ -215,12 +240,12 @@ export default function Home() {
     <div className="flex min-h-screen flex-col font-sans">
       <div className="z-10 w-full justify-between">
         <div className="flex w-full justify-between items-center p-4 bg-white">
-          <div className="text-xl">Hey! How can we help?</div>
+          <div className="text-xl">{widgetLayout.title}</div>
           <CloseButton />
         </div>
         <div className="fixed bottom-0 left-0 flex w-full border-t flex-col bg-white">
           <div className="w-full px-4 py-4">
-            <SendMessageCTA />
+            <SendMessageCTA ctaText={widgetLayout.ctaMessageButtonText} />
           </div>
           <div className="w-full border-t flex justify-center items-center py-2">
             <a
@@ -243,22 +268,10 @@ export default function Home() {
             >
               <Link href="/search">
                 <MagnifyingGlassIcon className="h-4 w-4 mr-1" />
-                Search for articles
+                {widgetLayout.ctaSearchButtonText}
               </Link>
             </Button>
-
-            <Tabs defaultValue="home" className="">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="home">Home</TabsTrigger>
-                <TabsTrigger value="threads">Conversations</TabsTrigger>
-              </TabsList>
-              <TabsContent value="home">
-                {renderHomeFeeds(homeFeeds)}
-              </TabsContent>
-              <TabsContent value="threads">
-                {renderThreads(threads)}
-              </TabsContent>
-            </Tabs>
+            {renderContent()}
           </div>
         </ScrollArea>
       </main>

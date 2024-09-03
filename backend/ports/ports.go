@@ -82,6 +82,8 @@ type WorkspaceServicer interface {
 		ctx context.Context, workspaceId string, length int) (models.WorkspaceSecret, error)
 	GetSecretKey(
 		ctx context.Context, workspaceId string) (models.WorkspaceSecret, error)
+	GetOrGenerateSecretKey(
+		ctx context.Context, workspaceId string) (models.WorkspaceSecret, error)
 	GetWidget(
 		ctx context.Context, widgetId string) (models.Widget, error)
 	GetCustomer(
