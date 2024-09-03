@@ -24,6 +24,7 @@ go.work
 # Secrets or Envs
 *.env
 *.env.local
+.env.yaml
 env.sh
 
 
@@ -72,12 +73,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Local directories and files
 scratch.txt
-
 secrets/
 db/
 redisdb/
-
-.env.yaml
-
+bkps/
 .idea/
