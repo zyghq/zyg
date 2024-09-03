@@ -43,6 +43,25 @@ func handleGetIndex(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
+func (h *CustomerHandler) handleGetWidgetConfig(w http.ResponseWriter, r *http.Request) {
+	// TODO: probaly get widget configuration from db/redis cache.
+	resp := WidgetConfig{
+		DomainsOnly:    false,
+		Domains:        []string{},
+		BubblePosition: "right",
+		HeaderColor:    "#9370DB",
+		ProfilePicture: "",
+		IconColor:      "#ffff",
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("failed to encode json", slog.Any("error", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+}
+
 func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Request) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
@@ -739,8 +758,11 @@ func NewServer(
 
 	mux.HandleFunc("GET /{$}", handleGetIndex)
 
+	mux.HandleFunc("GET /widgets/{widgetId}/config/{$}", ch.handleGetWidgetConfig)
 	mux.HandleFunc("POST /widgets/{widgetId}/init/{$}", ch.handleInitWidget)
-	mux.Handle("GET /widgets/{widgetId}/me/{$}", NewEnsureAuth(ch.handleGetCustomer, authService))
+
+	mux.Handle("GET /widgets/{widgetId}/me/{$}",
+		NewEnsureAuth(ch.handleGetCustomer, authService))
 	mux.Handle("POST /widgets/{widgetId}/me/identities/{$}",
 		NewEnsureAuth(ch.handleCustomerIdentities, authService))
 

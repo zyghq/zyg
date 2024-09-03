@@ -15,9 +15,17 @@ import {
   InitWidgetResponse,
   WidgetCustomerAuth,
 } from "@/lib/customer";
-
-import { SdkInitResponse } from "@/lib/widget";
+import { SdkInitResponse, WidgetLayout } from "@/lib/widget";
 import { useQuery } from "@tanstack/react-query";
+
+const defaultWidgetLayout = {
+  title: "Hey! How can we help",
+  ctaSearchButtonText: "Search for articles",
+  ctaMessageButtonText: "Send us a message",
+  tabs: ["home", "conversations"],
+  defaultTab: "home",
+  homeLinks: [],
+};
 
 export const ReactQueryClientProvider = ({
   children,
@@ -42,7 +50,16 @@ export const ReactQueryClientProvider = ({
 async function initWidgetRequest(
   payload: SdkInitResponse
 ): Promise<InitWidgetResponse> {
-  const { widgetId, ...body } = payload;
+  const { widgetId, sessionId, ...rest } = payload;
+  const { email, phone, externalId, customerHash } = rest;
+  // give what the API needs.
+  const body = {
+    sessionId,
+    customerExternalId: externalId,
+    customerEmail: email,
+    customerPhone: phone,
+    customerHash,
+  };
   const response = await fetch(`/api/widgets/${widgetId}/init`, {
     method: "POST",
     headers: {
@@ -71,6 +88,9 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
   const [customer, setCustomer] = React.useState<WidgetCustomerAuth | null>(
     null
   );
+  const [widgetLayout, setWidgetLayout] =
+    React.useState<WidgetLayout>(defaultWidgetLayout);
+
   const [isLoading, setIsLoading] = React.useState(true);
   const [hasError, setHasError] = React.useState(false);
 
@@ -134,7 +154,13 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
       try {
         console.log("*********** ifc:onMessageHandler ***********");
         const data = JSON.parse(e.data);
+        if (data.type === "layout") {
+          const response = JSON.parse(data.data) as WidgetLayout;
+          setWidgetLayout(response);
+        }
         if (data.type === "customer") {
+          console.log("*************** customer data iframe ***************");
+          console.log(data.data);
           const response = JSON.parse(data.data) as SdkInitResponse;
           initMutate.mutate({ ...response });
         }
@@ -158,6 +184,7 @@ export function CustomerProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     hasError,
     customer,
+    widgetLayout,
     setUpdates,
   };
 

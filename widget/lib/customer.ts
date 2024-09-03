@@ -1,5 +1,6 @@
 import * as React from "react";
 import { z } from "zod";
+import { WidgetLayout } from "@/lib/widget";
 
 // type KV = { [key: string]: string };
 
@@ -73,6 +74,7 @@ export interface CustomerRefreshable {
 
 export interface CustomerContext {
   customer: WidgetCustomerAuth | null;
+  widgetLayout: WidgetLayout;
   isLoading: boolean;
   hasError: boolean;
   setUpdates: (updates: CustomerRefreshable) => void;
