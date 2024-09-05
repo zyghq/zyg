@@ -37,7 +37,7 @@ func (h *ThreadChatHandler) handleGetThreadChats(
 
 	items := make([]ThreadResp, 0, 100)
 	for _, thread := range threads {
-		resp := (&ThreadResp{}).NewResponse(&thread)
+		resp := ThreadResp{}.NewResponse(&thread)
 		items = append(items, resp)
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -176,7 +176,7 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(
 		return
 	}
 
-	resp := (&ThreadResp{}).NewResponse(&thread)
+	resp := ThreadResp{}.NewResponse(&thread)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
@@ -199,7 +199,7 @@ func (h *ThreadChatHandler) handleGetMyThreadChats(
 
 	items := make([]ThreadResp, 0, 100)
 	for _, thread := range threads {
-		resp := (&ThreadResp{}).NewResponse(&thread)
+		resp := ThreadResp{}.NewResponse(&thread)
 		items = append(items, resp)
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -224,7 +224,7 @@ func (h *ThreadChatHandler) handleGetUnassignedThChats(
 
 	items := make([]ThreadResp, 0, 100)
 	for _, thread := range threads {
-		resp := (&ThreadResp{}).NewResponse(&thread)
+		resp := ThreadResp{}.NewResponse(&thread)
 		items = append(items, resp)
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -262,7 +262,7 @@ func (h *ThreadChatHandler) handleGetLabelledThreadChats(
 
 	items := make([]ThreadResp, 0, 100)
 	for _, thread := range threads {
-		resp := (&ThreadResp{}).NewResponse(&thread)
+		resp := ThreadResp{}.NewResponse(&thread)
 		items = append(items, resp)
 	}
 	w.Header().Set("Content-Type", "application/json")

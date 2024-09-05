@@ -98,18 +98,18 @@ export const threadResponseSchema = z.object({
     })
     .nullable()
     .default(null),
-  ingressFirstSeq: z.number().nullable().default(null),
-  ingressLastSeq: z.number().nullable().default(null),
-  ingressCustomer: z
+  inboundFirstSeqId: z.string().nullable().default(null),
+  inboundLastSeqId: z.string().nullable().default(null),
+  inboundCustomer: z
     .object({
       customerId: z.string(),
       name: z.string(),
     })
     .nullable()
     .default(null),
-  egressFirstSeq: z.number().nullable().default(null),
-  egressLastSeq: z.number().nullable().default(null),
-  egressMember: z
+  outboundFirstSeqId: z.string().nullable().default(null),
+  outboundLastSeqId: z.string().nullable().default(null),
+  outboundMember: z
     .object({
       memberId: z.string(),
       name: z.string(),

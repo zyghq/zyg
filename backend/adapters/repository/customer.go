@@ -192,6 +192,9 @@ func (c *CustomerDB) FetchCustomersByWorkspaceId(
 		args = append(args, *role)
 	}
 
+	// exclude visitors
+	stmt += " AND role <> 'visitor'"
+
 	stmt += " ORDER BY created_at DESC LIMIT 100"
 
 	rows, _ := c.db.Query(ctx, stmt, args...)
