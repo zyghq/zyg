@@ -78,9 +78,9 @@ func (s *ThreadChatService) GetWorkspaceThread(
 }
 
 func (s *ThreadChatService) ListCustomerThreadChats(
-	ctx context.Context, customerId string, role *string) ([]models.Thread, error) {
+	ctx context.Context, customerId string) ([]models.Thread, error) {
 	channel := models.ThreadChannel{}.Chat()
-	threads, err := s.repo.FetchThreadsByCustomerId(ctx, customerId, &channel, role)
+	threads, err := s.repo.FetchThreadsByCustomerId(ctx, customerId, &channel)
 	if err != nil {
 		return []models.Thread{}, ErrThreadChat
 	}
@@ -108,8 +108,7 @@ func (s *ThreadChatService) SetReplyStatus(
 func (s *ThreadChatService) ListWorkspaceThreadChats(
 	ctx context.Context, workspaceId string) ([]models.Thread, error) {
 	channel := models.ThreadChannel{}.Chat()
-	role := models.Customer{}.Engaged()
-	threads, err := s.repo.FetchThreadsByWorkspaceId(ctx, workspaceId, &channel, &role)
+	threads, err := s.repo.FetchThreadsByWorkspaceId(ctx, workspaceId, &channel, nil)
 	if err != nil {
 		return []models.Thread{}, ErrThreadChat
 	}
@@ -151,7 +150,7 @@ func (s *ThreadChatService) ListLabelledThreadChats(
 
 func (s *ThreadChatService) ThreadExistsInWorkspace(
 	ctx context.Context, workspaceId string, threadId string) (bool, error) {
-	exist, err := s.repo.CheckWorkspaceExistenceByThreadId(ctx, workspaceId, threadId)
+	exist, err := s.repo.CheckThreadInWorkspaceExists(ctx, workspaceId, threadId)
 	if err != nil {
 		return false, ErrThreadChat
 	}
@@ -165,7 +164,7 @@ func (s *ThreadChatService) SetLabel(
 		LabelId:  labelId,
 		AddedBy:  addedBy,
 	}
-	label, created, err := s.repo.SetLabelToThread(ctx, label)
+	label, created, err := s.repo.SetThreadLabel(ctx, label)
 	if err != nil {
 		return models.ThreadLabel{}, created, ErrThChatLabel
 	}
@@ -175,7 +174,7 @@ func (s *ThreadChatService) SetLabel(
 
 func (s *ThreadChatService) ListThreadLabels(
 	ctx context.Context, threadId string) ([]models.ThreadLabel, error) {
-	labels, err := s.repo.RetrieveLabelsByThreadId(ctx, threadId)
+	labels, err := s.repo.FetchAttachedLabelsByThreadId(ctx, threadId)
 	if err != nil {
 		return labels, ErrThChatLabel
 	}
@@ -291,7 +290,7 @@ func (s *ThreadChatService) GenerateMemberThreadMetrics(
 
 func (s *ThreadChatService) RemoveThreadLabel(
 	ctx context.Context, threadId string, labelId string) error {
-	err := s.repo.DeleteThreadLabelByCompId(ctx, threadId, labelId)
+	err := s.repo.DeleteThreadLabelByCompositeId(ctx, threadId, labelId)
 	if err != nil {
 		return ErrThChatLabel
 	}

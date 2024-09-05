@@ -348,6 +348,10 @@ func (c Customer) Engaged() string {
 	return "engaged"
 }
 
+func (c Customer) IsVisitor() bool {
+	return c.Role == c.Visitor()
+}
+
 func (c Customer) AnonName() string {
 	return "Anon User"
 }
@@ -368,14 +372,13 @@ func (c Customer) AvatarUrl() string {
 func (c Customer) IdentityHash() string {
 	h := sha256.New()
 	// Combine all fields into a single string
-	identityString := fmt.Sprintf("%s:%s:%s:%s:%s:%t:%s",
+	identityString := fmt.Sprintf("%s:%s:%s:%s:%s:%t",
 		c.WorkspaceId,
 		c.CustomerId,
 		c.ExternalId.String,
 		c.Email.String,
 		c.Phone.String,
 		c.IsVerified,
-		c.Role,
 	)
 
 	// Write the combined string to the hash
@@ -453,6 +456,16 @@ func (th *Thread) PreviewText() string {
 	}
 	if th.OutboundMessage != nil {
 		return th.OutboundMessage.PreviewText
+	}
+	return ""
+}
+
+func (th *Thread) CustomerPreviewText() string {
+	if th.OutboundMessage != nil {
+		return th.OutboundMessage.PreviewText
+	}
+	if th.InboundMessage != nil {
+		return th.InboundMessage.PreviewText
 	}
 	return ""
 }

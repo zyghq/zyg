@@ -91,7 +91,7 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 				priority, spam, channel,
 				inbound_message_id 
 			)
-			values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+			values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 			returning
 				thread_id, workspace_id, customer_id, assignee_id,
 				title, description, sequence, status, read, replied,
@@ -512,10 +512,10 @@ func (tc *ThreadChatDB) LookupByWorkspaceThreadId(
 }
 
 func (tc *ThreadChatDB) FetchThreadsByCustomerId(
-	ctx context.Context, customerId string, channel *string, role *string) ([]models.Thread, error) {
+	ctx context.Context, customerId string, channel *string) ([]models.Thread, error) {
 	var thread models.Thread
 	threads := make([]models.Thread, 0, 100)
-	args := make([]interface{}, 0, 3)
+	args := make([]interface{}, 0, 2)
 	stmt := `
 		SELECT th.thread_id AS thread_id,
 			th.workspace_id AS workspace_id,
@@ -565,11 +565,6 @@ func (tc *ThreadChatDB) FetchThreadsByCustomerId(
 	if channel != nil {
 		stmt += " AND th.channel = $2"
 		args = append(args, *channel)
-	}
-
-	if role != nil {
-		stmt += " AND c.role = $3"
-		args = append(args, *role)
 	}
 
 	stmt += " ORDER BY inb.last_seq_id DESC LIMIT 100"
@@ -926,7 +921,8 @@ func (tc *ThreadChatDB) FetchThreadsByWorkspaceId(
 		outboundUpdatedAt   sql.NullTime
 	)
 
-	stmt := `SELECT th.thread_id AS thread_id,
+	stmt := `SELECT
+			th.thread_id AS thread_id,
 			th.workspace_id AS workspace_id,
 			c.customer_id AS customer_id,
 			c.name AS customer_name,
@@ -981,6 +977,9 @@ func (tc *ThreadChatDB) FetchThreadsByWorkspaceId(
 		args = append(args, *role)
 	}
 
+	// Nothing from customer being a visitor role.
+	stmt += " AND c.role <> 'visitor'"
+
 	stmt += " ORDER BY inb.last_seq_id DESC LIMIT 100"
 
 	rows, _ := tc.db.Query(ctx, stmt, args...)
@@ -1000,7 +999,6 @@ func (tc *ThreadChatDB) FetchThreadsByWorkspaceId(
 		&outboundMessageId, &outboundMemberId, &outboundMemberName,
 		&outboundPreviewText, &outboundFirstSeqId, &outboundLastSeqId,
 		&outboundCreatedAt, &outboundUpdatedAt,
-		&thread.CreatedAt, &thread.UpdatedAt,
 		&thread.CreatedAt, &thread.UpdatedAt,
 	}, func() error {
 		// Sets the inbound message if a valid inbound message exists,
@@ -1118,6 +1116,9 @@ func (tc *ThreadChatDB) FetchThreadsByAssignedMemberId(
 		args = append(args, *role)
 	}
 
+	// Nothing from customer being a visitor role.
+	stmt += " AND c.role <> 'visitor'"
+
 	stmt += " ORDER BY inb.last_seq_id DESC LIMIT 100"
 
 	rows, _ := tc.db.Query(ctx, stmt, args...)
@@ -1137,7 +1138,6 @@ func (tc *ThreadChatDB) FetchThreadsByAssignedMemberId(
 		&outboundMessageId, &outboundMemberId, &outboundMemberName,
 		&outboundPreviewText, &outboundFirstSeqId, &outboundLastSeqId,
 		&outboundCreatedAt, &outboundUpdatedAt,
-		&thread.CreatedAt, &thread.UpdatedAt,
 		&thread.CreatedAt, &thread.UpdatedAt,
 	}, func() error {
 		// Sets the inbound message if a valid inbound message exists,
@@ -1254,6 +1254,9 @@ func (tc *ThreadChatDB) FetchThreadsByMemberUnassigned(
 		stmt += " AND c.role = $3"
 		args = append(args, *role)
 	}
+
+	// Nothing from customer being a visitor role.
+	stmt += " AND c.role <> 'visitor'"
 
 	stmt += " ORDER BY inb.last_seq_id DESC LIMIT 100"
 
@@ -1373,6 +1376,9 @@ func (tc *ThreadChatDB) FetchThreadsByLabelId(
 		args = append(args, *role)
 	}
 
+	// Nothing from customer being a visitor role.
+	stmt += " AND c.role <> 'visitor'"
+
 	stmt += " ORDER BY inb.last_seq_id DESC LIMIT 100"
 
 	rows, _ := tc.db.Query(ctx, stmt, args...)
@@ -1448,7 +1454,7 @@ func (tc *ThreadChatDB) FetchThreadsByLabelId(
 	return threads, nil
 }
 
-func (tc *ThreadChatDB) CheckWorkspaceExistenceByThreadId(
+func (tc *ThreadChatDB) CheckThreadInWorkspaceExists(
 	ctx context.Context, workspaceId string, threadId string) (bool, error) {
 	var isExist bool
 	stmt := `SELECT EXISTS(
@@ -1465,7 +1471,7 @@ func (tc *ThreadChatDB) CheckWorkspaceExistenceByThreadId(
 	return isExist, nil
 }
 
-func (tc *ThreadChatDB) SetLabelToThread(
+func (tc *ThreadChatDB) SetThreadLabel(
 	ctx context.Context, threadLabel models.ThreadLabel) (models.ThreadLabel, bool, error) {
 	var IsCreated bool
 	thLabelId := threadLabel.GenId()
@@ -1523,7 +1529,7 @@ func (tc *ThreadChatDB) SetLabelToThread(
 	return threadLabel, IsCreated, nil
 }
 
-func (tc *ThreadChatDB) DeleteThreadLabelByCompId(
+func (tc *ThreadChatDB) DeleteThreadLabelByCompositeId(
 	ctx context.Context, threadId string, labelId string) error {
 	stmt := `
 		delete from thread_label
@@ -1536,7 +1542,7 @@ func (tc *ThreadChatDB) DeleteThreadLabelByCompId(
 	return nil
 }
 
-func (tc *ThreadChatDB) RetrieveLabelsByThreadId(
+func (tc *ThreadChatDB) FetchAttachedLabelsByThreadId(
 	ctx context.Context, threadId string) ([]models.ThreadLabel, error) {
 	var label models.ThreadLabel
 	labels := make([]models.ThreadLabel, 0, 100)
@@ -1754,12 +1760,12 @@ func (tc *ThreadChatDB) InsertMemberChat(
 	// Inserts or updates the outbound message by message ID.
 	stmt = `
 		with ups as (
-			insert into outbound_message (message_id, member_id, first_sequence, last_sequence, preview_text)
+			insert into outbound_message (message_id, member_id, first_seq_id, last_seq_id, preview_text)
 				values ($1, $2, $3, $4, $5)
 			on conflict (message_id) do update
-				set last_sequence = $4, preview_text = $5, updated_at = now()
+				set last_seq_id = $4, preview_text = $5, updated_at = now()
 			returning
-				message_id, member_id, first_sequence, last_sequence, preview_text, created_at, updated_at
+				message_id, member_id, first_seq_id, last_seq_id, preview_text, created_at, updated_at
 		)
 		select
 			u.message_id,
@@ -1862,7 +1868,6 @@ func (tc *ThreadChatDB) FetchThChatMessagesByThreadId(
 func (tc *ThreadChatDB) ComputeStatusMetricsByWorkspaceId(
 	ctx context.Context, workspaceId string) (models.ThreadMetrics, error) {
 	var metrics models.ThreadMetrics
-	role := models.Customer{}.Engaged()
 	stmt := `SELECT
 		COALESCE(SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END), 0) AS done_count,
 		COALESCE(SUM(CASE WHEN status = 'todo' THEN 1 ELSE 0 END), 0) AS todo_count,
@@ -1872,9 +1877,9 @@ func (tc *ThreadChatDB) ComputeStatusMetricsByWorkspaceId(
 		thread th
 	INNER JOIN customer c ON th.customer_id = c.customer_id
 	WHERE 
-		th.workspace_id = $1 AND c.role = $2`
+		th.workspace_id = $1 AND c.role <> 'visitor'`
 
-	err := tc.db.QueryRow(ctx, stmt, workspaceId, role).Scan(
+	err := tc.db.QueryRow(ctx, stmt, workspaceId).Scan(
 		&metrics.DoneCount, &metrics.TodoCount,
 		&metrics.SnoozedCount, &metrics.ActiveCount,
 	)
@@ -1894,7 +1899,6 @@ func (tc *ThreadChatDB) ComputeStatusMetricsByWorkspaceId(
 func (tc *ThreadChatDB) ComputeAssigneeMetricsByMember(
 	ctx context.Context, workspaceId string, memberId string) (models.ThreadAssigneeMetrics, error) {
 	var metrics models.ThreadAssigneeMetrics
-	role := models.Customer{}.Engaged()
 	stmt := `SELECT
 			COALESCE(SUM(
 				CASE WHEN assignee_id = $2 AND status = 'todo' OR status = 'snoozed' THEN 1 ELSE 0 END), 0) AS member_assigned_count,
@@ -1906,9 +1910,9 @@ func (tc *ThreadChatDB) ComputeAssigneeMetricsByMember(
 			thread th
 		INNER JOIN customer c ON th.customer_id = c.customer_id
 		WHERE
-			th.workspace_id = $1 AND c.role = $3`
+			th.workspace_id = $1 AND c.role <> 'visitor'`
 
-	err := tc.db.QueryRow(ctx, stmt, workspaceId, memberId, role).Scan(
+	err := tc.db.QueryRow(ctx, stmt, workspaceId, memberId).Scan(
 		&metrics.MeCount, &metrics.UnAssignedCount, &metrics.OtherAssignedCount,
 	)
 

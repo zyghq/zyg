@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"time"
+
+	"github.com/zyghq/zyg/models"
 )
 
 type PATReq struct {
@@ -260,7 +262,7 @@ type ThreadResp struct {
 	UpdatedAt          time.Time
 }
 
-func (t ThreadResp) MarshalJSON() ([]byte, error) {
+func (th *ThreadResp) MarshalJSON() ([]byte, error) {
 	aux := &struct {
 		ThreadId           string          `json:"threadId"`
 		Customer           ThCustomerResp  `json:"customer"`
@@ -284,29 +286,90 @@ func (t ThreadResp) MarshalJSON() ([]byte, error) {
 		CreatedAt          string          `json:"createdAt"`
 		UpdatedAt          string          `json:"updatedAt"`
 	}{
-		ThreadId:           t.ThreadId,
-		Customer:           t.Customer,
-		Title:              t.Title,
-		Description:        t.Description,
-		Sequence:           t.Sequence,
-		Status:             t.Status,
-		Read:               t.Read,
-		Replied:            t.Replied,
-		Priority:           t.Priority,
-		Spam:               t.Spam,
-		Channel:            t.Channel,
-		PreviewText:        t.PreviewText,
-		Assignee:           t.Assignee,
-		InboundFirstSeqId:  t.InboundFirstSeqId,
-		InboundLastSeqId:   t.InboundLastSeqId,
-		InboundCustomer:    t.InboundCustomer,
-		OutboundFirstSeqId: t.OutboundFirstSeqId,
-		OutboundLastSeqId:  t.OutboundLastSeqId,
-		OutboundMember:     t.OutboundMember,
-		CreatedAt:          t.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:          t.UpdatedAt.Format(time.RFC3339),
+		ThreadId:           th.ThreadId,
+		Customer:           th.Customer,
+		Title:              th.Title,
+		Description:        th.Description,
+		Sequence:           th.Sequence,
+		Status:             th.Status,
+		Read:               th.Read,
+		Replied:            th.Replied,
+		Priority:           th.Priority,
+		Spam:               th.Spam,
+		Channel:            th.Channel,
+		PreviewText:        th.PreviewText,
+		Assignee:           th.Assignee,
+		InboundFirstSeqId:  th.InboundFirstSeqId,
+		InboundLastSeqId:   th.InboundLastSeqId,
+		InboundCustomer:    th.InboundCustomer,
+		OutboundFirstSeqId: th.OutboundFirstSeqId,
+		OutboundLastSeqId:  th.OutboundLastSeqId,
+		OutboundMember:     th.OutboundMember,
+		CreatedAt:          th.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:          th.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
+}
+
+func (th *ThreadResp) NewResponse(thread *models.Thread) ThreadResp {
+	var threadAssignee, outboundMember *ThMemberResp
+	var inboundCustomer *ThCustomerResp
+	var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string
+
+	customer := ThCustomerResp{
+		CustomerId: thread.CustomerId,
+		Name:       thread.CustomerName,
+	}
+
+	if thread.AssigneeId.Valid {
+		threadAssignee = &ThMemberResp{
+			MemberId: thread.AssigneeId.String,
+			Name:     thread.AssigneeName.String,
+		}
+	}
+
+	if thread.InboundMessage != nil {
+		inboundCustomer = &ThCustomerResp{
+			CustomerId: thread.InboundMessage.CustomerId,
+			Name:       thread.InboundMessage.CustomerName,
+		}
+		inboundFirstSeqId = &thread.InboundMessage.FirstSeqId
+		inboundLastSeqId = &thread.InboundMessage.LastSeqId
+	}
+
+	if thread.OutboundMessage != nil {
+		outboundMember = &ThMemberResp{
+			MemberId: thread.OutboundMessage.MemberId,
+			Name:     thread.OutboundMessage.MemberName,
+		}
+		outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
+		outboundLastSeqId = &thread.OutboundMessage.LastSeqId
+
+	}
+
+	return ThreadResp{
+		ThreadId:           thread.ThreadId,
+		Customer:           customer,
+		Title:              thread.Title,
+		Description:        thread.Description,
+		Sequence:           thread.Sequence,
+		Status:             thread.Status,
+		Read:               thread.Read,
+		Replied:            thread.Replied,
+		Priority:           thread.Priority,
+		Spam:               thread.Spam,
+		Channel:            thread.Channel,
+		PreviewText:        thread.PreviewText(),
+		Assignee:           threadAssignee,
+		InboundFirstSeqId:  inboundFirstSeqId,
+		InboundLastSeqId:   inboundLastSeqId,
+		InboundCustomer:    inboundCustomer,
+		OutboundFirstSeqId: outboundFirstSeqId,
+		OutboundLastSeqId:  outboundLastSeqId,
+		OutboundMember:     outboundMember,
+		CreatedAt:          thread.CreatedAt,
+		UpdatedAt:          thread.UpdatedAt,
+	}
 }
 
 type ChatResp struct {
