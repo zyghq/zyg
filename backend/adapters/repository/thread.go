@@ -28,6 +28,7 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 		}
 	}(tx, ctx)
 
+	// Inserts inbound message which thread will reference.
 	messageId := inboundMessage.GenId()
 	stmt := `
 		with ins as (
@@ -80,20 +81,21 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 		inboundUpdatedAt    sql.NullTime
 	)
 
+	// Inserts thread with the inbound message.
 	threadId := thread.GenId()
 	stmt = `
 		with ins as (
 			insert into thread (
 				thread_id, workspace_id, customer_id, assignee_id,
 				title, description, status, read, replied,
-				priority, spam, channel, preview_text,
+				priority, spam, channel,
 				inbound_message_id 
 			)
-			values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+			values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 			returning
 				thread_id, workspace_id, customer_id, assignee_id,
 				title, description, sequence, status, read, replied,
-				priority, spam, channel, preview_text,
+				priority, spam, channel,
 				inbound_message_id, outbound_message_id,
 				created_at, updated_at
 		) select
@@ -112,7 +114,6 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 			ins.priority as priority,
 			ins.spam as spam,
 			ins.channel as channel,
-			ins.preview_text as preview_text,
 			inb.message_id,
 			inbc.customer_id, 
 			inbc.name,
@@ -132,7 +133,7 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 
 	err = tx.QueryRow(ctx, stmt, threadId, thread.WorkspaceId, thread.CustomerId, thread.AssigneeId,
 		thread.Title, thread.Description, thread.Status, thread.Read, thread.Replied,
-		thread.Priority, thread.Spam, thread.Channel, thread.PreviewText,
+		thread.Priority, thread.Spam, thread.Channel,
 		inboundMessage.MessageId).Scan(
 		&thread.ThreadId, &thread.WorkspaceId,
 		&thread.CustomerId, &thread.CustomerName,
@@ -140,7 +141,6 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 		&thread.Title, &thread.Description, &thread.Sequence,
 		&thread.Status, &thread.Read, &thread.Replied,
 		&thread.Priority, &thread.Spam, &thread.Channel,
-		&thread.PreviewText,
 		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
 		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
 		&inboundCreatedAt, &inboundUpdatedAt,
@@ -156,7 +156,8 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 		return models.Thread{}, chat, ErrQuery
 	}
 
-	// set the inbound message if an inbound message exists.
+	// Sets the inbound message if a valid inbound message exists,
+	// otherwise clears the inbound message.
 	if inboundMessageId.Valid {
 		thread.AddInboundMessage(inboundMessageId.String,
 			inboundCustomerId.String, inboundCustomerName.String,
@@ -168,7 +169,7 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 		thread.ClearInboundMessage()
 	}
 
-	// insert thread chat
+	// Inserts chat for the thread.
 	stmt = `
 		with ins as (
 			insert into chat (
@@ -232,6 +233,9 @@ func (tc *ThreadChatDB) ModifyThreadById(
 	args := make([]interface{}, 0, len(fields))
 	ups := `UPDATE thread SET`
 
+	// Iterates over the fields to be updated.
+	// Note the fields to be updated with their respective db columns.
+	// E.g. `assignee` is associated with `assignee_id` db column.
 	for i, field := range fields {
 		switch field {
 		case "priority":
@@ -283,7 +287,7 @@ func (tc *ThreadChatDB) ModifyThreadById(
 		RETURNING
 			thread_id, workspace_id, customer_id, assignee_id,
 			title, description, sequence, status, read, replied,
-			priority, spam, channel, preview_text,
+			priority, spam, channel,
 			inbound_message_id, outbound_message_id,
 			created_at, updated_at
 		) SELECT
@@ -302,7 +306,6 @@ func (tc *ThreadChatDB) ModifyThreadById(
 			ups.priority AS priority,
 			ups.spam AS spam,
 			ups.channel AS channel,
-			ups.preview_text AS preview_text,
 			inb.message_id,
 			inbc.customer_id,
 			inbc.name,
@@ -339,7 +342,6 @@ func (tc *ThreadChatDB) ModifyThreadById(
 		&thread.Title, &thread.Description, &thread.Sequence,
 		&thread.Status, &thread.Read, &thread.Replied,
 		&thread.Priority, &thread.Spam, &thread.Channel,
-		&thread.PreviewText,
 		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
 		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
 		&inboundCreatedAt, &inboundUpdatedAt,
@@ -358,7 +360,8 @@ func (tc *ThreadChatDB) ModifyThreadById(
 		return models.Thread{}, ErrQuery
 	}
 
-	// set the inbound message if an inbound message exists.
+	// Sets the inbound message if a valid inbound message exists,
+	// otherwise clears the inbound message.
 	if inboundMessageId.Valid {
 		thread.AddInboundMessage(inboundMessageId.String, inboundCustomerId.String, inboundCustomerName.String,
 			inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
@@ -369,7 +372,8 @@ func (tc *ThreadChatDB) ModifyThreadById(
 		thread.ClearInboundMessage()
 	}
 
-	// set the outbound message if an outbound message exists.
+	// Sets the outbound message if a valid outbound message exists,
+	// otherwise clears the outbound message.
 	if outboundMessageId.Valid {
 		thread.AddOutboundMessage(outboundMessageId.String, outboundMemberId.String, outboundMemberName.String,
 			outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
@@ -402,7 +406,6 @@ func (tc *ThreadChatDB) LookupByWorkspaceThreadId(
 		th.priority AS priority,
 		th.spam AS spam,
 		th.channel AS channel,
-		th.preview_text AS preview_text,
 		inb.message_id,
 		inbc.customer_id, 
 		inbc.name,
@@ -464,7 +467,6 @@ func (tc *ThreadChatDB) LookupByWorkspaceThreadId(
 		&thread.Title, &thread.Description, &thread.Sequence,
 		&thread.Status, &thread.Read, &thread.Replied,
 		&thread.Priority, &thread.Spam, &thread.Channel,
-		&thread.PreviewText,
 		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
 		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
 		&inboundCreatedAt, &inboundUpdatedAt,
@@ -483,7 +485,8 @@ func (tc *ThreadChatDB) LookupByWorkspaceThreadId(
 		return models.Thread{}, ErrQuery
 	}
 
-	// set the inbound message if an inbound message exists.
+	// Sets the inbound message if a valid inbound message exists,
+	// otherwise clears the inbound message.
 	if inboundMessageId.Valid {
 		thread.AddInboundMessage(inboundMessageId.String, inboundCustomerId.String, inboundCustomerName.String,
 			inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
@@ -494,7 +497,8 @@ func (tc *ThreadChatDB) LookupByWorkspaceThreadId(
 		thread.ClearInboundMessage()
 	}
 
-	// set the outbound message if an outbound message exists.
+	// Sets the outbound message if a valid outbound message exists,
+	// otherwise clears the outbound message.
 	if outboundMessageId.Valid {
 		thread.AddOutboundMessage(outboundMessageId.String, outboundMemberId.String, outboundMemberName.String,
 			outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
@@ -528,7 +532,6 @@ func (tc *ThreadChatDB) FetchThreadsByCustomerId(
 			th.priority AS priority,
 			th.spam AS spam,
 			th.channel AS channel,
-			th.preview_text AS preview_text,
 			inb.message_id,
 			inbc.customer_id,
 			inbc.name,
@@ -601,7 +604,6 @@ func (tc *ThreadChatDB) FetchThreadsByCustomerId(
 		&thread.Title, &thread.Description, &thread.Sequence,
 		&thread.Status, &thread.Read, &thread.Replied,
 		&thread.Priority, &thread.Spam, &thread.Channel,
-		&thread.PreviewText,
 		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
 		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
 		&inboundCreatedAt, &inboundUpdatedAt,
@@ -610,7 +612,8 @@ func (tc *ThreadChatDB) FetchThreadsByCustomerId(
 		&outboundCreatedAt, &outboundUpdatedAt,
 		&thread.CreatedAt, &thread.UpdatedAt,
 	}, func() error {
-		// set the inbound message if an inbound message exists.
+		// Sets the inbound message an if valid inbound message exists,
+		// otherwise clears the inbound message.
 		if inboundMessageId.Valid {
 			thread.AddInboundMessage(inboundMessageId.String, inboundCustomerId.String, inboundCustomerName.String,
 				inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
@@ -620,7 +623,8 @@ func (tc *ThreadChatDB) FetchThreadsByCustomerId(
 		} else {
 			thread.ClearInboundMessage()
 		}
-		// set the outbound message if an outbound message exists.
+		// Sets the outbound message if a valid outbound message exists,
+		// otherwise clears the outbound message.
 		if outboundMessageId.Valid {
 			thread.AddOutboundMessage(outboundMessageId.String, outboundMemberId.String, outboundMemberName.String,
 				outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
@@ -672,7 +676,7 @@ func (tc *ThreadChatDB) UpdateAssignee(
 			RETURNING
 				thread_id, workspace_id, customer_id, assignee_id,
 				title, description, sequence, status, read, replied,
-				priority, spam, channel, preview_text,
+				priority, spam, channel,
 				inbound_message_id, outbound_message_id,
 				created_at, updated_at
 		) SELECT
@@ -691,7 +695,6 @@ func (tc *ThreadChatDB) UpdateAssignee(
 			ups.priority AS priority,
 			ups.spam AS spam,
 			ups.channel AS channel,
-			ups.preview_text AS preview_text,
 			inb.message_id,
 			inbc.customer_id,
 			inbc.name,
@@ -726,7 +729,6 @@ func (tc *ThreadChatDB) UpdateAssignee(
 		&thread.Title, &thread.Description, &thread.Sequence,
 		&thread.Status, &thread.Read, &thread.Replied,
 		&thread.Priority, &thread.Spam, &thread.Channel,
-		&thread.PreviewText,
 		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
 		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
 		&inboundCreatedAt, &inboundUpdatedAt,
@@ -746,7 +748,8 @@ func (tc *ThreadChatDB) UpdateAssignee(
 		return models.Thread{}, ErrQuery
 	}
 
-	// set the inbound message if an inbound message exists.
+	// Sets the inbound message if a valid inbound message exists,
+	// otherwise clears the inbound message.
 	if inboundMessageId.Valid {
 		thread.AddInboundMessage(inboundMessageId.String, inboundCustomerId.String, inboundCustomerName.String,
 			inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
@@ -757,7 +760,8 @@ func (tc *ThreadChatDB) UpdateAssignee(
 		thread.ClearInboundMessage()
 	}
 
-	// set the outbound message if an outbound message exists.
+	// Sets the outbound message if a valid outbound message exists,
+	// otherwise clears the outbound message.
 	if outboundMessageId.Valid {
 		thread.AddOutboundMessage(outboundMessageId.String, outboundMemberId.String, outboundMemberName.String,
 			outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
@@ -801,7 +805,7 @@ func (tc *ThreadChatDB) UpdateRepliedState(
 			RETURNING
 				thread_id, workspace_id, customer_id, assignee_id,
 				title, description, sequence, status, read, replied,
-				priority, spam, channel, preview_text,
+				priority, spam, channel,
 				inbound_message_id, outbound_message_id,
 				created_at, updated_at
 		) SELECT
@@ -820,7 +824,6 @@ func (tc *ThreadChatDB) UpdateRepliedState(
 			ups.priority AS priority,
 			ups.spam AS spam,
 			ups.channel AS channel,
-			ups.preview_text AS preview_text,
 			inb.message_id,
 			inbc.customer_id,
 			inbc.name,
@@ -855,7 +858,6 @@ func (tc *ThreadChatDB) UpdateRepliedState(
 		&thread.Title, &thread.Description, &thread.Sequence,
 		&thread.Status, &thread.Read, &thread.Replied,
 		&thread.Priority, &thread.Spam, &thread.Channel,
-		&thread.PreviewText,
 		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
 		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
 		&inboundCreatedAt, &inboundUpdatedAt,
@@ -874,7 +876,8 @@ func (tc *ThreadChatDB) UpdateRepliedState(
 		return models.Thread{}, ErrQuery
 	}
 
-	// set the inbound message if an inbound message exists.
+	// Sets the inbound message if a valid inbound message exists,
+	// otherwise clears the inbound message.
 	if inboundMessageId.Valid {
 		thread.AddInboundMessage(inboundMessageId.String, inboundCustomerId.String, inboundCustomerName.String,
 			inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
@@ -885,7 +888,8 @@ func (tc *ThreadChatDB) UpdateRepliedState(
 		thread.ClearInboundMessage()
 	}
 
-	// set the outbound message if an outbound message exists.
+	// Sets the outbound message if a valid outbound message exists,
+	// otherwise clears the outbound message.
 	if outboundMessageId.Valid {
 		thread.AddOutboundMessage(outboundMessageId.String, outboundMemberId.String, outboundMemberName.String,
 			outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
@@ -937,7 +941,6 @@ func (tc *ThreadChatDB) FetchThreadsByWorkspaceId(
 			th.priority AS priority,
 			th.spam AS spam,
 			th.channel AS channel,
-			th.preview_text AS preview_text,
 			inb.message_id,
 			inbc.customer_id, 
 			inbc.name,
@@ -991,7 +994,6 @@ func (tc *ThreadChatDB) FetchThreadsByWorkspaceId(
 		&thread.Title, &thread.Description, &thread.Sequence,
 		&thread.Status, &thread.Read, &thread.Replied,
 		&thread.Priority, &thread.Spam, &thread.Channel,
-		&thread.PreviewText,
 		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
 		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
 		&inboundCreatedAt, &inboundUpdatedAt,
@@ -1001,7 +1003,8 @@ func (tc *ThreadChatDB) FetchThreadsByWorkspaceId(
 		&thread.CreatedAt, &thread.UpdatedAt,
 		&thread.CreatedAt, &thread.UpdatedAt,
 	}, func() error {
-		// set the inbound message if an inbound message exists.
+		// Sets the inbound message if a valid inbound message exists,
+		// otherwise clears the inbound message.
 		if inboundMessageId.Valid {
 			thread.AddInboundMessage(inboundMessageId.String, inboundCustomerId.String, inboundCustomerName.String,
 				inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
@@ -1012,7 +1015,8 @@ func (tc *ThreadChatDB) FetchThreadsByWorkspaceId(
 			thread.ClearInboundMessage()
 		}
 
-		// set the outbound message if an outbound message exists.
+		// Sets the outbound message if a valid outbound message exists,
+		// otherwise clears the outbound message.
 		if outboundMessageId.Valid {
 			thread.AddOutboundMessage(outboundMessageId.String, outboundMemberId.String, outboundMemberName.String,
 				outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
@@ -1074,7 +1078,6 @@ func (tc *ThreadChatDB) FetchThreadsByAssignedMemberId(
 			th.priority AS priority,
 			th.spam AS spam,
 			th.channel AS channel,
-			th.preview_text AS preview_text,
 			inb.message_id,
 			inbc.customer_id, 
 			inbc.name,
@@ -1128,7 +1131,6 @@ func (tc *ThreadChatDB) FetchThreadsByAssignedMemberId(
 		&thread.Title, &thread.Description, &thread.Sequence,
 		&thread.Status, &thread.Read, &thread.Replied,
 		&thread.Priority, &thread.Spam, &thread.Channel,
-		&thread.PreviewText,
 		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
 		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
 		&inboundCreatedAt, &inboundUpdatedAt,
@@ -1138,7 +1140,8 @@ func (tc *ThreadChatDB) FetchThreadsByAssignedMemberId(
 		&thread.CreatedAt, &thread.UpdatedAt,
 		&thread.CreatedAt, &thread.UpdatedAt,
 	}, func() error {
-		// set the inbound message if an inbound message exists.
+		// Sets the inbound message if a valid inbound message exists,
+		// otherwise clears the inbound message.
 		if inboundMessageId.Valid {
 			thread.AddInboundMessage(inboundMessageId.String, inboundCustomerId.String, inboundCustomerName.String,
 				inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
@@ -1148,8 +1151,8 @@ func (tc *ThreadChatDB) FetchThreadsByAssignedMemberId(
 		} else {
 			thread.ClearInboundMessage()
 		}
-
-		// set the outbound message if an outbound message exists.
+		// Sets the outbound message if a valid outbound message exists,
+		// otherwise clears the outbound message.
 		if outboundMessageId.Valid {
 			thread.AddOutboundMessage(outboundMessageId.String, outboundMemberId.String, outboundMemberName.String,
 				outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
@@ -1212,7 +1215,6 @@ func (tc *ThreadChatDB) FetchThreadsByMemberUnassigned(
 			th.priority AS priority,
 			th.spam AS spam,
 			th.channel AS channel,
-			th.preview_text AS preview_text,
 			inb.message_id,
 			inbc.customer_id, 
 			inbc.name,
@@ -1266,16 +1268,16 @@ func (tc *ThreadChatDB) FetchThreadsByMemberUnassigned(
 		&thread.Title, &thread.Description, &thread.Sequence,
 		&thread.Status, &thread.Read, &thread.Replied,
 		&thread.Priority, &thread.Spam, &thread.Channel,
-		&thread.PreviewText,
 		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
-		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
+		&inboundFirstSeqId, &inboundLastSeqId,
 		&inboundCreatedAt, &inboundUpdatedAt,
 		&outboundMessageId, &outboundMemberId, &outboundMemberName,
 		&outboundPreviewText, &outboundFirstSeqId, &outboundLastSeqId,
 		&outboundCreatedAt, &outboundUpdatedAt,
 		&thread.CreatedAt, &thread.UpdatedAt,
 	}, func() error {
-		// set the inbound message if an inbound message exists.
+		// Sets the inbound message if a valid inbound message exists,
+		// otherwise clears the inbound message.
 		if inboundMessageId.Valid {
 			thread.AddInboundMessage(inboundMessageId.String, inboundCustomerId.String, inboundCustomerName.String,
 				inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
@@ -1286,7 +1288,8 @@ func (tc *ThreadChatDB) FetchThreadsByMemberUnassigned(
 			thread.ClearInboundMessage()
 		}
 
-		// set the outbound message if an outbound message exists.
+		// Sets the outbound message if a valid outbound message exists,
+		// otherwise clears the outbound message.
 		if outboundMessageId.Valid {
 			thread.AddOutboundMessage(outboundMessageId.String, outboundMemberId.String, outboundMemberName.String,
 				outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
@@ -1329,7 +1332,6 @@ func (tc *ThreadChatDB) FetchThreadsByLabelId(
 			th.priority AS priority,
 			th.spam AS spam,
 			th.channel AS channel,
-			th.preview_text AS preview_text,
 			inb.message_id,
 			inbc.customer_id,
 			inbc.name,
@@ -1403,7 +1405,6 @@ func (tc *ThreadChatDB) FetchThreadsByLabelId(
 		&thread.Title, &thread.Description, &thread.Sequence,
 		&thread.Status, &thread.Read, &thread.Replied,
 		&thread.Priority, &thread.Spam, &thread.Channel,
-		&thread.PreviewText,
 		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
 		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
 		&inboundCreatedAt, &inboundUpdatedAt,
@@ -1412,7 +1413,8 @@ func (tc *ThreadChatDB) FetchThreadsByLabelId(
 		&outboundCreatedAt, &outboundUpdatedAt,
 		&thread.CreatedAt, &thread.UpdatedAt,
 	}, func() error {
-		// set the inbound message if an inbound message exists.
+		// Sets the inbound message if a valid inbound message exists,
+		// otherwise clears the inbound message.
 		if inboundMessageId.Valid {
 			thread.AddInboundMessage(inboundMessageId.String, inboundCustomerId.String, inboundCustomerName.String,
 				inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
@@ -1423,7 +1425,8 @@ func (tc *ThreadChatDB) FetchThreadsByLabelId(
 			thread.ClearInboundMessage()
 		}
 
-		// set the outbound message if an outbound message exists.
+		// Sets the outbound message if a valid outbound message exists,
+		// otherwise clears the outbound message.
 		if outboundMessageId.Valid {
 			thread.AddOutboundMessage(outboundMessageId.String, outboundMemberId.String, outboundMemberName.String,
 				outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
@@ -1748,7 +1751,7 @@ func (tc *ThreadChatDB) InsertMemberChat(
 		return models.Chat{}, ErrQuery
 	}
 
-	// insert or update the outbound message by message ID.
+	// Inserts or updates the outbound message by message ID.
 	stmt = `
 		with ups as (
 			insert into outbound_message (message_id, member_id, first_sequence, last_sequence, preview_text)

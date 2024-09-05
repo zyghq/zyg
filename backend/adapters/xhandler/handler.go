@@ -43,8 +43,8 @@ func handleGetIndex(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
-func (h *CustomerHandler) handleGetWidgetConfig(w http.ResponseWriter, r *http.Request) {
-	// TODO: probaly get widget configuration from db/redis cache.
+func (h *CustomerHandler) handleGetWidgetConfig(w http.ResponseWriter, _ *http.Request) {
+	// TODO: probably get widget configuration from db/redis cache.
 	resp := WidgetConfig{
 		DomainsOnly:    false,
 		Domains:        []string{},
@@ -514,7 +514,7 @@ func (h *CustomerHandler) handleCreateCustomerThChat(
 		Priority:           thread.Priority,
 		Spam:               thread.Spam,
 		Channel:            thread.Channel,
-		PreviewText:        thread.PreviewText,
+		PreviewText:        thread.PreviewText(),
 		Assignee:           threadAssignee,
 		InboundFirstSeqId:  inboundFirstSeqId,
 		InboundLastSeqId:   inboundLastSeqId,
@@ -594,7 +594,7 @@ func (h *CustomerHandler) handleGetCustomerThChats(
 			Priority:           thread.Priority,
 			Spam:               thread.Spam,
 			Channel:            thread.Channel,
-			PreviewText:        thread.PreviewText,
+			PreviewText:        thread.PreviewText(),
 			Assignee:           threadAssignee,
 			InboundFirstSeqId:  inboundFirstSeqId,
 			InboundLastSeqId:   inboundLastSeqId,

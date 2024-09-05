@@ -43,7 +43,6 @@ func (s *ThreadChatService) CreateInboundThreadChat(
 		Status:      models.ThreadStatus{}.Todo(),
 		Priority:    models.ThreadPriority{}.Normal(),
 		Channel:     models.ThreadChannel{}.Chat(),
-		PreviewText: chat.PreviewText(),
 	}
 	thread, chat, err := s.repo.InsertInboundThreadChat(ctx, inbound, thread, chat)
 	if err != nil {
