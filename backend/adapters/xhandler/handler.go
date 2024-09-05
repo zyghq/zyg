@@ -560,7 +560,7 @@ func (h *CustomerHandler) handleGetCustomerThChats(
 
 	items := make([]ThreadResp, 0, 100)
 	for _, thread := range threads {
-		resp := (&ThreadResp{}).NewResponse(&thread)
+		resp := ThreadResp{}.NewResponse(&thread)
 		items = append(items, resp)
 	}
 	w.Header().Set("Content-Type", "application/json")

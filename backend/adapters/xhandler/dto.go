@@ -148,7 +148,7 @@ type ThreadResp struct {
 	UpdatedAt          time.Time
 }
 
-func (th *ThreadResp) MarshalJSON() ([]byte, error) {
+func (th ThreadResp) MarshalJSON() ([]byte, error) {
 	aux := &struct {
 		ThreadId           string          `json:"threadId"`
 		Customer           ThCustomerResp  `json:"customer"`
@@ -197,7 +197,7 @@ func (th *ThreadResp) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
-func (th *ThreadResp) NewResponse(thread *models.Thread) ThreadResp {
+func (th ThreadResp) NewResponse(thread *models.Thread) ThreadResp {
 	var threadAssignee, outboundMember *ThMemberResp
 	var inboundCustomer *ThCustomerResp
 	var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string

@@ -109,8 +109,7 @@ func (ws *WorkspaceService) GetMember(
 
 func (ws *WorkspaceService) ListCustomers(
 	ctx context.Context, workspaceId string) ([]models.Customer, error) {
-	role := models.Customer{}.Engaged()
-	customers, err := ws.customerRepo.FetchCustomersByWorkspaceId(ctx, workspaceId, &role)
+	customers, err := ws.customerRepo.FetchCustomersByWorkspaceId(ctx, workspaceId, nil)
 	if err != nil {
 		return []models.Customer{}, err
 	}

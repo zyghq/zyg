@@ -1050,7 +1050,7 @@ export async function updateThread(
     try {
       const data = await response.json();
 
-      console.log(data);
+      console.log("updateThread data", data);
       const parsed = threadResponseSchema.parse({ ...data });
       return { error: null, data: parsed };
     } catch (err) {
