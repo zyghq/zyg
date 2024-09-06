@@ -76,7 +76,8 @@ next-env.d.ts
 # Local directories and files
 scratch.txt
 secrets/
-db/
+pqdb/
 redisdb/
 bkps/
+
 .idea/
