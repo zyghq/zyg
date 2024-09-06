@@ -76,17 +76,14 @@ func NewServer(
 
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{$}",
 		NewEnsureMemberAuth(th.handleGetThreadChats, authService))
-
 	mux.Handle("PATCH /workspaces/{workspaceId}/threads/chat/{threadId}/{$}",
 		NewEnsureMemberAuth(th.handleUpdateThreadChat, authService))
-
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/me/{$}",
 		NewEnsureMemberAuth(th.handleGetMyThreadChats, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/unassigned/{$}",
 		NewEnsureMemberAuth(th.handleGetUnassignedThChats, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/labels/{labelId}/{$}",
 		NewEnsureMemberAuth(th.handleGetLabelledThreadChats, authService))
-
 	mux.Handle("POST /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
 		NewEnsureMemberAuth(th.handleCreateThChatMessage, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",

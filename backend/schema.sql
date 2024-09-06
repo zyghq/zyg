@@ -200,7 +200,6 @@ CREATE TABLE thread (
     priority VARCHAR(255) NOT NULL, -- priority of the thread
     spam BOOLEAN NOT NULL DEFAULT FALSE, -- spam flag
     channel VARCHAR(127) NOT NULL, -- channel of the thread
-    preview_text TEXT NOT NULL, -- preview text of the message
     inbound_message_id VARCHAR(255) NULL, -- fk to inbound_message
     outbound_message_id VARCHAR(255) NULL, -- fk to outbound_message
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

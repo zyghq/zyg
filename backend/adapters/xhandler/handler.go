@@ -43,8 +43,8 @@ func handleGetIndex(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
-func (h *CustomerHandler) handleGetWidgetConfig(w http.ResponseWriter, r *http.Request) {
-	// TODO: probaly get widget configuration from db/redis cache.
+func (h *CustomerHandler) handleGetWidgetConfig(w http.ResponseWriter, _ *http.Request) {
+	// TODO: probably get widget configuration from db/redis cache.
 	resp := WidgetConfig{
 		DomainsOnly:    false,
 		Domains:        []string{},
@@ -361,7 +361,7 @@ func (h *CustomerHandler) handleCustomerIdentities(
 	// Add other identities if needed.
 	//
 	// Intentionally don't want to modify the primary email identifier from external widget api.
-	// Find other api that do that.
+	// Use other api that do direct primary email modification.
 	if reqp.Email != nil {
 		// Check if email already exists for a customer, if then there is a conflict.
 		// Having a conflict doesn't mean we can't add multiple email identities.
@@ -382,6 +382,18 @@ func (h *CustomerHandler) handleCustomerIdentities(
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
+
+		// Convert if the Customer is `visitor` to a `lead`.
+		if customer.IsVisitor() {
+			customer.Role = customer.Lead()
+			updatedCustomer, err := h.cs.UpdateCustomer(ctx, *customer)
+			if err != nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+			customer = &updatedCustomer // updated customer
+		}
+
 		// Respond with customer details, with empty requireIdentities.
 		resp := CustomerResp{
 			CustomerId:        emailIdentity.CustomerId,
@@ -514,7 +526,7 @@ func (h *CustomerHandler) handleCreateCustomerThChat(
 		Priority:           thread.Priority,
 		Spam:               thread.Spam,
 		Channel:            thread.Channel,
-		PreviewText:        thread.PreviewText,
+		PreviewText:        thread.PreviewText(),
 		Assignee:           threadAssignee,
 		InboundFirstSeqId:  inboundFirstSeqId,
 		InboundLastSeqId:   inboundLastSeqId,
@@ -539,7 +551,7 @@ func (h *CustomerHandler) handleGetCustomerThChats(
 	w http.ResponseWriter, r *http.Request, customer *models.Customer) {
 	ctx := r.Context()
 
-	threads, err := h.ths.ListCustomerThreadChats(ctx, customer.CustomerId, nil)
+	threads, err := h.ths.ListCustomerThreadChats(ctx, customer.CustomerId)
 	if err != nil {
 		slog.Error("failed to fetch thread chats", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -548,63 +560,7 @@ func (h *CustomerHandler) handleGetCustomerThChats(
 
 	items := make([]ThreadResp, 0, 100)
 	for _, thread := range threads {
-		var threadAssignee, outboundMember *ThMemberResp
-		var inboundCustomer *ThCustomerResp
-		var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string
-
-		threadCustomer := ThCustomerResp{
-			CustomerId: thread.CustomerId,
-			Name:       thread.CustomerName,
-		}
-
-		if thread.AssigneeId.Valid {
-			threadAssignee = &ThMemberResp{
-				MemberId: thread.AssigneeId.String,
-				Name:     thread.AssigneeName.String,
-			}
-		}
-
-		if thread.InboundMessage != nil {
-			inboundCustomer = &ThCustomerResp{
-				CustomerId: thread.InboundMessage.CustomerId,
-				Name:       thread.InboundMessage.CustomerName,
-			}
-			inboundFirstSeqId = &thread.InboundMessage.FirstSeqId
-			inboundLastSeqId = &thread.InboundMessage.LastSeqId
-		}
-
-		if thread.OutboundMessage != nil {
-			outboundMember = &ThMemberResp{
-				MemberId: thread.OutboundMessage.MemberId,
-				Name:     thread.OutboundMessage.MemberName,
-			}
-			outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
-			outboundLastSeqId = &thread.OutboundMessage.LastSeqId
-		}
-
-		resp := ThreadResp{
-			ThreadId:           thread.ThreadId,
-			Customer:           threadCustomer,
-			Title:              thread.Title,
-			Description:        thread.Description,
-			Sequence:           thread.Sequence,
-			Status:             thread.Status,
-			Read:               thread.Read,
-			Replied:            thread.Replied,
-			Priority:           thread.Priority,
-			Spam:               thread.Spam,
-			Channel:            thread.Channel,
-			PreviewText:        thread.PreviewText,
-			Assignee:           threadAssignee,
-			InboundFirstSeqId:  inboundFirstSeqId,
-			InboundLastSeqId:   inboundLastSeqId,
-			InboundCustomer:    inboundCustomer,
-			OutboundFirstSeqId: outboundFirstSeqId,
-			OutboundLastSeqId:  outboundLastSeqId,
-			OutboundMember:     outboundMember,
-			CreatedAt:          thread.CreatedAt,
-			UpdatedAt:          thread.UpdatedAt,
-		}
+		resp := ThreadResp{}.NewResponse(&thread)
 		items = append(items, resp)
 	}
 	w.Header().Set("Content-Type", "application/json")

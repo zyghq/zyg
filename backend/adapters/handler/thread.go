@@ -37,63 +37,7 @@ func (h *ThreadChatHandler) handleGetThreadChats(
 
 	items := make([]ThreadResp, 0, 100)
 	for _, thread := range threads {
-		var threadAssignee, outboundMember *ThMemberResp
-		var inboundCustomer *ThCustomerResp
-		var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string
-
-		threadCustomer := ThCustomerResp{
-			CustomerId: thread.CustomerId,
-			Name:       thread.CustomerName,
-		}
-
-		if thread.AssigneeId.Valid {
-			threadAssignee = &ThMemberResp{
-				MemberId: thread.AssigneeId.String,
-				Name:     thread.AssigneeName.String,
-			}
-		}
-
-		if thread.InboundMessage != nil {
-			inboundCustomer = &ThCustomerResp{
-				CustomerId: thread.InboundMessage.CustomerId,
-				Name:       thread.InboundMessage.CustomerName,
-			}
-			inboundFirstSeqId = &thread.InboundMessage.FirstSeqId
-			inboundLastSeqId = &thread.InboundMessage.LastSeqId
-		}
-
-		if thread.OutboundMessage != nil {
-			outboundMember = &ThMemberResp{
-				MemberId: thread.OutboundMessage.MemberId,
-				Name:     thread.OutboundMessage.MemberName,
-			}
-			outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
-			outboundLastSeqId = &thread.OutboundMessage.LastSeqId
-		}
-
-		resp := ThreadResp{
-			ThreadId:           thread.ThreadId,
-			Customer:           threadCustomer,
-			Title:              thread.Title,
-			Description:        thread.Description,
-			Sequence:           thread.Sequence,
-			Status:             thread.Status,
-			Read:               thread.Read,
-			Replied:            thread.Replied,
-			Priority:           thread.Priority,
-			Spam:               thread.Spam,
-			Channel:            thread.Channel,
-			PreviewText:        thread.PreviewText,
-			Assignee:           threadAssignee,
-			InboundFirstSeqId:  inboundFirstSeqId,
-			InboundLastSeqId:   inboundLastSeqId,
-			InboundCustomer:    inboundCustomer,
-			OutboundFirstSeqId: outboundFirstSeqId,
-			OutboundLastSeqId:  outboundLastSeqId,
-			OutboundMember:     outboundMember,
-			CreatedAt:          thread.CreatedAt,
-			UpdatedAt:          thread.UpdatedAt,
-		}
+		resp := ThreadResp{}.NewResponse(&thread)
 		items = append(items, resp)
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -232,63 +176,7 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(
 		return
 	}
 
-	var threadAssignee, outboundMember *ThMemberResp
-	var inboundCustomer *ThCustomerResp
-	var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string
-
-	threadCustomer := ThCustomerResp{
-		CustomerId: thread.CustomerId,
-		Name:       thread.CustomerName,
-	}
-
-	if thread.AssigneeId.Valid {
-		threadAssignee = &ThMemberResp{
-			MemberId: thread.AssigneeId.String,
-			Name:     thread.AssigneeName.String,
-		}
-	}
-
-	if thread.InboundMessage != nil {
-		inboundCustomer = &ThCustomerResp{
-			CustomerId: thread.InboundMessage.CustomerId,
-			Name:       thread.InboundMessage.CustomerName,
-		}
-		inboundFirstSeqId = &thread.InboundMessage.FirstSeqId
-		inboundLastSeqId = &thread.InboundMessage.LastSeqId
-	}
-
-	if thread.OutboundMessage != nil {
-		outboundMember = &ThMemberResp{
-			MemberId: thread.OutboundMessage.MemberId,
-			Name:     thread.OutboundMessage.MemberName,
-		}
-		outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
-		outboundLastSeqId = &thread.OutboundMessage.LastSeqId
-	}
-
-	resp := ThreadResp{
-		ThreadId:           thread.ThreadId,
-		Customer:           threadCustomer,
-		Title:              thread.Title,
-		Description:        thread.Description,
-		Sequence:           thread.Sequence,
-		Status:             thread.Status,
-		Read:               thread.Read,
-		Replied:            thread.Replied,
-		Priority:           thread.Priority,
-		Spam:               thread.Spam,
-		Channel:            thread.Channel,
-		PreviewText:        thread.PreviewText,
-		Assignee:           threadAssignee,
-		InboundFirstSeqId:  inboundFirstSeqId,
-		InboundLastSeqId:   inboundLastSeqId,
-		InboundCustomer:    inboundCustomer,
-		OutboundFirstSeqId: outboundFirstSeqId,
-		OutboundLastSeqId:  outboundLastSeqId,
-		OutboundMember:     outboundMember,
-		CreatedAt:          thread.CreatedAt,
-		UpdatedAt:          thread.UpdatedAt,
-	}
+	resp := ThreadResp{}.NewResponse(&thread)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
@@ -311,63 +199,7 @@ func (h *ThreadChatHandler) handleGetMyThreadChats(
 
 	items := make([]ThreadResp, 0, 100)
 	for _, thread := range threads {
-		var threadAssignee, outboundMember *ThMemberResp
-		var inboundCustomer *ThCustomerResp
-		var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string
-
-		threadCustomer := ThCustomerResp{
-			CustomerId: thread.CustomerId,
-			Name:       thread.CustomerName,
-		}
-
-		if thread.AssigneeId.Valid {
-			threadAssignee = &ThMemberResp{
-				MemberId: thread.AssigneeId.String,
-				Name:     thread.AssigneeName.String,
-			}
-		}
-
-		if thread.InboundMessage != nil {
-			inboundCustomer = &ThCustomerResp{
-				CustomerId: thread.InboundMessage.CustomerId,
-				Name:       thread.InboundMessage.CustomerName,
-			}
-			inboundFirstSeqId = &thread.InboundMessage.FirstSeqId
-			inboundLastSeqId = &thread.InboundMessage.LastSeqId
-		}
-
-		if thread.OutboundMessage != nil {
-			outboundMember = &ThMemberResp{
-				MemberId: thread.OutboundMessage.MemberId,
-				Name:     thread.OutboundMessage.MemberName,
-			}
-			outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
-			outboundLastSeqId = &thread.OutboundMessage.LastSeqId
-		}
-
-		resp := ThreadResp{
-			ThreadId:           thread.ThreadId,
-			Customer:           threadCustomer,
-			Title:              thread.Title,
-			Description:        thread.Description,
-			Sequence:           thread.Sequence,
-			Status:             thread.Status,
-			Read:               thread.Read,
-			Replied:            thread.Replied,
-			Priority:           thread.Priority,
-			Spam:               thread.Spam,
-			Channel:            thread.Channel,
-			PreviewText:        thread.PreviewText,
-			Assignee:           threadAssignee,
-			InboundFirstSeqId:  inboundFirstSeqId,
-			InboundLastSeqId:   inboundLastSeqId,
-			InboundCustomer:    inboundCustomer,
-			OutboundFirstSeqId: outboundFirstSeqId,
-			OutboundLastSeqId:  outboundLastSeqId,
-			OutboundMember:     outboundMember,
-			CreatedAt:          thread.CreatedAt,
-			UpdatedAt:          thread.UpdatedAt,
-		}
+		resp := ThreadResp{}.NewResponse(&thread)
 		items = append(items, resp)
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -392,63 +224,7 @@ func (h *ThreadChatHandler) handleGetUnassignedThChats(
 
 	items := make([]ThreadResp, 0, 100)
 	for _, thread := range threads {
-		var threadAssignee, outboundMember *ThMemberResp
-		var inboundCustomer *ThCustomerResp
-		var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string
-
-		threadCustomer := ThCustomerResp{
-			CustomerId: thread.CustomerId,
-			Name:       thread.CustomerName,
-		}
-
-		if thread.AssigneeId.Valid {
-			threadAssignee = &ThMemberResp{
-				MemberId: thread.AssigneeId.String,
-				Name:     thread.AssigneeName.String,
-			}
-		}
-
-		if thread.InboundMessage != nil {
-			inboundCustomer = &ThCustomerResp{
-				CustomerId: thread.InboundMessage.CustomerId,
-				Name:       thread.InboundMessage.CustomerName,
-			}
-			inboundFirstSeqId = &thread.InboundMessage.FirstSeqId
-			inboundLastSeqId = &thread.InboundMessage.LastSeqId
-		}
-
-		if thread.OutboundMessage != nil {
-			outboundMember = &ThMemberResp{
-				MemberId: thread.OutboundMessage.MemberId,
-				Name:     thread.OutboundMessage.MemberName,
-			}
-			outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
-			outboundLastSeqId = &thread.OutboundMessage.LastSeqId
-		}
-
-		resp := ThreadResp{
-			ThreadId:           thread.ThreadId,
-			Customer:           threadCustomer,
-			Title:              thread.Title,
-			Description:        thread.Description,
-			Sequence:           thread.Sequence,
-			Status:             thread.Status,
-			Read:               thread.Read,
-			Replied:            thread.Replied,
-			Priority:           thread.Priority,
-			Spam:               thread.Spam,
-			Channel:            thread.Channel,
-			PreviewText:        thread.PreviewText,
-			Assignee:           threadAssignee,
-			InboundFirstSeqId:  inboundFirstSeqId,
-			InboundLastSeqId:   inboundLastSeqId,
-			InboundCustomer:    inboundCustomer,
-			OutboundFirstSeqId: outboundFirstSeqId,
-			OutboundLastSeqId:  outboundLastSeqId,
-			OutboundMember:     outboundMember,
-			CreatedAt:          thread.CreatedAt,
-			UpdatedAt:          thread.UpdatedAt,
-		}
+		resp := ThreadResp{}.NewResponse(&thread)
 		items = append(items, resp)
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -486,63 +262,7 @@ func (h *ThreadChatHandler) handleGetLabelledThreadChats(
 
 	items := make([]ThreadResp, 0, 100)
 	for _, thread := range threads {
-		var threadAssignee, outboundMember *ThMemberResp
-		var inboundCustomer *ThCustomerResp
-		var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string
-
-		threadCustomer := ThCustomerResp{
-			CustomerId: thread.CustomerId,
-			Name:       thread.CustomerName,
-		}
-
-		if thread.AssigneeId.Valid {
-			threadAssignee = &ThMemberResp{
-				MemberId: thread.AssigneeId.String,
-				Name:     thread.AssigneeName.String,
-			}
-		}
-
-		if thread.InboundMessage != nil {
-			inboundCustomer = &ThCustomerResp{
-				CustomerId: thread.InboundMessage.CustomerId,
-				Name:       thread.InboundMessage.CustomerName,
-			}
-			inboundFirstSeqId = &thread.InboundMessage.FirstSeqId
-			inboundLastSeqId = &thread.InboundMessage.LastSeqId
-		}
-
-		if thread.OutboundMessage != nil {
-			outboundMember = &ThMemberResp{
-				MemberId: thread.OutboundMessage.MemberId,
-				Name:     thread.OutboundMessage.MemberName,
-			}
-			outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
-			outboundLastSeqId = &thread.OutboundMessage.LastSeqId
-		}
-
-		resp := ThreadResp{
-			ThreadId:           thread.ThreadId,
-			Customer:           threadCustomer,
-			Title:              thread.Title,
-			Description:        thread.Description,
-			Sequence:           thread.Sequence,
-			Status:             thread.Status,
-			Read:               thread.Read,
-			Replied:            thread.Replied,
-			Priority:           thread.Priority,
-			Spam:               thread.Spam,
-			Channel:            thread.Channel,
-			PreviewText:        thread.PreviewText,
-			Assignee:           threadAssignee,
-			InboundFirstSeqId:  inboundFirstSeqId,
-			InboundLastSeqId:   inboundLastSeqId,
-			InboundCustomer:    inboundCustomer,
-			OutboundFirstSeqId: outboundFirstSeqId,
-			OutboundLastSeqId:  outboundLastSeqId,
-			OutboundMember:     outboundMember,
-			CreatedAt:          thread.CreatedAt,
-			UpdatedAt:          thread.UpdatedAt,
-		}
+		resp := ThreadResp{}.NewResponse(&thread)
 		items = append(items, resp)
 	}
 	w.Header().Set("Content-Type", "application/json")

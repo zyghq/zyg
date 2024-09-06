@@ -348,44 +348,8 @@ func (c Customer) Engaged() string {
 	return "engaged"
 }
 
-func (c Customer) MarshalJSON() ([]byte, error) {
-	var externalId, email, phone *string
-	if c.ExternalId.Valid {
-		externalId = &c.ExternalId.String
-	}
-	if c.Email.Valid {
-		email = &c.Email.String
-	}
-	if c.Phone.Valid {
-		phone = &c.Phone.String
-	}
-
-	aux := &struct {
-		WorkspaceId string  `json:"workspaceId"`
-		CustomerId  string  `json:"customerId"`
-		ExternalId  *string `json:"externalId"`
-		Email       *string `json:"email"`
-		Phone       *string `json:"phone"`
-		Name        string  `json:"name"`
-		AvatarUrl   string  `json:"avatarUrl"`
-		IsVerified  bool    `json:"isVerified"`
-		Role        string  `json:"role"`
-		CreatedAt   string  `json:"createdAt"`
-		UpdatedAt   string  `json:"updatedAt"`
-	}{
-		WorkspaceId: c.WorkspaceId,
-		CustomerId:  c.CustomerId,
-		ExternalId:  externalId,
-		Email:       email,
-		Phone:       phone,
-		Name:        c.Name,
-		AvatarUrl:   c.AvatarUrl(), // generate avatar url
-		IsVerified:  c.IsVerified,
-		Role:        c.Role,
-		CreatedAt:   c.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:   c.UpdatedAt.Format(time.RFC3339),
-	}
-	return json.Marshal(aux)
+func (c Customer) IsVisitor() bool {
+	return c.Role == c.Visitor()
 }
 
 func (c Customer) AnonName() string {
@@ -408,14 +372,13 @@ func (c Customer) AvatarUrl() string {
 func (c Customer) IdentityHash() string {
 	h := sha256.New()
 	// Combine all fields into a single string
-	identityString := fmt.Sprintf("%s:%s:%s:%s:%s:%t:%s",
+	identityString := fmt.Sprintf("%s:%s:%s:%s:%s:%t",
 		c.WorkspaceId,
 		c.CustomerId,
 		c.ExternalId.String,
 		c.Email.String,
 		c.Phone.String,
 		c.IsVerified,
-		c.Role,
 	)
 
 	// Write the combined string to the hash
@@ -477,7 +440,6 @@ type Thread struct {
 	Priority        string
 	Spam            bool
 	Channel         string
-	PreviewText     string
 	InboundMessage  *InboundMessage
 	OutboundMessage *OutboundMessage
 	CreatedAt       time.Time
@@ -486,6 +448,26 @@ type Thread struct {
 
 func (th *Thread) GenId() string {
 	return "th" + xid.New().String()
+}
+
+func (th *Thread) PreviewText() string {
+	if th.InboundMessage != nil {
+		return th.InboundMessage.PreviewText
+	}
+	if th.OutboundMessage != nil {
+		return th.OutboundMessage.PreviewText
+	}
+	return ""
+}
+
+func (th *Thread) CustomerPreviewText() string {
+	if th.OutboundMessage != nil {
+		return th.OutboundMessage.PreviewText
+	}
+	if th.InboundMessage != nil {
+		return th.InboundMessage.PreviewText
+	}
+	return ""
 }
 
 func (th *Thread) AddInboundMessage(
@@ -573,30 +555,6 @@ func (l Label) MarshalJSON() ([]byte, error) {
 		UpdatedAt:   l.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
-}
-
-type ThreadQAA struct {
-	WorkspaceId string
-	ThreadQAId  string
-	AnswerId    string
-	Answer      string
-	Sequence    int
-	Eval        sql.NullInt32
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
-type ThreadQA struct {
-	WorkspaceId    string
-	CustomerId     string
-	ThreadId       string
-	ParentThreadId sql.NullString
-	Query          string
-	Title          string
-	Summary        string
-	Sequence       int
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
 }
 
 type Label struct {
@@ -688,7 +646,7 @@ func (sk WorkspaceSecret) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
-type EmailCustomerConflict struct {
+type CustomerEmailConflict struct {
 	Email      string
 	CustomerId string
 	Name       string
@@ -703,7 +661,7 @@ type EmailIdentity struct {
 	HasConflict     bool
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
-	Conflicts       []EmailCustomerConflict
+	Conflicts       []CustomerEmailConflict
 }
 
 func (ei EmailIdentity) GenId() string {
