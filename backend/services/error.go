@@ -19,8 +19,6 @@ const (
 	ErrLabelNotFound        = serviceErr("label not found")
 	ErrThreadChat           = serviceErr("thread chat error")
 	ErrThreadChatNotFound   = serviceErr("thread chat not found")
-	ErrThreadChatAssign     = serviceErr("thread chat assignee error")
-	ErrThreadChatReplied    = serviceErr("thread chat reply error")
 	ErrThreadChatMetrics    = serviceErr("thread chat metrics error")
 	ErrThChatMessage        = serviceErr("thread chat message error")
 	ErrThChatLabel          = serviceErr("thread chat label error")

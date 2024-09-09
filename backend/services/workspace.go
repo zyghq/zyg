@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
@@ -20,6 +21,19 @@ type WorkspaceService struct {
 	workspaceRepo ports.WorkspaceRepositorer
 	memberRepo    ports.MemberRepositorer
 	customerRepo  ports.CustomerRepositorer
+}
+
+func (ws *WorkspaceService) GetSystemMember(
+	ctx context.Context, workspaceId string) (models.Member, error) {
+	// TODO: fix this asap.
+	member, err := ws.memberRepo.FetchByWorkspaceMemberId(ctx, workspaceId, "mmcr41nlctidud4k5g3cdg")
+	if errors.Is(err, repository.ErrEmpty) {
+		return models.Member{}, ErrMemberNotFound
+	}
+	if err != nil {
+		return models.Member{}, ErrMember
+	}
+	return member, nil
 }
 
 func NewWorkspaceService(
@@ -53,7 +67,8 @@ func (ws *WorkspaceService) UpdateLabel(
 	return label, nil
 }
 
-func (ws *WorkspaceService) GetWorkspace(ctx context.Context, workspaceId string) (models.Workspace, error) {
+func (ws *WorkspaceService) GetWorkspace(
+	ctx context.Context, workspaceId string) (models.Workspace, error) {
 	workspace, err := ws.workspaceRepo.FetchByWorkspaceId(ctx, workspaceId)
 
 	if errors.Is(err, repository.ErrQuery) {
@@ -365,11 +380,12 @@ func (ws *WorkspaceService) ValidateWidgetSession(
 	// if there is an error, we assume the widget session is invalid.
 	data, err := session.Decode(sk)
 	if err != nil {
-		fmt.Println(err)
+		slog.Error("failed to decode session", slog.Any("err", err))
 		return models.Customer{}, ErrWidgetSessionInvalid
 	}
 
-	customer, err := ws.customerRepo.LookupWorkspaceCustomerById(ctx, data.WorkspaceId, data.CustomerId, nil)
+	customer, err := ws.customerRepo.LookupWorkspaceCustomerById(
+		ctx, data.WorkspaceId, data.CustomerId, nil)
 	if err != nil {
 		return models.Customer{}, ErrWidgetSessionInvalid
 	}

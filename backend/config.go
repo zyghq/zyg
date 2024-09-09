@@ -3,6 +3,7 @@ package zyg
 import (
 	"fmt"
 	"os"
+	"strconv"
 )
 
 const DefaultSecretKeyLength = 64
@@ -21,4 +22,12 @@ func GetAvatarBaseURL() string {
 		return "https://avatar.vercel.sh/" // probably self-host?
 	}
 	return value
+}
+
+func DBQueryDebug() bool {
+	debug, err := strconv.ParseBool(os.Getenv("ZYG_DB_QUERY_DEBUG"))
+	if err != nil {
+		return false
+	}
+	return debug
 }

@@ -1,3 +1,5 @@
+github.com/cristalhq/builq v0.15.0 h1:YPfNGnn8eo+2ENap4YH3uD2nmXOYhG8fGrSdNSyEkTI=
+github.com/cristalhq/builq v0.15.0/go.mod h1:AEZed4D9q/Ru3MRON0P4ZWMDpQhDnGDhS4y8n1RegMc=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

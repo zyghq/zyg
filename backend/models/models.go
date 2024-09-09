@@ -63,6 +63,12 @@ type AssignedMember struct {
 	AssignedAt time.Time // The datetime the Member was assigned.
 }
 
+// CustomerActor identifies referenced Customer.
+type CustomerActor struct {
+	CustomerId string
+	Name       string
+}
+
 type Workspace struct {
 	WorkspaceId string
 	AccountId   string
@@ -75,6 +81,7 @@ func (w Workspace) GenId() string {
 	return "wrk" + xid.New().String()
 }
 
+// MarshalJSON Deprecated: will be removed in the next release.
 func (w Workspace) MarshalJSON() ([]byte, error) {
 	aux := &struct {
 		WorkspaceId string `json:"workspaceId"`
@@ -204,6 +211,7 @@ func (m Member) GenId() string {
 	return "mm" + xid.New().String()
 }
 
+// MarshalJSON Deprecated: will be removed in the next release.
 func (m Member) MarshalJSON() ([]byte, error) {
 	aux := &struct {
 		WorkspaceId string `json:"workspaceId"`
@@ -223,6 +231,13 @@ func (m Member) MarshalJSON() ([]byte, error) {
 		UpdatedAt:   m.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
+}
+
+func (m Member) AsMemberActor() MemberActor {
+	return MemberActor{
+		MemberId: m.MemberId,
+		Name:     m.Name,
+	}
 }
 
 type MemberRole struct{}
@@ -301,6 +316,13 @@ func (c Customer) AvatarUrl() string {
 		url = url + "/"
 	}
 	return url + c.CustomerId
+}
+
+func (c Customer) AsCustomerActor() CustomerActor {
+	return CustomerActor{
+		CustomerId: c.CustomerId,
+		Name:       c.Name,
+	}
 }
 
 // IdentityHash is a hash of the customer's identity

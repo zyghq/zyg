@@ -200,12 +200,12 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 			customer, isCreated, err = h.ws.CreateWidgetSession(
 				ctx, sk.Hmac, widget.WorkspaceId, widget.WidgetId, sessionId.String, customerName)
 		}
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
 		if errors.Is(err, services.ErrWidgetSession) {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 	} else {
@@ -436,108 +436,25 @@ func (h *CustomerHandler) handleCreateCustomerThChat(
 
 	ctx := r.Context()
 
-	workspace, err := h.ws.GetWorkspace(ctx, customer.WorkspaceId)
-	if errors.Is(err, services.ErrWorkspaceNotFound) {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
+	// return the system member for the workspace
+	member, err := h.ws.GetSystemMember(ctx, customer.WorkspaceId)
 	if err != nil {
-		slog.Error("failed to fetch workspace", slog.Any("err", err))
+		slog.Error("failed to fetch system member", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	thread, chat, err := h.ths.CreateInboundThreadChat(
-		ctx, workspace.WorkspaceId, customer.CustomerId, message.Message)
+	thread, chat, err := h.ths.CreateNewInboundThreadChat(
+		ctx, customer.WorkspaceId, *customer, member.AsMemberActor(),
+		message.Message,
+	)
 	if err != nil {
 		slog.Error("failed to create thread chat", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	var threadAssignee, outboundMember, chatMember *ThMemberResp
-	var inboundCustomer, chatCustomer *ThCustomerResp
-	var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string
-
-	// for chat - either of them
-	if chat.CustomerId.Valid {
-		chatCustomer = &ThCustomerResp{
-			CustomerId: chat.CustomerId.String,
-			Name:       chat.CustomerName.String,
-		}
-	} else if chat.MemberId.Valid {
-		chatMember = &ThMemberResp{
-			MemberId: chat.MemberId.String,
-			Name:     chat.MemberName.String,
-		}
-	}
-
-	threadCustomer := ThCustomerResp{
-		CustomerId: thread.CustomerId,
-		Name:       thread.CustomerName,
-	}
-
-	if thread.AssigneeId.Valid {
-		threadAssignee = &ThMemberResp{
-			MemberId: thread.AssigneeId.String,
-			Name:     thread.AssigneeName.String,
-		}
-	}
-
-	if thread.InboundMessage != nil {
-		inboundCustomer = &ThCustomerResp{
-			CustomerId: thread.InboundMessage.CustomerId,
-			Name:       thread.InboundMessage.CustomerName,
-		}
-		inboundFirstSeqId = &thread.InboundMessage.FirstSeqId
-		inboundLastSeqId = &thread.InboundMessage.LastSeqId
-	}
-
-	if thread.OutboundMessage != nil {
-		outboundMember = &ThMemberResp{
-			MemberId: thread.OutboundMessage.MemberId,
-			Name:     thread.OutboundMessage.MemberName,
-		}
-		outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
-		outboundLastSeqId = &thread.OutboundMessage.LastSeqId
-	}
-
-	chatResp := ChatResp{
-		ThreadId:  thread.ThreadId,
-		ChatId:    chat.ChatId,
-		Body:      chat.Body,
-		Sequence:  chat.Sequence,
-		IsHead:    chat.IsHead,
-		Customer:  chatCustomer,
-		Member:    chatMember,
-		CreatedAt: chat.CreatedAt,
-		UpdatedAt: chat.UpdatedAt,
-	}
-
-	resp := ThreadChatResp{
-		ThreadId:           thread.ThreadId,
-		Customer:           threadCustomer,
-		Title:              thread.Title,
-		Description:        thread.Description,
-		Sequence:           thread.Sequence,
-		Status:             thread.Status,
-		Read:               thread.Read,
-		Replied:            thread.Replied,
-		Priority:           thread.Priority,
-		Spam:               thread.Spam,
-		Channel:            thread.Channel,
-		PreviewText:        thread.PreviewText(),
-		Assignee:           threadAssignee,
-		InboundFirstSeqId:  inboundFirstSeqId,
-		InboundLastSeqId:   inboundLastSeqId,
-		InboundCustomer:    inboundCustomer,
-		OutboundFirstSeqId: outboundFirstSeqId,
-		OutboundLastSeqId:  outboundLastSeqId,
-		OutboundMember:     outboundMember,
-		CreatedAt:          thread.CreatedAt,
-		UpdatedAt:          thread.UpdatedAt,
-		Chat:               chatResp,
-	}
+	resp := ThreadChatResp{}.NewResponse(&thread, &chat)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
@@ -609,17 +526,17 @@ func (h *CustomerHandler) handleCreateThChatMessage(
 		return
 	}
 
-	var chatCustomer *ThCustomerResp
-	var chatMember *ThMemberResp
+	var chatCustomer *CustomerActorResp
+	var chatMember *MemberActorResp
 
 	// for chat - either of them
 	if chat.CustomerId.Valid {
-		chatCustomer = &ThCustomerResp{
+		chatCustomer = &CustomerActorResp{
 			CustomerId: chat.CustomerId.String,
 			Name:       chat.CustomerName.String,
 		}
 	} else if chat.MemberId.Valid {
-		chatMember = &ThMemberResp{
+		chatMember = &MemberActorResp{
 			MemberId: chat.MemberId.String,
 			Name:     chat.MemberName.String,
 		}
@@ -636,7 +553,6 @@ func (h *CustomerHandler) handleCreateThChatMessage(
 		CreatedAt: chat.CreatedAt,
 		UpdatedAt: chat.UpdatedAt,
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
@@ -658,6 +574,12 @@ func (h *CustomerHandler) handleGetThChatMessages(
 		return
 	}
 
+	if err != nil {
+		slog.Error("failed to fetch thread chat", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
 	chats, err := h.ths.ListThreadChatMessages(ctx, thread.ThreadId)
 	if err != nil {
 		slog.Error("failed to fetch thread chat messages", slog.Any("err", err))
@@ -667,15 +589,15 @@ func (h *CustomerHandler) handleGetThChatMessages(
 
 	messages := make([]ChatResp, 0, 100)
 	for _, chat := range chats {
-		var chatCustomer *ThCustomerResp
-		var chatMember *ThMemberResp
+		var chatCustomer *CustomerActorResp
+		var chatMember *MemberActorResp
 		if chat.CustomerId.Valid {
-			chatCustomer = &ThCustomerResp{
+			chatCustomer = &CustomerActorResp{
 				CustomerId: chat.CustomerId.String,
 				Name:       chat.CustomerName.String,
 			}
 		} else if chat.MemberId.Valid {
-			chatMember = &ThMemberResp{
+			chatMember = &MemberActorResp{
 				MemberId: chat.MemberId.String,
 				Name:     chat.MemberName.String,
 			}
@@ -693,7 +615,6 @@ func (h *CustomerHandler) handleGetThChatMessages(
 		}
 		messages = append(messages, chatResp)
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(messages); err != nil {
