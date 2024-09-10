@@ -20,7 +20,8 @@ type WorkspaceHandler struct {
 	cs ports.CustomerServicer
 }
 
-func NewWorkspaceHandler(ws ports.WorkspaceServicer, as ports.AccountServicer, cs ports.CustomerServicer) *WorkspaceHandler {
+func NewWorkspaceHandler(
+	ws ports.WorkspaceServicer, as ports.AccountServicer, cs ports.CustomerServicer) *WorkspaceHandler {
 	return &WorkspaceHandler{
 		ws: ws,
 		as: as,
@@ -28,7 +29,8 @@ func NewWorkspaceHandler(ws ports.WorkspaceServicer, as ports.AccountServicer, c
 	}
 }
 
-func (h *WorkspaceHandler) handleCreateWorkspace(w http.ResponseWriter, r *http.Request, account *models.Account) {
+func (h *WorkspaceHandler) handleCreateWorkspace(
+	w http.ResponseWriter, r *http.Request, account *models.Account) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
@@ -43,7 +45,7 @@ func (h *WorkspaceHandler) handleCreateWorkspace(w http.ResponseWriter, r *http.
 		return
 	}
 
-	workspace, err := h.as.CreateWorkspace(ctx, account.AccountId, account.Name, reqp.Name)
+	workspace, err := h.as.CreateWorkspace(ctx, *account, reqp.Name)
 	if err != nil {
 		slog.Error("failed to create workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

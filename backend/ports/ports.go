@@ -19,7 +19,7 @@ type AccountServicer interface {
 	DeletePersonalAccessToken(
 		ctx context.Context, patId string) error
 	CreateWorkspace(
-		ctx context.Context, accountId string, memberName string, workspaceName string) (models.Workspace, error)
+		ctx context.Context, account models.Account, workspaceName string) (models.Workspace, error)
 	GetAccountLinkedWorkspace(
 		ctx context.Context, accountId string, workspaceId string) (models.Workspace, error)
 	ListAccountLinkedWorkspaces(
@@ -169,8 +169,8 @@ type AccountRepositorer interface {
 }
 
 type WorkspaceRepositorer interface {
-	InsertWorkspaceWithMember(
-		ctx context.Context, workspace models.Workspace, member models.Member) (models.Workspace, error)
+	InsertWorkspaceWithMembers(
+		ctx context.Context, workspace models.Workspace, members []models.Member) (models.Workspace, error)
 	ModifyWorkspaceById(
 		ctx context.Context, workspace models.Workspace) (models.Workspace, error)
 	ModifyLabelById(

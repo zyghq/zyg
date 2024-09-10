@@ -23,6 +23,16 @@ type WorkspaceService struct {
 	customerRepo  ports.CustomerRepositorer
 }
 
+func NewWorkspaceService(
+	workspaceRepo ports.WorkspaceRepositorer, memberRepo ports.MemberRepositorer, customerRepo ports.CustomerRepositorer,
+) *WorkspaceService {
+	return &WorkspaceService{
+		workspaceRepo: workspaceRepo,
+		memberRepo:    memberRepo,
+		customerRepo:  customerRepo,
+	}
+}
+
 func (ws *WorkspaceService) GetSystemMember(
 	ctx context.Context, workspaceId string) (models.Member, error) {
 	// TODO: fix this asap.
@@ -34,18 +44,6 @@ func (ws *WorkspaceService) GetSystemMember(
 		return models.Member{}, ErrMember
 	}
 	return member, nil
-}
-
-func NewWorkspaceService(
-	workspaceRepo ports.WorkspaceRepositorer,
-	memberRepo ports.MemberRepositorer,
-	customerRepo ports.CustomerRepositorer,
-) *WorkspaceService {
-	return &WorkspaceService{
-		workspaceRepo: workspaceRepo,
-		memberRepo:    memberRepo,
-		customerRepo:  customerRepo,
-	}
 }
 
 func (ws *WorkspaceService) UpdateWorkspace(

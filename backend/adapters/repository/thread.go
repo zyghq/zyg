@@ -11,10 +11,6 @@ import (
 	"log/slog"
 )
 
-func debugQuery(query string) {
-	slog.Info("db", slog.Any("query", query))
-}
-
 // Returns the required columns for the thread table.
 // The order of the columns matters when returning the results.
 func threadCols() builq.Columns {

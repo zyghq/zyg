@@ -81,6 +81,16 @@ func (w Workspace) GenId() string {
 	return "wrk" + xid.New().String()
 }
 
+func (w Workspace) NewWorkspace(accountId string, name string) Workspace {
+	return Workspace{
+		WorkspaceId: w.GenId(),
+		AccountId:   accountId,
+		Name:        name,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+}
+
 // MarshalJSON Deprecated: will be removed in the next release.
 func (w Workspace) MarshalJSON() ([]byte, error) {
 	aux := &struct {
@@ -199,7 +209,6 @@ func (ap AccountPAT) MarshalJSON() ([]byte, error) {
 
 type Member struct {
 	WorkspaceId string
-	AccountId   string
 	MemberId    string
 	Name        string
 	Role        string
@@ -211,11 +220,14 @@ func (m Member) GenId() string {
 	return "mm" + xid.New().String()
 }
 
+func (m Member) IsMemberSystem() bool {
+	return m.Role == MemberRole{}.System()
+}
+
 // MarshalJSON Deprecated: will be removed in the next release.
 func (m Member) MarshalJSON() ([]byte, error) {
 	aux := &struct {
 		WorkspaceId string `json:"workspaceId"`
-		AccountId   string `json:"accountId"`
 		MemberId    string `json:"memberId"`
 		Name        string `json:"name"`
 		Role        string `json:"role"`
@@ -223,7 +235,6 @@ func (m Member) MarshalJSON() ([]byte, error) {
 		UpdatedAt   string `json:"updatedAt"`
 	}{
 		WorkspaceId: m.WorkspaceId,
-		AccountId:   m.AccountId,
 		MemberId:    m.MemberId,
 		Name:        m.Name,
 		Role:        m.Role,
@@ -242,29 +253,33 @@ func (m Member) AsMemberActor() MemberActor {
 
 type MemberRole struct{}
 
-func (mr MemberRole) Primary() string {
-	return "primary"
-}
-
 func (mr MemberRole) Owner() string {
 	return "owner"
 }
 
-func (mr MemberRole) Admin() string {
-	return "administrator"
+func (mr MemberRole) System() string {
+	return "system"
 }
 
-func (mr MemberRole) Member() string {
-	return "member"
+func (mr MemberRole) Admin() string {
+	return "admin"
+}
+
+func (mr MemberRole) Support() string {
+	return "support"
+}
+
+func (mr MemberRole) Viewer() string {
+	return "viewer"
 }
 
 func (mr MemberRole) DefaultRole() string {
-	return mr.Member()
+	return mr.Support()
 }
 
 func (mr MemberRole) IsValid(s string) bool {
 	switch s {
-	case mr.Primary(), mr.Owner(), mr.Admin(), mr.Member():
+	case mr.Owner(), mr.System(), mr.Admin(), mr.Support(), mr.Viewer():
 		return true
 	default:
 		return false

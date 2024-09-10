@@ -16,7 +16,8 @@ type ThreadChatService struct {
 	repo ports.ThreadRepositorer
 }
 
-func NewThreadChatService(repo ports.ThreadRepositorer) *ThreadChatService {
+func NewThreadChatService(
+	repo ports.ThreadRepositorer) *ThreadChatService {
 	return &ThreadChatService{
 		repo: repo,
 	}
