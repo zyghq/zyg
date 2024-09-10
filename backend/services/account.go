@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/sanchitrk/namingo"
 	"github.com/zyghq/zyg/adapters/repository"
 	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
@@ -94,10 +95,18 @@ func (s *AccountService) CreateWorkspace(
 	ctx context.Context, account models.Account, workspaceName string) (models.Workspace, error) {
 	workspace := models.Workspace{}.NewWorkspace(account.AccountId, workspaceName)
 	now := time.Now() // transactions in the same time space.
+
+	var memberName string
+	if account.Name != "" {
+		memberName = account.Name
+	} else {
+		memberName = namingo.Generate(1, "", namingo.TitleCase())
+	}
+
 	member := models.Member{
 		MemberId:    models.Member{}.GenId(),
 		WorkspaceId: workspace.WorkspaceId,
-		Name:        account.Name,
+		Name:        memberName,
 		Role:        models.MemberRole{}.Owner(),
 		CreatedAt:   now,
 		UpdatedAt:   now,
