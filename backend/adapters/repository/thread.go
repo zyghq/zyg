@@ -4,16 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log/slog"
+
 	"github.com/cristalhq/builq"
 	"github.com/jackc/pgx/v5"
 	"github.com/zyghq/zyg"
 	"github.com/zyghq/zyg/models"
-	"log/slog"
 )
-
-func debugQuery(query string) {
-	slog.Info("db", slog.Any("query", query))
-}
 
 // Returns the required columns for the thread table.
 // The order of the columns matters when returning the results.
@@ -1520,6 +1517,9 @@ func (tc *ThreadChatDB) FetchAttachedLabelsByThreadId(
 	return labels, nil
 }
 
+// InsertCustomerChat inserts a customer chat into the database.
+// TODO: pass thread with InboundMessage, and use that
+// instead of passing Thread and InboundMessage separately.
 func (tc *ThreadChatDB) InsertCustomerChat(
 	ctx context.Context, thread models.Thread, inboundMessage models.InboundMessage, chat models.Chat,
 ) (models.Chat, error) {
@@ -1643,6 +1643,9 @@ func (tc *ThreadChatDB) InsertCustomerChat(
 	return chat, nil
 }
 
+// InsertMemberChat inserts a member chat into the database.
+// TODO: pass thread with OutboundMessage, and use that
+// instead of passing Thread and OutboundMessage separately.
 func (tc *ThreadChatDB) InsertMemberChat(
 	ctx context.Context, thread models.Thread, outboundMessage models.OutboundMessage, chat models.Chat,
 ) (models.Chat, error) {

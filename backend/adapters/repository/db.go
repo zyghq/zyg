@@ -1,6 +1,9 @@
 package repository
 
-import "github.com/jackc/pgx/v5/pgxpool"
+import (
+	"github.com/jackc/pgx/v5/pgxpool"
+	"log/slog"
+)
 
 type AccountDB struct {
 	db *pgxpool.Pool
@@ -50,4 +53,8 @@ func NewThreadChatDB(db *pgxpool.Pool) *ThreadChatDB {
 	return &ThreadChatDB{
 		db: db,
 	}
+}
+
+func debugQuery(query string) {
+	slog.Info("db", slog.Any("query", query))
 }

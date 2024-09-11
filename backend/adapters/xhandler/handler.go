@@ -420,7 +420,7 @@ func (h *CustomerHandler) handleCustomerIdentities(
 	}
 }
 
-func (h *CustomerHandler) handleCreateCustomerThChat(
+func (h *CustomerHandler) handleCreateCustomerThreadChat(
 	w http.ResponseWriter, r *http.Request, customer *models.Customer) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
@@ -438,6 +438,16 @@ func (h *CustomerHandler) handleCreateCustomerThChat(
 
 	// return the system member for the workspace
 	member, err := h.ws.GetSystemMember(ctx, customer.WorkspaceId)
+	if errors.Is(err, services.ErrMemberNotFound) {
+		// system member isn't found, create a new one.
+		member, err = h.ws.CreateNewSystemMember(ctx, customer.WorkspaceId)
+		// error creating system member, return server error.
+		if err != nil {
+			slog.Error("failed to create system member", slog.Any("err", err))
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+	}
+
 	if err != nil {
 		slog.Error("failed to fetch system member", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -464,7 +474,7 @@ func (h *CustomerHandler) handleCreateCustomerThChat(
 	}
 }
 
-func (h *CustomerHandler) handleGetCustomerThChats(
+func (h *CustomerHandler) handleGetCustomerThreadChats(
 	w http.ResponseWriter, r *http.Request, customer *models.Customer) {
 	ctx := r.Context()
 
@@ -489,7 +499,7 @@ func (h *CustomerHandler) handleGetCustomerThChats(
 	}
 }
 
-func (h *CustomerHandler) handleCreateThChatMessage(
+func (h *CustomerHandler) handleCreateThreadChatMessage(
 	w http.ResponseWriter, r *http.Request, customer *models.Customer) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
@@ -519,7 +529,7 @@ func (h *CustomerHandler) handleCreateThChatMessage(
 		return
 	}
 
-	chat, err := h.ths.AddInboundMessage(ctx, thread, message.Message)
+	chat, err := h.ths.CreateInboundChatMessage(ctx, thread, message.Message)
 	if err != nil {
 		slog.Error("failed to create thread chat message", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -562,7 +572,7 @@ func (h *CustomerHandler) handleCreateThChatMessage(
 	}
 }
 
-func (h *CustomerHandler) handleGetThChatMessages(
+func (h *CustomerHandler) handleGetThreadChatMessages(
 	w http.ResponseWriter, r *http.Request, customer *models.Customer) {
 	threadId := r.PathValue("threadId")
 	ctx := r.Context()
@@ -644,14 +654,14 @@ func NewServer(
 		NewEnsureAuth(ch.handleCustomerIdentities, authService))
 
 	mux.Handle("POST /widgets/{widgetId}/threads/chat/{$}",
-		NewEnsureAuth(ch.handleCreateCustomerThChat, authService))
+		NewEnsureAuth(ch.handleCreateCustomerThreadChat, authService))
 	mux.Handle("GET /widgets/{widgetId}/threads/chat/{$}",
-		NewEnsureAuth(ch.handleGetCustomerThChats, authService))
+		NewEnsureAuth(ch.handleGetCustomerThreadChats, authService))
 
 	mux.Handle("POST /widgets/{widgetId}/threads/chat/{threadId}/messages/{$}",
-		NewEnsureAuth(ch.handleCreateThChatMessage, authService))
+		NewEnsureAuth(ch.handleCreateThreadChatMessage, authService))
 	mux.Handle("GET /widgets/{widgetId}/threads/chat/{threadId}/messages/{$}",
-		NewEnsureAuth(ch.handleGetThChatMessages, authService))
+		NewEnsureAuth(ch.handleGetThreadChatMessages, authService))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},

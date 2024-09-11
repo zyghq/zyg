@@ -74,7 +74,7 @@ CREATE TABLE workspace (
 CREATE TABLE member (
     member_id VARCHAR(255) NOT NULL, -- primary key
     workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
-    account_id VARCHAR(255) NOT NULL, -- fk to account
+    account_id VARCHAR(255) NULL, -- fk to account
     name VARCHAR (255) NOT NULL, -- name of the member
     role VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -2,15 +2,31 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 
+	"github.com/cristalhq/builq"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/zyghq/zyg"
 	"github.com/zyghq/zyg/models"
 )
 
-func (wrk *WorkspaceDB) InsertWorkspaceWithMember(
-	ctx context.Context, workspace models.Workspace, member models.Member) (models.Workspace, error) {
+func workspaceCols() builq.Columns {
+	return builq.Columns{
+		"workspace_id",
+		"account_id",
+		"name",
+		"created_at",
+		"updated_at",
+	}
+}
+
+func (wrk *WorkspaceDB) InsertWorkspaceWithMembers(
+	ctx context.Context, workspace models.Workspace, members []models.Member) (models.Workspace, error) {
+	// Start the DB transaction
 	tx, err := wrk.db.Begin(ctx)
 	if err != nil {
 		slog.Error("failed to start db tx", slog.Any("err", err))
@@ -24,11 +40,29 @@ func (wrk *WorkspaceDB) InsertWorkspaceWithMember(
 		}
 	}(tx, ctx)
 
-	workspaceId := workspace.GenId()
-	err = tx.QueryRow(ctx, `insert into workspace(workspace_id, account_id, name)
-		values ($1, $2, $3)
-		returning
-		workspace_id, account_id, name, created_at, updated_at`, workspaceId, workspace.AccountId, workspace.Name).Scan(
+	// Persist workspace.
+	q := builq.New()
+	workspaceCols := workspaceCols()
+
+	q("INSERT INTO workspace (%s)", workspaceCols)
+	q("VALUES (%$, %$, %$, %$, %$)",
+		workspace.WorkspaceId, workspace.AccountId, workspace.Name, workspace.CreatedAt, workspace.UpdatedAt)
+	q("RETURNING %s", workspaceCols)
+
+	stmt, _, err := q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return models.Workspace{}, ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
+
+	err = tx.QueryRow(
+		ctx, stmt, workspace.WorkspaceId, workspace.AccountId, workspace.Name,
+		workspace.CreatedAt, workspace.UpdatedAt).Scan(
 		&workspace.WorkspaceId, &workspace.AccountId,
 		&workspace.Name, &workspace.CreatedAt, &workspace.UpdatedAt,
 	)
@@ -43,34 +77,89 @@ func (wrk *WorkspaceDB) InsertWorkspaceWithMember(
 		return models.Workspace{}, ErrQuery
 	}
 
-	memberId := member.GenId()
-	err = tx.QueryRow(ctx, `insert into member(workspace_id, account_id, member_id, name, role)
-		values ($1, $2, $3, $4, $5)
-		returning
-		workspace_id, account_id, member_id, name, role, created_at, updated_at`,
-		workspaceId, workspace.AccountId, memberId, member.Name, member.Role).Scan(
-		&member.WorkspaceId, &member.AccountId,
-		&member.MemberId, &member.Name, &member.Role,
-		&member.CreatedAt, &member.UpdatedAt,
-	)
-
-	if errors.Is(err, pgx.ErrNoRows) {
-		slog.Error("no rows returned", slog.Any("err", err))
-		return models.Workspace{}, ErrEmpty
+	// Persist workspace members.
+	insertCols := builq.Columns{
+		"member_id",
+		"workspace_id",
+		"account_id",
+		"name",
+		"role",
+		"created_at",
+		"updated_at",
 	}
 
+	// Add insert-able queries to batch.
+	// Handle the null case for account_id.
+	batch := &pgx.Batch{}
+	for _, m := range members {
+		if m.IsMemberSystem() {
+			var accountId sql.NullString // defaults to nullable string.
+			// build insert query for system member.
+			q = builq.New()
+			q("INSERT INTO member (%s)", insertCols)
+			q("VALUES (%$, %$, %$, %$, %$, %$, %$)", m.MemberId, m.WorkspaceId, accountId, m.Name, m.Role, m.CreatedAt, m.UpdatedAt)
+			stmt, _, err = q.Build()
+			if err != nil {
+				slog.Error("failed to build query", slog.Any("err", err))
+				return models.Workspace{}, ErrQuery
+			}
+			if zyg.DBQueryDebug() {
+				debug := q.DebugBuild()
+				debugQuery(debug)
+			}
+			batch.Queue(stmt, m.MemberId, m.WorkspaceId, accountId, m.Name, m.Role, m.CreatedAt, m.UpdatedAt)
+		} else {
+			accountId := sql.NullString{String: workspace.AccountId, Valid: true} // reference to account
+			// build insert query for non-system member.
+			q = builq.New()
+			q("INSERT INTO member (%s)", insertCols)
+			q("VALUES (%$, %$, %$, %$, %$, %$, %$)", m.MemberId, m.WorkspaceId, accountId, m.Name, m.Role, m.CreatedAt, m.UpdatedAt)
+			stmt, _, err = q.Build()
+			if err != nil {
+				slog.Error("failed to build query", slog.Any("err", err))
+				return models.Workspace{}, ErrQuery
+			}
+			if zyg.DBQueryDebug() {
+				debug := q.DebugBuild()
+				debugQuery(debug)
+			}
+			batch.Queue(stmt, m.MemberId, m.WorkspaceId, accountId, m.Name, m.Role, m.CreatedAt, m.UpdatedAt)
+		}
+	}
+
+	results := tx.SendBatch(ctx, batch)
+	defer func(results pgx.BatchResults) {
+		err := results.Close()
+		if err != nil {
+			return
+		}
+	}(results)
+
+	for _, m := range members {
+		_, err := results.Exec()
+		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+				slog.Error("member already exists", slog.Any("memberId", m.MemberId))
+				continue
+			}
+			slog.Error("failed to insert members in batch", slog.Any("err", err))
+			return models.Workspace{}, ErrQuery // some other error, return should roll back.
+		}
+	}
+
+	err = results.Close()
 	if err != nil {
-		slog.Error("failed to insert query", slog.Any("err", err))
+		slog.Error("failed to close batch results", slog.Any("err", err))
 		return models.Workspace{}, ErrQuery
 	}
 
-	// commit the transaction
+	// All good, commit the transaction
 	err = tx.Commit(ctx)
 	if err != nil {
 		slog.Error("failed to commit db tx", slog.Any("err", err))
 		return models.Workspace{}, ErrQuery
 	}
-
 	return workspace, nil
 }
 
@@ -495,4 +584,95 @@ func (wrk *WorkspaceDB) UpsertWidgetSessionById(
 	}
 
 	return session, isCreated, nil
+}
+
+// InsertSystemMember inserts a system member without the account ID.
+func (wrk *WorkspaceDB) InsertSystemMember(ctx context.Context, member models.Member) (models.Member, error) {
+	q := builq.New()
+	cols := builq.Columns{
+		"member_id",
+		"workspace_id",
+		"name",
+		"role",
+		"created_at",
+		"updated_at",
+	}
+
+	q("INSERT INTO member (%s)", cols)
+	q("VALUES (%$, %$, %$, %$, %$, %$)",
+		member.MemberId, member.WorkspaceId, member.Name, member.Role, member.CreatedAt, member.UpdatedAt)
+	q("RETURNING %s", cols)
+
+	stmt, _, err := q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return models.Member{}, ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
+
+	err = wrk.db.QueryRow(
+		ctx, stmt, member.MemberId, member.WorkspaceId,
+		member.Name, member.Role, member.CreatedAt, member.UpdatedAt).Scan(
+		&member.MemberId, &member.WorkspaceId, &member.Name, &member.Role, &member.CreatedAt, &member.UpdatedAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
+		return models.Member{}, ErrEmpty
+	}
+	if err != nil {
+		slog.Error("failed to insert query", slog.Any("err", err))
+		return models.Member{}, ErrQuery
+	}
+	return member, nil
+}
+
+// LookupSystemMemberByOldest looks up system member with the oldest created in the workspace.
+func (wrk *WorkspaceDB) LookupSystemMemberByOldest(
+	ctx context.Context, workspaceId string) (models.Member, error) {
+	var member models.Member
+
+	q := builq.New()
+	cols := builq.Columns{
+		"member_id",
+		"workspace_id",
+		"name",
+		"role",
+		"created_at",
+		"updated_at",
+	}
+
+	q("SELECT %s FROM member", cols)
+	q("WHERE workspace_id = %$ AND role = %$", workspaceId, models.MemberRole{}.System())
+	q("ORDER BY created_at ASC LIMIT 1")
+
+	stmt, _, err := q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return models.Member{}, ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
+
+	err = wrk.db.QueryRow(ctx, stmt, workspaceId, models.MemberRole{}.System()).Scan(
+		&member.MemberId, &member.WorkspaceId, &member.Name, &member.Role,
+		&member.CreatedAt, &member.UpdatedAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
+		return models.Member{}, ErrEmpty
+	}
+	if err != nil {
+		slog.Error("failed to query", slog.Any("err", err))
+		return models.Member{}, ErrQuery
+	}
+	return member, nil
 }

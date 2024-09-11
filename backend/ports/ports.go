@@ -19,7 +19,7 @@ type AccountServicer interface {
 	DeletePersonalAccessToken(
 		ctx context.Context, patId string) error
 	CreateWorkspace(
-		ctx context.Context, accountId string, memberName string, workspaceName string) (models.Workspace, error)
+		ctx context.Context, account models.Account, workspaceName string) (models.Workspace, error)
 	GetAccountLinkedWorkspace(
 		ctx context.Context, accountId string, workspaceId string) (models.Workspace, error)
 	ListAccountLinkedWorkspaces(
@@ -62,6 +62,8 @@ type WorkspaceServicer interface {
 	GetMember(
 		ctx context.Context, workspaceId string, memberId string) (models.Member, error)
 	GetSystemMember(
+		ctx context.Context, workspaceId string) (models.Member, error)
+	CreateNewSystemMember(
 		ctx context.Context, workspaceId string) (models.Member, error)
 	ListCustomers(
 		ctx context.Context, workspaceId string) ([]models.Customer, error)
@@ -138,10 +140,11 @@ type ThreadServicer interface {
 		ctx context.Context, workspaceId string, threadId string) (bool, error)
 	SetLabel(
 		ctx context.Context, threadId string, labelId string, addedBy string) (models.ThreadLabel, bool, error)
-	ListThreadLabels(ctx context.Context, threadChatId string) ([]models.ThreadLabel, error)
-	AddInboundMessage(
+	ListThreadLabels(
+		ctx context.Context, threadChatId string) ([]models.ThreadLabel, error)
+	CreateInboundChatMessage(
 		ctx context.Context, thread models.Thread, message string) (models.Chat, error)
-	AddOutboundMessage(
+	CreateOutboundChatMessage(
 		ctx context.Context, thread models.Thread, memberId string, message string) (models.Chat, error)
 	ListThreadChatMessages(
 		ctx context.Context, threadId string) ([]models.Chat, error)
@@ -169,8 +172,8 @@ type AccountRepositorer interface {
 }
 
 type WorkspaceRepositorer interface {
-	InsertWorkspaceWithMember(
-		ctx context.Context, workspace models.Workspace, member models.Member) (models.Workspace, error)
+	InsertWorkspaceWithMembers(
+		ctx context.Context, workspace models.Workspace, members []models.Member) (models.Workspace, error)
 	ModifyWorkspaceById(
 		ctx context.Context, workspace models.Workspace) (models.Workspace, error)
 	ModifyLabelById(
@@ -201,6 +204,10 @@ type WorkspaceRepositorer interface {
 		ctx context.Context, widgetId string, sessionId string) (models.WidgetSession, error)
 	UpsertWidgetSessionById(
 		ctx context.Context, session models.WidgetSession) (models.WidgetSession, bool, error)
+	InsertSystemMember(
+		ctx context.Context, member models.Member) (models.Member, error)
+	LookupSystemMemberByOldest(
+		ctx context.Context, workspaceId string) (models.Member, error)
 }
 
 type MemberRepositorer interface {
