@@ -34,7 +34,7 @@ func NewCustomerHandler(
 }
 
 func handleGetIndex(w http.ResponseWriter, _ *http.Request) {
-	tm := time.Now().Format(time.RFC1123)
+	tm := time.Now().UTC().Format(time.RFC1123)
 	w.Header().Set("x-datetime", tm)
 	w.WriteHeader(http.StatusOK)
 	_, err := w.Write([]byte("ok"))

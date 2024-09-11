@@ -32,7 +32,7 @@ func (s *ThreadChatService) CreateNewInboundThreadChat(
 ) (models.Thread, models.Chat, error) {
 	// Freeze the datetime for this transaction.
 	// This is to ensure that all this is happening in the same time space.
-	now := time.Now()
+	now := time.Now().UTC()
 	channel := models.ThreadChannel{}.Chat() // channel the thread belongs to
 	customerActor := customer.AsCustomerActor()
 
