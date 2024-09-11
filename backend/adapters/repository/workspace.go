@@ -585,3 +585,94 @@ func (wrk *WorkspaceDB) UpsertWidgetSessionById(
 
 	return session, isCreated, nil
 }
+
+// InsertSystemMember inserts a system member without the account ID.
+func (wrk *WorkspaceDB) InsertSystemMember(ctx context.Context, member models.Member) (models.Member, error) {
+	q := builq.New()
+	cols := builq.Columns{
+		"member_id",
+		"workspace_id",
+		"name",
+		"role",
+		"created_at",
+		"updated_at",
+	}
+
+	q("INSERT INTO member (%s)", cols)
+	q("VALUES (%$, %$, %$, %$, %$, %$)",
+		member.MemberId, member.WorkspaceId, member.Name, member.Role, member.CreatedAt, member.UpdatedAt)
+	q("RETURNING %s", cols)
+
+	stmt, _, err := q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return models.Member{}, ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
+
+	err = wrk.db.QueryRow(
+		ctx, stmt, member.MemberId, member.WorkspaceId,
+		member.Name, member.Role, member.CreatedAt, member.UpdatedAt).Scan(
+		&member.MemberId, &member.WorkspaceId, &member.Name, &member.Role, &member.CreatedAt, &member.UpdatedAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
+		return models.Member{}, ErrEmpty
+	}
+	if err != nil {
+		slog.Error("failed to insert query", slog.Any("err", err))
+		return models.Member{}, ErrQuery
+	}
+	return member, nil
+}
+
+// LookupSystemMemberByOldest looks up system member with the oldest created in the workspace.
+func (wrk *WorkspaceDB) LookupSystemMemberByOldest(
+	ctx context.Context, workspaceId string) (models.Member, error) {
+	var member models.Member
+
+	q := builq.New()
+	cols := builq.Columns{
+		"member_id",
+		"workspace_id",
+		"name",
+		"role",
+		"created_at",
+		"updated_at",
+	}
+
+	q("SELECT %s FROM member", cols)
+	q("WHERE workspace_id = %$ AND role = %$", workspaceId, models.MemberRole{}.System())
+	q("ORDER BY created_at ASC LIMIT 1")
+
+	stmt, _, err := q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return models.Member{}, ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
+
+	err = wrk.db.QueryRow(ctx, stmt, workspaceId, models.MemberRole{}.System()).Scan(
+		&member.MemberId, &member.WorkspaceId, &member.Name, &member.Role,
+		&member.CreatedAt, &member.UpdatedAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
+		return models.Member{}, ErrEmpty
+	}
+	if err != nil {
+		slog.Error("failed to query", slog.Any("err", err))
+		return models.Member{}, ErrQuery
+	}
+	return member, nil
+}

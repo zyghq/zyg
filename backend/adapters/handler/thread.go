@@ -257,7 +257,7 @@ func (h *ThreadChatHandler) handleGetLabelledThreadChats(
 	}
 }
 
-func (h *ThreadChatHandler) handleCreateThChatMessage(
+func (h *ThreadChatHandler) handleCreateThreadChatMessage(
 	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
@@ -287,9 +287,9 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(
 		return
 	}
 
-	chat, err := h.ths.AddOutboundMessage(ctx, thread, member.MemberId, reqp.Message)
+	chat, err := h.ths.CreateOutboundChatMessage(ctx, thread, member.MemberId, reqp.Message)
 	if err != nil {
-		slog.Error("failed to create thread chat message", slog.Any("err", err))
+		slog.Error("failed to add thread chat message", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -355,7 +355,7 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(
 	}
 }
 
-func (h *ThreadChatHandler) handleGetThChatMessages(
+func (h *ThreadChatHandler) handleGetThreadChatMessages(
 	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	ctx := r.Context()
 
@@ -489,7 +489,7 @@ func (h *ThreadChatHandler) handleSetThreadChatLabel(
 	}
 }
 
-func (h *ThreadChatHandler) handleGetThChatLabels(
+func (h *ThreadChatHandler) handleGetThreadChatLabels(
 	w http.ResponseWriter, r *http.Request, member *models.Member) {
 
 	ctx := r.Context()
@@ -537,7 +537,7 @@ func (h *ThreadChatHandler) handleGetThChatLabels(
 	}
 }
 
-func (h *ThreadChatHandler) handleDeleteThChatLabel(
+func (h *ThreadChatHandler) handleDeleteThreadChatLabel(
 	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	ctx := r.Context()
 

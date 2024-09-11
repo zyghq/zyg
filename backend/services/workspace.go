@@ -35,11 +35,21 @@ func NewWorkspaceService(
 
 func (ws *WorkspaceService) GetSystemMember(
 	ctx context.Context, workspaceId string) (models.Member, error) {
-	// TODO: fix this asap.
-	member, err := ws.memberRepo.FetchByWorkspaceMemberId(ctx, workspaceId, "mmcr41nlctidud4k5g3cdg")
+	member, err := ws.workspaceRepo.LookupSystemMemberByOldest(ctx, workspaceId)
 	if errors.Is(err, repository.ErrEmpty) {
 		return models.Member{}, ErrMemberNotFound
 	}
+	if err != nil {
+		return models.Member{}, ErrMember
+	}
+	return member, nil
+}
+
+// CreateNewSystemMember creates a new system member for the workspace.
+func (ws *WorkspaceService) CreateNewSystemMember(
+	ctx context.Context, workspaceId string) (models.Member, error) {
+	member := models.Member{}.CreateNewSystemMember(workspaceId)
+	member, err := ws.workspaceRepo.InsertSystemMember(ctx, member)
 	if err != nil {
 		return models.Member{}, ErrMember
 	}

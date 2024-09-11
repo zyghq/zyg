@@ -63,6 +63,8 @@ type WorkspaceServicer interface {
 		ctx context.Context, workspaceId string, memberId string) (models.Member, error)
 	GetSystemMember(
 		ctx context.Context, workspaceId string) (models.Member, error)
+	CreateNewSystemMember(
+		ctx context.Context, workspaceId string) (models.Member, error)
 	ListCustomers(
 		ctx context.Context, workspaceId string) ([]models.Customer, error)
 	CreateCustomerWithExternalId(
@@ -138,10 +140,11 @@ type ThreadServicer interface {
 		ctx context.Context, workspaceId string, threadId string) (bool, error)
 	SetLabel(
 		ctx context.Context, threadId string, labelId string, addedBy string) (models.ThreadLabel, bool, error)
-	ListThreadLabels(ctx context.Context, threadChatId string) ([]models.ThreadLabel, error)
-	AddInboundMessage(
+	ListThreadLabels(
+		ctx context.Context, threadChatId string) ([]models.ThreadLabel, error)
+	CreateInboundChatMessage(
 		ctx context.Context, thread models.Thread, message string) (models.Chat, error)
-	AddOutboundMessage(
+	CreateOutboundChatMessage(
 		ctx context.Context, thread models.Thread, memberId string, message string) (models.Chat, error)
 	ListThreadChatMessages(
 		ctx context.Context, threadId string) ([]models.Chat, error)
@@ -201,6 +204,10 @@ type WorkspaceRepositorer interface {
 		ctx context.Context, widgetId string, sessionId string) (models.WidgetSession, error)
 	UpsertWidgetSessionById(
 		ctx context.Context, session models.WidgetSession) (models.WidgetSession, bool, error)
+	InsertSystemMember(
+		ctx context.Context, member models.Member) (models.Member, error)
+	LookupSystemMemberByOldest(
+		ctx context.Context, workspaceId string) (models.Member, error)
 }
 
 type MemberRepositorer interface {

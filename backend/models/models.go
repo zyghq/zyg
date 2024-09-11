@@ -251,6 +251,18 @@ func (m Member) AsMemberActor() MemberActor {
 	}
 }
 
+func (m Member) CreateNewSystemMember(workspaceId string) Member {
+	now := time.Now().UTC()
+	return Member{
+		MemberId:    m.GenId(), // generates a new ID
+		WorkspaceId: workspaceId,
+		Name:        "System",
+		Role:        MemberRole{}.System(),
+		CreatedAt:   now, // in same time space
+		UpdatedAt:   now, // in same time space
+	}
+}
+
 type MemberRole struct{}
 
 func (mr MemberRole) Owner() string {

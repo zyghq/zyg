@@ -1,3 +1,11 @@
 {
-  "editor.fontFamily": "'Cascadia Mono', 'SauceCodePro Nerd Font', Consolas, monospace"
+  "editor.fontFamily": "'Cascadia Mono', 'SauceCodePro Nerd Font', Consolas, monospace",
+  "cSpell.words": [
+    "addedby",
+    "inbc",
+    "oubm",
+    "segmentio",
+    "sess",
+    "xhandler"
+  ]
 }

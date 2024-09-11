@@ -174,9 +174,9 @@ func (s *ThreadChatService) ListThreadLabels(
 	return labels, nil
 }
 
-// AddInboundMessage adds an inbound message to the existing thread.
+// CreateInboundChatMessage adds an inbound message to the existing thread.
 // Checks if the thread already has an inbound message reference otherwise creates a new one.
-func (s *ThreadChatService) AddInboundMessage(
+func (s *ThreadChatService) CreateInboundChatMessage(
 	ctx context.Context, thread models.Thread, message string) (models.Chat, error) {
 	var inboundMessage models.InboundMessage
 	chat := models.Chat{
@@ -210,9 +210,9 @@ func (s *ThreadChatService) AddInboundMessage(
 	return chat, nil
 }
 
-// AddOutboundMessage adds an outbound message to the existing thread.
+// CreateOutboundChatMessage creates an outbound message to the existing thread chat.
 // Checks if the thread already has an outbound message reference otherwise creates a new one.
-func (s *ThreadChatService) AddOutboundMessage(
+func (s *ThreadChatService) CreateOutboundChatMessage(
 	ctx context.Context, thread models.Thread, memberId string, message string) (models.Chat, error) {
 	var outboundMessage models.OutboundMessage
 	chat := models.Chat{
@@ -222,8 +222,8 @@ func (s *ThreadChatService) AddOutboundMessage(
 		IsHead:   false,
 	}
 	// If an existing outbound message already exists, then update
-	// the existing outbound message with the latest value of last sequence ID.
-	// Else create a new outbound message for the thread.
+	// the existing with the latest value of last sequence ID,
+	// else create a new outbound message for the thread chat.
 	if thread.OutboundMessage != nil {
 		outboundMessage = *thread.OutboundMessage
 		lastSeqId := ksuid.New().String()
