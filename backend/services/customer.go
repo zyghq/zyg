@@ -19,7 +19,8 @@ type CustomerService struct {
 	repo ports.CustomerRepositorer
 }
 
-func NewCustomerService(repo ports.CustomerRepositorer) *CustomerService {
+func NewCustomerService(
+	repo ports.CustomerRepositorer) *CustomerService {
 	return &CustomerService{
 		repo: repo,
 	}

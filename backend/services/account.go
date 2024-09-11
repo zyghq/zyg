@@ -3,7 +3,9 @@ package services
 import (
 	"context"
 	"errors"
+	"time"
 
+	"github.com/sanchitrk/namingo"
 	"github.com/zyghq/zyg/adapters/repository"
 	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
@@ -15,8 +17,7 @@ type AccountService struct {
 }
 
 func NewAccountService(
-	accountRepo ports.AccountRepositorer,
-	workspaceRepo ports.WorkspaceRepositorer) *AccountService {
+	accountRepo ports.AccountRepositorer, workspaceRepo ports.WorkspaceRepositorer) *AccountService {
 	return &AccountService{
 		accountRepo:   accountRepo,
 		workspaceRepo: workspaceRepo,
@@ -91,16 +92,35 @@ func (s *AccountService) DeletePersonalAccessToken(ctx context.Context, patId st
 }
 
 func (s *AccountService) CreateWorkspace(
-	ctx context.Context, accountId string, memberName string, workspaceName string) (models.Workspace, error) {
-	workspace := models.Workspace{
-		AccountId: accountId,
-		Name:      workspaceName,
+	ctx context.Context, account models.Account, workspaceName string) (models.Workspace, error) {
+	workspace := models.Workspace{}.NewWorkspace(account.AccountId, workspaceName)
+	now := time.Now() // transactions in the same time space.
+
+	var memberName string
+	if account.Name != "" {
+		memberName = account.Name
+	} else {
+		memberName = namingo.Generate(1, "", namingo.TitleCase())
 	}
+
 	member := models.Member{
-		Name: memberName,
-		Role: models.MemberRole{}.Primary(),
+		MemberId:    models.Member{}.GenId(),
+		WorkspaceId: workspace.WorkspaceId,
+		Name:        memberName,
+		Role:        models.MemberRole{}.Owner(),
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
-	workspace, err := s.workspaceRepo.InsertWorkspaceWithMember(ctx, workspace, member)
+	sysMember := models.Member{
+		MemberId:    models.Member{}.GenId(),
+		WorkspaceId: workspace.WorkspaceId,
+		Name:        "System",
+		Role:        models.MemberRole{}.System(),
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+	members := []models.Member{member, sysMember} // members to be inserted into the newly created workspace.
+	workspace, err := s.workspaceRepo.InsertWorkspaceWithMembers(ctx, workspace, members)
 	if err != nil {
 		return models.Workspace{}, err
 	}
@@ -113,7 +133,6 @@ func (s *AccountService) GetAccountLinkedWorkspace(
 	if errors.Is(err, repository.ErrEmpty) {
 		return models.Workspace{}, ErrWorkspaceNotFound
 	}
-
 	if err != nil {
 		return models.Workspace{}, err
 	}

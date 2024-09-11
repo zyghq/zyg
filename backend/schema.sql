@@ -74,7 +74,7 @@ CREATE TABLE workspace (
 CREATE TABLE member (
     member_id VARCHAR(255) NOT NULL, -- primary key
     workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
-    account_id VARCHAR(255) NOT NULL, -- fk to account
+    account_id VARCHAR(255) NULL, -- fk to account
     name VARCHAR (255) NOT NULL, -- name of the member
     role VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -191,17 +191,23 @@ CREATE TABLE thread (
     workspace_id VARCHAR(255) NOT NULL,
     customer_id VARCHAR(255) NOT NULL,
     assignee_id VARCHAR(255) NULL,
+    assigned_at TIMESTAMP NULL,
     title TEXT NOT NULL,
     description TEXT NOT NULL,
-    sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+    sequence BIGINT NOT NULL DEFAULT fn_next_id(), -- deprecated
     status VARCHAR(127) NOT NULL, -- status of the thread
-    read BOOLEAN NOT NULL DEFAULT FALSE,  -- read by the member
-    replied BOOLEAN NOT NULL DEFAULT FALSE,  -- replied by the member
+    status_changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status_changed_by_id VARCHAR(255) NOT NULL,
+    stage VARCHAR(127) NOT NULL, -- stage of the thread
+    read BOOLEAN NOT NULL DEFAULT FALSE,  -- deprecated
+    replied BOOLEAN NOT NULL DEFAULT FALSE,  -- is replied by the member
     priority VARCHAR(255) NOT NULL, -- priority of the thread
-    spam BOOLEAN NOT NULL DEFAULT FALSE, -- spam flag
+    spam BOOLEAN NOT NULL DEFAULT FALSE, -- deprecated
     channel VARCHAR(127) NOT NULL, -- channel of the thread
     inbound_message_id VARCHAR(255) NULL, -- fk to inbound_message
     outbound_message_id VARCHAR(255) NULL, -- fk to outbound_message
+    created_by_id VARCHAR(255) NOT NULL, -- fk to member
+    updated_by_id VARCHAR(255) NOT NULL, -- fk to member
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -209,8 +215,13 @@ CREATE TABLE thread (
     CONSTRAINT thread_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
     CONSTRAINT thread_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
     CONSTRAINT thread_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES member (member_id),
-    CONSTRAINT thread_inbound_message_id_fkey FOREIGN KEY (inbound_message_id) REFERENCES inbound_message (message_id),
-    CONSTRAINT thread_outbound_message_id_fkey FOREIGN KEY (outbound_message_id) REFERENCES outbound_message (message_id)
+    CONSTRAINT thread_status_changed_by_id_fkey FOREIGN KEY (status_changed_by_id) REFERENCES member (member_id),
+    CONSTRAINT thread_inbound_message_id_fkey FOREIGN KEY (inbound_message_id)
+        REFERENCES inbound_message (message_id),
+    CONSTRAINT thread_outbound_message_id_fkey FOREIGN KEY (outbound_message_id)
+        REFERENCES outbound_message (message_id),
+    CONSTRAINT thread_created_by_id_fkey FOREIGN KEY (created_by_id) REFERENCES member (member_id),
+    CONSTRAINT thread_updated_by_id_fkey FOREIGN KEY (updated_by_id) REFERENCES member (member_id)
 );
 
 CREATE TABLE chat (

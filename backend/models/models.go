@@ -50,11 +50,24 @@ func NullString(s *string) sql.NullString {
 	return sql.NullString{String: *s, Valid: true}
 }
 
-// IsValidUUID validates if a string is a valid UUID
-//func IsValidUUID(u string) bool {
-//	_, err := uuid.Parse(u)
-//	return err == nil
-//}
+// MemberActor identifies referenced Member.
+type MemberActor struct {
+	MemberId string
+	Name     string
+}
+
+// AssignedMember represents the Member assigned with when it was assigned.
+type AssignedMember struct {
+	MemberId   string
+	Name       string
+	AssignedAt time.Time // The datetime the Member was assigned.
+}
+
+// CustomerActor identifies referenced Customer.
+type CustomerActor struct {
+	CustomerId string
+	Name       string
+}
 
 type Workspace struct {
 	WorkspaceId string
@@ -68,6 +81,17 @@ func (w Workspace) GenId() string {
 	return "wrk" + xid.New().String()
 }
 
+func (w Workspace) NewWorkspace(accountId string, name string) Workspace {
+	return Workspace{
+		WorkspaceId: w.GenId(),
+		AccountId:   accountId,
+		Name:        name,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+}
+
+// MarshalJSON Deprecated: will be removed in the next release.
 func (w Workspace) MarshalJSON() ([]byte, error) {
 	aux := &struct {
 		WorkspaceId string `json:"workspaceId"`
@@ -83,76 +107,6 @@ func (w Workspace) MarshalJSON() ([]byte, error) {
 		UpdatedAt:   w.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
-}
-
-type ThreadStatus struct{}
-
-func (s ThreadStatus) Todo() string {
-	return "todo"
-}
-
-func (s ThreadStatus) Done() string {
-	return "done"
-}
-
-func (s ThreadStatus) Snoozed() string {
-	return "snoozed"
-}
-
-func (s ThreadStatus) UnSnoozed() string {
-	return "unsnoozed"
-}
-
-func (s ThreadStatus) DefaultStatus() string {
-	return s.Todo()
-}
-
-func (s ThreadStatus) IsValid(status string) bool {
-	switch status {
-	case s.Done():
-		return true
-	case s.Todo():
-		return true
-	default:
-		return false
-	}
-}
-
-type ThreadPriority struct{}
-
-func (p ThreadPriority) Urgent() string {
-	return "urgent"
-}
-
-func (p ThreadPriority) High() string {
-	return "high"
-}
-
-func (p ThreadPriority) Normal() string {
-	return "normal"
-}
-
-func (p ThreadPriority) Low() string {
-	return "low"
-}
-
-func (p ThreadPriority) DefaultPriority() string {
-	return p.Normal()
-}
-
-func (p ThreadPriority) IsValid(s string) bool {
-	switch s {
-	case p.Urgent(), p.High(), p.Normal(), p.Low():
-		return true
-	default:
-		return false
-	}
-}
-
-type ThreadChannel struct{}
-
-func (c ThreadChannel) Chat() string {
-	return "chat"
 }
 
 type LabelAddedBy struct{}
@@ -255,7 +209,6 @@ func (ap AccountPAT) MarshalJSON() ([]byte, error) {
 
 type Member struct {
 	WorkspaceId string
-	AccountId   string
 	MemberId    string
 	Name        string
 	Role        string
@@ -267,10 +220,14 @@ func (m Member) GenId() string {
 	return "mm" + xid.New().String()
 }
 
+func (m Member) IsMemberSystem() bool {
+	return m.Role == MemberRole{}.System()
+}
+
+// MarshalJSON Deprecated: will be removed in the next release.
 func (m Member) MarshalJSON() ([]byte, error) {
 	aux := &struct {
 		WorkspaceId string `json:"workspaceId"`
-		AccountId   string `json:"accountId"`
 		MemberId    string `json:"memberId"`
 		Name        string `json:"name"`
 		Role        string `json:"role"`
@@ -278,7 +235,6 @@ func (m Member) MarshalJSON() ([]byte, error) {
 		UpdatedAt   string `json:"updatedAt"`
 	}{
 		WorkspaceId: m.WorkspaceId,
-		AccountId:   m.AccountId,
 		MemberId:    m.MemberId,
 		Name:        m.Name,
 		Role:        m.Role,
@@ -288,31 +244,54 @@ func (m Member) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
-type MemberRole struct{}
-
-func (mr MemberRole) Primary() string {
-	return "primary"
+func (m Member) AsMemberActor() MemberActor {
+	return MemberActor{
+		MemberId: m.MemberId,
+		Name:     m.Name,
+	}
 }
+
+func (m Member) CreateNewSystemMember(workspaceId string) Member {
+	now := time.Now().UTC()
+	return Member{
+		MemberId:    m.GenId(), // generates a new ID
+		WorkspaceId: workspaceId,
+		Name:        "System",
+		Role:        MemberRole{}.System(),
+		CreatedAt:   now, // in same time space
+		UpdatedAt:   now, // in same time space
+	}
+}
+
+type MemberRole struct{}
 
 func (mr MemberRole) Owner() string {
 	return "owner"
 }
 
-func (mr MemberRole) Admin() string {
-	return "administrator"
+func (mr MemberRole) System() string {
+	return "system"
 }
 
-func (mr MemberRole) Member() string {
-	return "member"
+func (mr MemberRole) Admin() string {
+	return "admin"
+}
+
+func (mr MemberRole) Support() string {
+	return "support"
+}
+
+func (mr MemberRole) Viewer() string {
+	return "viewer"
 }
 
 func (mr MemberRole) DefaultRole() string {
-	return mr.Member()
+	return mr.Support()
 }
 
 func (mr MemberRole) IsValid(s string) bool {
 	switch s {
-	case mr.Primary(), mr.Owner(), mr.Admin(), mr.Member():
+	case mr.Owner(), mr.System(), mr.Admin(), mr.Support(), mr.Viewer():
 		return true
 	default:
 		return false
@@ -366,6 +345,13 @@ func (c Customer) AvatarUrl() string {
 	return url + c.CustomerId
 }
 
+func (c Customer) AsCustomerActor() CustomerActor {
+	return CustomerActor{
+		CustomerId: c.CustomerId,
+		Name:       c.Name,
+	}
+}
+
 // IdentityHash is a hash of the customer's identity
 // Combined these fields create a unique hash for the customer
 // You might have to update this if you plan to add more identity fields
@@ -392,150 +378,6 @@ func (c Customer) IdentityHash() string {
 // email, phone, externalId are valid.
 func (c Customer) HasNaturalIdentity() bool {
 	return c.Email.Valid || c.Phone.Valid || c.ExternalId.Valid
-}
-
-type InboundMessage struct {
-	MessageId    string
-	CustomerId   string
-	CustomerName string
-	PreviewText  string
-	FirstSeqId   string
-	LastSeqId    string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-}
-
-func (im InboundMessage) GenId() string {
-	return "im" + xid.New().String()
-}
-
-type OutboundMessage struct {
-	MessageId   string
-	MemberId    string
-	MemberName  string
-	PreviewText string
-	FirstSeqId  string
-	LastSeqId   string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
-func (em OutboundMessage) GenId() string {
-	return "em" + xid.New().String()
-}
-
-type Thread struct {
-	WorkspaceId     string
-	ThreadId        string
-	CustomerId      string
-	CustomerName    string
-	AssigneeId      sql.NullString
-	AssigneeName    sql.NullString
-	Title           string
-	Description     string
-	Sequence        int
-	Status          string
-	Read            bool
-	Replied         bool
-	Priority        string
-	Spam            bool
-	Channel         string
-	InboundMessage  *InboundMessage
-	OutboundMessage *OutboundMessage
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-}
-
-func (th *Thread) GenId() string {
-	return "th" + xid.New().String()
-}
-
-func (th *Thread) PreviewText() string {
-	if th.InboundMessage != nil {
-		return th.InboundMessage.PreviewText
-	}
-	if th.OutboundMessage != nil {
-		return th.OutboundMessage.PreviewText
-	}
-	return ""
-}
-
-func (th *Thread) CustomerPreviewText() string {
-	if th.OutboundMessage != nil {
-		return th.OutboundMessage.PreviewText
-	}
-	if th.InboundMessage != nil {
-		return th.InboundMessage.PreviewText
-	}
-	return ""
-}
-
-func (th *Thread) AddInboundMessage(
-	messageId string,
-	customerId string, customerName string,
-	previewText string,
-	firstSeqId string, lastSeqId string,
-	createdAt time.Time, updatedAt time.Time,
-) {
-	th.InboundMessage = &InboundMessage{
-		MessageId: messageId, CustomerId: customerId, CustomerName: customerName,
-		PreviewText: previewText,
-		FirstSeqId:  firstSeqId, LastSeqId: lastSeqId,
-		CreatedAt: createdAt,
-		UpdatedAt: updatedAt,
-	}
-}
-
-func (th *Thread) ClearInboundMessage() {
-	th.InboundMessage = nil
-}
-
-func (th *Thread) AddOutboundMessage(
-	messageId string,
-	memberId string, memberName string,
-	previewText string,
-	firstSeqId string, lastSeqId string,
-	createdAt time.Time, updatedAt time.Time,
-) {
-	th.OutboundMessage = &OutboundMessage{
-		MessageId:   messageId,
-		MemberId:    memberId,
-		MemberName:  memberName,
-		PreviewText: previewText,
-		FirstSeqId:  firstSeqId,
-		LastSeqId:   lastSeqId,
-		CreatedAt:   createdAt,
-		UpdatedAt:   updatedAt,
-	}
-}
-
-func (th *Thread) ClearOutboundMessage() {
-	th.OutboundMessage = nil
-}
-
-type Chat struct {
-	ThreadId     string
-	ChatId       string
-	Body         string
-	Sequence     int
-	CustomerId   sql.NullString
-	CustomerName sql.NullString
-	MemberId     sql.NullString
-	MemberName   sql.NullString
-	IsHead       bool
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-}
-
-func (c Chat) GenId() string {
-	return "ch" + xid.New().String()
-}
-
-func (c Chat) PreviewText() string {
-	if len(c.Body) > 255 {
-		return c.Body[:255]
-	}
-	return c.Body
 }
 
 func (l Label) MarshalJSON() ([]byte, error) {

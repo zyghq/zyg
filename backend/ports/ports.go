@@ -19,7 +19,7 @@ type AccountServicer interface {
 	DeletePersonalAccessToken(
 		ctx context.Context, patId string) error
 	CreateWorkspace(
-		ctx context.Context, accountId string, memberName string, workspaceName string) (models.Workspace, error)
+		ctx context.Context, account models.Account, workspaceName string) (models.Workspace, error)
 	GetAccountLinkedWorkspace(
 		ctx context.Context, accountId string, workspaceId string) (models.Workspace, error)
 	ListAccountLinkedWorkspaces(
@@ -61,6 +61,10 @@ type WorkspaceServicer interface {
 		ctx context.Context, workspaceId string) ([]models.Member, error)
 	GetMember(
 		ctx context.Context, workspaceId string, memberId string) (models.Member, error)
+	GetSystemMember(
+		ctx context.Context, workspaceId string) (models.Member, error)
+	CreateNewSystemMember(
+		ctx context.Context, workspaceId string) (models.Member, error)
 	ListCustomers(
 		ctx context.Context, workspaceId string) ([]models.Customer, error)
 	CreateCustomerWithExternalId(
@@ -114,8 +118,9 @@ type CustomerServicer interface {
 }
 
 type ThreadServicer interface {
-	CreateInboundThreadChat(
-		ctx context.Context, workspaceId string, customerId string, message string,
+	CreateNewInboundThreadChat(
+		ctx context.Context, workspaceId string,
+		customer models.Customer, createdBy models.MemberActor, message string,
 	) (models.Thread, models.Chat, error)
 	GetWorkspaceThread(
 		ctx context.Context, workspaceId string, threadId string, channel *string) (models.Thread, error)
@@ -123,10 +128,6 @@ type ThreadServicer interface {
 		ctx context.Context, thread models.Thread, fields []string) (models.Thread, error)
 	ListCustomerThreadChats(
 		ctx context.Context, customerId string) ([]models.Thread, error)
-	AssignMember(
-		ctx context.Context, threadId string, assigneeId string) (models.Thread, error)
-	SetReplyStatus(
-		ctx context.Context, threadId string, replied bool) (models.Thread, error)
 	ListWorkspaceThreadChats(
 		ctx context.Context, workspaceId string) ([]models.Thread, error)
 	ListMemberThreadChats(
@@ -139,10 +140,11 @@ type ThreadServicer interface {
 		ctx context.Context, workspaceId string, threadId string) (bool, error)
 	SetLabel(
 		ctx context.Context, threadId string, labelId string, addedBy string) (models.ThreadLabel, bool, error)
-	ListThreadLabels(ctx context.Context, threadChatId string) ([]models.ThreadLabel, error)
-	AddInboundMessage(
+	ListThreadLabels(
+		ctx context.Context, threadChatId string) ([]models.ThreadLabel, error)
+	CreateInboundChatMessage(
 		ctx context.Context, thread models.Thread, message string) (models.Chat, error)
-	AddOutboundMessage(
+	CreateOutboundChatMessage(
 		ctx context.Context, thread models.Thread, memberId string, message string) (models.Chat, error)
 	ListThreadChatMessages(
 		ctx context.Context, threadId string) ([]models.Chat, error)
@@ -170,8 +172,8 @@ type AccountRepositorer interface {
 }
 
 type WorkspaceRepositorer interface {
-	InsertWorkspaceWithMember(
-		ctx context.Context, workspace models.Workspace, member models.Member) (models.Workspace, error)
+	InsertWorkspaceWithMembers(
+		ctx context.Context, workspace models.Workspace, members []models.Member) (models.Workspace, error)
 	ModifyWorkspaceById(
 		ctx context.Context, workspace models.Workspace) (models.Workspace, error)
 	ModifyLabelById(
@@ -202,6 +204,10 @@ type WorkspaceRepositorer interface {
 		ctx context.Context, widgetId string, sessionId string) (models.WidgetSession, error)
 	UpsertWidgetSessionById(
 		ctx context.Context, session models.WidgetSession) (models.WidgetSession, bool, error)
+	InsertSystemMember(
+		ctx context.Context, member models.Member) (models.Member, error)
+	LookupSystemMemberByOldest(
+		ctx context.Context, workspaceId string) (models.Member, error)
 }
 
 type MemberRepositorer interface {
@@ -238,19 +244,15 @@ type CustomerRepositorer interface {
 
 type ThreadRepositorer interface {
 	InsertInboundThreadChat(
-		ctx context.Context, inboundMessage models.InboundMessage,
-		thread models.Thread, chat models.Chat) (models.Thread, models.Chat, error)
+		ctx context.Context, thread models.Thread, chat models.Chat) (models.Thread, models.Chat, error)
 	LookupByWorkspaceThreadId(
 		ctx context.Context, workspaceId string, threadId string, channel *string) (models.Thread, error)
 	ModifyThreadById(
 		ctx context.Context, thread models.Thread, fields []string) (models.Thread, error)
 	FetchThreadsByCustomerId(
 		ctx context.Context, customerId string, channel *string) ([]models.Thread, error)
-	UpdateAssignee(ctx context.Context, threadId string, assigneeId string) (models.Thread, error)
-	UpdateRepliedState(
-		ctx context.Context, threadId string, replied bool) (models.Thread, error)
-	FetchThreadsByWorkspaceId(ctx context.Context, workspaceId string, channel *string, role *string,
-	) ([]models.Thread, error)
+	FetchThreadsByWorkspaceId(
+		ctx context.Context, workspaceId string, channel *string, role *string) ([]models.Thread, error)
 	FetchThreadsByAssignedMemberId(
 		ctx context.Context, memberId string, channel *string, role *string) ([]models.Thread, error)
 	FetchThreadsByMemberUnassigned(
@@ -277,6 +279,6 @@ type ThreadRepositorer interface {
 		ctx context.Context, workspaceId string, memberId string) (models.ThreadAssigneeMetrics, error)
 	ComputeLabelMetricsByWorkspaceId(
 		ctx context.Context, workspaceId string) ([]models.ThreadLabelMetric, error)
-	DeleteThreadLabelByCompositeId(
+	DeleteThreadLabelById(
 		ctx context.Context, threadId string, labelId string) error
 }
