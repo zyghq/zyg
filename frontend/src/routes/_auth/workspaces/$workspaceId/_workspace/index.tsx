@@ -20,10 +20,10 @@ import {
 export const Route = createFileRoute(
   "/_auth/workspaces/$workspaceId/_workspace/"
 )({
-  component: () => <AllThreads />,
+  component: () => <Threads />,
 });
 
-function AllThreads() {
+function Threads() {
   const workspaceStore = useWorkspaceStore();
   const navigate = useNavigate();
   const { status, reasons, sort, assignees, priorities } = Route.useSearch();

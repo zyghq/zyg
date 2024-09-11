@@ -16,6 +16,9 @@ import {
   GearIcon,
   WidthIcon,
   ExitIcon,
+  MagnifyingGlassIcon,
+  PersonIcon,
+  BarChartIcon,
 } from "@radix-ui/react-icons";
 import {
   DropdownMenu,
@@ -107,6 +110,81 @@ export default function SideNavLinks({
           <div className="mt-4 flex flex-col space-y-1">
             <Link
               onClick={() => openClose(false)}
+              to="/workspaces/$workspaceId/search"
+              params={{ workspaceId }}
+              search={{ status: status }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
+            >
+              {({ isActive }: { isActive: boolean }) => (
+                <>
+                  {isActive ? (
+                    <>
+                      <div className="flex">
+                        <MagnifyingGlassIcon className="my-auto mr-2 h-5 w-5 text-muted-foreground" />
+                        <div className="font-semibold">Search</div>
+                      </div>
+                      <Badge className="bg-white font-mono text-muted-foreground dark:bg-black">{`/`}</Badge>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex">
+                        <MagnifyingGlassIcon className="my-auto mr-2 h-5 w-5 text-muted-foreground" />
+                        <div className="font-normal">Search</div>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className="font-mono text-muted-foreground bg-white"
+                      >
+                        {`/`}
+                      </Badge>
+                    </>
+                  )}
+                </>
+              )}
+            </Link>
+            <Link
+              onClick={() => openClose(false)}
+              to="/workspaces/$workspaceId/insights"
+              params={{ workspaceId }}
+              search={{ status: status }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
+            >
+              {({ isActive }: { isActive: boolean }) => (
+                <>
+                  {isActive ? (
+                    <>
+                      <div className="flex">
+                        <BarChartIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" />
+                        <div className="font-semibold">Insights</div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex">
+                        <BarChartIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" />
+                        <div className="font-normal">Insights</div>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </Link>
+            <Link
+              onClick={() => openClose(false)}
               to="/workspaces/$workspaceId"
               params={{ workspaceId }}
               search={{ status: status }}
@@ -119,7 +197,7 @@ export default function SideNavLinks({
                 className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
               }}
             >
-              {({ isActive }) => (
+              {({ isActive }: { isActive: boolean }) => (
                 <>
                   {isActive ? (
                     <>
@@ -156,36 +234,34 @@ export default function SideNavLinks({
               )}
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
               }}
             >
-              {({ isActive }) => (
+              {({ isActive }: { isActive: boolean }) => (
                 <>
                   {isActive ? (
                     <>
                       <div className="flex">
-                        {/* <ChatBubbleIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" /> */}
                         <div className="flex my-auto mr-2">
                           <Avatar size={18} name={memberId} variant="marble" />
                         </div>
-                        <div className="font-normal">My Threads</div>
+                        <div className="font-semibold">Your Threads</div>
                       </div>
-                      <Badge className="bg-indigo-500 font-mono text-white hover:bg-indigo-600">
+                      <span className="font-mono text-muted-foreground pr-2">
                         {metrics.assignedToMe}
-                      </Badge>
+                      </span>
                     </>
                   ) : (
                     <>
                       <div className="flex">
-                        {/* <ChatBubbleIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" /> */}
                         <div className="flex my-auto mr-2">
                           <Avatar size={18} name={memberId} variant="marble" />
                         </div>
-                        <div className="font-normal">My Threads</div>
+                        <div className="font-normal">Your Threads</div>
                       </div>
-                      <Badge variant="outline" className="font-mono font-light">
+                      <span className="font-mono text-muted-foreground pr-2">
                         {metrics.assignedToMe}
-                      </Badge>
+                      </span>
                     </>
                   )}
                 </>
@@ -202,30 +278,30 @@ export default function SideNavLinks({
               )}
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
               }}
             >
-              {({ isActive }) => (
+              {({ isActive }: { isActive: boolean }) => (
                 <>
                   {isActive ? (
                     <>
                       <div className="flex">
-                        <ChatBubbleIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" />
-                        <div className="font-normal">Unassigned Threads</div>
+                        <PersonIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" />
+                        <div className="font-semibold">Unassigned Threads</div>
                       </div>
-                      <Badge className="bg-indigo-500 font-mono text-white hover:bg-indigo-600">
+                      <span className="font-mono text-muted-foreground pr-2">
                         {metrics.unassigned}
-                      </Badge>
+                      </span>
                     </>
                   ) : (
                     <>
                       <div className="flex">
-                        <ChatBubbleIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" />
+                        <PersonIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" />
                         <div className="font-normal">Unassigned Threads</div>
                       </div>
-                      <Badge variant="outline" className="font-mono font-light">
+                      <span className="font-mono text-muted-foreground pr-2">
                         {metrics.unassigned}
-                      </Badge>
+                      </span>
                     </>
                   )}
                 </>

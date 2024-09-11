@@ -54,7 +54,7 @@ const prioritiesSchema = (validValues: string[]) => {
 
     // no valid values
     if (uniqueValidValues.length === 0) {
-      throw new Error("invalid prioritie(s) passed");
+      throw new Error("invalid priorities passed");
     }
 
     if (uniqueValidValues.length === 1) {
@@ -124,7 +124,7 @@ function WorkspaceLayout() {
         memberId={memberId}
       />
       <div className="flex min-h-screen">
-        <aside className="hidden sticky top-14 h-[calc(100vh-theme(spacing.14))] w-80 overflow-y-auto md:block md:border-r">
+        <aside className="hidden sticky top-14 h-[calc(100vh-theme(spacing.14))] w-80 overflow-y-auto md:block md:border-r bg-zinc-50 dark:bg-inherit">
           <SideNavLinks
             maxHeight="h-[calc(100dvh-8rem)]"
             email={email}

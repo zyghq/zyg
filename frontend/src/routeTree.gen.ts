@@ -37,7 +37,9 @@ import { Route as AuthWorkspacesWorkspaceIdSettingsChatImport } from './routes/_
 import { Route as AuthWorkspacesWorkspaceIdSettingsBillingImport } from './routes/_auth/workspaces/$workspaceId/settings/billing'
 import { Route as AuthWorkspacesWorkspaceIdSettingsAiImport } from './routes/_auth/workspaces/$workspaceId/settings/ai'
 import { Route as AuthWorkspacesWorkspaceIdWorkspaceUnassignedImport } from './routes/_auth/workspaces/$workspaceId/_workspace/unassigned'
+import { Route as AuthWorkspacesWorkspaceIdWorkspaceSearchImport } from './routes/_auth/workspaces/$workspaceId/_workspace/search'
 import { Route as AuthWorkspacesWorkspaceIdWorkspaceMeImport } from './routes/_auth/workspaces/$workspaceId/_workspace/me'
+import { Route as AuthWorkspacesWorkspaceIdWorkspaceInsightsImport } from './routes/_auth/workspaces/$workspaceId/_workspace/insights'
 import { Route as AuthWorkspacesWorkspaceIdThreadsThreadIdIndexImport } from './routes/_auth/workspaces/$workspaceId/threads/$threadId/index'
 import { Route as AuthWorkspacesWorkspaceIdSettingsPatsIndexImport } from './routes/_auth/workspaces/$workspaceId/settings/pats/index'
 import { Route as AuthWorkspacesWorkspaceIdSettingsPatsAddImport } from './routes/_auth/workspaces/$workspaceId/settings/pats/add'
@@ -192,9 +194,21 @@ const AuthWorkspacesWorkspaceIdWorkspaceUnassignedRoute =
     getParentRoute: () => AuthWorkspacesWorkspaceIdWorkspaceRouteRoute,
   } as any)
 
+const AuthWorkspacesWorkspaceIdWorkspaceSearchRoute =
+  AuthWorkspacesWorkspaceIdWorkspaceSearchImport.update({
+    path: '/search',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdWorkspaceRouteRoute,
+  } as any)
+
 const AuthWorkspacesWorkspaceIdWorkspaceMeRoute =
   AuthWorkspacesWorkspaceIdWorkspaceMeImport.update({
     path: '/me',
+    getParentRoute: () => AuthWorkspacesWorkspaceIdWorkspaceRouteRoute,
+  } as any)
+
+const AuthWorkspacesWorkspaceIdWorkspaceInsightsRoute =
+  AuthWorkspacesWorkspaceIdWorkspaceInsightsImport.update({
+    path: '/insights',
     getParentRoute: () => AuthWorkspacesWorkspaceIdWorkspaceRouteRoute,
   } as any)
 
@@ -303,11 +317,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
       parentRoute: typeof AuthWorkspacesWorkspaceIdImport
     }
+    '/_auth/workspaces/$workspaceId/_workspace/insights': {
+      id: '/_auth/workspaces/$workspaceId/_workspace/insights'
+      path: '/insights'
+      fullPath: '/workspaces/$workspaceId/insights'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceInsightsImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceRouteImport
+    }
     '/_auth/workspaces/$workspaceId/_workspace/me': {
       id: '/_auth/workspaces/$workspaceId/_workspace/me'
       path: '/me'
       fullPath: '/workspaces/$workspaceId/me'
       preLoaderRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceMeImport
+      parentRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceRouteImport
+    }
+    '/_auth/workspaces/$workspaceId/_workspace/search': {
+      id: '/_auth/workspaces/$workspaceId/_workspace/search'
+      path: '/search'
+      fullPath: '/workspaces/$workspaceId/search'
+      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceSearchImport
       parentRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceRouteImport
     }
     '/_auth/workspaces/$workspaceId/_workspace/unassigned': {
@@ -449,7 +477,9 @@ declare module '@tanstack/react-router' {
 // Create and export the route tree
 
 interface AuthWorkspacesWorkspaceIdWorkspaceRouteRouteChildren {
+  AuthWorkspacesWorkspaceIdWorkspaceInsightsRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceInsightsRoute
   AuthWorkspacesWorkspaceIdWorkspaceMeRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceMeRoute
+  AuthWorkspacesWorkspaceIdWorkspaceSearchRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceSearchRoute
   AuthWorkspacesWorkspaceIdWorkspaceUnassignedRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceUnassignedRoute
   AuthWorkspacesWorkspaceIdWorkspaceIndexRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceIndexRoute
   AuthWorkspacesWorkspaceIdWorkspaceLabelsLabelIdRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceLabelsLabelIdRoute
@@ -457,8 +487,12 @@ interface AuthWorkspacesWorkspaceIdWorkspaceRouteRouteChildren {
 
 const AuthWorkspacesWorkspaceIdWorkspaceRouteRouteChildren: AuthWorkspacesWorkspaceIdWorkspaceRouteRouteChildren =
   {
+    AuthWorkspacesWorkspaceIdWorkspaceInsightsRoute:
+      AuthWorkspacesWorkspaceIdWorkspaceInsightsRoute,
     AuthWorkspacesWorkspaceIdWorkspaceMeRoute:
       AuthWorkspacesWorkspaceIdWorkspaceMeRoute,
+    AuthWorkspacesWorkspaceIdWorkspaceSearchRoute:
+      AuthWorkspacesWorkspaceIdWorkspaceSearchRoute,
     AuthWorkspacesWorkspaceIdWorkspaceUnassignedRoute:
       AuthWorkspacesWorkspaceIdWorkspaceUnassignedRoute,
     AuthWorkspacesWorkspaceIdWorkspaceIndexRoute:
@@ -577,7 +611,9 @@ export interface FileRoutesByFullPath {
   '/workspaces/add': typeof AuthWorkspacesAddRoute
   '/workspaces': typeof AuthWorkspacesIndexRoute
   '/workspaces/$workspaceId/settings': typeof AuthWorkspacesWorkspaceIdSettingsRouteRouteWithChildren
+  '/workspaces/$workspaceId/insights': typeof AuthWorkspacesWorkspaceIdWorkspaceInsightsRoute
   '/workspaces/$workspaceId/me': typeof AuthWorkspacesWorkspaceIdWorkspaceMeRoute
+  '/workspaces/$workspaceId/search': typeof AuthWorkspacesWorkspaceIdWorkspaceSearchRoute
   '/workspaces/$workspaceId/unassigned': typeof AuthWorkspacesWorkspaceIdWorkspaceUnassignedRoute
   '/workspaces/$workspaceId/settings/ai': typeof AuthWorkspacesWorkspaceIdSettingsAiRoute
   '/workspaces/$workspaceId/settings/billing': typeof AuthWorkspacesWorkspaceIdSettingsBillingRoute
@@ -609,7 +645,9 @@ export interface FileRoutesByTo {
   '/workspaces/$workspaceId': typeof AuthWorkspacesWorkspaceIdWorkspaceIndexRoute
   '/workspaces/add': typeof AuthWorkspacesAddRoute
   '/workspaces': typeof AuthWorkspacesIndexRoute
+  '/workspaces/$workspaceId/insights': typeof AuthWorkspacesWorkspaceIdWorkspaceInsightsRoute
   '/workspaces/$workspaceId/me': typeof AuthWorkspacesWorkspaceIdWorkspaceMeRoute
+  '/workspaces/$workspaceId/search': typeof AuthWorkspacesWorkspaceIdWorkspaceSearchRoute
   '/workspaces/$workspaceId/unassigned': typeof AuthWorkspacesWorkspaceIdWorkspaceUnassignedRoute
   '/workspaces/$workspaceId/settings/ai': typeof AuthWorkspacesWorkspaceIdSettingsAiRoute
   '/workspaces/$workspaceId/settings/billing': typeof AuthWorkspacesWorkspaceIdSettingsBillingRoute
@@ -643,7 +681,9 @@ export interface FileRoutesById {
   '/_auth/workspaces/': typeof AuthWorkspacesIndexRoute
   '/_auth/workspaces/$workspaceId/_workspace': typeof AuthWorkspacesWorkspaceIdWorkspaceRouteRouteWithChildren
   '/_auth/workspaces/$workspaceId/settings': typeof AuthWorkspacesWorkspaceIdSettingsRouteRouteWithChildren
+  '/_auth/workspaces/$workspaceId/_workspace/insights': typeof AuthWorkspacesWorkspaceIdWorkspaceInsightsRoute
   '/_auth/workspaces/$workspaceId/_workspace/me': typeof AuthWorkspacesWorkspaceIdWorkspaceMeRoute
+  '/_auth/workspaces/$workspaceId/_workspace/search': typeof AuthWorkspacesWorkspaceIdWorkspaceSearchRoute
   '/_auth/workspaces/$workspaceId/_workspace/unassigned': typeof AuthWorkspacesWorkspaceIdWorkspaceUnassignedRoute
   '/_auth/workspaces/$workspaceId/settings/ai': typeof AuthWorkspacesWorkspaceIdSettingsAiRoute
   '/_auth/workspaces/$workspaceId/settings/billing': typeof AuthWorkspacesWorkspaceIdSettingsBillingRoute
@@ -678,7 +718,9 @@ export interface FileRouteTypes {
     | '/workspaces/add'
     | '/workspaces'
     | '/workspaces/$workspaceId/settings'
+    | '/workspaces/$workspaceId/insights'
     | '/workspaces/$workspaceId/me'
+    | '/workspaces/$workspaceId/search'
     | '/workspaces/$workspaceId/unassigned'
     | '/workspaces/$workspaceId/settings/ai'
     | '/workspaces/$workspaceId/settings/billing'
@@ -709,7 +751,9 @@ export interface FileRouteTypes {
     | '/workspaces/$workspaceId'
     | '/workspaces/add'
     | '/workspaces'
+    | '/workspaces/$workspaceId/insights'
     | '/workspaces/$workspaceId/me'
+    | '/workspaces/$workspaceId/search'
     | '/workspaces/$workspaceId/unassigned'
     | '/workspaces/$workspaceId/settings/ai'
     | '/workspaces/$workspaceId/settings/billing'
@@ -741,7 +785,9 @@ export interface FileRouteTypes {
     | '/_auth/workspaces/'
     | '/_auth/workspaces/$workspaceId/_workspace'
     | '/_auth/workspaces/$workspaceId/settings'
+    | '/_auth/workspaces/$workspaceId/_workspace/insights'
     | '/_auth/workspaces/$workspaceId/_workspace/me'
+    | '/_auth/workspaces/$workspaceId/_workspace/search'
     | '/_auth/workspaces/$workspaceId/_workspace/unassigned'
     | '/_auth/workspaces/$workspaceId/settings/ai'
     | '/_auth/workspaces/$workspaceId/settings/billing'
@@ -847,7 +893,9 @@ export const routeTree = rootRoute
       "filePath": "_auth/workspaces/$workspaceId/_workspace/route.tsx",
       "parent": "/_auth/workspaces/$workspaceId",
       "children": [
+        "/_auth/workspaces/$workspaceId/_workspace/insights",
         "/_auth/workspaces/$workspaceId/_workspace/me",
+        "/_auth/workspaces/$workspaceId/_workspace/search",
         "/_auth/workspaces/$workspaceId/_workspace/unassigned",
         "/_auth/workspaces/$workspaceId/_workspace/",
         "/_auth/workspaces/$workspaceId/_workspace/labels/$labelId"
@@ -873,8 +921,16 @@ export const routeTree = rootRoute
         "/_auth/workspaces/$workspaceId/settings/pats/"
       ]
     },
+    "/_auth/workspaces/$workspaceId/_workspace/insights": {
+      "filePath": "_auth/workspaces/$workspaceId/_workspace/insights.tsx",
+      "parent": "/_auth/workspaces/$workspaceId/_workspace"
+    },
     "/_auth/workspaces/$workspaceId/_workspace/me": {
       "filePath": "_auth/workspaces/$workspaceId/_workspace/me.tsx",
+      "parent": "/_auth/workspaces/$workspaceId/_workspace"
+    },
+    "/_auth/workspaces/$workspaceId/_workspace/search": {
+      "filePath": "_auth/workspaces/$workspaceId/_workspace/search.tsx",
       "parent": "/_auth/workspaces/$workspaceId/_workspace"
     },
     "/_auth/workspaces/$workspaceId/_workspace/unassigned": {
