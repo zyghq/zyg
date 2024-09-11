@@ -94,7 +94,7 @@ func (s *AccountService) DeletePersonalAccessToken(ctx context.Context, patId st
 func (s *AccountService) CreateWorkspace(
 	ctx context.Context, account models.Account, workspaceName string) (models.Workspace, error) {
 	workspace := models.Workspace{}.NewWorkspace(account.AccountId, workspaceName)
-	now := time.Now() // transactions in the same time space.
+	now := time.Now().UTC() // transactions in the same time space.
 
 	var memberName string
 	if account.Name != "" {

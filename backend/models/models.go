@@ -86,8 +86,8 @@ func (w Workspace) NewWorkspace(accountId string, name string) Workspace {
 		WorkspaceId: w.GenId(),
 		AccountId:   accountId,
 		Name:        name,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		CreatedAt:   time.Now().UTC(),
+		UpdatedAt:   time.Now().UTC(),
 	}
 }
 
@@ -252,7 +252,7 @@ func (m Member) AsMemberActor() MemberActor {
 }
 
 func (m Member) CreateNewSystemMember(workspaceId string) Member {
-	now := time.Now().UTC()
+	now := time.Now().UTC().UTC()
 	return Member{
 		MemberId:    m.GenId(), // generates a new ID
 		WorkspaceId: workspaceId,
@@ -533,7 +533,7 @@ func (ws *WidgetSession) CreateSession(sessionId string, widgetId string) Widget
 	return WidgetSession{
 		SessionId: sessionId,
 		WidgetId:  widgetId,
-		ExpireAt:  time.Now().Add(time.Hour * 24), // 24 hours
+		ExpireAt:  time.Now().UTC().Add(time.Hour * 24), // 24 hours
 	}
 }
 

@@ -50,9 +50,9 @@ func (s *CustomerService) GenerateCustomerJwt(c models.Customer, sk string) (str
 			Issuer:    "auth.zyg.ai",
 			Subject:   c.CustomerId,
 			Audience:  audience,
-			ExpiresAt: jwt.NewNumericDate(time.Now().AddDate(1, 0, 0)), // Expires 1 year from now
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			NotBefore: jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().UTC().AddDate(1, 0, 0)), // Expires 1 year from now
+			IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
+			NotBefore: jwt.NewNumericDate(time.Now().UTC()),
 			ID:        c.WorkspaceId + ":" + c.CustomerId,
 		},
 	}

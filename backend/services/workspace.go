@@ -286,7 +286,7 @@ func (ws *WorkspaceService) GenerateWorkspaceSecret(
 	// Create a buffer to store our entropy sources
 	entropy := make([]byte, 0, 1024)
 	// Add current timestamp
-	entropy = append(entropy, []byte(time.Now().String())...)
+	entropy = append(entropy, []byte(time.Now().UTC().String())...)
 	// Add process ID
 	entropy = append(entropy, []byte(fmt.Sprintf("%d", os.Getpid()))...)
 	// Add random bytes

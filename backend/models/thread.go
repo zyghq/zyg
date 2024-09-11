@@ -37,7 +37,7 @@ func (ts *ThreadStatus) NewStatus(member MemberActor) ThreadStatus {
 func (ts *ThreadStatus) Spam(member MemberActor) {
 	ts.Stage = spam
 	ts.Status = ts.Todo()
-	ts.StatusChangedAt = time.Now()
+	ts.StatusChangedAt = time.Now().UTC()
 	ts.StatusChangedBy = member
 }
 
@@ -46,7 +46,7 @@ func (ts *ThreadStatus) Spam(member MemberActor) {
 func (ts *ThreadStatus) NeedsFirstResponse(member MemberActor) {
 	ts.Stage = needsFirstResponse // update the stage
 	ts.Status = ts.Todo()         // status for this stage
-	ts.StatusChangedAt = time.Now()
+	ts.StatusChangedAt = time.Now().UTC()
 	ts.StatusChangedBy = member
 }
 
@@ -55,7 +55,7 @@ func (ts *ThreadStatus) NeedsFirstResponse(member MemberActor) {
 func (ts *ThreadStatus) WaitingOnCustomer(member MemberActor) {
 	ts.Stage = waitingOnCustomer // update the stage
 	ts.Status = ts.Todo()        // status for this stage
-	ts.StatusChangedAt = time.Now()
+	ts.StatusChangedAt = time.Now().UTC()
 	ts.StatusChangedBy = member
 }
 
@@ -64,7 +64,7 @@ func (ts *ThreadStatus) WaitingOnCustomer(member MemberActor) {
 func (ts *ThreadStatus) Hold(member MemberActor) {
 	ts.Stage = hold       // update the stage
 	ts.Status = ts.Todo() // status for this stage
-	ts.StatusChangedAt = time.Now()
+	ts.StatusChangedAt = time.Now().UTC()
 	ts.StatusChangedBy = member
 }
 
@@ -74,7 +74,7 @@ func (ts *ThreadStatus) Hold(member MemberActor) {
 func (ts *ThreadStatus) NeedsNextResponse(member MemberActor) {
 	ts.Stage = needsNextResponse // update the stage
 	ts.Status = ts.Todo()        // status for this stage
-	ts.StatusChangedAt = time.Now()
+	ts.StatusChangedAt = time.Now().UTC()
 	ts.StatusChangedBy = member
 }
 
@@ -84,7 +84,7 @@ func (ts *ThreadStatus) NeedsNextResponse(member MemberActor) {
 func (ts *ThreadStatus) Resolved(member MemberActor) {
 	ts.Stage = resolved   // update the stage
 	ts.Status = ts.Done() // status of this stage
-	ts.StatusChangedAt = time.Now()
+	ts.StatusChangedAt = time.Now().UTC()
 	ts.StatusChangedBy = member
 }
 
@@ -103,7 +103,7 @@ func (ts *ThreadStatus) DefaultStatus() string {
 
 func (ts *ThreadStatus) MarkDone(member MemberActor) {
 	ts.Status = ts.Done()
-	ts.StatusChangedAt = time.Now()
+	ts.StatusChangedAt = time.Now().UTC()
 	ts.StatusChangedBy = member
 }
 
