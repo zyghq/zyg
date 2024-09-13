@@ -124,7 +124,7 @@ function WorkspaceLayout() {
         memberId={memberId}
       />
       <div className="flex min-h-screen">
-        <aside className="hidden sticky top-14 h-[calc(100vh-theme(spacing.14))] w-80 overflow-y-auto md:block md:border-r bg-zinc-50 dark:bg-inherit">
+        <aside className="hidden sticky top-14 h-[calc(100vh-theme(spacing.14))] overflow-y-auto md:block md:border-r bg-zinc-50 dark:bg-inherit min-w-80">
           <SideNavLinks
             maxHeight="h-[calc(100dvh-8rem)]"
             email={email}

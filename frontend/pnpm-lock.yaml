@@ -74,6 +74,9 @@ importers:
       '@tanstack/react-router':
         specifier: ^1.57.9
         version: 1.57.9(@tanstack/router-generator@1.57.9)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@tanstack/react-virtual':
+        specifier: ^3.10.7
+        version: 3.10.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@types/lodash':
         specifier: ^4.17.7
         version: 4.17.7
@@ -1495,6 +1498,12 @@ packages:
       react: ^17.0.0 || ^18.0.0
       react-dom: ^17.0.0 || ^18.0.0
 
+  '@tanstack/react-virtual@3.10.7':
+    resolution: {integrity: sha512-yeP+M0G8D+15ZFPivpuQ5hoM4Fa/PzERBx8P8EGcfEsXX3JOb9G9UUrqc47ZXAxvK+YqzM9T5qlJUYUFOwCZJw==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
+
   '@tanstack/router-devtools@1.57.9':
     resolution: {integrity: sha512-PHj8+uADH8R6dJ9XZPWjMpXAYX7Pq0MtnRFuZ6su9DaIybnXSCNZfDhNfahNaxkxYjolMa/cxI9bwRW/qk0n+w==}
     engines: {node: '>=12'}
@@ -1528,6 +1537,9 @@ packages:
 
   '@tanstack/store@0.5.5':
     resolution: {integrity: sha512-EOSrgdDAJExbvRZEQ/Xhh9iZchXpMN+ga1Bnk8Nmygzs8TfiE6hbzThF+Pr2G19uHL6+DTDTHhJ8VQiOd7l4tA==}
+
+  '@tanstack/virtual-core@3.10.7':
+    resolution: {integrity: sha512-ND5dfsU0n9F4gROzwNNDJmg6y8n9pI8YWxtgbfJ5UcNn7Hx+MxEXtXcQ189tS7sh8pmCObgz2qSiyRKTZxT4dg==}
 
   '@tanstack/virtual-file-routes@1.56.0':
     resolution: {integrity: sha512-fBUj+lbSaw+VxoBN4J/WFE7dTx8x4XCTRAQvbiIyPJ8MY1KRVkdZV6cbLvg7MeDP6CxUcj6XNvWU6h0ic1Ipyg==}
@@ -3943,6 +3955,12 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       use-sync-external-store: 1.2.2(react@18.3.1)
 
+  '@tanstack/react-virtual@3.10.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@tanstack/virtual-core': 3.10.7
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+
   '@tanstack/router-devtools@1.57.9(@tanstack/react-router@1.57.9(@tanstack/router-generator@1.57.9)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(csstype@3.1.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@tanstack/react-router': 1.57.9(@tanstack/router-generator@1.57.9)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -3997,6 +4015,8 @@ snapshots:
       - webpack-sources
 
   '@tanstack/store@0.5.5': {}
+
+  '@tanstack/virtual-core@3.10.7': {}
 
   '@tanstack/virtual-file-routes@1.56.0': {}
 

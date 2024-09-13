@@ -74,7 +74,7 @@ function UnassignedThreads() {
 
   return (
     <div>
-      <div className="px-8 flex justify-between my-4">
+      <div className="px-4 sm:px-8 flex justify-between my-4">
         <div className="text-lg sm:text-xl font-medium my-auto">
           Unassigned Threads
         </div>

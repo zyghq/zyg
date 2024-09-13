@@ -1,6 +1,6 @@
 // import { cn } from "@/lib/utils";
 // import { Link } from "@tanstack/react-router";
-// import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 // import { formatDistanceToNow } from "date-fns";
 // import { Thread } from "@/db/models";
 // import { ChatBubbleIcon, ResetIcon } from "@radix-ui/react-icons";
@@ -137,7 +137,9 @@
 //   );
 // }
 
-import { Mail } from "lucide-react";
+// import { Mail } from "lucide-react";
+import { ChatBubbleIcon, PersonIcon } from "@radix-ui/react-icons";
+import { LocateIcon } from "lucide-react";
 
 interface SupportRequest {
   id: string;
@@ -195,51 +197,55 @@ export function ThreadListV2() {
   return (
     <div>
       {supportRequests.map((request) => (
-        <div className="block unicode-bidi-isolate border-b" key={request.id}>
-          <div className="relative top-10 left-4">
-            <Mail className="w-4 h-4 text-muted-foreground" />
+        <a
+          key={request.id}
+          href="#"
+          className="grid grid-cols-custom-thread-list-default sm:grid-cols-custom-thread-list-sm grid-rows-custom-thread-list-default sm:grid-rows-custom-thread-list-sm px-4 py-4 border-b sm:px-8 gap-x-4 gap-y-2 hover:bg-zinc-50 dark:hover:bg-accent"
+        >
+          <div className="col-span-1 sm:col-span-1">
+            <ChatBubbleIcon className="w-4 h-4 text-muted-foreground" />
           </div>
-          <a
-            href="#"
-            className="grid gap-x-4 items-start py-4 px-8 hover:bg-zinc-50 no-underline"
-          >
-            ...
-          </a>
-        </div>
-        // <a
-        //   key={request.id}
-        //   href={`#${request.id}`}
-        //   className="grid items-center border-b border-gray-200 hover:bg-gray-50"
-        //   style={{
-        //     padding: "10px 32px",
-        //     gridTemplateColumns: "18px 200px auto 240px",
-        //     gridTemplateRows: "1fr",
-        //   }}
-        // >
-        //   <Mail className="w-4 h-4 text-muted-foreground" />
-        //   <div className="font-medium text-sm truncate">{request.sender}</div>
-        //   <div className="flex items-center space-x-2 overflow-hidden">
-        //     <span className="font-medium text-sm whitespace-nowrap">
-        //       {request.subject}
-        //     </span>
-        //     <span className="text-sm text-gray-500 truncate">
-        //       {request.preview}
-        //     </span>
-        //   </div>
-        //   <div className="flex items-center justify-end space-x-2">
-        //     <div className="flex flex-wrap justify-end gap-1">
-        //       {request.tags.map((tag, index) => (
-        //         <span
-        //           key={index}
-        //           className="px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded-full"
-        //         >
-        //           {tag}
-        //         </span>
-        //       ))}
-        //     </div>
-        //     <span className="text-sm text-gray-500 ml-2">{request.time}</span>
-        //   </div>
-        // </a>
+          <div className="col-span-1 sm:col-span-1">
+            <div className="flex flex-col">
+              <div className="text-xs font-medium sm:text-sm">
+                {request.sender}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                sanchitrrk@gmail.com
+              </div>
+            </div>
+          </div>
+          <div className="col-span-1 sm:col-span-1 sm:order-last">
+            <div className="flex justify-end gap-4 items-center">
+              <div className="text-xs">{request.time}</div>
+              <PersonIcon className="w-4 h-4 text-muted-foreground" />
+            </div>
+          </div>
+          <div className="col-span-3 sm:col-span-1 sm:order-3">
+            <span className="flex whitespace-nowrap overflow-hidden text-ellipsis">
+              <span className="text-sm font-medium break-words">
+                {request.subject}
+              </span>
+              <span className="text-sm ml-2 text-muted-foreground truncate">
+                {request.preview}
+              </span>
+            </span>
+            <div className="flex flex-wrap justify-start gap-1 mt-1">
+              {request.tags.map((tag, index) => (
+                <Badge
+                  key={index}
+                  variant="outline"
+                  className="p-1 bg-indigo-100 font-normal border-indigo-200 dark:bg-indigo-700 dark:border-indigo-600"
+                >
+                  <span className="mr-1">
+                    <LocateIcon className="w-4 h-4 text-indigo-500 dark:text-accent-foreground" />
+                  </span>
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </a>
       ))}
     </div>
   );

@@ -140,7 +140,7 @@ export default function SideNavLinks({
                       </div>
                       <Badge
                         variant="outline"
-                        className="font-mono text-muted-foreground bg-white"
+                        className="font-mono text-muted-foreground bg-white dark:bg-accent"
                       >
                         {`/`}
                       </Badge>
