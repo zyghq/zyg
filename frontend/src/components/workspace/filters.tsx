@@ -29,7 +29,9 @@ import { MixerHorizontalIcon, CheckIcon } from "@radix-ui/react-icons";
 import Avatar from "boring-avatars";
 import { Assignee } from "@/db/store";
 
-const routeApi = getRouteApi("/_auth/workspaces/$workspaceId/_workspace");
+const routeApi = getRouteApi(
+  "/_account/workspaces/$workspaceId/_workspace"
+);
 
 function ReasonsSubMenu({
   reasons,

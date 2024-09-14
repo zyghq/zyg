@@ -1,19 +1,14 @@
 import React from "react";
-import { cn } from "@/lib/utils";
-import { Link, getRouteApi } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { buttonVariants } from "@/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-
-import { TagIcon, TagsIcon } from "lucide-react";
+import { TagsIcon } from "lucide-react";
 import { CaretSortIcon } from "@radix-ui/react-icons";
 import { LabelMetrics } from "@/db/models";
-
-const routeApi = getRouteApi("/_auth/workspaces/$workspaceId/_workspace");
+import { LabelThreadsLink } from "@/components/workspace/sidenav-thread-links";
 
 export function SideNavLabelLinks({
   workspaceId,
@@ -22,8 +17,6 @@ export function SideNavLabelLinks({
   workspaceId: string;
   labels: LabelMetrics[];
 }) {
-  const routeSearch = routeApi.useSearch();
-  const { status, sort } = routeSearch;
   const [isOpen, setIsOpen] = React.useState(false);
   return (
     <Collapsible
@@ -47,50 +40,11 @@ export function SideNavLabelLinks({
       </div>
       <CollapsibleContent className="space-y-1">
         {labels.map((label) => (
-          <Link
+          <LabelThreadsLink
             key={label.labelId}
-            to="/workspaces/$workspaceId/labels/$labelId"
-            params={{ workspaceId, labelId: label.labelId }}
-            search={{ status: status, sort: sort }}
-            className={cn(
-              buttonVariants({ variant: "ghost" }),
-              "flex w-full justify-between px-3 dark:text-accent-foreground"
-            )}
-            activeOptions={{ exact: true }}
-            activeProps={{
-              className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
-            }}
-          >
-            {({ isActive }) => (
-              <>
-                {isActive ? (
-                  <>
-                    <div className="flex">
-                      <TagIcon className="my-auto mr-1 h-3 w-3 text-muted-foreground" />
-                      <div className="font-normal capitalize text-foreground">
-                        {label.name}
-                      </div>
-                    </div>
-                    <div className="font-mono font-light text-muted-foreground">
-                      {label.count}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex">
-                      <TagIcon className="my-auto mr-1 h-3 w-3 text-muted-foreground" />
-                      <div className="font-normal capitalize text-foreground">
-                        {label.name}
-                      </div>
-                    </div>
-                    <div className="font-mono font-light text-muted-foreground">
-                      {label.count}
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-          </Link>
+            workspaceId={workspaceId}
+            label={label}
+          />
         ))}
       </CollapsibleContent>
     </Collapsible>

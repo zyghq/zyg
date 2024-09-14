@@ -10,13 +10,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DoubleArrowUpIcon } from "@radix-ui/react-icons";
 
-const routeApi = getRouteApi("/_auth/workspaces/$workspaceId/_workspace");
+const routeApi = getRouteApi("/_account/workspaces/$workspaceId/_workspace");
 
 export function Sorts() {
   const navigate = useNavigate();
   const [selectedSort, setSelectedSort] = React.useState<string>("");
   const routeSearch = routeApi.useSearch();
-  const { status, sort } = routeSearch;
+  const { sort } = routeSearch;
 
   React.useEffect(() => {
     setSelectedSort(sort || "");
@@ -52,7 +52,7 @@ export function Sorts() {
           value={selectedSort}
           onValueChange={(value) =>
             navigate({
-              search: (prev) => {
+              search: (prev: any) => {
                 return { ...prev, sort: value };
               },
             })

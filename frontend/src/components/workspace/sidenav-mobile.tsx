@@ -19,7 +19,6 @@ export default function SideNavMobile({
   memberId: string;
 }) {
   const [open, setOpen] = React.useState(false);
-
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>

@@ -36,7 +36,7 @@ export function SideNavLinks({
   maxHeight?: string;
 }) {
   const { workspaceId } = useParams({
-    from: "/_auth/workspaces/$workspaceId/settings",
+    from: "/_account/workspaces/$workspaceId/settings",
   });
   return (
     <React.Fragment>

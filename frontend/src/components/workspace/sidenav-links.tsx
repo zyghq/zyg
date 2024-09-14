@@ -2,12 +2,14 @@ import React from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-
-import Avatar from "boring-avatars";
-import { Link, getRouteApi } from "@tanstack/react-router";
-
+import { Link } from "@tanstack/react-router";
 import { WorkspaceMetrics } from "@/db/models";
 import { SideNavLabelLinks } from "@/components/workspace/sidenav-label-links";
+import {
+  MyThreadsLink,
+  UnassignedThreadsLink,
+  TodoThreadsLink,
+} from "@/components/workspace/sidenav-thread-links";
 import {
   OpenInNewWindowIcon,
   ReaderIcon,
@@ -17,7 +19,6 @@ import {
   WidthIcon,
   ExitIcon,
   MagnifyingGlassIcon,
-  PersonIcon,
   BarChartIcon,
 } from "@radix-ui/react-icons";
 import {
@@ -36,8 +37,6 @@ import {
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const routeApi = getRouteApi("/_auth/workspaces/$workspaceId/_workspace");
-
 export default function SideNavLinks({
   maxHeight,
   workspaceId,
@@ -55,8 +54,6 @@ export default function SideNavLinks({
   email: string;
   openClose?: (isOpen: boolean) => void | undefined;
 }) {
-  const routeSearch = routeApi.useSearch();
-  const { status, sort } = routeSearch;
   return (
     <React.Fragment>
       <ScrollArea className={maxHeight}>
@@ -86,11 +83,11 @@ export default function SideNavLinks({
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link target="_blank" href="https://zyg.ai/docs/">
+                <a target="_blank" href="https://zyg.ai/docs/">
                   <ReaderIcon className="my-auto mr-2 h-4 w-4" />
                   <div className="my-auto">Documentation</div>
                   <OpenInNewWindowIcon className="my-auto ml-2 h-4 w-4" />
-                </Link>
+                </a>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
@@ -112,7 +109,6 @@ export default function SideNavLinks({
               onClick={() => openClose(false)}
               to="/workspaces/$workspaceId/search"
               params={{ workspaceId }}
-              search={{ status: status }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "flex w-full justify-between px-3 dark:text-accent-foreground"
@@ -153,7 +149,6 @@ export default function SideNavLinks({
               onClick={() => openClose(false)}
               to="/workspaces/$workspaceId/insights"
               params={{ workspaceId }}
-              search={{ status: status }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "flex w-full justify-between px-3 dark:text-accent-foreground"
@@ -183,130 +178,22 @@ export default function SideNavLinks({
                 </>
               )}
             </Link>
-            <Link
-              onClick={() => openClose(false)}
-              to="/workspaces/$workspaceId"
-              params={{ workspaceId }}
-              search={{ status: status }}
-              className={cn(
-                buttonVariants({ variant: "ghost" }),
-                "flex w-full justify-between px-3 dark:text-accent-foreground"
-              )}
-              activeOptions={{ exact: true, includeSearch: false }}
-              activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
-              }}
-            >
-              {({ isActive }: { isActive: boolean }) => (
-                <>
-                  {isActive ? (
-                    <>
-                      <div className="flex">
-                        <ChatBubbleIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" />
-                        <div className="font-normal">All Threads</div>
-                      </div>
-                      <Badge className="bg-indigo-500 font-mono text-white hover:bg-indigo-600">
-                        {metrics.active}
-                      </Badge>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex">
-                        <ChatBubbleIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" />
-                        <div className="font-normal">All Threads</div>
-                      </div>
-                      <Badge variant="outline" className="font-mono font-light">
-                        {metrics.active}
-                      </Badge>
-                    </>
-                  )}
-                </>
-              )}
-            </Link>
-            <Link
-              to="/workspaces/$workspaceId/me"
-              onClick={() => openClose(false)}
-              params={{ workspaceId }}
-              search={{ status, sort }}
-              className={cn(
-                buttonVariants({ variant: "ghost" }),
-                "flex w-full justify-between px-3 dark:text-accent-foreground"
-              )}
-              activeOptions={{ exact: true, includeSearch: false }}
-              activeProps={{
-                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
-              }}
-            >
-              {({ isActive }: { isActive: boolean }) => (
-                <>
-                  {isActive ? (
-                    <>
-                      <div className="flex">
-                        <div className="flex my-auto mr-2">
-                          <Avatar size={18} name={memberId} variant="marble" />
-                        </div>
-                        <div className="font-semibold">Your Threads</div>
-                      </div>
-                      <span className="font-mono text-muted-foreground pr-2">
-                        {metrics.assignedToMe}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex">
-                        <div className="flex my-auto mr-2">
-                          <Avatar size={18} name={memberId} variant="marble" />
-                        </div>
-                        <div className="font-normal">Your Threads</div>
-                      </div>
-                      <span className="font-mono text-muted-foreground pr-2">
-                        {metrics.assignedToMe}
-                      </span>
-                    </>
-                  )}
-                </>
-              )}
-            </Link>
-            <Link
-              to="/workspaces/$workspaceId/unassigned"
-              onClick={() => openClose(false)}
-              params={{ workspaceId }}
-              search={{ status, sort }}
-              className={cn(
-                buttonVariants({ variant: "ghost" }),
-                "flex w-full justify-between px-3 dark:text-accent-foreground"
-              )}
-              activeOptions={{ exact: true, includeSearch: false }}
-              activeProps={{
-                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
-              }}
-            >
-              {({ isActive }: { isActive: boolean }) => (
-                <>
-                  {isActive ? (
-                    <>
-                      <div className="flex">
-                        <PersonIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" />
-                        <div className="font-semibold">Unassigned Threads</div>
-                      </div>
-                      <span className="font-mono text-muted-foreground pr-2">
-                        {metrics.unassigned}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex">
-                        <PersonIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" />
-                        <div className="font-normal">Unassigned Threads</div>
-                      </div>
-                      <span className="font-mono text-muted-foreground pr-2">
-                        {metrics.unassigned}
-                      </span>
-                    </>
-                  )}
-                </>
-              )}
-            </Link>
+            <MyThreadsLink
+              workspaceId={workspaceId}
+              memberId={memberId}
+              assignedCount={metrics.assignedToMe}
+              openClose={openClose}
+            />
+            <UnassignedThreadsLink
+              workspaceId={workspaceId}
+              unassignedCount={metrics.unassigned}
+              openClose={openClose}
+            />
+            <TodoThreadsLink
+              workspaceId={workspaceId}
+              activeCount={metrics.active}
+              openClose={openClose}
+            />
           </div>
           <div className="mb-3 mt-4 text-xs text-muted-foreground">Browse</div>
           <div className="flex flex-col space-y-2">
@@ -339,7 +226,7 @@ export default function SideNavLinks({
                   <div className="my-auto">Get in touch</div>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link
+                  <a
                     className="flex"
                     target="_blank"
                     href="https://zyg.ai/docs/"
@@ -347,7 +234,7 @@ export default function SideNavLinks({
                     <ReaderIcon className="my-auto mr-2 h-4 w-4" />
                     <div className="my-auto">Documentation</div>
                     <OpenInNewWindowIcon className="my-auto ml-2 h-4 w-4" />
-                  </Link>
+                  </a>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <UsersIcon className="my-auto mr-2 h-4 w-4" />
