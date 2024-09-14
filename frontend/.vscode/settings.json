@@ -14,5 +14,5 @@
   "files.autoSave": "afterDelay",
   "files.autoSaveDelay": 1000,
   "cSpell.enableFiletypes": ["typescriptreact"],
-  "cSpell.words": ["sidenav", "signin", "signout"]
+  "cSpell.words": ["overscan", "sidenav", "signin", "signout"]
 }
