@@ -34,7 +34,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import Avatar from "boring-avatars";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidePanelThreadList } from "@/components/workspace/thread/sidepanel-thread-list";
 import { useStore } from "zustand";
 import { WorkspaceStoreState } from "@/db/store";
@@ -60,6 +60,7 @@ import {
   ThreadResponse,
   ThreadLabelResponse,
 } from "@/db/schema";
+import { defaultSortOp } from "@/lib/search-params";
 
 export const Route = createFileRoute(
   "/_account/workspaces/$workspaceId/threads/$threadId"
@@ -99,7 +100,10 @@ function Chat({
 
   return (
     <div className="flex rounded-lg px-3 py-4 space-x-2 bg-white dark:bg-accent">
-      <Avatar name={customerOrMemberId} size={32} variant="marble" />
+      <Avatar className="h-7 w-7">
+        <AvatarImage src={`https://avatar.vercel.sh/${customerOrMemberId}`} />
+        <AvatarFallback>{isMe ? "M" : "U"}</AvatarFallback>
+      </Avatar>
       <div className="flex flex-col flex-1">
         <div className="flex justify-between">
           <div className="flex items-center">
@@ -512,7 +516,11 @@ function ThreadDetail() {
           <div className="flex">
             <div className="flex flex-col gap-4 px-2 py-4">
               <Button variant="outline" size="icon" asChild>
-                <Link to={"/workspaces/$workspaceId"} params={{ workspaceId }}>
+                <Link
+                  to={"/workspaces/$workspaceId/threads/todo"}
+                  params={{ workspaceId }}
+                  search={{ sort: defaultSortOp }}
+                >
                   <ArrowLeftIcon className="h-4 w-4" />
                 </Link>
               </Button>

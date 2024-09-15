@@ -1,18 +1,18 @@
-import * as React from "react";
-import { createFileRoute, Outlet, Link } from "@tanstack/react-router";
-import { ArrowLeftIcon } from "@radix-ui/react-icons";
-import { SideNavLinks } from "@/components/workspace/settings/sidenav-links";
 import { buttonVariants } from "@/components/ui/button";
+import SideNavLinks from "@/components/workspace/settings/sidenav-links";
+import SideNavMobileLinks from "@/components/workspace/settings/sidenav-mobile-links";
 import { cn } from "@/lib/utils";
-import { SideNavMobile } from "@/components/workspace/settings/sidenav-mobile";
-import { useStore } from "zustand";
 import { useAccountStore } from "@/providers";
+import { ArrowLeftIcon } from "@radix-ui/react-icons";
+import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
+import * as React from "react";
+import { useStore } from "zustand";
 
-export const Route = createFileRoute("/_account/workspaces/$workspaceId/settings")(
-  {
-    component: SettingsLayout,
-  }
-);
+export const Route = createFileRoute(
+  "/_account/workspaces/$workspaceId/settings"
+)({
+  component: SettingsLayout,
+});
 
 function SettingsLayout() {
   const { workspaceId } = Route.useParams();
@@ -28,15 +28,15 @@ function SettingsLayout() {
         <div className="mx-4 flex w-full items-center">
           <div className="hidden md:flex">
             <Link
-              to="/workspaces/$workspaceId"
+              className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
               params={{ workspaceId }}
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+              to="/workspaces/$workspaceId"
             >
               <ArrowLeftIcon className="mr-2 h-4 w-4" />
               Settings
             </Link>
           </div>
-          <SideNavMobile
+          <SideNavMobileLinks
             accountId={accountId}
             accountName={accountName}
             workspaceId={workspaceId}

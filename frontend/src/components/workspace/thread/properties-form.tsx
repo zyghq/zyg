@@ -52,7 +52,7 @@ import {
   PlusCircledIcon,
 } from "@radix-ui/react-icons";
 import { useMutation } from "@tanstack/react-query";
-import Avatar from "boring-avatars";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import * as React from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -108,18 +108,20 @@ function SetAssignee({
           <Button
             aria-expanded={open}
             aria-label="Select a team"
-            className="flex gap-1"
+            className="flex gap-x-2"
             role="combobox"
             variant="outline"
           >
             {value === "unassigned" || !value ? (
-              <Avatar
-                colors={["#e4e4ea"]}
-                name={value || "unassigned"}
-                size={18}
-              />
+              <Avatar className="h-5 w-5">
+                <AvatarImage src={`https://avatar.vercel.sh/unassigned`} />
+                <AvatarFallback>U</AvatarFallback>
+              </Avatar>
             ) : (
-              <Avatar name={value} size={18} />
+              <Avatar className="h-5 w-5">
+                <AvatarImage src={`https://avatar.vercel.sh/${value}`} />
+                <AvatarFallback>M</AvatarFallback>
+              </Avatar>
             )}
             {renderMemberName()}
             <CaretSortIcon className="ml-auto h-4 w-4 shrink-0 opacity-50" />
@@ -132,7 +134,7 @@ function SetAssignee({
               <CommandEmpty>No member found.</CommandEmpty>
               {membersUpdated.map((member) => (
                 <CommandItem
-                  className="text-xs flex gap-1"
+                  className="text-xs flex gap-2"
                   key={member.memberId}
                   onSelect={() => {
                     onValueChange(member.memberId);
@@ -140,13 +142,19 @@ function SetAssignee({
                   }}
                 >
                   {member.memberId === "unassigned" || !member.memberId ? (
-                    <Avatar
-                      colors={["#e4e4ea"]}
-                      name={member.memberId || "unassigned"}
-                      size={18}
-                    />
+                    <Avatar className="h-5 w-5">
+                      <AvatarImage
+                        src={`https://avatar.vercel.sh/unassigned`}
+                      />
+                      <AvatarFallback>M</AvatarFallback>
+                    </Avatar>
                   ) : (
-                    <Avatar name={member.memberId} size={18} />
+                    <Avatar className="h-5 w-5">
+                      <AvatarImage
+                        src={`https://avatar.vercel.sh/${member.memberId}`}
+                      />
+                      <AvatarFallback>M</AvatarFallback>
+                    </Avatar>
                   )}
                   {member.name}
                   <CheckIcon
@@ -163,7 +171,7 @@ function SetAssignee({
               <CommandGroup>
                 <DialogTrigger asChild>
                   <CommandItem
-                    className="text-xs flex gap-1"
+                    className="text-xs flex gap-2"
                     onSelect={() => {
                       setOpen(false);
                       setShowNewTeamDialog(true);

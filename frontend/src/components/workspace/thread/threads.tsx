@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useWorkspaceStore } from "@/providers";
 import { ChatBubbleIcon, ResetIcon } from "@radix-ui/react-icons";
 import { Link } from "@tanstack/react-router";
-import Avatar from "boring-avatars";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { useStore } from "zustand";
 
@@ -68,7 +68,12 @@ function ThreadItem({
             })}
           </div>
           {item.assigneeId && (
-            <Avatar name={item.assigneeId} size={28} variant="marble" />
+            <Avatar className="h-5 w-5">
+              <AvatarImage
+                src={`https://avatar.vercel.sh/${item.assigneeId}`}
+              />
+              <AvatarFallback>M</AvatarFallback>
+            </Avatar>
           )}
         </div>
         {item.replied ? (

@@ -25,7 +25,7 @@ import { Assignee } from "@/db/store";
 import { cn } from "@/lib/utils";
 import { CheckIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
-import Avatar from "boring-avatars";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import React from "react";
 
 const routeApi = getRouteApi(
@@ -414,9 +414,14 @@ function AssigneeSubMenu({
                     key={m.assigneeId}
                     onSelect={() => onSelect(m.assigneeId)}
                   >
-                    <div className="flex gap-2">
-                      <Avatar name={m.assigneeId} size={20} />
-                      {m.name}
+                    <div className="flex gap-x-2">
+                      <Avatar className="h-5 w-5">
+                        <AvatarImage
+                          src={`https://avatar.vercel.sh/${m.assigneeId}`}
+                        />
+                        <AvatarFallback>M</AvatarFallback>
+                      </Avatar>
+                      <span>{m.name}</span>
                     </div>
                     <CheckIcon
                       className={cn(

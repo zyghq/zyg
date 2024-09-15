@@ -1,12 +1,12 @@
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { SideNavLinks } from "@/components/workspace/settings/sidenav-links";
+import SideNavLinks from "@/components/workspace/settings/sidenav-links";
 import { cn } from "@/lib/utils";
 import { ArrowLeftIcon, HamburgerMenuIcon } from "@radix-ui/react-icons";
 import { Link } from "@tanstack/react-router";
 import React from "react";
 
-export function SideNavMobile({
+export default function SideNavMobileLinks({
   accountId,
   accountName,
   workspaceId,

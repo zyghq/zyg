@@ -17,7 +17,8 @@ import {
   ReaderIcon,
 } from "@radix-ui/react-icons";
 import { Link, useParams } from "@tanstack/react-router";
-import Avatar from "boring-avatars";
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BlocksIcon } from "lucide-react";
 import {
   Bug as BugIcon,
@@ -26,7 +27,7 @@ import {
 } from "lucide-react";
 import React from "react";
 
-export function SideNavLinks({
+export default function SideNavLinks({
   accountId,
   accountName,
   maxHeight,
@@ -43,11 +44,17 @@ export function SideNavLinks({
       <ScrollArea className={maxHeight}>
         <div className="p-4">
           {/* G1 */}
-          <div className="mb-4 flex items-center gap-1">
-            <Avatar name={accountId} size={32} variant="marble" />
+          <div className="mb-4 flex items-center gap-x-2">
+            <Avatar className="h-5 w-5">
+              <AvatarImage
+                alt={accountId}
+                src={`https://avatar.vercel.sh/${accountId}`}
+              />
+              <AvatarFallback>CN</AvatarFallback>
+            </Avatar>
             <div>
-              <div className="text-xs font-medium">{accountName}</div>
-              <div className="text-xs text-foreground">Account</div>
+              <div className="text-xs font-medium">{accountName || "User"}</div>
+              <div className="text-xs text-muted-foreground">Account</div>
             </div>
           </div>
           {/* G1 Items */}
@@ -88,7 +95,7 @@ export function SideNavLinks({
             <Link
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
@@ -102,7 +109,7 @@ export function SideNavLinks({
             <Link
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
@@ -116,7 +123,7 @@ export function SideNavLinks({
             <Link
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
@@ -130,7 +137,7 @@ export function SideNavLinks({
             <Link
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
@@ -144,7 +151,7 @@ export function SideNavLinks({
             <Link
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
@@ -168,7 +175,7 @@ export function SideNavLinks({
             <Link
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
@@ -182,7 +189,7 @@ export function SideNavLinks({
             <Link
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
@@ -196,7 +203,7 @@ export function SideNavLinks({
             <Link
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
@@ -220,7 +227,7 @@ export function SideNavLinks({
             <Link
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
@@ -234,7 +241,7 @@ export function SideNavLinks({
             <Link
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
@@ -258,7 +265,7 @@ export function SideNavLinks({
             <Link
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
@@ -272,7 +279,7 @@ export function SideNavLinks({
             <Link
               activeOptions={{ exact: false, includeSearch: false }}
               activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
@@ -286,7 +293,7 @@ export function SideNavLinks({
             <Link
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),

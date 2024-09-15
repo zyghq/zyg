@@ -17,18 +17,15 @@ function WorkspaceLayout() {
   const workspaceStore = useWorkspaceStore();
 
   const email = useStore(accountStore, (state) => state.getEmail(state));
-
   const workspaceId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.getWorkspaceId(state)
   );
   const workspaceName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.getWorkspaceName(state)
   );
-
   const memberId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.getMemberId(state)
   );
-
   const metrics = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.getMetrics(state)
   );

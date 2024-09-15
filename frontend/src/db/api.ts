@@ -821,7 +821,7 @@ export async function bootstrapWorkspace(
     errPats;
 
   if (hasErr) {
-    data.error = new Error("error bootsrapping workspace store information");
+    data.error = new Error("error bootstrapping workspace store information");
     data.isPending = false;
     return data;
   }

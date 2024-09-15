@@ -7,7 +7,7 @@ import { PlusIcon, DotsHorizontalIcon } from "@radix-ui/react-icons";
 import { useWorkspaceStore } from "@/providers";
 import { useStore } from "zustand";
 import React from "react";
-import Avatar from "boring-avatars";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 
 export const Route = createFileRoute(
@@ -57,11 +57,12 @@ function MemberSettings() {
                       <div className="flex w-full flex-col gap-1">
                         <div className="flex items-center">
                           <div className="flex items-center gap-2">
-                            <Avatar
-                              name={member.memberId}
-                              size={32}
-                              variant="marble"
-                            />
+                            <Avatar>
+                              <AvatarImage
+                                src={`https://avatar.vercel.sh/${member.memberId}`}
+                              />
+                              <AvatarFallback>CN</AvatarFallback>
+                            </Avatar>
                             <div className="flex flex-col">
                               <div className="font-normal">{member.name}</div>
                               <div className="text-xs text-muted-foreground"></div>
