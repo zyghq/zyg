@@ -30,7 +30,7 @@ import Avatar from "boring-avatars";
 import { Assignee } from "@/db/store";
 
 const routeApi = getRouteApi(
-  "/_account/workspaces/$workspaceId/_workspace"
+  "/_account/workspaces/$workspaceId/_workspace/threads"
 );
 
 function ReasonsSubMenu({

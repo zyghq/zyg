@@ -5,7 +5,7 @@ import { Icons } from "@/components/icons";
 import { ThemeToggler } from "@/components/theme-toggler";
 import { ArrowLeftRightIcon } from "lucide-react";
 import { WorkspaceMetrics } from "@/db/models";
-import SideNavMobile from "@/components/workspace/sidenav-mobile";
+import SideNavMobileLinks from "@/components/workspace/sidenav-mobile-links";
 
 export function Header({
   email,
@@ -29,7 +29,7 @@ export function Header({
             <span className="hidden font-semibold sm:inline-block">Zyg.</span>
           </Link>
         </div>
-        <SideNavMobile
+        <SideNavMobileLinks
           email={email}
           workspaceId={workspaceId}
           workspaceName={workspaceName}

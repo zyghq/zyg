@@ -5,7 +5,7 @@ import { WorkspaceStoreState } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
 import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
-import { ThreadListV3 } from "@/components/workspace/threads-v3";
+import { ThreadListV3 } from "@/components/workspace/thread-list";
 
 import {
   ReasonsFiltersType,

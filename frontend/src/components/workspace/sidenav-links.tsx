@@ -4,12 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 import { WorkspaceMetrics } from "@/db/models";
-import { SideNavLabelLinks } from "@/components/workspace/sidenav-label-links";
-import {
-  MyThreadsLink,
-  UnassignedThreadsLink,
-  TodoThreadsLink,
-} from "@/components/workspace/sidenav-thread-links";
 import {
   OpenInNewWindowIcon,
   ReaderIcon,
@@ -20,6 +14,8 @@ import {
   ExitIcon,
   MagnifyingGlassIcon,
   BarChartIcon,
+  PersonIcon,
+  CircleIcon,
 } from "@radix-ui/react-icons";
 import {
   DropdownMenu,
@@ -34,8 +30,98 @@ import {
   Bug as BugIcon,
   LifeBuoy as LifeBuoyIcon,
   Users as UsersIcon,
+  TagIcon,
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { defaultSortOp } from "@/lib/search-params";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { TagsIcon } from "lucide-react";
+import { LabelMetrics } from "@/db/models";
+
+function SideNavLabelLinks({
+  workspaceId,
+  labels,
+}: {
+  workspaceId: string;
+  labels: LabelMetrics[];
+}) {
+  const [isOpen, setIsOpen] = React.useState(false);
+  return (
+    <Collapsible
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      className="w-full space-y-2"
+    >
+      <div className="flex items-center justify-between space-x-1">
+        <Button variant="ghost" className="w-full pl-3">
+          <div className="mr-auto flex">
+            <TagsIcon className="my-auto mr-2 h-4 w-4" />
+            <div className="font-normal">Labels</div>
+          </div>
+        </Button>
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" size="icon">
+            <CaretSortIcon className="h-4 w-4" />
+            <span className="sr-only">Toggle</span>
+          </Button>
+        </CollapsibleTrigger>
+      </div>
+      <CollapsibleContent className="space-y-1">
+        {labels.map((label) => (
+          <Link
+            key={label.labelId}
+            to="/workspaces/$workspaceId/threads/labels/$labelId"
+            params={{ workspaceId, labelId: label.labelId }}
+            search={{ sort: defaultSortOp }}
+            className={cn(
+              buttonVariants({ variant: "ghost" }),
+              "flex w-full justify-between px-3 dark:text-accent-foreground"
+            )}
+            activeOptions={{ exact: true }}
+            activeProps={{
+              className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+            }}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive ? (
+                  <>
+                    <div className="flex">
+                      <TagIcon className="my-auto mr-1 h-3 w-3 text-muted-foreground" />
+                      <div className="font-normal capitalize text-foreground">
+                        {label.name}
+                      </div>
+                    </div>
+                    <div className="font-mono font-light text-muted-foreground">
+                      {label.count}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex">
+                      <TagIcon className="my-auto mr-1 h-3 w-3 text-muted-foreground" />
+                      <div className="font-normal capitalize text-foreground">
+                        {label.name}
+                      </div>
+                    </div>
+                    <div className="font-mono font-light text-muted-foreground">
+                      {label.count}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </Link>
+        ))}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
 
 export default function SideNavLinks({
   maxHeight,
@@ -178,22 +264,138 @@ export default function SideNavLinks({
                 </>
               )}
             </Link>
-            <MyThreadsLink
-              workspaceId={workspaceId}
-              memberId={memberId}
-              assignedCount={metrics.assignedToMe}
-              openClose={openClose}
-            />
-            <UnassignedThreadsLink
-              workspaceId={workspaceId}
-              unassignedCount={metrics.unassigned}
-              openClose={openClose}
-            />
-            <TodoThreadsLink
-              workspaceId={workspaceId}
-              activeCount={metrics.active}
-              openClose={openClose}
-            />
+            <Link
+              to="/workspaces/$workspaceId/threads/me"
+              onClick={() => openClose(false)}
+              params={{ workspaceId }}
+              search={{ sort: defaultSortOp }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
+            >
+              {({ isActive }: { isActive: boolean }) => (
+                <>
+                  {isActive ? (
+                    <>
+                      <div className="flex gap-x-2">
+                        <Avatar className="h-5 w-5">
+                          <AvatarImage
+                            src={`https://avatar.vercel.sh/${memberId}`}
+                            alt={memberId}
+                          />
+                          <AvatarFallback>CN</AvatarFallback>
+                        </Avatar>
+                        <div className="font-semibold">Your Threads</div>
+                      </div>
+                      <span className="font-mono text-muted-foreground pr-2">
+                        {metrics.assignedToMe}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex gap-x-2">
+                        <Avatar className="h-5 w-5">
+                          <AvatarImage
+                            src={`https://avatar.vercel.sh/${memberId}`}
+                            alt={memberId}
+                          />
+                          <AvatarFallback>M</AvatarFallback>
+                        </Avatar>
+                        <div className="font-normal">Your Threads</div>
+                      </div>
+                      <span className="font-mono text-muted-foreground pr-2">
+                        {metrics.assignedToMe}
+                      </span>
+                    </>
+                  )}
+                </>
+              )}
+            </Link>
+            <Link
+              to="/workspaces/$workspaceId/threads/unassigned"
+              onClick={() => openClose(false)}
+              params={{ workspaceId }}
+              search={{ sort: defaultSortOp }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
+            >
+              {({ isActive }: { isActive: boolean }) => (
+                <>
+                  {isActive ? (
+                    <>
+                      <div className="flex">
+                        <PersonIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" />
+                        <div className="font-semibold">Unassigned Threads</div>
+                      </div>
+                      <span className="font-mono text-muted-foreground pr-2">
+                        {metrics.unassigned}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex">
+                        <PersonIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" />
+                        <div className="font-normal">Unassigned Threads</div>
+                      </div>
+                      <span className="font-mono text-muted-foreground pr-2">
+                        {metrics.unassigned}
+                      </span>
+                    </>
+                  )}
+                </>
+              )}
+            </Link>
+            <Link
+              onClick={() => openClose(false)}
+              to="/workspaces/$workspaceId/threads/todo"
+              params={{ workspaceId }}
+              search={{ sort: defaultSortOp }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
+            >
+              {({ isActive }: { isActive: boolean }) => (
+                <>
+                  {isActive ? (
+                    <>
+                      <div className="flex gap-x-2">
+                        <CircleIcon className="my-auto h-4 w-4 text-indigo-500" />
+                        <div className="font-semibold">Todo</div>
+                      </div>
+                      <Badge className="bg-indigo-500 font-mono text-white hover:bg-indigo-600">
+                        {metrics.active}
+                      </Badge>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex gap-x-2">
+                        <CircleIcon className="my-auto h-4 w-4 text-indigo-500" />
+                        <div className="font-normal">Todo</div>
+                      </div>
+                      <Badge variant="outline" className="font-mono font-light">
+                        {metrics.active}
+                      </Badge>
+                    </>
+                  )}
+                </>
+              )}
+            </Link>
           </div>
           <div className="mb-3 mt-4 text-xs text-muted-foreground">Browse</div>
           <div className="flex flex-col space-y-2">

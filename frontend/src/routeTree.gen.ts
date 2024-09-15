@@ -39,6 +39,7 @@ import { Route as AccountWorkspacesWorkspaceIdSettingsBillingImport } from './ro
 import { Route as AccountWorkspacesWorkspaceIdSettingsAiImport } from './routes/_account/workspaces/$workspaceId/settings/ai'
 import { Route as AccountWorkspacesWorkspaceIdWorkspaceSearchImport } from './routes/_account/workspaces/$workspaceId/_workspace/search'
 import { Route as AccountWorkspacesWorkspaceIdWorkspaceInsightsImport } from './routes/_account/workspaces/$workspaceId/_workspace/insights'
+import { Route as AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport } from './routes/_account/workspaces/$workspaceId/_workspace/threads/route'
 import { Route as AccountWorkspacesWorkspaceIdSettingsPatsIndexImport } from './routes/_account/workspaces/$workspaceId/settings/pats/index'
 import { Route as AccountWorkspacesWorkspaceIdSettingsPatsAddImport } from './routes/_account/workspaces/$workspaceId/settings/pats/add'
 import { Route as AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedImport } from './routes/_account/workspaces/$workspaceId/_workspace/threads/unassigned'
@@ -208,6 +209,12 @@ const AccountWorkspacesWorkspaceIdWorkspaceInsightsRoute =
     getParentRoute: () => AccountWorkspacesWorkspaceIdWorkspaceRouteRoute,
   } as any)
 
+const AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute =
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport.update({
+    path: '/threads',
+    getParentRoute: () => AccountWorkspacesWorkspaceIdWorkspaceRouteRoute,
+  } as any)
+
 const AccountWorkspacesWorkspaceIdSettingsPatsIndexRoute =
   AccountWorkspacesWorkspaceIdSettingsPatsIndexImport.update({
     path: '/pats/',
@@ -222,26 +229,30 @@ const AccountWorkspacesWorkspaceIdSettingsPatsAddRoute =
 
 const AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedRoute =
   AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedImport.update({
-    path: '/threads/unassigned',
-    getParentRoute: () => AccountWorkspacesWorkspaceIdWorkspaceRouteRoute,
+    path: '/unassigned',
+    getParentRoute: () =>
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute,
   } as any)
 
 const AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoRoute =
   AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoImport.update({
-    path: '/threads/todo',
-    getParentRoute: () => AccountWorkspacesWorkspaceIdWorkspaceRouteRoute,
+    path: '/todo',
+    getParentRoute: () =>
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute,
   } as any)
 
 const AccountWorkspacesWorkspaceIdWorkspaceThreadsMeRoute =
   AccountWorkspacesWorkspaceIdWorkspaceThreadsMeImport.update({
-    path: '/threads/me',
-    getParentRoute: () => AccountWorkspacesWorkspaceIdWorkspaceRouteRoute,
+    path: '/me',
+    getParentRoute: () =>
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute,
   } as any)
 
 const AccountWorkspacesWorkspaceIdWorkspaceThreadsLabelsLabelIdRoute =
   AccountWorkspacesWorkspaceIdWorkspaceThreadsLabelsLabelIdImport.update({
-    path: '/threads/labels/$labelId',
-    getParentRoute: () => AccountWorkspacesWorkspaceIdWorkspaceRouteRoute,
+    path: '/labels/$labelId',
+    getParentRoute: () =>
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute,
   } as any)
 
 // Populate the FileRoutesByPath interface
@@ -324,6 +335,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/workspaces/$workspaceId/settings'
       preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteImport
       parentRoute: typeof AccountWorkspacesWorkspaceIdImport
+    }
+    '/_account/workspaces/$workspaceId/_workspace/threads': {
+      id: '/_account/workspaces/$workspaceId/_workspace/threads'
+      path: '/threads'
+      fullPath: '/workspaces/$workspaceId/threads'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceRouteImport
     }
     '/_account/workspaces/$workspaceId/_workspace/insights': {
       id: '/_account/workspaces/$workspaceId/_workspace/insights'
@@ -446,24 +464,24 @@ declare module '@tanstack/react-router' {
     }
     '/_account/workspaces/$workspaceId/_workspace/threads/me': {
       id: '/_account/workspaces/$workspaceId/_workspace/threads/me'
-      path: '/threads/me'
+      path: '/me'
       fullPath: '/workspaces/$workspaceId/threads/me'
       preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsMeImport
-      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceRouteImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport
     }
     '/_account/workspaces/$workspaceId/_workspace/threads/todo': {
       id: '/_account/workspaces/$workspaceId/_workspace/threads/todo'
-      path: '/threads/todo'
+      path: '/todo'
       fullPath: '/workspaces/$workspaceId/threads/todo'
       preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoImport
-      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceRouteImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport
     }
     '/_account/workspaces/$workspaceId/_workspace/threads/unassigned': {
       id: '/_account/workspaces/$workspaceId/_workspace/threads/unassigned'
-      path: '/threads/unassigned'
+      path: '/unassigned'
       fullPath: '/workspaces/$workspaceId/threads/unassigned'
       preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedImport
-      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceRouteImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport
     }
     '/_account/workspaces/$workspaceId/settings/pats/add': {
       id: '/_account/workspaces/$workspaceId/settings/pats/add'
@@ -481,34 +499,25 @@ declare module '@tanstack/react-router' {
     }
     '/_account/workspaces/$workspaceId/_workspace/threads/labels/$labelId': {
       id: '/_account/workspaces/$workspaceId/_workspace/threads/labels/$labelId'
-      path: '/threads/labels/$labelId'
+      path: '/labels/$labelId'
       fullPath: '/workspaces/$workspaceId/threads/labels/$labelId'
       preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsLabelsLabelIdImport
-      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceRouteImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport
     }
   }
 }
 
 // Create and export the route tree
 
-interface AccountWorkspacesWorkspaceIdWorkspaceRouteRouteChildren {
-  AccountWorkspacesWorkspaceIdWorkspaceInsightsRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceInsightsRoute
-  AccountWorkspacesWorkspaceIdWorkspaceSearchRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceSearchRoute
-  AccountWorkspacesWorkspaceIdWorkspaceIndexRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceIndexRoute
+interface AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteChildren {
   AccountWorkspacesWorkspaceIdWorkspaceThreadsMeRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsMeRoute
   AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoRoute
   AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedRoute
   AccountWorkspacesWorkspaceIdWorkspaceThreadsLabelsLabelIdRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsLabelsLabelIdRoute
 }
 
-const AccountWorkspacesWorkspaceIdWorkspaceRouteRouteChildren: AccountWorkspacesWorkspaceIdWorkspaceRouteRouteChildren =
+const AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteChildren: AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteChildren =
   {
-    AccountWorkspacesWorkspaceIdWorkspaceInsightsRoute:
-      AccountWorkspacesWorkspaceIdWorkspaceInsightsRoute,
-    AccountWorkspacesWorkspaceIdWorkspaceSearchRoute:
-      AccountWorkspacesWorkspaceIdWorkspaceSearchRoute,
-    AccountWorkspacesWorkspaceIdWorkspaceIndexRoute:
-      AccountWorkspacesWorkspaceIdWorkspaceIndexRoute,
     AccountWorkspacesWorkspaceIdWorkspaceThreadsMeRoute:
       AccountWorkspacesWorkspaceIdWorkspaceThreadsMeRoute,
     AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoRoute:
@@ -517,6 +526,30 @@ const AccountWorkspacesWorkspaceIdWorkspaceRouteRouteChildren: AccountWorkspaces
       AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedRoute,
     AccountWorkspacesWorkspaceIdWorkspaceThreadsLabelsLabelIdRoute:
       AccountWorkspacesWorkspaceIdWorkspaceThreadsLabelsLabelIdRoute,
+  }
+
+const AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteWithChildren =
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute._addFileChildren(
+    AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteChildren,
+  )
+
+interface AccountWorkspacesWorkspaceIdWorkspaceRouteRouteChildren {
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteWithChildren
+  AccountWorkspacesWorkspaceIdWorkspaceInsightsRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceInsightsRoute
+  AccountWorkspacesWorkspaceIdWorkspaceSearchRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceSearchRoute
+  AccountWorkspacesWorkspaceIdWorkspaceIndexRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceIndexRoute
+}
+
+const AccountWorkspacesWorkspaceIdWorkspaceRouteRouteChildren: AccountWorkspacesWorkspaceIdWorkspaceRouteRouteChildren =
+  {
+    AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute:
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteWithChildren,
+    AccountWorkspacesWorkspaceIdWorkspaceInsightsRoute:
+      AccountWorkspacesWorkspaceIdWorkspaceInsightsRoute,
+    AccountWorkspacesWorkspaceIdWorkspaceSearchRoute:
+      AccountWorkspacesWorkspaceIdWorkspaceSearchRoute,
+    AccountWorkspacesWorkspaceIdWorkspaceIndexRoute:
+      AccountWorkspacesWorkspaceIdWorkspaceIndexRoute,
   }
 
 const AccountWorkspacesWorkspaceIdWorkspaceRouteRouteWithChildren =
@@ -630,6 +663,7 @@ export interface FileRoutesByFullPath {
   '/workspaces/add': typeof AccountWorkspacesAddRoute
   '/workspaces': typeof AccountWorkspacesIndexRoute
   '/workspaces/$workspaceId/settings': typeof AccountWorkspacesWorkspaceIdSettingsRouteRouteWithChildren
+  '/workspaces/$workspaceId/threads': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteWithChildren
   '/workspaces/$workspaceId/insights': typeof AccountWorkspacesWorkspaceIdWorkspaceInsightsRoute
   '/workspaces/$workspaceId/search': typeof AccountWorkspacesWorkspaceIdWorkspaceSearchRoute
   '/workspaces/$workspaceId/settings/ai': typeof AccountWorkspacesWorkspaceIdSettingsAiRoute
@@ -665,6 +699,7 @@ export interface FileRoutesByTo {
   '/workspaces/$workspaceId': typeof AccountWorkspacesWorkspaceIdWorkspaceIndexRoute
   '/workspaces/add': typeof AccountWorkspacesAddRoute
   '/workspaces': typeof AccountWorkspacesIndexRoute
+  '/workspaces/$workspaceId/threads': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteWithChildren
   '/workspaces/$workspaceId/insights': typeof AccountWorkspacesWorkspaceIdWorkspaceInsightsRoute
   '/workspaces/$workspaceId/search': typeof AccountWorkspacesWorkspaceIdWorkspaceSearchRoute
   '/workspaces/$workspaceId/settings/ai': typeof AccountWorkspacesWorkspaceIdSettingsAiRoute
@@ -702,6 +737,7 @@ export interface FileRoutesById {
   '/_account/workspaces/': typeof AccountWorkspacesIndexRoute
   '/_account/workspaces/$workspaceId/_workspace': typeof AccountWorkspacesWorkspaceIdWorkspaceRouteRouteWithChildren
   '/_account/workspaces/$workspaceId/settings': typeof AccountWorkspacesWorkspaceIdSettingsRouteRouteWithChildren
+  '/_account/workspaces/$workspaceId/_workspace/threads': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteWithChildren
   '/_account/workspaces/$workspaceId/_workspace/insights': typeof AccountWorkspacesWorkspaceIdWorkspaceInsightsRoute
   '/_account/workspaces/$workspaceId/_workspace/search': typeof AccountWorkspacesWorkspaceIdWorkspaceSearchRoute
   '/_account/workspaces/$workspaceId/settings/ai': typeof AccountWorkspacesWorkspaceIdSettingsAiRoute
@@ -740,6 +776,7 @@ export interface FileRouteTypes {
     | '/workspaces/add'
     | '/workspaces'
     | '/workspaces/$workspaceId/settings'
+    | '/workspaces/$workspaceId/threads'
     | '/workspaces/$workspaceId/insights'
     | '/workspaces/$workspaceId/search'
     | '/workspaces/$workspaceId/settings/ai'
@@ -774,6 +811,7 @@ export interface FileRouteTypes {
     | '/workspaces/$workspaceId'
     | '/workspaces/add'
     | '/workspaces'
+    | '/workspaces/$workspaceId/threads'
     | '/workspaces/$workspaceId/insights'
     | '/workspaces/$workspaceId/search'
     | '/workspaces/$workspaceId/settings/ai'
@@ -809,6 +847,7 @@ export interface FileRouteTypes {
     | '/_account/workspaces/'
     | '/_account/workspaces/$workspaceId/_workspace'
     | '/_account/workspaces/$workspaceId/settings'
+    | '/_account/workspaces/$workspaceId/_workspace/threads'
     | '/_account/workspaces/$workspaceId/_workspace/insights'
     | '/_account/workspaces/$workspaceId/_workspace/search'
     | '/_account/workspaces/$workspaceId/settings/ai'
@@ -918,13 +957,10 @@ export const routeTree = rootRoute
       "filePath": "_account/workspaces/$workspaceId/_workspace/route.tsx",
       "parent": "/_account/workspaces/$workspaceId",
       "children": [
+        "/_account/workspaces/$workspaceId/_workspace/threads",
         "/_account/workspaces/$workspaceId/_workspace/insights",
         "/_account/workspaces/$workspaceId/_workspace/search",
-        "/_account/workspaces/$workspaceId/_workspace/",
-        "/_account/workspaces/$workspaceId/_workspace/threads/me",
-        "/_account/workspaces/$workspaceId/_workspace/threads/todo",
-        "/_account/workspaces/$workspaceId/_workspace/threads/unassigned",
-        "/_account/workspaces/$workspaceId/_workspace/threads/labels/$labelId"
+        "/_account/workspaces/$workspaceId/_workspace/"
       ]
     },
     "/_account/workspaces/$workspaceId/settings": {
@@ -945,6 +981,16 @@ export const routeTree = rootRoute
         "/_account/workspaces/$workspaceId/settings/",
         "/_account/workspaces/$workspaceId/settings/pats/add",
         "/_account/workspaces/$workspaceId/settings/pats/"
+      ]
+    },
+    "/_account/workspaces/$workspaceId/_workspace/threads": {
+      "filePath": "_account/workspaces/$workspaceId/_workspace/threads/route.tsx",
+      "parent": "/_account/workspaces/$workspaceId/_workspace",
+      "children": [
+        "/_account/workspaces/$workspaceId/_workspace/threads/me",
+        "/_account/workspaces/$workspaceId/_workspace/threads/todo",
+        "/_account/workspaces/$workspaceId/_workspace/threads/unassigned",
+        "/_account/workspaces/$workspaceId/_workspace/threads/labels/$labelId"
       ]
     },
     "/_account/workspaces/$workspaceId/_workspace/insights": {
@@ -1017,15 +1063,15 @@ export const routeTree = rootRoute
     },
     "/_account/workspaces/$workspaceId/_workspace/threads/me": {
       "filePath": "_account/workspaces/$workspaceId/_workspace/threads/me.tsx",
-      "parent": "/_account/workspaces/$workspaceId/_workspace"
+      "parent": "/_account/workspaces/$workspaceId/_workspace/threads"
     },
     "/_account/workspaces/$workspaceId/_workspace/threads/todo": {
       "filePath": "_account/workspaces/$workspaceId/_workspace/threads/todo.tsx",
-      "parent": "/_account/workspaces/$workspaceId/_workspace"
+      "parent": "/_account/workspaces/$workspaceId/_workspace/threads"
     },
     "/_account/workspaces/$workspaceId/_workspace/threads/unassigned": {
       "filePath": "_account/workspaces/$workspaceId/_workspace/threads/unassigned.tsx",
-      "parent": "/_account/workspaces/$workspaceId/_workspace"
+      "parent": "/_account/workspaces/$workspaceId/_workspace/threads"
     },
     "/_account/workspaces/$workspaceId/settings/pats/add": {
       "filePath": "_account/workspaces/$workspaceId/settings/pats/add.tsx",
@@ -1037,7 +1083,7 @@ export const routeTree = rootRoute
     },
     "/_account/workspaces/$workspaceId/_workspace/threads/labels/$labelId": {
       "filePath": "_account/workspaces/$workspaceId/_workspace/threads/labels.$labelId.tsx",
-      "parent": "/_account/workspaces/$workspaceId/_workspace"
+      "parent": "/_account/workspaces/$workspaceId/_workspace/threads"
     }
   }
 }

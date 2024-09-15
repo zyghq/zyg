@@ -11,7 +11,7 @@ import {
   PrioritiesFiltersType,
 } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
-import { ThreadListV3 } from "@/components/workspace/threads-v3";
+import { ThreadListV3 } from "@/components/workspace/thread-list";
 
 export const Route = createFileRoute(
   "/_account/workspaces/$workspaceId/_workspace/threads/unassigned"

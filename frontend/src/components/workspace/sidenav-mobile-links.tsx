@@ -5,7 +5,7 @@ import { HamburgerMenuIcon } from "@radix-ui/react-icons";
 import { WorkspaceMetrics } from "@/db/models";
 import SideNavLinks from "@/components/workspace/sidenav-links";
 
-export default function SideNavMobile({
+export default function SideNavMobileLinks({
   email,
   workspaceId,
   workspaceName,

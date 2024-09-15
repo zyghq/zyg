@@ -1,4 +1,4 @@
-import { ThreadLinkItem } from "@/components/workspace/thread-item";
+import { ThreadLinkItem } from "@/components/workspace/thread-list-item";
 import { Virtuoso } from "react-virtuoso";
 import { Thread } from "@/db/models";
 

@@ -1,16 +1,16 @@
+import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useStore } from "zustand";
 import { WorkspaceStoreState } from "@/db/store";
 import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
-import { ThreadListV3 } from "@/components/workspace/threads-v3";
+import { ThreadListV3 } from "@/components/workspace/thread-list";
 import {
   ReasonsFiltersType,
   AssigneesFiltersType,
   PrioritiesFiltersType,
 } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
-import * as React from "react";
 
 export const Route = createFileRoute(
   "/_account/workspaces/$workspaceId/_workspace/threads/me"
