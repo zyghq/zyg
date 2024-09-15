@@ -1,27 +1,5 @@
-import * as React from "react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, SubmitHandler } from "react-hook-form";
-import { z } from "zod";
-import { ThreadResponse } from "@/db/schema";
-import { threadTransformer } from "@/db/models";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { PriorityIcons } from "@/components/icons";
-
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -40,39 +18,59 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import Avatar from "boring-avatars";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { updateThread } from "@/db/api";
+import { threadTransformer } from "@/db/models";
+import { ThreadResponse } from "@/db/schema";
+import { WorkspaceStoreState } from "@/db/store";
+import { cn } from "@/lib/utils";
+import { useWorkspaceStore } from "@/providers";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   CaretSortIcon,
   CheckIcon,
   PlusCircledIcon,
 } from "@radix-ui/react-icons";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { WorkspaceStoreState } from "@/db/store";
-import { useWorkspaceStore } from "@/providers";
-import { useStore } from "zustand";
 import { useMutation } from "@tanstack/react-query";
-import { updateThread } from "@/db/api";
+import Avatar from "boring-avatars";
+import * as React from "react";
+import { SubmitHandler, useForm } from "react-hook-form";
+import { z } from "zod";
+import { useStore } from "zustand";
 
 const FormSchema = z.object({
-  priority: z.string(),
   assignee: z.string(),
+  priority: z.string(),
 });
 
 type FormInputs = z.infer<typeof FormSchema>;
 
 function SetAssignee({
-  value,
   onValueChange,
+  value,
 }: {
-  value: string;
   onValueChange: (value: string) => void;
+  value: string;
 }) {
   const workspaceStore = useWorkspaceStore();
   const [open, setOpen] = React.useState(false);
@@ -104,21 +102,21 @@ function SetAssignee({
   });
 
   return (
-    <Dialog open={showNewTeamDialog} onOpenChange={setShowNewTeamDialog}>
-      <Popover open={open} onOpenChange={setOpen}>
+    <Dialog onOpenChange={setShowNewTeamDialog} open={showNewTeamDialog}>
+      <Popover onOpenChange={setOpen} open={open}>
         <PopoverTrigger asChild>
           <Button
-            variant="outline"
-            role="combobox"
             aria-expanded={open}
             aria-label="Select a team"
             className="flex gap-1"
+            role="combobox"
+            variant="outline"
           >
             {value === "unassigned" || !value ? (
               <Avatar
+                colors={["#e4e4ea"]}
                 name={value || "unassigned"}
                 size={18}
-                colors={["#e4e4ea"]}
               />
             ) : (
               <Avatar name={value} size={18} />
@@ -127,25 +125,25 @@ function SetAssignee({
             <CaretSortIcon className="ml-auto h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[200px] p-0" align="start">
+        <PopoverContent align="start" className="w-[200px] p-0">
           <Command>
             <CommandList>
               <CommandInput placeholder="Search member..." />
               <CommandEmpty>No member found.</CommandEmpty>
               {membersUpdated.map((member) => (
                 <CommandItem
+                  className="text-xs flex gap-1"
                   key={member.memberId}
                   onSelect={() => {
                     onValueChange(member.memberId);
                     setOpen(false);
                   }}
-                  className="text-xs flex gap-1"
                 >
                   {member.memberId === "unassigned" || !member.memberId ? (
                     <Avatar
+                      colors={["#e4e4ea"]}
                       name={member.memberId || "unassigned"}
                       size={18}
-                      colors={["#e4e4ea"]}
                     />
                   ) : (
                     <Avatar name={member.memberId} size={18} />
@@ -189,16 +187,16 @@ function SetAssignee({
           <div className="space-y-4 py-2 pb-4">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
-              <Input id="name" autoComplete="off" />
+              <Input autoComplete="off" id="name" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="name">Email</Label>
-              <Input type="email" id="email" placeholder="name@example.com" />
+              <Input id="email" placeholder="name@example.com" type="email" />
             </div>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setShowNewTeamDialog(false)}>
+          <Button onClick={() => setShowNewTeamDialog(false)} variant="outline">
             Cancel
           </Button>
           <Button type="submit">Continue</Button>
@@ -209,26 +207,26 @@ function SetAssignee({
 }
 
 export function PropertiesForm({
+  assigneeId,
+  priority,
+  threadId,
   token,
   workspaceId,
-  threadId,
-  priority,
-  assigneeId,
 }: {
+  assigneeId: string;
+  priority: string;
+  threadId: string;
   token: string;
   workspaceId: string;
-  threadId: string;
-  priority: string;
-  assigneeId: string;
 }) {
   const refSubmitButtom = React.useRef<HTMLButtonElement>(null);
 
   const form = useForm<z.infer<typeof FormSchema>>({
-    resolver: zodResolver(FormSchema),
     defaultValues: {
-      priority: priority,
       assignee: assigneeId,
+      priority: priority,
     },
+    resolver: zodResolver(FormSchema),
   });
   const workspaceStore = useWorkspaceStore();
 
@@ -236,7 +234,7 @@ export function PropertiesForm({
   const { errors } = formState;
 
   React.useEffect(() => {
-    form.reset({ priority: priority, assignee: assigneeId });
+    form.reset({ assignee: assigneeId, priority: priority });
   }, [form, assigneeId, priority]);
 
   const mutation = useMutation({
@@ -247,7 +245,7 @@ export function PropertiesForm({
         assignee: memberId,
         priority,
       };
-      const { error, data } = await updateThread(
+      const { data, error } = await updateThread(
         token,
         workspaceId,
         threadId,
@@ -264,8 +262,8 @@ export function PropertiesForm({
     onError: (error) => {
       console.error(error);
       form.setError("root", {
-        type: "serverError",
         message: "Something went wrong. Please try again later.",
+        type: "serverError",
       });
     },
     onSuccess: (data) => {
@@ -296,8 +294,8 @@ export function PropertiesForm({
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
         className="flex flex-col gap-2 px-4 py-2"
+        onSubmit={form.handleSubmit(onSubmit)}
       >
         <div className="flex gap-1">
           <FormField
@@ -306,8 +304,8 @@ export function PropertiesForm({
             render={({ field }) => (
               <FormItem>
                 <Select
-                  onValueChange={onPriorityChange}
                   defaultValue={field.value}
+                  onValueChange={onPriorityChange}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -351,14 +349,14 @@ export function PropertiesForm({
             render={({ field }) => (
               <FormItem>
                 <SetAssignee
-                  value={field.value}
                   onValueChange={onAssigneeChange}
+                  value={field.value}
                 />
                 <FormMessage />
               </FormItem>
             )}
           />
-          <button ref={refSubmitButtom} hidden type="submit">
+          <button hidden ref={refSubmitButtom} type="submit">
             Submit
           </button>
         </div>

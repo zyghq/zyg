@@ -1,21 +1,21 @@
 import { ThreadLinkItem } from "@/components/workspace/thread-list-item";
-import { Virtuoso } from "react-virtuoso";
 import { Thread } from "@/db/models";
+import { Virtuoso } from "react-virtuoso";
 
 export function ThreadListV3({
-  workspaceId,
   threads,
+  workspaceId,
 }: {
-  workspaceId: string;
   threads: Thread[];
+  workspaceId: string;
 }) {
   return (
     <Virtuoso
-      useWindowScroll
-      totalCount={threads.length}
       itemContent={(index) => (
-        <ThreadLinkItem workspaceId={workspaceId} thread={threads[index]} />
+        <ThreadLinkItem thread={threads[index]} workspaceId={workspaceId} />
       )}
+      totalCount={threads.length}
+      useWindowScroll
     />
   );
 }

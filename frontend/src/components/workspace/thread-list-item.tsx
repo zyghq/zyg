@@ -1,18 +1,18 @@
-import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
-import { ChatBubbleIcon, PersonIcon } from "@radix-ui/react-icons";
-import { LocateIcon } from "lucide-react";
 import { Thread } from "@/db/models";
-import { useStore } from "zustand";
-import { formatDistanceToNow } from "date-fns";
 import { useWorkspaceStore } from "@/providers";
+import { ChatBubbleIcon, PersonIcon } from "@radix-ui/react-icons";
+import { Link } from "@tanstack/react-router";
+import { formatDistanceToNow } from "date-fns";
+import { LocateIcon } from "lucide-react";
+import { useStore } from "zustand";
 
 export function ThreadLinkItem({
-  workspaceId,
   thread,
+  workspaceId,
 }: {
-  workspaceId: string;
   thread: Thread;
+  workspaceId: string;
 }) {
   const workspaceStore = useWorkspaceStore();
   const customerName = useStore(workspaceStore, (state) =>
@@ -20,9 +20,9 @@ export function ThreadLinkItem({
   );
   return (
     <Link
-      to={"/workspaces/$workspaceId/threads/$threadId"}
-      params={{ workspaceId, threadId: thread.threadId }}
       className="grid grid-cols-custom-thread-list-default sm:grid-cols-custom-thread-list-sm grid-rows-custom-thread-list-default sm:grid-rows-custom-thread-list-sm px-4 py-4 border-b sm:px-8 gap-x-4 gap-y-2 hover:bg-zinc-50 dark:hover:bg-accent"
+      params={{ threadId: thread.threadId, workspaceId }}
+      to={"/workspaces/$workspaceId/threads/$threadId"}
     >
       <div className="col-span-1 sm:col-span-1">
         <ChatBubbleIcon className="w-4 h-4 text-muted-foreground" />
@@ -54,8 +54,8 @@ export function ThreadLinkItem({
         </span>
         <div className="flex flex-wrap justify-start gap-1 mt-1">
           <Badge
-            variant="outline"
             className="p-1 bg-indigo-100 font-normal border-indigo-200 dark:bg-indigo-700 dark:border-indigo-600"
+            variant="outline"
           >
             <span className="mr-1">
               <LocateIcon className="w-4 h-4 text-indigo-500 dark:text-accent-foreground" />

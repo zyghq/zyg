@@ -1,8 +1,13 @@
-import React from "react";
-import { cn } from "@/lib/utils";
-import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -15,19 +20,13 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-
 import { Separator } from "@/components/ui/separator";
-import { MixerHorizontalIcon, CheckIcon } from "@radix-ui/react-icons";
-import Avatar from "boring-avatars";
 import { Assignee } from "@/db/store";
+import { cn } from "@/lib/utils";
+import { CheckIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
+import { getRouteApi, useNavigate } from "@tanstack/react-router";
+import Avatar from "boring-avatars";
+import React from "react";
 
 const routeApi = getRouteApi(
   "/_account/workspaces/$workspaceId/_workspace/threads"
@@ -36,7 +35,7 @@ const routeApi = getRouteApi(
 function ReasonsSubMenu({
   reasons,
 }: {
-  reasons: string[] | string | undefined;
+  reasons: string | string[] | undefined;
 }) {
   const navigate = useNavigate();
   const [selectedReasons, setSelectedReasons] = React.useState<
@@ -58,7 +57,7 @@ function ReasonsSubMenu({
 
   function onChecked(reason: string) {
     return navigate({
-      search: (prev: { reasons: string[] | string }) => {
+      search: (prev: { reasons: string | string[] }) => {
         const { reasons, ...others } = prev;
 
         // no existing reasons - add new reason
@@ -80,7 +79,7 @@ function ReasonsSubMenu({
 
   function onUnchecked(reason: string) {
     return navigate({
-      search: (prev: { reasons: string[] | string | null }) => {
+      search: (prev: { reasons: null | string | string[] }) => {
         const { reasons, ...others } = prev;
 
         // no existing reasons - nothing to do
@@ -114,8 +113,8 @@ function ReasonsSubMenu({
         Reason
         {selectedReasons && selectedReasons.length > 0 && (
           <React.Fragment>
-            <Separator orientation="vertical" className="mx-1 h-3" />
-            <Badge variant="secondary" className="px-1 text-xs font-normal p-0">
+            <Separator className="mx-1 h-3" orientation="vertical" />
+            <Badge className="px-1 text-xs font-normal p-0" variant="secondary">
               {selectedReasons.length} selected
             </Badge>
           </React.Fragment>
@@ -124,24 +123,24 @@ function ReasonsSubMenu({
       <DropdownMenuPortal>
         <DropdownMenuSubContent className="mx-2 w-44 sm:w-56">
           <DropdownMenuCheckboxItem
-            onSelect={(e) => e.preventDefault()}
             checked={
               selectedReasons ? selectedReasons.includes("unreplied") : false
             }
             onCheckedChange={(checked) => {
               checked ? onChecked("unreplied") : onUnchecked("unreplied");
             }}
+            onSelect={(e) => e.preventDefault()}
           >
             Awaiting Reply
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
-            onSelect={(e) => e.preventDefault()}
             checked={
               selectedReasons ? selectedReasons.includes("replied") : false
             }
             onCheckedChange={(checked) => {
               checked ? onChecked("replied") : onUnchecked("replied");
             }}
+            onSelect={(e) => e.preventDefault()}
           >
             Replied
           </DropdownMenuCheckboxItem>
@@ -154,7 +153,7 @@ function ReasonsSubMenu({
 function PrioritiesSubMenu({
   priorities,
 }: {
-  priorities: string[] | string | undefined;
+  priorities: string | string[] | undefined;
 }) {
   const navigate = useNavigate();
   const [selectedPriorities, setSelectedPriorities] = React.useState<
@@ -176,7 +175,7 @@ function PrioritiesSubMenu({
 
   function onChecked(priority: string) {
     return navigate({
-      search: (prev: { priorities: string[] | string }) => {
+      search: (prev: { priorities: string | string[] }) => {
         const { priorities, ...others } = prev;
 
         // no existing priorities - add new priority
@@ -198,7 +197,7 @@ function PrioritiesSubMenu({
 
   function onUnchecked(priority: string) {
     return navigate({
-      search: (prev: { priorities: string[] | string | null }) => {
+      search: (prev: { priorities: null | string | string[] }) => {
         const { priorities, ...others } = prev;
 
         // no existing priorities - nothing to do
@@ -232,8 +231,8 @@ function PrioritiesSubMenu({
         Priority
         {selectedPriorities && selectedPriorities.length > 0 && (
           <React.Fragment>
-            <Separator orientation="vertical" className="mx-1 h-3" />
-            <Badge variant="secondary" className="px-1 text-xs font-normal p-0">
+            <Separator className="mx-1 h-3" orientation="vertical" />
+            <Badge className="px-1 text-xs font-normal p-0" variant="secondary">
               {selectedPriorities.length} selected
             </Badge>
           </React.Fragment>
@@ -242,46 +241,46 @@ function PrioritiesSubMenu({
       <DropdownMenuPortal>
         <DropdownMenuSubContent className="mx-2 w-44 sm:w-56">
           <DropdownMenuCheckboxItem
-            onSelect={(e) => e.preventDefault()}
             checked={
               selectedPriorities ? selectedPriorities.includes("urgent") : false
             }
             onCheckedChange={(checked) => {
               checked ? onChecked("urgent") : onUnchecked("urgent");
             }}
+            onSelect={(e) => e.preventDefault()}
           >
             Urgent
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
-            onSelect={(e) => e.preventDefault()}
             checked={
               selectedPriorities ? selectedPriorities.includes("high") : false
             }
             onCheckedChange={(checked) => {
               checked ? onChecked("high") : onUnchecked("high");
             }}
+            onSelect={(e) => e.preventDefault()}
           >
             High
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
-            onSelect={(e) => e.preventDefault()}
             checked={
               selectedPriorities ? selectedPriorities.includes("normal") : false
             }
             onCheckedChange={(checked) => {
               checked ? onChecked("normal") : onUnchecked("normal");
             }}
+            onSelect={(e) => e.preventDefault()}
           >
             Normal
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
-            onSelect={(e) => e.preventDefault()}
             checked={
               selectedPriorities ? selectedPriorities.includes("low") : false
             }
             onCheckedChange={(checked) => {
               checked ? onChecked("low") : onUnchecked("low");
             }}
+            onSelect={(e) => e.preventDefault()}
           >
             low
           </DropdownMenuCheckboxItem>
@@ -292,11 +291,11 @@ function PrioritiesSubMenu({
 }
 
 function AssigneeSubMenu({
-  assignees,
   assignedMembers,
+  assignees,
 }: {
-  assignees: string[] | string | undefined;
   assignedMembers: Assignee[];
+  assignees: string | string[] | undefined;
 }) {
   const navigate = useNavigate();
   const [selectedMembers, setSelectedMembers] = React.useState<
@@ -318,7 +317,7 @@ function AssigneeSubMenu({
 
   function onChecked(member: string) {
     return navigate({
-      search: (prev: { assignees: string[] | string }) => {
+      search: (prev: { assignees: string | string[] }) => {
         // search params
         const { assignees, ...others } = prev;
 
@@ -333,7 +332,7 @@ function AssigneeSubMenu({
         }
         // multiple members selected add more to existing
         if (Array.isArray(assignees)) {
-          const uniques = [...new Set([...assignees, member])];
+          const uniques = [...new Set([member, ...assignees])];
           return { assignees: uniques, ...others };
         }
       },
@@ -342,7 +341,7 @@ function AssigneeSubMenu({
 
   function onUnchecked(member: string) {
     return navigate({
-      search: (prev: { assignees: string[] | string | null }) => {
+      search: (prev: { assignees: null | string | string[] }) => {
         const { assignees, ...others } = prev;
 
         // no existing members - nothing to do
@@ -395,8 +394,8 @@ function AssigneeSubMenu({
         Assignee
         {selectedMembers && selectedMembers.length > 0 && (
           <React.Fragment>
-            <Separator orientation="vertical" className="mx-1 h-3" />
-            <Badge variant="secondary" className="px-1 text-xs font-normal p-0">
+            <Separator className="mx-1 h-3" orientation="vertical" />
+            <Badge className="px-1 text-xs font-normal p-0" variant="secondary">
               {selectedMembers.length} selected
             </Badge>
           </React.Fragment>
@@ -411,9 +410,9 @@ function AssigneeSubMenu({
               <CommandGroup>
                 {assignedMembers.map((m) => (
                   <CommandItem
+                    className="text-sm"
                     key={m.assigneeId}
                     onSelect={() => onSelect(m.assigneeId)}
-                    className="text-sm"
                   >
                     <div className="flex gap-2">
                       <Avatar name={m.assigneeId} size={20} />
@@ -444,16 +443,16 @@ export function Filters({
   disableAssigneeFilter?: boolean;
 }) {
   const routeSearch = routeApi.useSearch();
-  const { reasons, priorities, assignees } = routeSearch;
+  const { assignees, priorities, reasons } = routeSearch;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="border-dashed">
+        <Button className="border-dashed" size="sm" variant="outline">
           <MixerHorizontalIcon className="mr-1 h-3 w-3" />
           Filters
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="sm:58 w-48 mx-1" align="end">
+      <DropdownMenuContent align="end" className="sm:58 w-48 mx-1">
         <DropdownMenuGroup>
           <ReasonsSubMenu reasons={reasons} />
           <PrioritiesSubMenu priorities={priorities} />
@@ -463,8 +462,8 @@ export function Filters({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <AssigneeSubMenu
-                assignees={assignees}
                 assignedMembers={assignedMembers}
+                assignees={assignees}
               />
             </DropdownMenuGroup>
           </React.Fragment>

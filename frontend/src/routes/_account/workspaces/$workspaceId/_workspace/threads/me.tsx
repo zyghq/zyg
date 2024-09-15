@@ -1,16 +1,16 @@
-import * as React from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { useStore } from "zustand";
-import { WorkspaceStoreState } from "@/db/store";
 import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
 import { ThreadListV3 } from "@/components/workspace/thread-list";
+import { WorkspaceStoreState } from "@/db/store";
 import {
-  ReasonsFiltersType,
   AssigneesFiltersType,
   PrioritiesFiltersType,
+  ReasonsFiltersType,
 } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
+import { createFileRoute } from "@tanstack/react-router";
+import * as React from "react";
+import { useStore } from "zustand";
 
 export const Route = createFileRoute(
   "/_account/workspaces/$workspaceId/_workspace/threads/me"
@@ -20,7 +20,7 @@ export const Route = createFileRoute(
 
 function MyThreads() {
   const workspaceStore = useWorkspaceStore();
-  const { reasons, sort, assignees, priorities } = Route.useSearch();
+  const { assignees, priorities, reasons, sort } = Route.useSearch();
 
   const workspaceId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.getWorkspaceId(state)
@@ -63,13 +63,15 @@ function MyThreads() {
   return (
     <React.Fragment>
       <div className="px-4 sm:px-8 flex justify-between my-4">
-        <div className="text-lg sm:text-xl font-medium my-auto">My Threads</div>
+        <div className="text-lg sm:text-xl font-medium my-auto">
+          Your Threads
+        </div>
         <div className="flex gap-1 my-auto">
           <Filters assignedMembers={assignedMembers} />
           <Sorts />
         </div>
       </div>
-      <ThreadListV3 workspaceId={workspaceId} threads={todoThreads} />
+      <ThreadListV3 threads={todoThreads} workspaceId={workspaceId} />
     </React.Fragment>
   );
 }

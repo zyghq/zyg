@@ -1,22 +1,11 @@
-import React from "react";
-import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Link } from "@tanstack/react-router";
-import { WorkspaceMetrics } from "@/db/models";
 import {
-  OpenInNewWindowIcon,
-  ReaderIcon,
-  ChatBubbleIcon,
-  CaretSortIcon,
-  GearIcon,
-  WidthIcon,
-  ExitIcon,
-  MagnifyingGlassIcon,
-  BarChartIcon,
-  PersonIcon,
-  CircleIcon,
-} from "@radix-ui/react-icons";
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,47 +14,58 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Building2Icon,
-  Bug as BugIcon,
-  LifeBuoy as LifeBuoyIcon,
-  Users as UsersIcon,
-  TagIcon,
-} from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { defaultSortOp } from "@/lib/search-params";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { TagsIcon } from "lucide-react";
+import { WorkspaceMetrics } from "@/db/models";
 import { LabelMetrics } from "@/db/models";
+import { defaultSortOp } from "@/lib/search-params";
+import { cn } from "@/lib/utils";
+import {
+  BarChartIcon,
+  CaretSortIcon,
+  ChatBubbleIcon,
+  CircleIcon,
+  ExitIcon,
+  GearIcon,
+  MagnifyingGlassIcon,
+  OpenInNewWindowIcon,
+  PersonIcon,
+  ReaderIcon,
+  WidthIcon,
+} from "@radix-ui/react-icons";
+import { Link } from "@tanstack/react-router";
+import {
+  Bug as BugIcon,
+  Building2Icon,
+  LifeBuoy as LifeBuoyIcon,
+  TagIcon,
+  Users as UsersIcon,
+} from "lucide-react";
+import { TagsIcon } from "lucide-react";
+import React from "react";
 
 function SideNavLabelLinks({
-  workspaceId,
   labels,
+  workspaceId,
 }: {
-  workspaceId: string;
   labels: LabelMetrics[];
+  workspaceId: string;
 }) {
   const [isOpen, setIsOpen] = React.useState(false);
   return (
     <Collapsible
-      open={isOpen}
-      onOpenChange={setIsOpen}
       className="w-full space-y-2"
+      onOpenChange={setIsOpen}
+      open={isOpen}
     >
       <div className="flex items-center justify-between space-x-1">
-        <Button variant="ghost" className="w-full pl-3">
+        <Button className="w-full pl-3" variant="ghost">
           <div className="mr-auto flex">
             <TagsIcon className="my-auto mr-2 h-4 w-4" />
             <div className="font-normal">Labels</div>
           </div>
         </Button>
         <CollapsibleTrigger asChild>
-          <Button variant="ghost" size="icon">
+          <Button size="icon" variant="ghost">
             <CaretSortIcon className="h-4 w-4" />
             <span className="sr-only">Toggle</span>
           </Button>
@@ -74,18 +74,18 @@ function SideNavLabelLinks({
       <CollapsibleContent className="space-y-1">
         {labels.map((label) => (
           <Link
-            key={label.labelId}
-            to="/workspaces/$workspaceId/threads/labels/$labelId"
-            params={{ workspaceId, labelId: label.labelId }}
-            search={{ sort: defaultSortOp }}
-            className={cn(
-              buttonVariants({ variant: "ghost" }),
-              "flex w-full justify-between px-3 dark:text-accent-foreground"
-            )}
             activeOptions={{ exact: true }}
             activeProps={{
               className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
             }}
+            className={cn(
+              buttonVariants({ variant: "ghost" }),
+              "flex w-full justify-between px-3 dark:text-accent-foreground"
+            )}
+            key={label.labelId}
+            params={{ labelId: label.labelId, workspaceId }}
+            search={{ sort: defaultSortOp }}
+            to="/workspaces/$workspaceId/threads/labels/$labelId"
           >
             {({ isActive }) => (
               <>
@@ -124,21 +124,21 @@ function SideNavLabelLinks({
 }
 
 export default function SideNavLinks({
+  email,
   maxHeight,
+  memberId,
+  metrics,
+  openClose = () => {},
   workspaceId,
   workspaceName,
-  metrics,
-  memberId,
-  email,
-  openClose = () => {},
 }: {
+  email: string;
   maxHeight: string;
+  memberId: string;
+  metrics: WorkspaceMetrics;
+  openClose?: (isOpen: boolean) => undefined | void;
   workspaceId: string;
   workspaceName: string;
-  metrics: WorkspaceMetrics;
-  memberId: string;
-  email: string;
-  openClose?: (isOpen: boolean) => void | undefined;
 }) {
   return (
     <React.Fragment>
@@ -146,7 +146,7 @@ export default function SideNavLinks({
         <div className="p-2 sm:p-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex justify-between">
+              <Button className="flex justify-between" variant="outline">
                 <div className="flex justify-start">
                   <Building2Icon className="mr-2 h-5 w-5" />
                   <div className="my-auto">{workspaceName}</div>
@@ -161,15 +161,15 @@ export default function SideNavLinks({
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link
-                  to="/workspaces/$workspaceId/settings"
                   params={{ workspaceId }}
+                  to="/workspaces/$workspaceId/settings"
                 >
                   <GearIcon className="my-auto mr-2 h-4 w-4" />
                   <div className="my-auto">Settings</div>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <a target="_blank" href="https://zyg.ai/docs/">
+                <a href="https://zyg.ai/docs/" target="_blank">
                   <ReaderIcon className="my-auto mr-2 h-4 w-4" />
                   <div className="my-auto">Documentation</div>
                   <OpenInNewWindowIcon className="my-auto ml-2 h-4 w-4" />
@@ -192,17 +192,17 @@ export default function SideNavLinks({
           </DropdownMenu>
           <div className="mt-4 flex flex-col space-y-1">
             <Link
-              onClick={() => openClose(false)}
-              to="/workspaces/$workspaceId/search"
-              params={{ workspaceId }}
-              className={cn(
-                buttonVariants({ variant: "ghost" }),
-                "flex w-full justify-between px-3 dark:text-accent-foreground"
-              )}
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
                 className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
               }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              onClick={() => openClose(false)}
+              params={{ workspaceId }}
+              to="/workspaces/$workspaceId/search"
             >
               {({ isActive }: { isActive: boolean }) => (
                 <>
@@ -221,8 +221,8 @@ export default function SideNavLinks({
                         <div className="font-normal">Search</div>
                       </div>
                       <Badge
-                        variant="outline"
                         className="font-mono text-muted-foreground bg-white dark:bg-accent"
+                        variant="outline"
                       >
                         {`/`}
                       </Badge>
@@ -232,17 +232,17 @@ export default function SideNavLinks({
               )}
             </Link>
             <Link
-              onClick={() => openClose(false)}
-              to="/workspaces/$workspaceId/insights"
-              params={{ workspaceId }}
-              className={cn(
-                buttonVariants({ variant: "ghost" }),
-                "flex w-full justify-between px-3 dark:text-accent-foreground"
-              )}
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
                 className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
               }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              onClick={() => openClose(false)}
+              params={{ workspaceId }}
+              to="/workspaces/$workspaceId/insights"
             >
               {({ isActive }: { isActive: boolean }) => (
                 <>
@@ -265,18 +265,18 @@ export default function SideNavLinks({
               )}
             </Link>
             <Link
-              to="/workspaces/$workspaceId/threads/me"
-              onClick={() => openClose(false)}
-              params={{ workspaceId }}
-              search={{ sort: defaultSortOp }}
-              className={cn(
-                buttonVariants({ variant: "ghost" }),
-                "flex w-full justify-between px-3 dark:text-accent-foreground"
-              )}
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
                 className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
               }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              onClick={() => openClose(false)}
+              params={{ workspaceId }}
+              search={{ sort: defaultSortOp }}
+              to="/workspaces/$workspaceId/threads/me"
             >
               {({ isActive }: { isActive: boolean }) => (
                 <>
@@ -285,8 +285,8 @@ export default function SideNavLinks({
                       <div className="flex gap-x-2">
                         <Avatar className="h-5 w-5">
                           <AvatarImage
-                            src={`https://avatar.vercel.sh/${memberId}`}
                             alt={memberId}
+                            src={`https://avatar.vercel.sh/${memberId}`}
                           />
                           <AvatarFallback>CN</AvatarFallback>
                         </Avatar>
@@ -301,8 +301,8 @@ export default function SideNavLinks({
                       <div className="flex gap-x-2">
                         <Avatar className="h-5 w-5">
                           <AvatarImage
-                            src={`https://avatar.vercel.sh/${memberId}`}
                             alt={memberId}
+                            src={`https://avatar.vercel.sh/${memberId}`}
                           />
                           <AvatarFallback>M</AvatarFallback>
                         </Avatar>
@@ -317,18 +317,18 @@ export default function SideNavLinks({
               )}
             </Link>
             <Link
-              to="/workspaces/$workspaceId/threads/unassigned"
-              onClick={() => openClose(false)}
-              params={{ workspaceId }}
-              search={{ sort: defaultSortOp }}
-              className={cn(
-                buttonVariants({ variant: "ghost" }),
-                "flex w-full justify-between px-3 dark:text-accent-foreground"
-              )}
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
                 className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
               }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              onClick={() => openClose(false)}
+              params={{ workspaceId }}
+              search={{ sort: defaultSortOp }}
+              to="/workspaces/$workspaceId/threads/unassigned"
             >
               {({ isActive }: { isActive: boolean }) => (
                 <>
@@ -357,18 +357,18 @@ export default function SideNavLinks({
               )}
             </Link>
             <Link
-              onClick={() => openClose(false)}
-              to="/workspaces/$workspaceId/threads/todo"
-              params={{ workspaceId }}
-              search={{ sort: defaultSortOp }}
-              className={cn(
-                buttonVariants({ variant: "ghost" }),
-                "flex w-full justify-between px-3 dark:text-accent-foreground"
-              )}
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
                 className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
               }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              onClick={() => openClose(false)}
+              params={{ workspaceId }}
+              search={{ sort: defaultSortOp }}
+              to="/workspaces/$workspaceId/threads/todo"
             >
               {({ isActive }: { isActive: boolean }) => (
                 <>
@@ -388,7 +388,7 @@ export default function SideNavLinks({
                         <CircleIcon className="my-auto h-4 w-4 text-indigo-500" />
                         <div className="font-normal">Todo</div>
                       </div>
-                      <Badge variant="outline" className="font-mono font-light">
+                      <Badge className="font-mono font-light" variant="outline">
                         {metrics.active}
                       </Badge>
                     </>
@@ -401,8 +401,8 @@ export default function SideNavLinks({
           <div className="flex flex-col space-y-2">
             <div className="flex">
               <SideNavLabelLinks
-                workspaceId={workspaceId}
                 labels={metrics.labels}
+                workspaceId={workspaceId}
               />
             </div>
           </div>
@@ -413,7 +413,7 @@ export default function SideNavLinks({
           <div className="mx-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button size="sm" variant="outline">
                   <LifeBuoyIcon className="mr-2 h-4 w-4" />
                   Support
                 </Button>
@@ -430,8 +430,8 @@ export default function SideNavLinks({
                 <DropdownMenuItem asChild>
                   <a
                     className="flex"
-                    target="_blank"
                     href="https://zyg.ai/docs/"
+                    target="_blank"
                   >
                     <ReaderIcon className="my-auto mr-2 h-4 w-4" />
                     <div className="my-auto">Documentation</div>
