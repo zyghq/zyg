@@ -6,6 +6,7 @@ import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { LocateIcon } from "lucide-react";
 import { useStore } from "zustand";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function ThreadLinkItem({
   thread,
@@ -40,7 +41,17 @@ export function ThreadLinkItem({
               addSuffix: true,
             })}
           </div>
-          <PersonIcon className="w-4 h-4 text-muted-foreground" />
+          {thread.assigneeId ? (
+            <Avatar className="h-5 w-5">
+              <AvatarImage
+                alt={thread.assigneeId}
+                src={`https://avatar.vercel.sh/${thread.assigneeId}`}
+              />
+              <AvatarFallback>M</AvatarFallback>
+            </Avatar>
+          ) : (
+            <PersonIcon className="w-4 h-4 text-muted-foreground" />
+          )}
         </div>
       </div>
       <div className="col-span-3 sm:col-span-1 sm:order-3">

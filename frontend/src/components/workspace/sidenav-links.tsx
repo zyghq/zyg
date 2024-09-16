@@ -39,8 +39,13 @@ import {
   LifeBuoy as LifeBuoyIcon,
   TagIcon,
   Users as UsersIcon,
+  LocateIcon,
+  TagsIcon,
+  ReplyIcon,
+  ClockIcon,
+  PauseIcon,
+  CheckCircleIcon,
 } from "lucide-react";
-import { TagsIcon } from "lucide-react";
 import React from "react";
 
 function SideNavLabelLinks({
@@ -391,6 +396,200 @@ export default function SideNavLinks({
                       <Badge className="font-mono font-light" variant="outline">
                         {metrics.active}
                       </Badge>
+                    </>
+                  )}
+                </>
+              )}
+            </Link>
+            <Link
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              onClick={() => openClose(false)}
+              params={{ workspaceId }}
+              search={{ sort: defaultSortOp }}
+              to="/workspaces/$workspaceId/threads/needs-first-response"
+            >
+              {({ isActive }: { isActive: boolean }) => (
+                <>
+                  {isActive ? (
+                    <>
+                      <div className="flex gap-x-2 ml-4">
+                        <LocateIcon className="my-auto w-4 h-4 text-indigo-500" />
+                        <div className="font-medium">Needs First Response</div>
+                      </div>
+                      <span className="font-mono text-muted-foreground pr-2">
+                        {"00"}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex gap-x-2 ml-4">
+                        <LocateIcon className="my-auto w-4 h-4 text-indigo-500" />
+                        <div className="font-normal">Needs First Response</div>
+                      </div>
+                      <span className="font-mono text-muted-foreground pr-2">
+                        {"00"}
+                      </span>
+                    </>
+                  )}
+                </>
+              )}
+            </Link>
+            <Link
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              onClick={() => openClose(false)}
+              params={{ workspaceId }}
+              search={{ sort: defaultSortOp }}
+              to="/workspaces/$workspaceId/threads/needs-next-response"
+            >
+              {({ isActive }: { isActive: boolean }) => (
+                <>
+                  {isActive ? (
+                    <>
+                      <div className="flex gap-x-2 ml-4">
+                        <ReplyIcon className="my-auto w-4 h-4 text-indigo-500" />
+                        <div className="font-medium">Needs Next Response</div>
+                      </div>
+                      <span className="font-mono text-muted-foreground pr-2">
+                        {"00"}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex gap-x-2 ml-4">
+                        <ReplyIcon className="my-auto w-4 h-4 text-indigo-500" />
+                        <div className="font-normal">Needs Next Response</div>
+                      </div>
+                      <span className="font-mono text-muted-foreground pr-2">
+                        {"00"}
+                      </span>
+                    </>
+                  )}
+                </>
+              )}
+            </Link>
+            <Link
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              onClick={() => openClose(false)}
+              params={{ workspaceId }}
+              search={{ sort: defaultSortOp }}
+              to="/workspaces/$workspaceId/threads/hold"
+            >
+              {({ isActive }: { isActive: boolean }) => (
+                <>
+                  {isActive ? (
+                    <>
+                      <div className="flex gap-x-2 ml-4">
+                        <PauseIcon className="my-auto w-4 h-4 text-indigo-500" />
+                        <div className="font-medium">Hold</div>
+                      </div>
+                      <span className="font-mono text-muted-foreground pr-2">
+                        {"00"}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex gap-x-2 ml-4">
+                        <PauseIcon className="my-auto w-4 h-4 text-indigo-500" />
+                        <div className="font-normal">Hold</div>
+                      </div>
+                      <span className="font-mono text-muted-foreground pr-2">
+                        {"00"}
+                      </span>
+                    </>
+                  )}
+                </>
+              )}
+            </Link>
+            <Link
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              onClick={() => openClose(false)}
+              params={{ workspaceId }}
+              search={{ sort: defaultSortOp }}
+              to="/workspaces/$workspaceId/threads/waiting-on-customer"
+            >
+              {({ isActive }: { isActive: boolean }) => (
+                <>
+                  {isActive ? (
+                    <>
+                      <div className="flex gap-x-2 ml-4">
+                        <ClockIcon className="my-auto w-4 h-4 text-indigo-500" />
+                        <div className="font-medium">Waiting on Customer</div>
+                      </div>
+                      <span className="font-mono text-muted-foreground pr-2">
+                        {"00"}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex gap-x-2 ml-4">
+                        <ClockIcon className="my-auto w-4 h-4 text-indigo-500" />
+                        <div className="font-normal">Waiting on Customer</div>
+                      </div>
+                      <span className="font-mono text-muted-foreground pr-2">
+                        {"00"}
+                      </span>
+                    </>
+                  )}
+                </>
+              )}
+            </Link>
+            <Link
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              onClick={() => openClose(false)}
+              params={{ workspaceId }}
+              search={{ sort: defaultSortOp }}
+              to="/workspaces/$workspaceId/threads/done"
+            >
+              {({ isActive }: { isActive: boolean }) => (
+                <>
+                  {isActive ? (
+                    <>
+                      <div className="flex gap-x-2">
+                        <CheckCircleIcon className="my-auto h-4 w-4 text-green-500" />
+                        <div className="font-semibold">Done</div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex gap-x-2">
+                        <CheckCircleIcon className="my-auto h-4 w-4 text-green-500" />
+                        <div className="font-normal">Done</div>
+                      </div>
                     </>
                   )}
                 </>

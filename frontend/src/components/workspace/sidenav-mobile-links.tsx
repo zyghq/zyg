@@ -1,5 +1,12 @@
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import SideNavLinks from "@/components/workspace/sidenav-links";
 import { WorkspaceMetrics } from "@/db/models";
 import { HamburgerMenuIcon } from "@radix-ui/react-icons";
@@ -31,6 +38,14 @@ export default function SideNavMobileLinks({
         </Button>
       </SheetTrigger>
       <SheetContent className="p-0" side="left">
+        {/* adding this to stop aria warnings. */}
+        <SheetHeader className="hidden">
+          <SheetTitle>Open Menu</SheetTitle>
+          <SheetDescription>
+            Select menu items from the left sidebar to navigate to different
+            pages.
+          </SheetDescription>
+        </SheetHeader>
         <SideNavLinks
           email={email}
           maxHeight="h-[calc(100dvh-4rem)]"
