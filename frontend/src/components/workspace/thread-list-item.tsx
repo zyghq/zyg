@@ -30,7 +30,7 @@ export function ThreadLinkItem({
       </div>
       <div className="col-span-1 xl:col-span-1">
         <div className="flex flex-col">
-          <div className="text-xs font-medium xl:text-sm">{customerName}</div>
+          <div className="text-xs font-medium sm:text-sm">{customerName}</div>
           <div className="text-xs text-muted-foreground"></div>
         </div>
       </div>
