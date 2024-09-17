@@ -21,22 +21,22 @@ export function ThreadLinkItem({
   );
   return (
     <Link
-      className="grid grid-cols-custom-thread-list-default sm:grid-cols-custom-thread-list-sm grid-rows-custom-thread-list-default sm:grid-rows-custom-thread-list-sm px-4 py-4 border-b sm:px-8 gap-x-4 gap-y-2 hover:bg-zinc-50 dark:hover:bg-accent"
+      className="grid grid-cols-custom-thread-list-default xl:grid-cols-custom-thread-list-xl grid-rows-custom-thread-list-default xl:grid-rows-custom-thread-list-xl px-4 py-4 border-b xl:px-8 gap-x-4 gap-y-2 hover:bg-zinc-50 dark:hover:bg-accent"
       params={{ threadId: thread.threadId, workspaceId }}
       to={"/workspaces/$workspaceId/threads/$threadId"}
     >
-      <div className="col-span-1 sm:col-span-1">
+      <div className="col-span-1 xl:col-span-1">
         <ChatBubbleIcon className="w-4 h-4 text-muted-foreground" />
       </div>
-      <div className="col-span-1 sm:col-span-1">
+      <div className="col-span-1 xl:col-span-1">
         <div className="flex flex-col">
-          <div className="text-xs font-medium sm:text-sm">{customerName}</div>
+          <div className="text-xs font-medium xl:text-sm">{customerName}</div>
           <div className="text-xs text-muted-foreground"></div>
         </div>
       </div>
-      <div className="col-span-1 sm:col-span-1 sm:order-last">
+      <div className="col-span-1 xl:col-span-1 xl:order-last">
         <div className="flex justify-end gap-4 items-center">
-          <div className="text-xs">
+          <div className="text-xs font-mono">
             {formatDistanceToNow(new Date(thread.updatedAt), {
               addSuffix: true,
             })}
@@ -54,7 +54,7 @@ export function ThreadLinkItem({
           )}
         </div>
       </div>
-      <div className="col-span-3 sm:col-span-1 sm:order-3">
+      <div className="col-span-3 xl:col-span-1 xl:order-3">
         <span className="flex whitespace-nowrap overflow-hidden text-ellipsis">
           <span className="text-sm font-medium break-words">
             {thread.title}

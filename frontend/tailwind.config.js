@@ -73,11 +73,11 @@ module.exports = {
       },
       gridTemplateColumns: {
         "custom-thread-list-default": "auto 1fr auto",
-        "custom-thread-list-sm": "18px 200px 1fr 240px",
+        "custom-thread-list-xl": "18px 220px 1fr 220px",
       },
       gridTemplateRows: {
         "custom-thread-list-default": "auto auto",
-        "custom-thread-list-sm": "1fr",
+        "custom-thread-list-xl": "1fr",
       },
     },
   },

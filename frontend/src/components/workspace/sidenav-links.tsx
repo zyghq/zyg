@@ -96,8 +96,8 @@ function SideNavLabelLinks({
               <>
                 {isActive ? (
                   <>
-                    <div className="flex">
-                      <TagIcon className="my-auto mr-1 h-3 w-3 text-muted-foreground" />
+                    <div className="flex gap-x-2 ml-2">
+                      <TagIcon className="my-auto h-3 w-3 text-muted-foreground" />
                       <div className="font-normal capitalize text-foreground">
                         {label.name}
                       </div>
@@ -108,8 +108,8 @@ function SideNavLabelLinks({
                   </>
                 ) : (
                   <>
-                    <div className="flex">
-                      <TagIcon className="my-auto mr-1 h-3 w-3 text-muted-foreground" />
+                    <div className="flex gap-x-2 ml-2">
+                      <TagIcon className="my-auto h-3 w-3 text-muted-foreground" />
                       <div className="font-normal capitalize text-foreground">
                         {label.name}
                       </div>
