@@ -1,4 +1,3 @@
-import * as React from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -6,11 +5,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Pencil1Icon, DotsHorizontalIcon } from "@radix-ui/react-icons";
-import { TagIcon } from "lucide-react";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, SubmitHandler } from "react-hook-form";
 import {
   Form,
   FormControl,
@@ -19,9 +13,15 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useMutation } from "@tanstack/react-query";
 import { updateWorkspaceLabel } from "@/db/api";
 import { useWorkspaceStore } from "@/providers";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { DotsHorizontalIcon, Pencil1Icon } from "@radix-ui/react-icons";
+import { useMutation } from "@tanstack/react-query";
+import { TagIcon } from "lucide-react";
+import * as React from "react";
+import { SubmitHandler, useForm } from "react-hook-form";
+import { z } from "zod";
 
 type FormInputs = {
   name: string;
@@ -32,30 +32,30 @@ const formSchema = z.object({
 });
 
 export function LabelItem({
+  label,
+  labelId,
   token,
   workspaceId,
-  labelId,
-  label,
 }: {
+  label: string;
+  labelId: string;
   token: string;
   workspaceId: string;
-  labelId: string;
-  label: string;
 }) {
   const [editMode, setEditMode] = React.useState(false);
   const workspaceStore = useWorkspaceStore();
 
   const form = useForm({
-    resolver: zodResolver(formSchema),
     defaultValues: {
       name: label,
     },
+    resolver: zodResolver(formSchema),
   });
 
   const mutation = useMutation({
     mutationFn: async (inputs: { name: string }) => {
       const { name } = inputs;
-      const { error, data } = await updateWorkspaceLabel(
+      const { data, error } = await updateWorkspaceLabel(
         token,
         workspaceId,
         labelId,
@@ -74,8 +74,8 @@ export function LabelItem({
     onError: (error) => {
       console.error(error);
       form.setError("name", {
-        type: "serverError",
         message: "Something went wrong. Please try again later.",
+        type: "serverError",
       });
     },
     onSuccess: (data) => {
@@ -101,8 +101,8 @@ export function LabelItem({
         <div className="flex w-full flex-col">
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(onSubmit)}
               className="flex justify-between space-x-2"
+              onSubmit={form.handleSubmit(onSubmit)}
             >
               <div className="flex items-center w-full">
                 <FormField
@@ -112,10 +112,10 @@ export function LabelItem({
                     <FormItem className="w-full">
                       <FormControl>
                         <Input
-                          autoFocus
-                          required
                           autoComplete="off"
+                          autoFocus
                           placeholder="Label"
+                          required
                           {...field}
                         />
                       </FormControl>
@@ -127,14 +127,14 @@ export function LabelItem({
               <div className="flex gap-1">
                 <Button
                   disabled={isUpdating}
-                  type="button"
-                  variant="outline"
                   onClick={() => setEditMode(false)}
                   size="default"
+                  type="button"
+                  variant="outline"
                 >
                   Cancel
                 </Button>
-                <Button disabled={isUpdating} type="submit" size="default">
+                <Button disabled={isUpdating} size="default" type="submit">
                   Save
                 </Button>
               </div>
@@ -151,14 +151,14 @@ export function LabelItem({
             <div className="ml-auto">
               <Button
                 onClick={() => setEditMode(true)}
-                variant="ghost"
                 size="icon"
+                variant="ghost"
               >
                 <Pencil1Icon className="h-4 w-4" />
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
+                  <Button size="icon" variant="ghost">
                     <DotsHorizontalIcon className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>

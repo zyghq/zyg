@@ -1,22 +1,22 @@
-import { cn } from "@/lib/utils";
-import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
-import { formatDistanceToNow } from "date-fns";
 import { Thread } from "@/db/models";
-import { ChatBubbleIcon, ResetIcon } from "@radix-ui/react-icons";
-import Avatar from "boring-avatars";
-import { useStore } from "zustand";
 import { WorkspaceStoreState } from "@/db/store";
+import { cn } from "@/lib/utils";
 import { useWorkspaceStore } from "@/providers";
+import { ChatBubbleIcon, ResetIcon } from "@radix-ui/react-icons";
+import { Link } from "@tanstack/react-router";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { formatDistanceToNow } from "date-fns";
+import { useStore } from "zustand";
 
 function ThreadItem({
-  workspaceId,
   item,
   variant = "default",
+  workspaceId,
 }: {
-  workspaceId: string;
   item: Thread;
   variant?: string;
+  workspaceId: string;
 }) {
   // const WorkspaceStore = useRouteContext({
   //   from: "/_auth/workspaces/$workspaceId/_workspace",
@@ -37,16 +37,16 @@ function ThreadItem({
 
   return (
     <Link
-      to={"/workspaces/$workspaceId/threads/$threadId"}
-      params={{ workspaceId, threadId: item.threadId }}
-      className={cn(
-        "flex flex-col items-start gap-2 rounded-lg px-3 py-3 text-left text-sm transition-all hover:bg-accent",
-        variant === "compress" && "gap-0 rounded-none py-5 border-b"
-      )}
       activeOptions={{ exact: true }}
       activeProps={{
         className: "border-l-2 border-l-indigo-500 bg-indigo-50 dark:bg-accent",
       }}
+      className={cn(
+        "flex flex-col items-start gap-2 rounded-lg px-3 py-3 text-left text-sm transition-all hover:bg-accent",
+        variant === "compress" && "gap-0 rounded-none py-5 border-b"
+      )}
+      params={{ threadId: item.threadId, workspaceId }}
+      to={"/workspaces/$workspaceId/threads/$threadId"}
     >
       <div className="flex w-full flex-col gap-1">
         <div className="flex items-center">
@@ -68,12 +68,17 @@ function ThreadItem({
             })}
           </div>
           {item.assigneeId && (
-            <Avatar size={28} name={item.assigneeId} variant="marble" />
+            <Avatar className="h-5 w-5">
+              <AvatarImage
+                src={`https://avatar.vercel.sh/${item.assigneeId}`}
+              />
+              <AvatarFallback>M</AvatarFallback>
+            </Avatar>
           )}
         </div>
         {item.replied ? (
           <div className="flex">
-            <Badge variant="outline" className="font-normal">
+            <Badge className="font-normal" variant="outline">
               <div className="flex items-center gap-1">
                 <ResetIcon className="h-3 w-3" />
                 replied to
@@ -83,8 +88,8 @@ function ThreadItem({
         ) : (
           <div className="flex">
             <Badge
-              variant="outline"
               className="bg-indigo-100 font-normal dark:bg-indigo-500"
+              variant="outline"
             >
               <div className="flex items-center gap-1">
                 <ResetIcon className="h-3 w-3" />
@@ -103,13 +108,13 @@ function ThreadItem({
 }
 
 export function ThreadList({
-  workspaceId,
   threads,
   variant = "default",
+  workspaceId,
 }: {
-  workspaceId: string;
   threads: Thread[];
   variant?: string;
+  workspaceId: string;
 }) {
   return (
     <div
@@ -117,10 +122,10 @@ export function ThreadList({
     >
       {threads.map((item: Thread) => (
         <ThreadItem
-          key={item.threadId}
-          workspaceId={workspaceId}
           item={item}
+          key={item.threadId}
           variant={variant}
+          workspaceId={workspaceId}
         />
       ))}
     </div>

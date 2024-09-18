@@ -1,5 +1,3 @@
-import React from "react";
-import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,14 +7,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DoubleArrowUpIcon } from "@radix-ui/react-icons";
+import { getRouteApi, useNavigate } from "@tanstack/react-router";
+import React from "react";
 
-const routeApi = getRouteApi("/_auth/workspaces/$workspaceId/_workspace");
+const routeApi = getRouteApi(
+  "/_account/workspaces/$workspaceId/_workspace/threads"
+);
 
 export function Sorts() {
   const navigate = useNavigate();
   const [selectedSort, setSelectedSort] = React.useState<string>("");
   const routeSearch = routeApi.useSearch();
-  const { status, sort } = routeSearch;
+  const { sort } = routeSearch;
 
   React.useEffect(() => {
     setSelectedSort(sort || "");
@@ -41,22 +43,22 @@ export function Sorts() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="border-dashed">
+        <Button className="border-dashed" size="sm" variant="outline">
           <DoubleArrowUpIcon className="mr-1 h-3 w-3" />
           Sort
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-58 mx-1" align="end">
+      <DropdownMenuContent align="end" className="w-58 mx-1">
         <DropdownMenuRadioGroup
           onSelect={(e) => e.preventDefault()}
-          value={selectedSort}
           onValueChange={(value) =>
             navigate({
-              search: (prev) => {
+              search: (prev: any) => {
                 return { ...prev, sort: value };
               },
             })
           }
+          value={selectedSort}
         >
           <DropdownMenuRadioItem
             onSelect={(e) => e.preventDefault()}

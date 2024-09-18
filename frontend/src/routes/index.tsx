@@ -1,5 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
+// TODO: redirect to last used workspace.
 export const Route = createFileRoute("/")({
   beforeLoad: async ({ context }) => {
     const { supabaseClient } = context;
