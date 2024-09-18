@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
@@ -78,6 +79,8 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(
 	}
 
 	fields := make([]string, 0, len(reqp))
+
+	// Modify priority if present, otherwise set default priority.
 	if priority, found := reqp["priority"]; found {
 		if priority == nil {
 			// set default priority
@@ -95,26 +98,29 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(
 		}
 	}
 
-	if status, found := reqp["status"]; found {
-		if status == nil {
-			// set default status
-			thread.Status = models.ThreadStatus{}.DefaultStatus()
-			fields = append(fields, "status")
+	// Modify stage which indirectly modifies status, otherwise set default stage and status.
+	if stage, found := reqp["stage"]; found {
+		if stage == nil {
+			// set the default stage
+			thread.SetDefaultStatus(member.AsMemberActor())
+			fields = append(fields, "stage")
 		} else {
-			status := status.(string)
-			isValid := models.ThreadStatus{}.IsValid(status)
+			stage := stage.(string)
+			isValid := thread.ThreadStatus.IsValidStage(stage)
 			if !isValid {
 				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 				return
 			}
-			thread.Status = status
-			fields = append(fields, "status")
+			thread.SetStatusStage(stage, member.AsMemberActor())
+			fields = append(fields, "stage")
 		}
 	}
 
+	// Modify assignee if present, otherwise set default assignee.
+	// Assignee is a workspace member as a member actor.
 	if assignee, found := reqp["assignee"]; found {
 		if assignee == nil {
-			thread.AssigneeId = models.NullString(nil)
+			thread.ClearAssignedMember()
 			fields = append(fields, "assignee")
 		} else {
 			assigneeId := assignee.(string)
@@ -128,23 +134,12 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
-			thread.AssigneeId = models.NullString(&member.MemberId)
+			thread.AssignMember(member.MemberId, member.Name, time.Now().UTC())
 			fields = append(fields, "assignee")
 		}
 	}
 
-	if read, found := reqp["read"]; found {
-		if read == nil {
-			// set default read
-			thread.Read = false
-			fields = append(fields, "read")
-		} else {
-			read := read.(bool)
-			thread.Read = read
-			fields = append(fields, "read")
-		}
-	}
-
+	// Modify the replied state if present, otherwise set default replied state.
 	if replied, found := reqp["replied"]; found {
 		if replied == nil {
 			// set default replied
@@ -154,18 +149,6 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(
 			replied := replied.(bool)
 			thread.Replied = replied
 			fields = append(fields, "replied")
-		}
-	}
-
-	if spam, found := reqp["spam"]; found {
-		if spam == nil {
-			// set default spam
-			thread.Spam = false
-			fields = append(fields, "spam")
-		} else {
-			spam := spam.(bool)
-			thread.Spam = spam
-			fields = append(fields, "spam")
 		}
 	}
 
@@ -274,7 +257,7 @@ func (h *ThreadChatHandler) handleGetLabelledThreadChats(
 	}
 }
 
-func (h *ThreadChatHandler) handleCreateThChatMessage(
+func (h *ThreadChatHandler) handleCreateThreadChatMessage(
 	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
@@ -304,24 +287,24 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(
 		return
 	}
 
-	chat, err := h.ths.AddOutboundMessage(ctx, thread, member.MemberId, reqp.Message)
+	chat, err := h.ths.CreateOutboundChatMessage(ctx, thread, member.MemberId, reqp.Message)
 	if err != nil {
-		slog.Error("failed to create thread chat message", slog.Any("err", err))
+		slog.Error("failed to add thread chat message", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	var chatCustomer *ThCustomerResp
-	var chatMember *ThMemberResp
+	var chatCustomer *CustomerActorResp
+	var chatMember *MemberActorResp
 
 	// for chat - either of them
 	if chat.CustomerId.Valid {
-		chatCustomer = &ThCustomerResp{
+		chatCustomer = &CustomerActorResp{
 			CustomerId: chat.CustomerId.String,
 			Name:       chat.CustomerName.String,
 		}
 	} else if chat.MemberId.Valid {
-		chatMember = &ThMemberResp{
+		chatMember = &MemberActorResp{
 			MemberId: chat.MemberId.String,
 			Name:     chat.MemberName.String,
 		}
@@ -372,7 +355,7 @@ func (h *ThreadChatHandler) handleCreateThChatMessage(
 	}
 }
 
-func (h *ThreadChatHandler) handleGetThChatMessages(
+func (h *ThreadChatHandler) handleGetThreadChatMessages(
 	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	ctx := r.Context()
 
@@ -398,15 +381,15 @@ func (h *ThreadChatHandler) handleGetThChatMessages(
 
 	messages := make([]ChatResp, 0, 100)
 	for _, chat := range chats {
-		var chatCustomer *ThCustomerResp
-		var chatMember *ThMemberResp
+		var chatCustomer *CustomerActorResp
+		var chatMember *MemberActorResp
 		if chat.CustomerId.Valid {
-			chatCustomer = &ThCustomerResp{
+			chatCustomer = &CustomerActorResp{
 				CustomerId: chat.CustomerId.String,
 				Name:       chat.CustomerName.String,
 			}
 		} else if chat.MemberId.Valid {
-			chatMember = &ThMemberResp{
+			chatMember = &MemberActorResp{
 				MemberId: chat.MemberId.String,
 				Name:     chat.MemberName.String,
 			}
@@ -506,7 +489,7 @@ func (h *ThreadChatHandler) handleSetThreadChatLabel(
 	}
 }
 
-func (h *ThreadChatHandler) handleGetThChatLabels(
+func (h *ThreadChatHandler) handleGetThreadChatLabels(
 	w http.ResponseWriter, r *http.Request, member *models.Member) {
 
 	ctx := r.Context()
@@ -554,7 +537,7 @@ func (h *ThreadChatHandler) handleGetThChatLabels(
 	}
 }
 
-func (h *ThreadChatHandler) handleDeleteThChatLabel(
+func (h *ThreadChatHandler) handleDeleteThreadChatLabel(
 	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	ctx := r.Context()
 

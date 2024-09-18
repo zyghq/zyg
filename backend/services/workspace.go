@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
@@ -23,15 +24,36 @@ type WorkspaceService struct {
 }
 
 func NewWorkspaceService(
-	workspaceRepo ports.WorkspaceRepositorer,
-	memberRepo ports.MemberRepositorer,
-	customerRepo ports.CustomerRepositorer,
+	workspaceRepo ports.WorkspaceRepositorer, memberRepo ports.MemberRepositorer, customerRepo ports.CustomerRepositorer,
 ) *WorkspaceService {
 	return &WorkspaceService{
 		workspaceRepo: workspaceRepo,
 		memberRepo:    memberRepo,
 		customerRepo:  customerRepo,
 	}
+}
+
+func (ws *WorkspaceService) GetSystemMember(
+	ctx context.Context, workspaceId string) (models.Member, error) {
+	member, err := ws.workspaceRepo.LookupSystemMemberByOldest(ctx, workspaceId)
+	if errors.Is(err, repository.ErrEmpty) {
+		return models.Member{}, ErrMemberNotFound
+	}
+	if err != nil {
+		return models.Member{}, ErrMember
+	}
+	return member, nil
+}
+
+// CreateNewSystemMember creates a new system member for the workspace.
+func (ws *WorkspaceService) CreateNewSystemMember(
+	ctx context.Context, workspaceId string) (models.Member, error) {
+	member := models.Member{}.CreateNewSystemMember(workspaceId)
+	member, err := ws.workspaceRepo.InsertSystemMember(ctx, member)
+	if err != nil {
+		return models.Member{}, ErrMember
+	}
+	return member, nil
 }
 
 func (ws *WorkspaceService) UpdateWorkspace(
@@ -53,7 +75,8 @@ func (ws *WorkspaceService) UpdateLabel(
 	return label, nil
 }
 
-func (ws *WorkspaceService) GetWorkspace(ctx context.Context, workspaceId string) (models.Workspace, error) {
+func (ws *WorkspaceService) GetWorkspace(
+	ctx context.Context, workspaceId string) (models.Workspace, error) {
 	workspace, err := ws.workspaceRepo.FetchByWorkspaceId(ctx, workspaceId)
 
 	if errors.Is(err, repository.ErrQuery) {
@@ -263,7 +286,7 @@ func (ws *WorkspaceService) GenerateWorkspaceSecret(
 	// Create a buffer to store our entropy sources
 	entropy := make([]byte, 0, 1024)
 	// Add current timestamp
-	entropy = append(entropy, []byte(time.Now().String())...)
+	entropy = append(entropy, []byte(time.Now().UTC().String())...)
 	// Add process ID
 	entropy = append(entropy, []byte(fmt.Sprintf("%d", os.Getpid()))...)
 	// Add random bytes
@@ -365,11 +388,12 @@ func (ws *WorkspaceService) ValidateWidgetSession(
 	// if there is an error, we assume the widget session is invalid.
 	data, err := session.Decode(sk)
 	if err != nil {
-		fmt.Println(err)
+		slog.Error("failed to decode session", slog.Any("err", err))
 		return models.Customer{}, ErrWidgetSessionInvalid
 	}
 
-	customer, err := ws.customerRepo.LookupWorkspaceCustomerById(ctx, data.WorkspaceId, data.CustomerId, nil)
+	customer, err := ws.customerRepo.LookupWorkspaceCustomerById(
+		ctx, data.WorkspaceId, data.CustomerId, nil)
 	if err != nil {
 		return models.Customer{}, ErrWidgetSessionInvalid
 	}

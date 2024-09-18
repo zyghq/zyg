@@ -20,7 +20,7 @@ func (w *wrappedWriter) WriteHeader(statusCode int) {
 
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
+		start := time.Now().UTC()
 		wrapper := &wrappedWriter{
 			ResponseWriter: w,
 			statusCode:     http.StatusOK, // default

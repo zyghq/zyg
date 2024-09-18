@@ -14,7 +14,7 @@ import {
   Customer,
 } from "./models";
 
-// add more entitites as supported by store
+// add more entities as supported by store
 // e.g: Workspace | User | etc.
 type WorkspaceEntities = Workspace | Thread | Customer | Label | Member | Pat;
 
@@ -129,6 +129,8 @@ interface IWorkspaceStoreActions {
     state: WorkspaceStoreState,
     threadId: string
   ): string | null;
+  setFromPath(path: string): void;
+  viewFromPath(state: WorkspaceStoreState): string | null;
 }
 
 export interface IWorkspaceValueObjects {
@@ -136,6 +138,7 @@ export interface IWorkspaceValueObjects {
   isPending: boolean;
   error: Error | null;
   threadAppliedFilters: ThreadAppliedFilters | null;
+  fromPath?: string;
 }
 
 export type WorkspaceStoreState = IWorkspaceEntities &
@@ -483,6 +486,18 @@ export const buildStore = (
           return state;
         });
       },
+      setFromPath: (path: string) => {
+        set((state) => {
+          if (state.fromPath) {
+            state.fromPath = path;
+            return state;
+          } else {
+            state.fromPath = path;
+            return state;
+          }
+        });
+      },
+      viewFromPath: (state: WorkspaceStoreState) => state.fromPath || null,
       viewThreadAssigneeId: (state: WorkspaceStoreState, threadId: string) =>
         state.threads?.[threadId]?.assigneeId || null,
     }))

@@ -1,17 +1,5 @@
-import React from "react";
-import { Link, useParams } from "@tanstack/react-router";
-import { cn } from "@/lib/utils";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { BlocksIcon } from "lucide-react";
-import Avatar from "boring-avatars";
 import { Icons } from "@/components/icons";
-import {
-  CodeIcon,
-  ChatBubbleIcon,
-  OpenInNewWindowIcon,
-  ReaderIcon,
-} from "@radix-ui/react-icons";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,13 +8,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import {
+  ChatBubbleIcon,
+  CodeIcon,
+  OpenInNewWindowIcon,
+  ReaderIcon,
+} from "@radix-ui/react-icons";
+import { Link, useParams } from "@tanstack/react-router";
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { BlocksIcon } from "lucide-react";
 import {
   Bug as BugIcon,
   LifeBuoy as LifeBuoyIcon,
   Users as UsersIcon,
 } from "lucide-react";
+import React from "react";
 
-export function SideNavLinks({
+export default function SideNavLinks({
   accountId,
   accountName,
   maxHeight,
@@ -36,43 +37,49 @@ export function SideNavLinks({
   maxHeight?: string;
 }) {
   const { workspaceId } = useParams({
-    from: "/_auth/workspaces/$workspaceId/settings",
+    from: "/_account/workspaces/$workspaceId/settings",
   });
   return (
     <React.Fragment>
       <ScrollArea className={maxHeight}>
         <div className="p-4">
           {/* G1 */}
-          <div className="mb-4 flex items-center gap-1">
-            <Avatar name={accountId} size={32} variant="marble" />
+          <div className="mb-4 flex items-center gap-x-2">
+            <Avatar className="h-5 w-5">
+              <AvatarImage
+                alt={accountId}
+                src={`https://avatar.vercel.sh/${accountId}`}
+              />
+              <AvatarFallback>CN</AvatarFallback>
+            </Avatar>
             <div>
-              <div className="text-xs font-medium">{accountName}</div>
-              <div className="text-xs text-foreground">Account</div>
+              <div className="text-xs font-medium">{accountName || "User"}</div>
+              <div className="text-xs text-muted-foreground">Account</div>
             </div>
           </div>
           {/* G1 Items */}
           <div className="flex flex-col gap-1">
             <Button
-              variant="ghost"
               asChild
               className="flex w-full justify-between"
+              variant="ghost"
             >
-              <Link href={`/`}>
+              <a href={`/`}>
                 <div className="flex">
                   <div className="my-auto">Appearance</div>
                 </div>
-              </Link>
+              </a>
             </Button>
             <Button
-              variant="ghost"
               asChild
               className="flex w-full justify-between"
+              variant="ghost"
             >
-              <Link href={`/`}>
+              <a href={`/`}>
                 <div className="flex">
                   <div className="my-auto">Personal Notifications</div>
                 </div>
-              </Link>
+              </a>
             </Button>
           </div>
           {/* G2 */}
@@ -86,72 +93,72 @@ export function SideNavLinks({
           {/* G2 Items */}
           <div className="flex flex-col gap-1">
             <Link
-              to="/workspaces/$workspaceId/settings"
-              params={{ workspaceId }}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "flex w-full justify-between px-3 dark:text-accent-foreground"
               )}
-              activeOptions={{ exact: true, includeSearch: false }}
-              activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
-              }}
+              params={{ workspaceId }}
+              to="/workspaces/$workspaceId/settings"
             >
               <div className="flex">General</div>
             </Link>
             <Link
-              to="/workspaces/$workspaceId/settings/members"
-              params={{ workspaceId }}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "flex w-full justify-between px-3 dark:text-accent-foreground"
               )}
-              activeOptions={{ exact: true, includeSearch: false }}
-              activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
-              }}
+              params={{ workspaceId }}
+              to="/workspaces/$workspaceId/settings/members"
             >
               <div className="flex">Members</div>
             </Link>
             <Link
-              to="/workspaces/$workspaceId/settings/labels"
-              params={{ workspaceId }}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "flex w-full justify-between px-3 dark:text-accent-foreground"
               )}
-              activeOptions={{ exact: true, includeSearch: false }}
-              activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
-              }}
+              params={{ workspaceId }}
+              to="/workspaces/$workspaceId/settings/labels"
             >
               <div className="flex">Labels</div>
             </Link>
             <Link
-              to="/workspaces/$workspaceId/settings/ai"
-              params={{ workspaceId }}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "flex w-full justify-between px-3 dark:text-accent-foreground"
               )}
-              activeOptions={{ exact: true, includeSearch: false }}
-              activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
-              }}
+              params={{ workspaceId }}
+              to="/workspaces/$workspaceId/settings/ai"
             >
               <div className="flex">AI</div>
             </Link>
             <Link
-              to="/workspaces/$workspaceId/settings/billing"
-              params={{ workspaceId }}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "flex w-full justify-between px-3 dark:text-accent-foreground"
               )}
-              activeOptions={{ exact: true, includeSearch: false }}
-              activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
-              }}
+              params={{ workspaceId }}
+              to="/workspaces/$workspaceId/settings/billing"
             >
               <div className="flex">Billing</div>
             </Link>
@@ -166,44 +173,44 @@ export function SideNavLinks({
           {/* G3 Items */}
           <div className="flex flex-col gap-1">
             <Link
-              to="/workspaces/$workspaceId/settings/slack"
-              params={{ workspaceId }}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "flex w-full justify-between px-3 dark:text-accent-foreground"
               )}
-              activeOptions={{ exact: true, includeSearch: false }}
-              activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
-              }}
+              params={{ workspaceId }}
+              to="/workspaces/$workspaceId/settings/slack"
             >
               <div className="flex">Slack</div>
             </Link>
             <Link
-              to="/workspaces/$workspaceId/settings/email"
-              params={{ workspaceId }}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "flex w-full justify-between px-3 dark:text-accent-foreground"
               )}
-              activeOptions={{ exact: true, includeSearch: false }}
-              activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
-              }}
+              params={{ workspaceId }}
+              to="/workspaces/$workspaceId/settings/email"
             >
               <div className="flex">Email</div>
             </Link>
             <Link
-              to="/workspaces/$workspaceId/settings/chat"
-              params={{ workspaceId }}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "flex w-full justify-between px-3 dark:text-accent-foreground"
               )}
-              activeOptions={{ exact: true, includeSearch: false }}
-              activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
-              }}
+              params={{ workspaceId }}
+              to="/workspaces/$workspaceId/settings/chat"
             >
               <div className="flex">Chat</div>
             </Link>
@@ -218,30 +225,30 @@ export function SideNavLinks({
           {/* G4 Items */}
           <div className="flex flex-col gap-1">
             <Link
-              to="/workspaces/$workspaceId/settings/github"
-              params={{ workspaceId }}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "flex w-full justify-between px-3 dark:text-accent-foreground"
               )}
-              activeOptions={{ exact: true, includeSearch: false }}
-              activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
-              }}
+              params={{ workspaceId }}
+              to="/workspaces/$workspaceId/settings/github"
             >
               <div className="flex">Github</div>
             </Link>
             <Link
-              to="/workspaces/$workspaceId/settings/linear"
-              params={{ workspaceId }}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "flex w-full justify-between px-3 dark:text-accent-foreground"
               )}
-              activeOptions={{ exact: true, includeSearch: false }}
-              activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
-              }}
+              params={{ workspaceId }}
+              to="/workspaces/$workspaceId/settings/linear"
             >
               <div className="flex">Linear</div>
             </Link>
@@ -256,44 +263,44 @@ export function SideNavLinks({
           {/* G5 Items */}
           <div className="flex flex-col gap-1">
             <Link
-              to="/workspaces/$workspaceId/settings/webhooks"
-              params={{ workspaceId }}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "flex w-full justify-between px-3 dark:text-accent-foreground"
               )}
-              activeOptions={{ exact: true, includeSearch: false }}
-              activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
-              }}
+              params={{ workspaceId }}
+              to="/workspaces/$workspaceId/settings/webhooks"
             >
               <div className="flex">Webhooks</div>
             </Link>
             <Link
-              to="/workspaces/$workspaceId/settings/pats"
-              params={{ workspaceId }}
+              activeOptions={{ exact: false, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "flex w-full justify-between px-3 dark:text-accent-foreground"
               )}
-              activeOptions={{ exact: false, includeSearch: false }}
-              activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
-              }}
+              params={{ workspaceId }}
+              to="/workspaces/$workspaceId/settings/pats"
             >
               <div className="flex">Personal Access Tokens</div>
             </Link>
             <Link
-              to="/workspaces/$workspaceId/settings/events"
-              params={{ workspaceId }}
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "flex w-full justify-between px-3 dark:text-accent-foreground"
               )}
-              activeOptions={{ exact: true, includeSearch: false }}
-              activeProps={{
-                className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
-              }}
+              params={{ workspaceId }}
+              to="/workspaces/$workspaceId/settings/events"
             >
               <div className="flex">Events</div>
             </Link>
@@ -305,7 +312,7 @@ export function SideNavLinks({
           <div className="mx-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button size="sm" variant="outline">
                   <LifeBuoyIcon className="mr-2 h-4 w-4" />
                   Support
                 </Button>
@@ -320,15 +327,15 @@ export function SideNavLinks({
                   <div className="my-auto">Get in touch</div>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link
+                  <a
                     className="flex"
-                    target="_blank"
                     href="https://zyg.ai/docs/"
+                    target="_blank"
                   >
                     <ReaderIcon className="my-auto mr-2 h-4 w-4" />
                     <div className="my-auto">Documentation</div>
                     <OpenInNewWindowIcon className="my-auto ml-2 h-4 w-4" />
-                  </Link>
+                  </a>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <UsersIcon className="my-auto mr-2 h-4 w-4" />

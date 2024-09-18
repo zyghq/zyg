@@ -11,62 +11,52 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as SignupImport } from './routes/signup'
-import { Route as SignoutImport } from './routes/signout'
-import { Route as SigninImport } from './routes/signin'
-import { Route as RecoverImport } from './routes/recover'
-import { Route as AuthRouteImport } from './routes/_auth/route'
+import { Route as AccountRouteImport } from './routes/_account/route'
 import { Route as IndexImport } from './routes/index'
-import { Route as AuthWorkspacesIndexImport } from './routes/_auth/workspaces/index'
-import { Route as AuthWorkspacesAddImport } from './routes/_auth/workspaces/add'
-import { Route as AuthWorkspacesWorkspaceIdImport } from './routes/_auth/workspaces/$workspaceId'
-import { Route as AuthWorkspacesWorkspaceIdSettingsRouteImport } from './routes/_auth/workspaces/$workspaceId/settings/route'
-import { Route as AuthWorkspacesWorkspaceIdWorkspaceRouteImport } from './routes/_auth/workspaces/$workspaceId/_workspace/route'
-import { Route as AuthWorkspacesWorkspaceIdSetupIndexImport } from './routes/_auth/workspaces/$workspaceId/setup/index'
-import { Route as AuthWorkspacesWorkspaceIdSettingsIndexImport } from './routes/_auth/workspaces/$workspaceId/settings/index'
-import { Route as AuthWorkspacesWorkspaceIdWorkspaceIndexImport } from './routes/_auth/workspaces/$workspaceId/_workspace/index'
-import { Route as AuthWorkspacesWorkspaceIdSettingsWebhooksImport } from './routes/_auth/workspaces/$workspaceId/settings/webhooks'
-import { Route as AuthWorkspacesWorkspaceIdSettingsSlackImport } from './routes/_auth/workspaces/$workspaceId/settings/slack'
-import { Route as AuthWorkspacesWorkspaceIdSettingsMembersImport } from './routes/_auth/workspaces/$workspaceId/settings/members'
-import { Route as AuthWorkspacesWorkspaceIdSettingsLinearImport } from './routes/_auth/workspaces/$workspaceId/settings/linear'
-import { Route as AuthWorkspacesWorkspaceIdSettingsLabelsImport } from './routes/_auth/workspaces/$workspaceId/settings/labels'
-import { Route as AuthWorkspacesWorkspaceIdSettingsGithubImport } from './routes/_auth/workspaces/$workspaceId/settings/github'
-import { Route as AuthWorkspacesWorkspaceIdSettingsEventsImport } from './routes/_auth/workspaces/$workspaceId/settings/events'
-import { Route as AuthWorkspacesWorkspaceIdSettingsEmailImport } from './routes/_auth/workspaces/$workspaceId/settings/email'
-import { Route as AuthWorkspacesWorkspaceIdSettingsChatImport } from './routes/_auth/workspaces/$workspaceId/settings/chat'
-import { Route as AuthWorkspacesWorkspaceIdSettingsBillingImport } from './routes/_auth/workspaces/$workspaceId/settings/billing'
-import { Route as AuthWorkspacesWorkspaceIdSettingsAiImport } from './routes/_auth/workspaces/$workspaceId/settings/ai'
-import { Route as AuthWorkspacesWorkspaceIdWorkspaceUnassignedImport } from './routes/_auth/workspaces/$workspaceId/_workspace/unassigned'
-import { Route as AuthWorkspacesWorkspaceIdWorkspaceMeImport } from './routes/_auth/workspaces/$workspaceId/_workspace/me'
-import { Route as AuthWorkspacesWorkspaceIdThreadsThreadIdIndexImport } from './routes/_auth/workspaces/$workspaceId/threads/$threadId/index'
-import { Route as AuthWorkspacesWorkspaceIdSettingsPatsIndexImport } from './routes/_auth/workspaces/$workspaceId/settings/pats/index'
-import { Route as AuthWorkspacesWorkspaceIdSettingsPatsAddImport } from './routes/_auth/workspaces/$workspaceId/settings/pats/add'
-import { Route as AuthWorkspacesWorkspaceIdWorkspaceLabelsLabelIdImport } from './routes/_auth/workspaces/$workspaceId/_workspace/labels.$labelId'
+import { Route as authSignupImport } from './routes/(auth)/signup'
+import { Route as authSignoutImport } from './routes/(auth)/signout'
+import { Route as authSigninImport } from './routes/(auth)/signin'
+import { Route as authRecoverImport } from './routes/(auth)/recover'
+import { Route as AccountWorkspacesIndexImport } from './routes/_account/workspaces/index'
+import { Route as AccountWorkspacesAddImport } from './routes/_account/workspaces/add'
+import { Route as AccountWorkspacesWorkspaceIdImport } from './routes/_account/workspaces/$workspaceId'
+import { Route as AccountWorkspacesWorkspaceIdSettingsRouteImport } from './routes/_account/workspaces/$workspaceId/settings/route'
+import { Route as AccountWorkspacesWorkspaceIdWorkspaceRouteImport } from './routes/_account/workspaces/$workspaceId/_workspace/route'
+import { Route as AccountWorkspacesWorkspaceIdSetupIndexImport } from './routes/_account/workspaces/$workspaceId/setup/index'
+import { Route as AccountWorkspacesWorkspaceIdSettingsIndexImport } from './routes/_account/workspaces/$workspaceId/settings/index'
+import { Route as AccountWorkspacesWorkspaceIdWorkspaceIndexImport } from './routes/_account/workspaces/$workspaceId/_workspace/index'
+import { Route as AccountWorkspacesWorkspaceIdThreadsThreadIdImport } from './routes/_account/workspaces/$workspaceId/threads.$threadId'
+import { Route as AccountWorkspacesWorkspaceIdSettingsWebhooksImport } from './routes/_account/workspaces/$workspaceId/settings/webhooks'
+import { Route as AccountWorkspacesWorkspaceIdSettingsSlackImport } from './routes/_account/workspaces/$workspaceId/settings/slack'
+import { Route as AccountWorkspacesWorkspaceIdSettingsMembersImport } from './routes/_account/workspaces/$workspaceId/settings/members'
+import { Route as AccountWorkspacesWorkspaceIdSettingsLinearImport } from './routes/_account/workspaces/$workspaceId/settings/linear'
+import { Route as AccountWorkspacesWorkspaceIdSettingsLabelsImport } from './routes/_account/workspaces/$workspaceId/settings/labels'
+import { Route as AccountWorkspacesWorkspaceIdSettingsGithubImport } from './routes/_account/workspaces/$workspaceId/settings/github'
+import { Route as AccountWorkspacesWorkspaceIdSettingsEventsImport } from './routes/_account/workspaces/$workspaceId/settings/events'
+import { Route as AccountWorkspacesWorkspaceIdSettingsEmailImport } from './routes/_account/workspaces/$workspaceId/settings/email'
+import { Route as AccountWorkspacesWorkspaceIdSettingsChatImport } from './routes/_account/workspaces/$workspaceId/settings/chat'
+import { Route as AccountWorkspacesWorkspaceIdSettingsBillingImport } from './routes/_account/workspaces/$workspaceId/settings/billing'
+import { Route as AccountWorkspacesWorkspaceIdSettingsAiImport } from './routes/_account/workspaces/$workspaceId/settings/ai'
+import { Route as AccountWorkspacesWorkspaceIdWorkspaceSearchImport } from './routes/_account/workspaces/$workspaceId/_workspace/search'
+import { Route as AccountWorkspacesWorkspaceIdWorkspaceInsightsImport } from './routes/_account/workspaces/$workspaceId/_workspace/insights'
+import { Route as AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport } from './routes/_account/workspaces/$workspaceId/_workspace/threads/route'
+import { Route as AccountWorkspacesWorkspaceIdSettingsPatsIndexImport } from './routes/_account/workspaces/$workspaceId/settings/pats/index'
+import { Route as AccountWorkspacesWorkspaceIdSettingsPatsAddImport } from './routes/_account/workspaces/$workspaceId/settings/pats/add'
+import { Route as AccountWorkspacesWorkspaceIdWorkspaceThreadsWaitingOnCustomerImport } from './routes/_account/workspaces/$workspaceId/_workspace/threads/waiting-on-customer'
+import { Route as AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedImport } from './routes/_account/workspaces/$workspaceId/_workspace/threads/unassigned'
+import { Route as AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoImport } from './routes/_account/workspaces/$workspaceId/_workspace/threads/todo'
+import { Route as AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamImport } from './routes/_account/workspaces/$workspaceId/_workspace/threads/spam'
+import { Route as AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsNextResponseImport } from './routes/_account/workspaces/$workspaceId/_workspace/threads/needs-next-response'
+import { Route as AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsFirstResponseImport } from './routes/_account/workspaces/$workspaceId/_workspace/threads/needs-first-response'
+import { Route as AccountWorkspacesWorkspaceIdWorkspaceThreadsMeImport } from './routes/_account/workspaces/$workspaceId/_workspace/threads/me'
+import { Route as AccountWorkspacesWorkspaceIdWorkspaceThreadsHoldImport } from './routes/_account/workspaces/$workspaceId/_workspace/threads/hold'
+import { Route as AccountWorkspacesWorkspaceIdWorkspaceThreadsDoneImport } from './routes/_account/workspaces/$workspaceId/_workspace/threads/done'
+import { Route as AccountWorkspacesWorkspaceIdWorkspaceThreadsLabelsLabelIdImport } from './routes/_account/workspaces/$workspaceId/_workspace/threads/labels.$labelId'
 
 // Create/Update Routes
 
-const SignupRoute = SignupImport.update({
-  path: '/signup',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const SignoutRoute = SignoutImport.update({
-  path: '/signout',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const SigninRoute = SigninImport.update({
-  path: '/signin',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const RecoverRoute = RecoverImport.update({
-  path: '/recover',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const AuthRouteRoute = AuthRouteImport.update({
-  id: '/_auth',
+const AccountRouteRoute = AccountRouteImport.update({
+  id: '/_account',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -75,151 +65,242 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const AuthWorkspacesIndexRoute = AuthWorkspacesIndexImport.update({
+const authSignupRoute = authSignupImport.update({
+  path: '/signup',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const authSignoutRoute = authSignoutImport.update({
+  path: '/signout',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const authSigninRoute = authSigninImport.update({
+  path: '/signin',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const authRecoverRoute = authRecoverImport.update({
+  path: '/recover',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AccountWorkspacesIndexRoute = AccountWorkspacesIndexImport.update({
   path: '/workspaces/',
-  getParentRoute: () => AuthRouteRoute,
+  getParentRoute: () => AccountRouteRoute,
 } as any)
 
-const AuthWorkspacesAddRoute = AuthWorkspacesAddImport.update({
+const AccountWorkspacesAddRoute = AccountWorkspacesAddImport.update({
   path: '/workspaces/add',
-  getParentRoute: () => AuthRouteRoute,
+  getParentRoute: () => AccountRouteRoute,
 } as any)
 
-const AuthWorkspacesWorkspaceIdRoute = AuthWorkspacesWorkspaceIdImport.update({
-  path: '/workspaces/$workspaceId',
-  getParentRoute: () => AuthRouteRoute,
-} as any)
+const AccountWorkspacesWorkspaceIdRoute =
+  AccountWorkspacesWorkspaceIdImport.update({
+    path: '/workspaces/$workspaceId',
+    getParentRoute: () => AccountRouteRoute,
+  } as any)
 
-const AuthWorkspacesWorkspaceIdSettingsRouteRoute =
-  AuthWorkspacesWorkspaceIdSettingsRouteImport.update({
+const AccountWorkspacesWorkspaceIdSettingsRouteRoute =
+  AccountWorkspacesWorkspaceIdSettingsRouteImport.update({
     path: '/settings',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdWorkspaceRouteRoute =
-  AuthWorkspacesWorkspaceIdWorkspaceRouteImport.update({
+const AccountWorkspacesWorkspaceIdWorkspaceRouteRoute =
+  AccountWorkspacesWorkspaceIdWorkspaceRouteImport.update({
     id: '/_workspace',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdSetupIndexRoute =
-  AuthWorkspacesWorkspaceIdSetupIndexImport.update({
+const AccountWorkspacesWorkspaceIdSetupIndexRoute =
+  AccountWorkspacesWorkspaceIdSetupIndexImport.update({
     path: '/setup/',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdSettingsIndexRoute =
-  AuthWorkspacesWorkspaceIdSettingsIndexImport.update({
+const AccountWorkspacesWorkspaceIdSettingsIndexRoute =
+  AccountWorkspacesWorkspaceIdSettingsIndexImport.update({
     path: '/',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdSettingsRouteRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdWorkspaceIndexRoute =
-  AuthWorkspacesWorkspaceIdWorkspaceIndexImport.update({
+const AccountWorkspacesWorkspaceIdWorkspaceIndexRoute =
+  AccountWorkspacesWorkspaceIdWorkspaceIndexImport.update({
     path: '/',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdWorkspaceRouteRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdWorkspaceRouteRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdSettingsWebhooksRoute =
-  AuthWorkspacesWorkspaceIdSettingsWebhooksImport.update({
+const AccountWorkspacesWorkspaceIdThreadsThreadIdRoute =
+  AccountWorkspacesWorkspaceIdThreadsThreadIdImport.update({
+    path: '/threads/$threadId',
+    getParentRoute: () => AccountWorkspacesWorkspaceIdRoute,
+  } as any)
+
+const AccountWorkspacesWorkspaceIdSettingsWebhooksRoute =
+  AccountWorkspacesWorkspaceIdSettingsWebhooksImport.update({
     path: '/webhooks',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdSettingsRouteRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdSettingsSlackRoute =
-  AuthWorkspacesWorkspaceIdSettingsSlackImport.update({
+const AccountWorkspacesWorkspaceIdSettingsSlackRoute =
+  AccountWorkspacesWorkspaceIdSettingsSlackImport.update({
     path: '/slack',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdSettingsRouteRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdSettingsMembersRoute =
-  AuthWorkspacesWorkspaceIdSettingsMembersImport.update({
+const AccountWorkspacesWorkspaceIdSettingsMembersRoute =
+  AccountWorkspacesWorkspaceIdSettingsMembersImport.update({
     path: '/members',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdSettingsRouteRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdSettingsLinearRoute =
-  AuthWorkspacesWorkspaceIdSettingsLinearImport.update({
+const AccountWorkspacesWorkspaceIdSettingsLinearRoute =
+  AccountWorkspacesWorkspaceIdSettingsLinearImport.update({
     path: '/linear',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdSettingsRouteRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdSettingsLabelsRoute =
-  AuthWorkspacesWorkspaceIdSettingsLabelsImport.update({
+const AccountWorkspacesWorkspaceIdSettingsLabelsRoute =
+  AccountWorkspacesWorkspaceIdSettingsLabelsImport.update({
     path: '/labels',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdSettingsRouteRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdSettingsGithubRoute =
-  AuthWorkspacesWorkspaceIdSettingsGithubImport.update({
+const AccountWorkspacesWorkspaceIdSettingsGithubRoute =
+  AccountWorkspacesWorkspaceIdSettingsGithubImport.update({
     path: '/github',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdSettingsRouteRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdSettingsEventsRoute =
-  AuthWorkspacesWorkspaceIdSettingsEventsImport.update({
+const AccountWorkspacesWorkspaceIdSettingsEventsRoute =
+  AccountWorkspacesWorkspaceIdSettingsEventsImport.update({
     path: '/events',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdSettingsRouteRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdSettingsEmailRoute =
-  AuthWorkspacesWorkspaceIdSettingsEmailImport.update({
+const AccountWorkspacesWorkspaceIdSettingsEmailRoute =
+  AccountWorkspacesWorkspaceIdSettingsEmailImport.update({
     path: '/email',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdSettingsRouteRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdSettingsChatRoute =
-  AuthWorkspacesWorkspaceIdSettingsChatImport.update({
+const AccountWorkspacesWorkspaceIdSettingsChatRoute =
+  AccountWorkspacesWorkspaceIdSettingsChatImport.update({
     path: '/chat',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdSettingsRouteRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdSettingsBillingRoute =
-  AuthWorkspacesWorkspaceIdSettingsBillingImport.update({
+const AccountWorkspacesWorkspaceIdSettingsBillingRoute =
+  AccountWorkspacesWorkspaceIdSettingsBillingImport.update({
     path: '/billing',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdSettingsRouteRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdSettingsAiRoute =
-  AuthWorkspacesWorkspaceIdSettingsAiImport.update({
+const AccountWorkspacesWorkspaceIdSettingsAiRoute =
+  AccountWorkspacesWorkspaceIdSettingsAiImport.update({
     path: '/ai',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdSettingsRouteRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdWorkspaceUnassignedRoute =
-  AuthWorkspacesWorkspaceIdWorkspaceUnassignedImport.update({
-    path: '/unassigned',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdWorkspaceRouteRoute,
+const AccountWorkspacesWorkspaceIdWorkspaceSearchRoute =
+  AccountWorkspacesWorkspaceIdWorkspaceSearchImport.update({
+    path: '/search',
+    getParentRoute: () => AccountWorkspacesWorkspaceIdWorkspaceRouteRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdWorkspaceMeRoute =
-  AuthWorkspacesWorkspaceIdWorkspaceMeImport.update({
-    path: '/me',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdWorkspaceRouteRoute,
+const AccountWorkspacesWorkspaceIdWorkspaceInsightsRoute =
+  AccountWorkspacesWorkspaceIdWorkspaceInsightsImport.update({
+    path: '/insights',
+    getParentRoute: () => AccountWorkspacesWorkspaceIdWorkspaceRouteRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdThreadsThreadIdIndexRoute =
-  AuthWorkspacesWorkspaceIdThreadsThreadIdIndexImport.update({
-    path: '/threads/$threadId/',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdRoute,
+const AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute =
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport.update({
+    path: '/threads',
+    getParentRoute: () => AccountWorkspacesWorkspaceIdWorkspaceRouteRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdSettingsPatsIndexRoute =
-  AuthWorkspacesWorkspaceIdSettingsPatsIndexImport.update({
+const AccountWorkspacesWorkspaceIdSettingsPatsIndexRoute =
+  AccountWorkspacesWorkspaceIdSettingsPatsIndexImport.update({
     path: '/pats/',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdSettingsRouteRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdSettingsPatsAddRoute =
-  AuthWorkspacesWorkspaceIdSettingsPatsAddImport.update({
+const AccountWorkspacesWorkspaceIdSettingsPatsAddRoute =
+  AccountWorkspacesWorkspaceIdSettingsPatsAddImport.update({
     path: '/pats/add',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdSettingsRouteRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdSettingsRouteRoute,
   } as any)
 
-const AuthWorkspacesWorkspaceIdWorkspaceLabelsLabelIdRoute =
-  AuthWorkspacesWorkspaceIdWorkspaceLabelsLabelIdImport.update({
+const AccountWorkspacesWorkspaceIdWorkspaceThreadsWaitingOnCustomerRoute =
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsWaitingOnCustomerImport.update({
+    path: '/waiting-on-customer',
+    getParentRoute: () =>
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute,
+  } as any)
+
+const AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedRoute =
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedImport.update({
+    path: '/unassigned',
+    getParentRoute: () =>
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute,
+  } as any)
+
+const AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoRoute =
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoImport.update({
+    path: '/todo',
+    getParentRoute: () =>
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute,
+  } as any)
+
+const AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamRoute =
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamImport.update({
+    path: '/spam',
+    getParentRoute: () =>
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute,
+  } as any)
+
+const AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsNextResponseRoute =
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsNextResponseImport.update({
+    path: '/needs-next-response',
+    getParentRoute: () =>
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute,
+  } as any)
+
+const AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsFirstResponseRoute =
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsFirstResponseImport.update({
+    path: '/needs-first-response',
+    getParentRoute: () =>
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute,
+  } as any)
+
+const AccountWorkspacesWorkspaceIdWorkspaceThreadsMeRoute =
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsMeImport.update({
+    path: '/me',
+    getParentRoute: () =>
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute,
+  } as any)
+
+const AccountWorkspacesWorkspaceIdWorkspaceThreadsHoldRoute =
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsHoldImport.update({
+    path: '/hold',
+    getParentRoute: () =>
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute,
+  } as any)
+
+const AccountWorkspacesWorkspaceIdWorkspaceThreadsDoneRoute =
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsDoneImport.update({
+    path: '/done',
+    getParentRoute: () =>
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute,
+  } as any)
+
+const AccountWorkspacesWorkspaceIdWorkspaceThreadsLabelsLabelIdRoute =
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsLabelsLabelIdImport.update({
     path: '/labels/$labelId',
-    getParentRoute: () => AuthWorkspacesWorkspaceIdWorkspaceRouteRoute,
+    getParentRoute: () =>
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute,
   } as any)
 
 // Populate the FileRoutesByPath interface
@@ -233,259 +314,951 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
-    '/_auth': {
-      id: '/_auth'
+    '/_account': {
+      id: '/_account'
       path: ''
       fullPath: ''
-      preLoaderRoute: typeof AuthRouteImport
+      preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRoute
     }
-    '/recover': {
+    '/(auth)/recover': {
       id: '/recover'
       path: '/recover'
       fullPath: '/recover'
-      preLoaderRoute: typeof RecoverImport
+      preLoaderRoute: typeof authRecoverImport
       parentRoute: typeof rootRoute
     }
-    '/signin': {
+    '/(auth)/signin': {
       id: '/signin'
       path: '/signin'
       fullPath: '/signin'
-      preLoaderRoute: typeof SigninImport
+      preLoaderRoute: typeof authSigninImport
       parentRoute: typeof rootRoute
     }
-    '/signout': {
+    '/(auth)/signout': {
       id: '/signout'
       path: '/signout'
       fullPath: '/signout'
-      preLoaderRoute: typeof SignoutImport
+      preLoaderRoute: typeof authSignoutImport
       parentRoute: typeof rootRoute
     }
-    '/signup': {
+    '/(auth)/signup': {
       id: '/signup'
       path: '/signup'
       fullPath: '/signup'
-      preLoaderRoute: typeof SignupImport
+      preLoaderRoute: typeof authSignupImport
       parentRoute: typeof rootRoute
     }
-    '/_auth/workspaces/$workspaceId': {
-      id: '/_auth/workspaces/$workspaceId'
+    '/_account/workspaces/$workspaceId': {
+      id: '/_account/workspaces/$workspaceId'
       path: '/workspaces/$workspaceId'
       fullPath: '/workspaces/$workspaceId'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdImport
-      parentRoute: typeof AuthRouteImport
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdImport
+      parentRoute: typeof AccountRouteImport
     }
-    '/_auth/workspaces/add': {
-      id: '/_auth/workspaces/add'
+    '/_account/workspaces/add': {
+      id: '/_account/workspaces/add'
       path: '/workspaces/add'
       fullPath: '/workspaces/add'
-      preLoaderRoute: typeof AuthWorkspacesAddImport
-      parentRoute: typeof AuthRouteImport
+      preLoaderRoute: typeof AccountWorkspacesAddImport
+      parentRoute: typeof AccountRouteImport
     }
-    '/_auth/workspaces/': {
-      id: '/_auth/workspaces/'
+    '/_account/workspaces/': {
+      id: '/_account/workspaces/'
       path: '/workspaces'
       fullPath: '/workspaces'
-      preLoaderRoute: typeof AuthWorkspacesIndexImport
-      parentRoute: typeof AuthRouteImport
+      preLoaderRoute: typeof AccountWorkspacesIndexImport
+      parentRoute: typeof AccountRouteImport
     }
-    '/_auth/workspaces/$workspaceId/_workspace': {
-      id: '/_auth/workspaces/$workspaceId/_workspace'
+    '/_account/workspaces/$workspaceId/_workspace': {
+      id: '/_account/workspaces/$workspaceId/_workspace'
       path: ''
       fullPath: '/workspaces/$workspaceId'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceRouteImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdImport
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceRouteImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdImport
     }
-    '/_auth/workspaces/$workspaceId/settings': {
-      id: '/_auth/workspaces/$workspaceId/settings'
+    '/_account/workspaces/$workspaceId/settings': {
+      id: '/_account/workspaces/$workspaceId/settings'
       path: '/settings'
       fullPath: '/workspaces/$workspaceId/settings'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdImport
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdImport
     }
-    '/_auth/workspaces/$workspaceId/_workspace/me': {
-      id: '/_auth/workspaces/$workspaceId/_workspace/me'
-      path: '/me'
-      fullPath: '/workspaces/$workspaceId/me'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceMeImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceRouteImport
+    '/_account/workspaces/$workspaceId/_workspace/threads': {
+      id: '/_account/workspaces/$workspaceId/_workspace/threads'
+      path: '/threads'
+      fullPath: '/workspaces/$workspaceId/threads'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceRouteImport
     }
-    '/_auth/workspaces/$workspaceId/_workspace/unassigned': {
-      id: '/_auth/workspaces/$workspaceId/_workspace/unassigned'
-      path: '/unassigned'
-      fullPath: '/workspaces/$workspaceId/unassigned'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceUnassignedImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceRouteImport
+    '/_account/workspaces/$workspaceId/_workspace/insights': {
+      id: '/_account/workspaces/$workspaceId/_workspace/insights'
+      path: '/insights'
+      fullPath: '/workspaces/$workspaceId/insights'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceInsightsImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceRouteImport
     }
-    '/_auth/workspaces/$workspaceId/settings/ai': {
-      id: '/_auth/workspaces/$workspaceId/settings/ai'
+    '/_account/workspaces/$workspaceId/_workspace/search': {
+      id: '/_account/workspaces/$workspaceId/_workspace/search'
+      path: '/search'
+      fullPath: '/workspaces/$workspaceId/search'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceSearchImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceRouteImport
+    }
+    '/_account/workspaces/$workspaceId/settings/ai': {
+      id: '/_account/workspaces/$workspaceId/settings/ai'
       path: '/ai'
       fullPath: '/workspaces/$workspaceId/settings/ai'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsAiImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSettingsAiImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteImport
     }
-    '/_auth/workspaces/$workspaceId/settings/billing': {
-      id: '/_auth/workspaces/$workspaceId/settings/billing'
+    '/_account/workspaces/$workspaceId/settings/billing': {
+      id: '/_account/workspaces/$workspaceId/settings/billing'
       path: '/billing'
       fullPath: '/workspaces/$workspaceId/settings/billing'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsBillingImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSettingsBillingImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteImport
     }
-    '/_auth/workspaces/$workspaceId/settings/chat': {
-      id: '/_auth/workspaces/$workspaceId/settings/chat'
+    '/_account/workspaces/$workspaceId/settings/chat': {
+      id: '/_account/workspaces/$workspaceId/settings/chat'
       path: '/chat'
       fullPath: '/workspaces/$workspaceId/settings/chat'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsChatImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSettingsChatImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteImport
     }
-    '/_auth/workspaces/$workspaceId/settings/email': {
-      id: '/_auth/workspaces/$workspaceId/settings/email'
+    '/_account/workspaces/$workspaceId/settings/email': {
+      id: '/_account/workspaces/$workspaceId/settings/email'
       path: '/email'
       fullPath: '/workspaces/$workspaceId/settings/email'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsEmailImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSettingsEmailImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteImport
     }
-    '/_auth/workspaces/$workspaceId/settings/events': {
-      id: '/_auth/workspaces/$workspaceId/settings/events'
+    '/_account/workspaces/$workspaceId/settings/events': {
+      id: '/_account/workspaces/$workspaceId/settings/events'
       path: '/events'
       fullPath: '/workspaces/$workspaceId/settings/events'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsEventsImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSettingsEventsImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteImport
     }
-    '/_auth/workspaces/$workspaceId/settings/github': {
-      id: '/_auth/workspaces/$workspaceId/settings/github'
+    '/_account/workspaces/$workspaceId/settings/github': {
+      id: '/_account/workspaces/$workspaceId/settings/github'
       path: '/github'
       fullPath: '/workspaces/$workspaceId/settings/github'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsGithubImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSettingsGithubImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteImport
     }
-    '/_auth/workspaces/$workspaceId/settings/labels': {
-      id: '/_auth/workspaces/$workspaceId/settings/labels'
+    '/_account/workspaces/$workspaceId/settings/labels': {
+      id: '/_account/workspaces/$workspaceId/settings/labels'
       path: '/labels'
       fullPath: '/workspaces/$workspaceId/settings/labels'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsLabelsImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSettingsLabelsImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteImport
     }
-    '/_auth/workspaces/$workspaceId/settings/linear': {
-      id: '/_auth/workspaces/$workspaceId/settings/linear'
+    '/_account/workspaces/$workspaceId/settings/linear': {
+      id: '/_account/workspaces/$workspaceId/settings/linear'
       path: '/linear'
       fullPath: '/workspaces/$workspaceId/settings/linear'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsLinearImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSettingsLinearImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteImport
     }
-    '/_auth/workspaces/$workspaceId/settings/members': {
-      id: '/_auth/workspaces/$workspaceId/settings/members'
+    '/_account/workspaces/$workspaceId/settings/members': {
+      id: '/_account/workspaces/$workspaceId/settings/members'
       path: '/members'
       fullPath: '/workspaces/$workspaceId/settings/members'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsMembersImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSettingsMembersImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteImport
     }
-    '/_auth/workspaces/$workspaceId/settings/slack': {
-      id: '/_auth/workspaces/$workspaceId/settings/slack'
+    '/_account/workspaces/$workspaceId/settings/slack': {
+      id: '/_account/workspaces/$workspaceId/settings/slack'
       path: '/slack'
       fullPath: '/workspaces/$workspaceId/settings/slack'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsSlackImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSettingsSlackImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteImport
     }
-    '/_auth/workspaces/$workspaceId/settings/webhooks': {
-      id: '/_auth/workspaces/$workspaceId/settings/webhooks'
+    '/_account/workspaces/$workspaceId/settings/webhooks': {
+      id: '/_account/workspaces/$workspaceId/settings/webhooks'
       path: '/webhooks'
       fullPath: '/workspaces/$workspaceId/settings/webhooks'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsWebhooksImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSettingsWebhooksImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteImport
     }
-    '/_auth/workspaces/$workspaceId/_workspace/': {
-      id: '/_auth/workspaces/$workspaceId/_workspace/'
-      path: '/'
-      fullPath: '/workspaces/$workspaceId/'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceIndexImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceRouteImport
-    }
-    '/_auth/workspaces/$workspaceId/settings/': {
-      id: '/_auth/workspaces/$workspaceId/settings/'
-      path: '/'
-      fullPath: '/workspaces/$workspaceId/settings/'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsIndexImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
-    }
-    '/_auth/workspaces/$workspaceId/setup/': {
-      id: '/_auth/workspaces/$workspaceId/setup/'
-      path: '/setup'
-      fullPath: '/workspaces/$workspaceId/setup'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSetupIndexImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdImport
-    }
-    '/_auth/workspaces/$workspaceId/_workspace/labels/$labelId': {
-      id: '/_auth/workspaces/$workspaceId/_workspace/labels/$labelId'
-      path: '/labels/$labelId'
-      fullPath: '/workspaces/$workspaceId/labels/$labelId'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceLabelsLabelIdImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdWorkspaceRouteImport
-    }
-    '/_auth/workspaces/$workspaceId/settings/pats/add': {
-      id: '/_auth/workspaces/$workspaceId/settings/pats/add'
-      path: '/pats/add'
-      fullPath: '/workspaces/$workspaceId/settings/pats/add'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsPatsAddImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
-    }
-    '/_auth/workspaces/$workspaceId/settings/pats/': {
-      id: '/_auth/workspaces/$workspaceId/settings/pats/'
-      path: '/pats'
-      fullPath: '/workspaces/$workspaceId/settings/pats'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdSettingsPatsIndexImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdSettingsRouteImport
-    }
-    '/_auth/workspaces/$workspaceId/threads/$threadId/': {
-      id: '/_auth/workspaces/$workspaceId/threads/$threadId/'
+    '/_account/workspaces/$workspaceId/threads/$threadId': {
+      id: '/_account/workspaces/$workspaceId/threads/$threadId'
       path: '/threads/$threadId'
       fullPath: '/workspaces/$workspaceId/threads/$threadId'
-      preLoaderRoute: typeof AuthWorkspacesWorkspaceIdThreadsThreadIdIndexImport
-      parentRoute: typeof AuthWorkspacesWorkspaceIdImport
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdThreadsThreadIdImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdImport
+    }
+    '/_account/workspaces/$workspaceId/_workspace/': {
+      id: '/_account/workspaces/$workspaceId/_workspace/'
+      path: '/'
+      fullPath: '/workspaces/$workspaceId/'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceIndexImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceRouteImport
+    }
+    '/_account/workspaces/$workspaceId/settings/': {
+      id: '/_account/workspaces/$workspaceId/settings/'
+      path: '/'
+      fullPath: '/workspaces/$workspaceId/settings/'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSettingsIndexImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteImport
+    }
+    '/_account/workspaces/$workspaceId/setup/': {
+      id: '/_account/workspaces/$workspaceId/setup/'
+      path: '/setup'
+      fullPath: '/workspaces/$workspaceId/setup'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSetupIndexImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdImport
+    }
+    '/_account/workspaces/$workspaceId/_workspace/threads/done': {
+      id: '/_account/workspaces/$workspaceId/_workspace/threads/done'
+      path: '/done'
+      fullPath: '/workspaces/$workspaceId/threads/done'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsDoneImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport
+    }
+    '/_account/workspaces/$workspaceId/_workspace/threads/hold': {
+      id: '/_account/workspaces/$workspaceId/_workspace/threads/hold'
+      path: '/hold'
+      fullPath: '/workspaces/$workspaceId/threads/hold'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsHoldImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport
+    }
+    '/_account/workspaces/$workspaceId/_workspace/threads/me': {
+      id: '/_account/workspaces/$workspaceId/_workspace/threads/me'
+      path: '/me'
+      fullPath: '/workspaces/$workspaceId/threads/me'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsMeImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport
+    }
+    '/_account/workspaces/$workspaceId/_workspace/threads/needs-first-response': {
+      id: '/_account/workspaces/$workspaceId/_workspace/threads/needs-first-response'
+      path: '/needs-first-response'
+      fullPath: '/workspaces/$workspaceId/threads/needs-first-response'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsFirstResponseImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport
+    }
+    '/_account/workspaces/$workspaceId/_workspace/threads/needs-next-response': {
+      id: '/_account/workspaces/$workspaceId/_workspace/threads/needs-next-response'
+      path: '/needs-next-response'
+      fullPath: '/workspaces/$workspaceId/threads/needs-next-response'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsNextResponseImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport
+    }
+    '/_account/workspaces/$workspaceId/_workspace/threads/spam': {
+      id: '/_account/workspaces/$workspaceId/_workspace/threads/spam'
+      path: '/spam'
+      fullPath: '/workspaces/$workspaceId/threads/spam'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport
+    }
+    '/_account/workspaces/$workspaceId/_workspace/threads/todo': {
+      id: '/_account/workspaces/$workspaceId/_workspace/threads/todo'
+      path: '/todo'
+      fullPath: '/workspaces/$workspaceId/threads/todo'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport
+    }
+    '/_account/workspaces/$workspaceId/_workspace/threads/unassigned': {
+      id: '/_account/workspaces/$workspaceId/_workspace/threads/unassigned'
+      path: '/unassigned'
+      fullPath: '/workspaces/$workspaceId/threads/unassigned'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport
+    }
+    '/_account/workspaces/$workspaceId/_workspace/threads/waiting-on-customer': {
+      id: '/_account/workspaces/$workspaceId/_workspace/threads/waiting-on-customer'
+      path: '/waiting-on-customer'
+      fullPath: '/workspaces/$workspaceId/threads/waiting-on-customer'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsWaitingOnCustomerImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport
+    }
+    '/_account/workspaces/$workspaceId/settings/pats/add': {
+      id: '/_account/workspaces/$workspaceId/settings/pats/add'
+      path: '/pats/add'
+      fullPath: '/workspaces/$workspaceId/settings/pats/add'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSettingsPatsAddImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteImport
+    }
+    '/_account/workspaces/$workspaceId/settings/pats/': {
+      id: '/_account/workspaces/$workspaceId/settings/pats/'
+      path: '/pats'
+      fullPath: '/workspaces/$workspaceId/settings/pats'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSettingsPatsIndexImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteImport
+    }
+    '/_account/workspaces/$workspaceId/_workspace/threads/labels/$labelId': {
+      id: '/_account/workspaces/$workspaceId/_workspace/threads/labels/$labelId'
+      path: '/labels/$labelId'
+      fullPath: '/workspaces/$workspaceId/threads/labels/$labelId'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsLabelsLabelIdImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport
     }
   }
 }
 
 // Create and export the route tree
 
-export const routeTree = rootRoute.addChildren({
-  IndexRoute,
-  AuthRouteRoute: AuthRouteRoute.addChildren({
-    AuthWorkspacesWorkspaceIdRoute: AuthWorkspacesWorkspaceIdRoute.addChildren({
-      AuthWorkspacesWorkspaceIdWorkspaceRouteRoute:
-        AuthWorkspacesWorkspaceIdWorkspaceRouteRoute.addChildren({
-          AuthWorkspacesWorkspaceIdWorkspaceMeRoute,
-          AuthWorkspacesWorkspaceIdWorkspaceUnassignedRoute,
-          AuthWorkspacesWorkspaceIdWorkspaceIndexRoute,
-          AuthWorkspacesWorkspaceIdWorkspaceLabelsLabelIdRoute,
-        }),
-      AuthWorkspacesWorkspaceIdSettingsRouteRoute:
-        AuthWorkspacesWorkspaceIdSettingsRouteRoute.addChildren({
-          AuthWorkspacesWorkspaceIdSettingsAiRoute,
-          AuthWorkspacesWorkspaceIdSettingsBillingRoute,
-          AuthWorkspacesWorkspaceIdSettingsChatRoute,
-          AuthWorkspacesWorkspaceIdSettingsEmailRoute,
-          AuthWorkspacesWorkspaceIdSettingsEventsRoute,
-          AuthWorkspacesWorkspaceIdSettingsGithubRoute,
-          AuthWorkspacesWorkspaceIdSettingsLabelsRoute,
-          AuthWorkspacesWorkspaceIdSettingsLinearRoute,
-          AuthWorkspacesWorkspaceIdSettingsMembersRoute,
-          AuthWorkspacesWorkspaceIdSettingsSlackRoute,
-          AuthWorkspacesWorkspaceIdSettingsWebhooksRoute,
-          AuthWorkspacesWorkspaceIdSettingsIndexRoute,
-          AuthWorkspacesWorkspaceIdSettingsPatsAddRoute,
-          AuthWorkspacesWorkspaceIdSettingsPatsIndexRoute,
-        }),
-      AuthWorkspacesWorkspaceIdSetupIndexRoute,
-      AuthWorkspacesWorkspaceIdThreadsThreadIdIndexRoute,
-    }),
-    AuthWorkspacesAddRoute,
-    AuthWorkspacesIndexRoute,
-  }),
-  RecoverRoute,
-  SigninRoute,
-  SignoutRoute,
-  SignupRoute,
-})
+interface AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteChildren {
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsDoneRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsDoneRoute
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsHoldRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsHoldRoute
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsMeRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsMeRoute
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsFirstResponseRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsFirstResponseRoute
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsNextResponseRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsNextResponseRoute
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamRoute
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoRoute
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedRoute
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsWaitingOnCustomerRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsWaitingOnCustomerRoute
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsLabelsLabelIdRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsLabelsLabelIdRoute
+}
+
+const AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteChildren: AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteChildren =
+  {
+    AccountWorkspacesWorkspaceIdWorkspaceThreadsDoneRoute:
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsDoneRoute,
+    AccountWorkspacesWorkspaceIdWorkspaceThreadsHoldRoute:
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsHoldRoute,
+    AccountWorkspacesWorkspaceIdWorkspaceThreadsMeRoute:
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsMeRoute,
+    AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsFirstResponseRoute:
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsFirstResponseRoute,
+    AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsNextResponseRoute:
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsNextResponseRoute,
+    AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamRoute:
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamRoute,
+    AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoRoute:
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoRoute,
+    AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedRoute:
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedRoute,
+    AccountWorkspacesWorkspaceIdWorkspaceThreadsWaitingOnCustomerRoute:
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsWaitingOnCustomerRoute,
+    AccountWorkspacesWorkspaceIdWorkspaceThreadsLabelsLabelIdRoute:
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsLabelsLabelIdRoute,
+  }
+
+const AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteWithChildren =
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute._addFileChildren(
+    AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteChildren,
+  )
+
+interface AccountWorkspacesWorkspaceIdWorkspaceRouteRouteChildren {
+  AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteWithChildren
+  AccountWorkspacesWorkspaceIdWorkspaceInsightsRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceInsightsRoute
+  AccountWorkspacesWorkspaceIdWorkspaceSearchRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceSearchRoute
+  AccountWorkspacesWorkspaceIdWorkspaceIndexRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceIndexRoute
+}
+
+const AccountWorkspacesWorkspaceIdWorkspaceRouteRouteChildren: AccountWorkspacesWorkspaceIdWorkspaceRouteRouteChildren =
+  {
+    AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute:
+      AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteWithChildren,
+    AccountWorkspacesWorkspaceIdWorkspaceInsightsRoute:
+      AccountWorkspacesWorkspaceIdWorkspaceInsightsRoute,
+    AccountWorkspacesWorkspaceIdWorkspaceSearchRoute:
+      AccountWorkspacesWorkspaceIdWorkspaceSearchRoute,
+    AccountWorkspacesWorkspaceIdWorkspaceIndexRoute:
+      AccountWorkspacesWorkspaceIdWorkspaceIndexRoute,
+  }
+
+const AccountWorkspacesWorkspaceIdWorkspaceRouteRouteWithChildren =
+  AccountWorkspacesWorkspaceIdWorkspaceRouteRoute._addFileChildren(
+    AccountWorkspacesWorkspaceIdWorkspaceRouteRouteChildren,
+  )
+
+interface AccountWorkspacesWorkspaceIdSettingsRouteRouteChildren {
+  AccountWorkspacesWorkspaceIdSettingsAiRoute: typeof AccountWorkspacesWorkspaceIdSettingsAiRoute
+  AccountWorkspacesWorkspaceIdSettingsBillingRoute: typeof AccountWorkspacesWorkspaceIdSettingsBillingRoute
+  AccountWorkspacesWorkspaceIdSettingsChatRoute: typeof AccountWorkspacesWorkspaceIdSettingsChatRoute
+  AccountWorkspacesWorkspaceIdSettingsEmailRoute: typeof AccountWorkspacesWorkspaceIdSettingsEmailRoute
+  AccountWorkspacesWorkspaceIdSettingsEventsRoute: typeof AccountWorkspacesWorkspaceIdSettingsEventsRoute
+  AccountWorkspacesWorkspaceIdSettingsGithubRoute: typeof AccountWorkspacesWorkspaceIdSettingsGithubRoute
+  AccountWorkspacesWorkspaceIdSettingsLabelsRoute: typeof AccountWorkspacesWorkspaceIdSettingsLabelsRoute
+  AccountWorkspacesWorkspaceIdSettingsLinearRoute: typeof AccountWorkspacesWorkspaceIdSettingsLinearRoute
+  AccountWorkspacesWorkspaceIdSettingsMembersRoute: typeof AccountWorkspacesWorkspaceIdSettingsMembersRoute
+  AccountWorkspacesWorkspaceIdSettingsSlackRoute: typeof AccountWorkspacesWorkspaceIdSettingsSlackRoute
+  AccountWorkspacesWorkspaceIdSettingsWebhooksRoute: typeof AccountWorkspacesWorkspaceIdSettingsWebhooksRoute
+  AccountWorkspacesWorkspaceIdSettingsIndexRoute: typeof AccountWorkspacesWorkspaceIdSettingsIndexRoute
+  AccountWorkspacesWorkspaceIdSettingsPatsAddRoute: typeof AccountWorkspacesWorkspaceIdSettingsPatsAddRoute
+  AccountWorkspacesWorkspaceIdSettingsPatsIndexRoute: typeof AccountWorkspacesWorkspaceIdSettingsPatsIndexRoute
+}
+
+const AccountWorkspacesWorkspaceIdSettingsRouteRouteChildren: AccountWorkspacesWorkspaceIdSettingsRouteRouteChildren =
+  {
+    AccountWorkspacesWorkspaceIdSettingsAiRoute:
+      AccountWorkspacesWorkspaceIdSettingsAiRoute,
+    AccountWorkspacesWorkspaceIdSettingsBillingRoute:
+      AccountWorkspacesWorkspaceIdSettingsBillingRoute,
+    AccountWorkspacesWorkspaceIdSettingsChatRoute:
+      AccountWorkspacesWorkspaceIdSettingsChatRoute,
+    AccountWorkspacesWorkspaceIdSettingsEmailRoute:
+      AccountWorkspacesWorkspaceIdSettingsEmailRoute,
+    AccountWorkspacesWorkspaceIdSettingsEventsRoute:
+      AccountWorkspacesWorkspaceIdSettingsEventsRoute,
+    AccountWorkspacesWorkspaceIdSettingsGithubRoute:
+      AccountWorkspacesWorkspaceIdSettingsGithubRoute,
+    AccountWorkspacesWorkspaceIdSettingsLabelsRoute:
+      AccountWorkspacesWorkspaceIdSettingsLabelsRoute,
+    AccountWorkspacesWorkspaceIdSettingsLinearRoute:
+      AccountWorkspacesWorkspaceIdSettingsLinearRoute,
+    AccountWorkspacesWorkspaceIdSettingsMembersRoute:
+      AccountWorkspacesWorkspaceIdSettingsMembersRoute,
+    AccountWorkspacesWorkspaceIdSettingsSlackRoute:
+      AccountWorkspacesWorkspaceIdSettingsSlackRoute,
+    AccountWorkspacesWorkspaceIdSettingsWebhooksRoute:
+      AccountWorkspacesWorkspaceIdSettingsWebhooksRoute,
+    AccountWorkspacesWorkspaceIdSettingsIndexRoute:
+      AccountWorkspacesWorkspaceIdSettingsIndexRoute,
+    AccountWorkspacesWorkspaceIdSettingsPatsAddRoute:
+      AccountWorkspacesWorkspaceIdSettingsPatsAddRoute,
+    AccountWorkspacesWorkspaceIdSettingsPatsIndexRoute:
+      AccountWorkspacesWorkspaceIdSettingsPatsIndexRoute,
+  }
+
+const AccountWorkspacesWorkspaceIdSettingsRouteRouteWithChildren =
+  AccountWorkspacesWorkspaceIdSettingsRouteRoute._addFileChildren(
+    AccountWorkspacesWorkspaceIdSettingsRouteRouteChildren,
+  )
+
+interface AccountWorkspacesWorkspaceIdRouteChildren {
+  AccountWorkspacesWorkspaceIdWorkspaceRouteRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceRouteRouteWithChildren
+  AccountWorkspacesWorkspaceIdSettingsRouteRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteRouteWithChildren
+  AccountWorkspacesWorkspaceIdThreadsThreadIdRoute: typeof AccountWorkspacesWorkspaceIdThreadsThreadIdRoute
+  AccountWorkspacesWorkspaceIdSetupIndexRoute: typeof AccountWorkspacesWorkspaceIdSetupIndexRoute
+}
+
+const AccountWorkspacesWorkspaceIdRouteChildren: AccountWorkspacesWorkspaceIdRouteChildren =
+  {
+    AccountWorkspacesWorkspaceIdWorkspaceRouteRoute:
+      AccountWorkspacesWorkspaceIdWorkspaceRouteRouteWithChildren,
+    AccountWorkspacesWorkspaceIdSettingsRouteRoute:
+      AccountWorkspacesWorkspaceIdSettingsRouteRouteWithChildren,
+    AccountWorkspacesWorkspaceIdThreadsThreadIdRoute:
+      AccountWorkspacesWorkspaceIdThreadsThreadIdRoute,
+    AccountWorkspacesWorkspaceIdSetupIndexRoute:
+      AccountWorkspacesWorkspaceIdSetupIndexRoute,
+  }
+
+const AccountWorkspacesWorkspaceIdRouteWithChildren =
+  AccountWorkspacesWorkspaceIdRoute._addFileChildren(
+    AccountWorkspacesWorkspaceIdRouteChildren,
+  )
+
+interface AccountRouteRouteChildren {
+  AccountWorkspacesWorkspaceIdRoute: typeof AccountWorkspacesWorkspaceIdRouteWithChildren
+  AccountWorkspacesAddRoute: typeof AccountWorkspacesAddRoute
+  AccountWorkspacesIndexRoute: typeof AccountWorkspacesIndexRoute
+}
+
+const AccountRouteRouteChildren: AccountRouteRouteChildren = {
+  AccountWorkspacesWorkspaceIdRoute:
+    AccountWorkspacesWorkspaceIdRouteWithChildren,
+  AccountWorkspacesAddRoute: AccountWorkspacesAddRoute,
+  AccountWorkspacesIndexRoute: AccountWorkspacesIndexRoute,
+}
+
+const AccountRouteRouteWithChildren = AccountRouteRoute._addFileChildren(
+  AccountRouteRouteChildren,
+)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '': typeof AccountRouteRouteWithChildren
+  '/recover': typeof authRecoverRoute
+  '/signin': typeof authSigninRoute
+  '/signout': typeof authSignoutRoute
+  '/signup': typeof authSignupRoute
+  '/workspaces/$workspaceId': typeof AccountWorkspacesWorkspaceIdWorkspaceRouteRouteWithChildren
+  '/workspaces/add': typeof AccountWorkspacesAddRoute
+  '/workspaces': typeof AccountWorkspacesIndexRoute
+  '/workspaces/$workspaceId/settings': typeof AccountWorkspacesWorkspaceIdSettingsRouteRouteWithChildren
+  '/workspaces/$workspaceId/threads': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteWithChildren
+  '/workspaces/$workspaceId/insights': typeof AccountWorkspacesWorkspaceIdWorkspaceInsightsRoute
+  '/workspaces/$workspaceId/search': typeof AccountWorkspacesWorkspaceIdWorkspaceSearchRoute
+  '/workspaces/$workspaceId/settings/ai': typeof AccountWorkspacesWorkspaceIdSettingsAiRoute
+  '/workspaces/$workspaceId/settings/billing': typeof AccountWorkspacesWorkspaceIdSettingsBillingRoute
+  '/workspaces/$workspaceId/settings/chat': typeof AccountWorkspacesWorkspaceIdSettingsChatRoute
+  '/workspaces/$workspaceId/settings/email': typeof AccountWorkspacesWorkspaceIdSettingsEmailRoute
+  '/workspaces/$workspaceId/settings/events': typeof AccountWorkspacesWorkspaceIdSettingsEventsRoute
+  '/workspaces/$workspaceId/settings/github': typeof AccountWorkspacesWorkspaceIdSettingsGithubRoute
+  '/workspaces/$workspaceId/settings/labels': typeof AccountWorkspacesWorkspaceIdSettingsLabelsRoute
+  '/workspaces/$workspaceId/settings/linear': typeof AccountWorkspacesWorkspaceIdSettingsLinearRoute
+  '/workspaces/$workspaceId/settings/members': typeof AccountWorkspacesWorkspaceIdSettingsMembersRoute
+  '/workspaces/$workspaceId/settings/slack': typeof AccountWorkspacesWorkspaceIdSettingsSlackRoute
+  '/workspaces/$workspaceId/settings/webhooks': typeof AccountWorkspacesWorkspaceIdSettingsWebhooksRoute
+  '/workspaces/$workspaceId/threads/$threadId': typeof AccountWorkspacesWorkspaceIdThreadsThreadIdRoute
+  '/workspaces/$workspaceId/': typeof AccountWorkspacesWorkspaceIdWorkspaceIndexRoute
+  '/workspaces/$workspaceId/settings/': typeof AccountWorkspacesWorkspaceIdSettingsIndexRoute
+  '/workspaces/$workspaceId/setup': typeof AccountWorkspacesWorkspaceIdSetupIndexRoute
+  '/workspaces/$workspaceId/threads/done': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsDoneRoute
+  '/workspaces/$workspaceId/threads/hold': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsHoldRoute
+  '/workspaces/$workspaceId/threads/me': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsMeRoute
+  '/workspaces/$workspaceId/threads/needs-first-response': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsFirstResponseRoute
+  '/workspaces/$workspaceId/threads/needs-next-response': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsNextResponseRoute
+  '/workspaces/$workspaceId/threads/spam': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamRoute
+  '/workspaces/$workspaceId/threads/todo': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoRoute
+  '/workspaces/$workspaceId/threads/unassigned': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedRoute
+  '/workspaces/$workspaceId/threads/waiting-on-customer': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsWaitingOnCustomerRoute
+  '/workspaces/$workspaceId/settings/pats/add': typeof AccountWorkspacesWorkspaceIdSettingsPatsAddRoute
+  '/workspaces/$workspaceId/settings/pats': typeof AccountWorkspacesWorkspaceIdSettingsPatsIndexRoute
+  '/workspaces/$workspaceId/threads/labels/$labelId': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsLabelsLabelIdRoute
+}
+
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '': typeof AccountRouteRouteWithChildren
+  '/recover': typeof authRecoverRoute
+  '/signin': typeof authSigninRoute
+  '/signout': typeof authSignoutRoute
+  '/signup': typeof authSignupRoute
+  '/workspaces/$workspaceId': typeof AccountWorkspacesWorkspaceIdWorkspaceIndexRoute
+  '/workspaces/add': typeof AccountWorkspacesAddRoute
+  '/workspaces': typeof AccountWorkspacesIndexRoute
+  '/workspaces/$workspaceId/threads': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteWithChildren
+  '/workspaces/$workspaceId/insights': typeof AccountWorkspacesWorkspaceIdWorkspaceInsightsRoute
+  '/workspaces/$workspaceId/search': typeof AccountWorkspacesWorkspaceIdWorkspaceSearchRoute
+  '/workspaces/$workspaceId/settings/ai': typeof AccountWorkspacesWorkspaceIdSettingsAiRoute
+  '/workspaces/$workspaceId/settings/billing': typeof AccountWorkspacesWorkspaceIdSettingsBillingRoute
+  '/workspaces/$workspaceId/settings/chat': typeof AccountWorkspacesWorkspaceIdSettingsChatRoute
+  '/workspaces/$workspaceId/settings/email': typeof AccountWorkspacesWorkspaceIdSettingsEmailRoute
+  '/workspaces/$workspaceId/settings/events': typeof AccountWorkspacesWorkspaceIdSettingsEventsRoute
+  '/workspaces/$workspaceId/settings/github': typeof AccountWorkspacesWorkspaceIdSettingsGithubRoute
+  '/workspaces/$workspaceId/settings/labels': typeof AccountWorkspacesWorkspaceIdSettingsLabelsRoute
+  '/workspaces/$workspaceId/settings/linear': typeof AccountWorkspacesWorkspaceIdSettingsLinearRoute
+  '/workspaces/$workspaceId/settings/members': typeof AccountWorkspacesWorkspaceIdSettingsMembersRoute
+  '/workspaces/$workspaceId/settings/slack': typeof AccountWorkspacesWorkspaceIdSettingsSlackRoute
+  '/workspaces/$workspaceId/settings/webhooks': typeof AccountWorkspacesWorkspaceIdSettingsWebhooksRoute
+  '/workspaces/$workspaceId/threads/$threadId': typeof AccountWorkspacesWorkspaceIdThreadsThreadIdRoute
+  '/workspaces/$workspaceId/settings': typeof AccountWorkspacesWorkspaceIdSettingsIndexRoute
+  '/workspaces/$workspaceId/setup': typeof AccountWorkspacesWorkspaceIdSetupIndexRoute
+  '/workspaces/$workspaceId/threads/done': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsDoneRoute
+  '/workspaces/$workspaceId/threads/hold': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsHoldRoute
+  '/workspaces/$workspaceId/threads/me': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsMeRoute
+  '/workspaces/$workspaceId/threads/needs-first-response': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsFirstResponseRoute
+  '/workspaces/$workspaceId/threads/needs-next-response': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsNextResponseRoute
+  '/workspaces/$workspaceId/threads/spam': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamRoute
+  '/workspaces/$workspaceId/threads/todo': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoRoute
+  '/workspaces/$workspaceId/threads/unassigned': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedRoute
+  '/workspaces/$workspaceId/threads/waiting-on-customer': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsWaitingOnCustomerRoute
+  '/workspaces/$workspaceId/settings/pats/add': typeof AccountWorkspacesWorkspaceIdSettingsPatsAddRoute
+  '/workspaces/$workspaceId/settings/pats': typeof AccountWorkspacesWorkspaceIdSettingsPatsIndexRoute
+  '/workspaces/$workspaceId/threads/labels/$labelId': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsLabelsLabelIdRoute
+}
+
+export interface FileRoutesById {
+  __root__: typeof rootRoute
+  '/': typeof IndexRoute
+  '/_account': typeof AccountRouteRouteWithChildren
+  '/recover': typeof authRecoverRoute
+  '/signin': typeof authSigninRoute
+  '/signout': typeof authSignoutRoute
+  '/signup': typeof authSignupRoute
+  '/_account/workspaces/$workspaceId': typeof AccountWorkspacesWorkspaceIdRouteWithChildren
+  '/_account/workspaces/add': typeof AccountWorkspacesAddRoute
+  '/_account/workspaces/': typeof AccountWorkspacesIndexRoute
+  '/_account/workspaces/$workspaceId/_workspace': typeof AccountWorkspacesWorkspaceIdWorkspaceRouteRouteWithChildren
+  '/_account/workspaces/$workspaceId/settings': typeof AccountWorkspacesWorkspaceIdSettingsRouteRouteWithChildren
+  '/_account/workspaces/$workspaceId/_workspace/threads': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteWithChildren
+  '/_account/workspaces/$workspaceId/_workspace/insights': typeof AccountWorkspacesWorkspaceIdWorkspaceInsightsRoute
+  '/_account/workspaces/$workspaceId/_workspace/search': typeof AccountWorkspacesWorkspaceIdWorkspaceSearchRoute
+  '/_account/workspaces/$workspaceId/settings/ai': typeof AccountWorkspacesWorkspaceIdSettingsAiRoute
+  '/_account/workspaces/$workspaceId/settings/billing': typeof AccountWorkspacesWorkspaceIdSettingsBillingRoute
+  '/_account/workspaces/$workspaceId/settings/chat': typeof AccountWorkspacesWorkspaceIdSettingsChatRoute
+  '/_account/workspaces/$workspaceId/settings/email': typeof AccountWorkspacesWorkspaceIdSettingsEmailRoute
+  '/_account/workspaces/$workspaceId/settings/events': typeof AccountWorkspacesWorkspaceIdSettingsEventsRoute
+  '/_account/workspaces/$workspaceId/settings/github': typeof AccountWorkspacesWorkspaceIdSettingsGithubRoute
+  '/_account/workspaces/$workspaceId/settings/labels': typeof AccountWorkspacesWorkspaceIdSettingsLabelsRoute
+  '/_account/workspaces/$workspaceId/settings/linear': typeof AccountWorkspacesWorkspaceIdSettingsLinearRoute
+  '/_account/workspaces/$workspaceId/settings/members': typeof AccountWorkspacesWorkspaceIdSettingsMembersRoute
+  '/_account/workspaces/$workspaceId/settings/slack': typeof AccountWorkspacesWorkspaceIdSettingsSlackRoute
+  '/_account/workspaces/$workspaceId/settings/webhooks': typeof AccountWorkspacesWorkspaceIdSettingsWebhooksRoute
+  '/_account/workspaces/$workspaceId/threads/$threadId': typeof AccountWorkspacesWorkspaceIdThreadsThreadIdRoute
+  '/_account/workspaces/$workspaceId/_workspace/': typeof AccountWorkspacesWorkspaceIdWorkspaceIndexRoute
+  '/_account/workspaces/$workspaceId/settings/': typeof AccountWorkspacesWorkspaceIdSettingsIndexRoute
+  '/_account/workspaces/$workspaceId/setup/': typeof AccountWorkspacesWorkspaceIdSetupIndexRoute
+  '/_account/workspaces/$workspaceId/_workspace/threads/done': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsDoneRoute
+  '/_account/workspaces/$workspaceId/_workspace/threads/hold': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsHoldRoute
+  '/_account/workspaces/$workspaceId/_workspace/threads/me': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsMeRoute
+  '/_account/workspaces/$workspaceId/_workspace/threads/needs-first-response': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsFirstResponseRoute
+  '/_account/workspaces/$workspaceId/_workspace/threads/needs-next-response': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsNextResponseRoute
+  '/_account/workspaces/$workspaceId/_workspace/threads/spam': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamRoute
+  '/_account/workspaces/$workspaceId/_workspace/threads/todo': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoRoute
+  '/_account/workspaces/$workspaceId/_workspace/threads/unassigned': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedRoute
+  '/_account/workspaces/$workspaceId/_workspace/threads/waiting-on-customer': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsWaitingOnCustomerRoute
+  '/_account/workspaces/$workspaceId/settings/pats/add': typeof AccountWorkspacesWorkspaceIdSettingsPatsAddRoute
+  '/_account/workspaces/$workspaceId/settings/pats/': typeof AccountWorkspacesWorkspaceIdSettingsPatsIndexRoute
+  '/_account/workspaces/$workspaceId/_workspace/threads/labels/$labelId': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsLabelsLabelIdRoute
+}
+
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | ''
+    | '/recover'
+    | '/signin'
+    | '/signout'
+    | '/signup'
+    | '/workspaces/$workspaceId'
+    | '/workspaces/add'
+    | '/workspaces'
+    | '/workspaces/$workspaceId/settings'
+    | '/workspaces/$workspaceId/threads'
+    | '/workspaces/$workspaceId/insights'
+    | '/workspaces/$workspaceId/search'
+    | '/workspaces/$workspaceId/settings/ai'
+    | '/workspaces/$workspaceId/settings/billing'
+    | '/workspaces/$workspaceId/settings/chat'
+    | '/workspaces/$workspaceId/settings/email'
+    | '/workspaces/$workspaceId/settings/events'
+    | '/workspaces/$workspaceId/settings/github'
+    | '/workspaces/$workspaceId/settings/labels'
+    | '/workspaces/$workspaceId/settings/linear'
+    | '/workspaces/$workspaceId/settings/members'
+    | '/workspaces/$workspaceId/settings/slack'
+    | '/workspaces/$workspaceId/settings/webhooks'
+    | '/workspaces/$workspaceId/threads/$threadId'
+    | '/workspaces/$workspaceId/'
+    | '/workspaces/$workspaceId/settings/'
+    | '/workspaces/$workspaceId/setup'
+    | '/workspaces/$workspaceId/threads/done'
+    | '/workspaces/$workspaceId/threads/hold'
+    | '/workspaces/$workspaceId/threads/me'
+    | '/workspaces/$workspaceId/threads/needs-first-response'
+    | '/workspaces/$workspaceId/threads/needs-next-response'
+    | '/workspaces/$workspaceId/threads/spam'
+    | '/workspaces/$workspaceId/threads/todo'
+    | '/workspaces/$workspaceId/threads/unassigned'
+    | '/workspaces/$workspaceId/threads/waiting-on-customer'
+    | '/workspaces/$workspaceId/settings/pats/add'
+    | '/workspaces/$workspaceId/settings/pats'
+    | '/workspaces/$workspaceId/threads/labels/$labelId'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | ''
+    | '/recover'
+    | '/signin'
+    | '/signout'
+    | '/signup'
+    | '/workspaces/$workspaceId'
+    | '/workspaces/add'
+    | '/workspaces'
+    | '/workspaces/$workspaceId/threads'
+    | '/workspaces/$workspaceId/insights'
+    | '/workspaces/$workspaceId/search'
+    | '/workspaces/$workspaceId/settings/ai'
+    | '/workspaces/$workspaceId/settings/billing'
+    | '/workspaces/$workspaceId/settings/chat'
+    | '/workspaces/$workspaceId/settings/email'
+    | '/workspaces/$workspaceId/settings/events'
+    | '/workspaces/$workspaceId/settings/github'
+    | '/workspaces/$workspaceId/settings/labels'
+    | '/workspaces/$workspaceId/settings/linear'
+    | '/workspaces/$workspaceId/settings/members'
+    | '/workspaces/$workspaceId/settings/slack'
+    | '/workspaces/$workspaceId/settings/webhooks'
+    | '/workspaces/$workspaceId/threads/$threadId'
+    | '/workspaces/$workspaceId/settings'
+    | '/workspaces/$workspaceId/setup'
+    | '/workspaces/$workspaceId/threads/done'
+    | '/workspaces/$workspaceId/threads/hold'
+    | '/workspaces/$workspaceId/threads/me'
+    | '/workspaces/$workspaceId/threads/needs-first-response'
+    | '/workspaces/$workspaceId/threads/needs-next-response'
+    | '/workspaces/$workspaceId/threads/spam'
+    | '/workspaces/$workspaceId/threads/todo'
+    | '/workspaces/$workspaceId/threads/unassigned'
+    | '/workspaces/$workspaceId/threads/waiting-on-customer'
+    | '/workspaces/$workspaceId/settings/pats/add'
+    | '/workspaces/$workspaceId/settings/pats'
+    | '/workspaces/$workspaceId/threads/labels/$labelId'
+  id:
+    | '__root__'
+    | '/'
+    | '/_account'
+    | '/recover'
+    | '/signin'
+    | '/signout'
+    | '/signup'
+    | '/_account/workspaces/$workspaceId'
+    | '/_account/workspaces/add'
+    | '/_account/workspaces/'
+    | '/_account/workspaces/$workspaceId/_workspace'
+    | '/_account/workspaces/$workspaceId/settings'
+    | '/_account/workspaces/$workspaceId/_workspace/threads'
+    | '/_account/workspaces/$workspaceId/_workspace/insights'
+    | '/_account/workspaces/$workspaceId/_workspace/search'
+    | '/_account/workspaces/$workspaceId/settings/ai'
+    | '/_account/workspaces/$workspaceId/settings/billing'
+    | '/_account/workspaces/$workspaceId/settings/chat'
+    | '/_account/workspaces/$workspaceId/settings/email'
+    | '/_account/workspaces/$workspaceId/settings/events'
+    | '/_account/workspaces/$workspaceId/settings/github'
+    | '/_account/workspaces/$workspaceId/settings/labels'
+    | '/_account/workspaces/$workspaceId/settings/linear'
+    | '/_account/workspaces/$workspaceId/settings/members'
+    | '/_account/workspaces/$workspaceId/settings/slack'
+    | '/_account/workspaces/$workspaceId/settings/webhooks'
+    | '/_account/workspaces/$workspaceId/threads/$threadId'
+    | '/_account/workspaces/$workspaceId/_workspace/'
+    | '/_account/workspaces/$workspaceId/settings/'
+    | '/_account/workspaces/$workspaceId/setup/'
+    | '/_account/workspaces/$workspaceId/_workspace/threads/done'
+    | '/_account/workspaces/$workspaceId/_workspace/threads/hold'
+    | '/_account/workspaces/$workspaceId/_workspace/threads/me'
+    | '/_account/workspaces/$workspaceId/_workspace/threads/needs-first-response'
+    | '/_account/workspaces/$workspaceId/_workspace/threads/needs-next-response'
+    | '/_account/workspaces/$workspaceId/_workspace/threads/spam'
+    | '/_account/workspaces/$workspaceId/_workspace/threads/todo'
+    | '/_account/workspaces/$workspaceId/_workspace/threads/unassigned'
+    | '/_account/workspaces/$workspaceId/_workspace/threads/waiting-on-customer'
+    | '/_account/workspaces/$workspaceId/settings/pats/add'
+    | '/_account/workspaces/$workspaceId/settings/pats/'
+    | '/_account/workspaces/$workspaceId/_workspace/threads/labels/$labelId'
+  fileRoutesById: FileRoutesById
+}
+
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  AccountRouteRoute: typeof AccountRouteRouteWithChildren
+  authRecoverRoute: typeof authRecoverRoute
+  authSigninRoute: typeof authSigninRoute
+  authSignoutRoute: typeof authSignoutRoute
+  authSignupRoute: typeof authSignupRoute
+}
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  AccountRouteRoute: AccountRouteRouteWithChildren,
+  authRecoverRoute: authRecoverRoute,
+  authSigninRoute: authSigninRoute,
+  authSignoutRoute: authSignoutRoute,
+  authSignupRoute: authSignupRoute,
+}
+
+export const routeTree = rootRoute
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
 
 /* prettier-ignore-end */
+
+/* ROUTE_MANIFEST_START
+{
+  "routes": {
+    "__root__": {
+      "filePath": "__root.tsx",
+      "children": [
+        "/",
+        "/_account",
+        "/recover",
+        "/signin",
+        "/signout",
+        "/signup"
+      ]
+    },
+    "/": {
+      "filePath": "index.tsx"
+    },
+    "/_account": {
+      "filePath": "_account/route.tsx",
+      "children": [
+        "/_account/workspaces/$workspaceId",
+        "/_account/workspaces/add",
+        "/_account/workspaces/"
+      ]
+    },
+    "/recover": {
+      "filePath": "(auth)/recover.tsx"
+    },
+    "/signin": {
+      "filePath": "(auth)/signin.tsx"
+    },
+    "/signout": {
+      "filePath": "(auth)/signout.tsx"
+    },
+    "/signup": {
+      "filePath": "(auth)/signup.tsx"
+    },
+    "/_account/workspaces/$workspaceId": {
+      "filePath": "_account/workspaces/$workspaceId.tsx",
+      "parent": "/_account",
+      "children": [
+        "/_account/workspaces/$workspaceId/_workspace",
+        "/_account/workspaces/$workspaceId/settings",
+        "/_account/workspaces/$workspaceId/threads/$threadId",
+        "/_account/workspaces/$workspaceId/setup/"
+      ]
+    },
+    "/_account/workspaces/add": {
+      "filePath": "_account/workspaces/add.tsx",
+      "parent": "/_account"
+    },
+    "/_account/workspaces/": {
+      "filePath": "_account/workspaces/index.tsx",
+      "parent": "/_account"
+    },
+    "/_account/workspaces/$workspaceId/_workspace": {
+      "filePath": "_account/workspaces/$workspaceId/_workspace/route.tsx",
+      "parent": "/_account/workspaces/$workspaceId",
+      "children": [
+        "/_account/workspaces/$workspaceId/_workspace/threads",
+        "/_account/workspaces/$workspaceId/_workspace/insights",
+        "/_account/workspaces/$workspaceId/_workspace/search",
+        "/_account/workspaces/$workspaceId/_workspace/"
+      ]
+    },
+    "/_account/workspaces/$workspaceId/settings": {
+      "filePath": "_account/workspaces/$workspaceId/settings/route.tsx",
+      "parent": "/_account/workspaces/$workspaceId",
+      "children": [
+        "/_account/workspaces/$workspaceId/settings/ai",
+        "/_account/workspaces/$workspaceId/settings/billing",
+        "/_account/workspaces/$workspaceId/settings/chat",
+        "/_account/workspaces/$workspaceId/settings/email",
+        "/_account/workspaces/$workspaceId/settings/events",
+        "/_account/workspaces/$workspaceId/settings/github",
+        "/_account/workspaces/$workspaceId/settings/labels",
+        "/_account/workspaces/$workspaceId/settings/linear",
+        "/_account/workspaces/$workspaceId/settings/members",
+        "/_account/workspaces/$workspaceId/settings/slack",
+        "/_account/workspaces/$workspaceId/settings/webhooks",
+        "/_account/workspaces/$workspaceId/settings/",
+        "/_account/workspaces/$workspaceId/settings/pats/add",
+        "/_account/workspaces/$workspaceId/settings/pats/"
+      ]
+    },
+    "/_account/workspaces/$workspaceId/_workspace/threads": {
+      "filePath": "_account/workspaces/$workspaceId/_workspace/threads/route.tsx",
+      "parent": "/_account/workspaces/$workspaceId/_workspace",
+      "children": [
+        "/_account/workspaces/$workspaceId/_workspace/threads/done",
+        "/_account/workspaces/$workspaceId/_workspace/threads/hold",
+        "/_account/workspaces/$workspaceId/_workspace/threads/me",
+        "/_account/workspaces/$workspaceId/_workspace/threads/needs-first-response",
+        "/_account/workspaces/$workspaceId/_workspace/threads/needs-next-response",
+        "/_account/workspaces/$workspaceId/_workspace/threads/spam",
+        "/_account/workspaces/$workspaceId/_workspace/threads/todo",
+        "/_account/workspaces/$workspaceId/_workspace/threads/unassigned",
+        "/_account/workspaces/$workspaceId/_workspace/threads/waiting-on-customer",
+        "/_account/workspaces/$workspaceId/_workspace/threads/labels/$labelId"
+      ]
+    },
+    "/_account/workspaces/$workspaceId/_workspace/insights": {
+      "filePath": "_account/workspaces/$workspaceId/_workspace/insights.tsx",
+      "parent": "/_account/workspaces/$workspaceId/_workspace"
+    },
+    "/_account/workspaces/$workspaceId/_workspace/search": {
+      "filePath": "_account/workspaces/$workspaceId/_workspace/search.tsx",
+      "parent": "/_account/workspaces/$workspaceId/_workspace"
+    },
+    "/_account/workspaces/$workspaceId/settings/ai": {
+      "filePath": "_account/workspaces/$workspaceId/settings/ai.tsx",
+      "parent": "/_account/workspaces/$workspaceId/settings"
+    },
+    "/_account/workspaces/$workspaceId/settings/billing": {
+      "filePath": "_account/workspaces/$workspaceId/settings/billing.tsx",
+      "parent": "/_account/workspaces/$workspaceId/settings"
+    },
+    "/_account/workspaces/$workspaceId/settings/chat": {
+      "filePath": "_account/workspaces/$workspaceId/settings/chat.tsx",
+      "parent": "/_account/workspaces/$workspaceId/settings"
+    },
+    "/_account/workspaces/$workspaceId/settings/email": {
+      "filePath": "_account/workspaces/$workspaceId/settings/email.tsx",
+      "parent": "/_account/workspaces/$workspaceId/settings"
+    },
+    "/_account/workspaces/$workspaceId/settings/events": {
+      "filePath": "_account/workspaces/$workspaceId/settings/events.tsx",
+      "parent": "/_account/workspaces/$workspaceId/settings"
+    },
+    "/_account/workspaces/$workspaceId/settings/github": {
+      "filePath": "_account/workspaces/$workspaceId/settings/github.tsx",
+      "parent": "/_account/workspaces/$workspaceId/settings"
+    },
+    "/_account/workspaces/$workspaceId/settings/labels": {
+      "filePath": "_account/workspaces/$workspaceId/settings/labels.tsx",
+      "parent": "/_account/workspaces/$workspaceId/settings"
+    },
+    "/_account/workspaces/$workspaceId/settings/linear": {
+      "filePath": "_account/workspaces/$workspaceId/settings/linear.tsx",
+      "parent": "/_account/workspaces/$workspaceId/settings"
+    },
+    "/_account/workspaces/$workspaceId/settings/members": {
+      "filePath": "_account/workspaces/$workspaceId/settings/members.tsx",
+      "parent": "/_account/workspaces/$workspaceId/settings"
+    },
+    "/_account/workspaces/$workspaceId/settings/slack": {
+      "filePath": "_account/workspaces/$workspaceId/settings/slack.tsx",
+      "parent": "/_account/workspaces/$workspaceId/settings"
+    },
+    "/_account/workspaces/$workspaceId/settings/webhooks": {
+      "filePath": "_account/workspaces/$workspaceId/settings/webhooks.tsx",
+      "parent": "/_account/workspaces/$workspaceId/settings"
+    },
+    "/_account/workspaces/$workspaceId/threads/$threadId": {
+      "filePath": "_account/workspaces/$workspaceId/threads.$threadId.tsx",
+      "parent": "/_account/workspaces/$workspaceId"
+    },
+    "/_account/workspaces/$workspaceId/_workspace/": {
+      "filePath": "_account/workspaces/$workspaceId/_workspace/index.tsx",
+      "parent": "/_account/workspaces/$workspaceId/_workspace"
+    },
+    "/_account/workspaces/$workspaceId/settings/": {
+      "filePath": "_account/workspaces/$workspaceId/settings/index.tsx",
+      "parent": "/_account/workspaces/$workspaceId/settings"
+    },
+    "/_account/workspaces/$workspaceId/setup/": {
+      "filePath": "_account/workspaces/$workspaceId/setup/index.tsx",
+      "parent": "/_account/workspaces/$workspaceId"
+    },
+    "/_account/workspaces/$workspaceId/_workspace/threads/done": {
+      "filePath": "_account/workspaces/$workspaceId/_workspace/threads/done.tsx",
+      "parent": "/_account/workspaces/$workspaceId/_workspace/threads"
+    },
+    "/_account/workspaces/$workspaceId/_workspace/threads/hold": {
+      "filePath": "_account/workspaces/$workspaceId/_workspace/threads/hold.tsx",
+      "parent": "/_account/workspaces/$workspaceId/_workspace/threads"
+    },
+    "/_account/workspaces/$workspaceId/_workspace/threads/me": {
+      "filePath": "_account/workspaces/$workspaceId/_workspace/threads/me.tsx",
+      "parent": "/_account/workspaces/$workspaceId/_workspace/threads"
+    },
+    "/_account/workspaces/$workspaceId/_workspace/threads/needs-first-response": {
+      "filePath": "_account/workspaces/$workspaceId/_workspace/threads/needs-first-response.tsx",
+      "parent": "/_account/workspaces/$workspaceId/_workspace/threads"
+    },
+    "/_account/workspaces/$workspaceId/_workspace/threads/needs-next-response": {
+      "filePath": "_account/workspaces/$workspaceId/_workspace/threads/needs-next-response.tsx",
+      "parent": "/_account/workspaces/$workspaceId/_workspace/threads"
+    },
+    "/_account/workspaces/$workspaceId/_workspace/threads/spam": {
+      "filePath": "_account/workspaces/$workspaceId/_workspace/threads/spam.tsx",
+      "parent": "/_account/workspaces/$workspaceId/_workspace/threads"
+    },
+    "/_account/workspaces/$workspaceId/_workspace/threads/todo": {
+      "filePath": "_account/workspaces/$workspaceId/_workspace/threads/todo.tsx",
+      "parent": "/_account/workspaces/$workspaceId/_workspace/threads"
+    },
+    "/_account/workspaces/$workspaceId/_workspace/threads/unassigned": {
+      "filePath": "_account/workspaces/$workspaceId/_workspace/threads/unassigned.tsx",
+      "parent": "/_account/workspaces/$workspaceId/_workspace/threads"
+    },
+    "/_account/workspaces/$workspaceId/_workspace/threads/waiting-on-customer": {
+      "filePath": "_account/workspaces/$workspaceId/_workspace/threads/waiting-on-customer.tsx",
+      "parent": "/_account/workspaces/$workspaceId/_workspace/threads"
+    },
+    "/_account/workspaces/$workspaceId/settings/pats/add": {
+      "filePath": "_account/workspaces/$workspaceId/settings/pats/add.tsx",
+      "parent": "/_account/workspaces/$workspaceId/settings"
+    },
+    "/_account/workspaces/$workspaceId/settings/pats/": {
+      "filePath": "_account/workspaces/$workspaceId/settings/pats/index.tsx",
+      "parent": "/_account/workspaces/$workspaceId/settings"
+    },
+    "/_account/workspaces/$workspaceId/_workspace/threads/labels/$labelId": {
+      "filePath": "_account/workspaces/$workspaceId/_workspace/threads/labels.$labelId.tsx",
+      "parent": "/_account/workspaces/$workspaceId/_workspace/threads"
+    }
+  }
+}
+ROUTE_MANIFEST_END */

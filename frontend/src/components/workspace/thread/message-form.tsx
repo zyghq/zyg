@@ -1,35 +1,35 @@
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { SendHorizonalIcon } from "lucide-react";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
+import { Textarea } from "@/components/ui/textarea";
 import { sendThreadChatMessage } from "@/db/api";
 import { ThreadChatResponse } from "@/db/schema";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { SendHorizonalIcon } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 const formSchema = z.object({
   message: z.string().min(1, "Message is required"),
 });
 
 type MessageFormProps = {
-  token: string;
-  workspaceId: string;
-  threadId: string;
   customerName: string;
   refetch: () => void;
+  threadId: string;
+  token: string;
+  workspaceId: string;
 };
 
 function SubmitButton({ isDisabled }: { isDisabled: boolean }) {
   return (
     <Button
-      className="ml-1"
-      size="icon"
-      type="submit"
-      disabled={isDisabled}
       aria-disabled={isDisabled}
       aria-label="Send Message"
+      className="ml-1"
+      disabled={isDisabled}
+      size="icon"
+      type="submit"
     >
       <SendHorizonalIcon className="h-4 w-4" />
     </Button>
@@ -37,23 +37,23 @@ function SubmitButton({ isDisabled }: { isDisabled: boolean }) {
 }
 
 export function MessageForm({
-  token,
-  workspaceId,
-  threadId,
   customerName,
   refetch,
+  threadId,
+  token,
+  workspaceId,
 }: MessageFormProps) {
   const form = useForm({
-    resolver: zodResolver(formSchema),
     defaultValues: {
       message: "",
     },
+    resolver: zodResolver(formSchema),
   });
 
   const mutation = useMutation({
     mutationFn: async (values: { message: string }) => {
       const { message } = values;
-      const { error, data } = await sendThreadChatMessage(
+      const { data, error } = await sendThreadChatMessage(
         token,
         workspaceId,
         threadId,
@@ -100,8 +100,8 @@ export function MessageForm({
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
         className="flex justify-between items-center"
+        onSubmit={form.handleSubmit(onSubmit)}
       >
         <FormField
           control={form.control}
@@ -111,9 +111,9 @@ export function MessageForm({
               <FormControl>
                 <Textarea
                   className="resize-none"
-                  rows={4}
                   placeholder={`Reply to ${customerName}`}
                   required
+                  rows={4}
                   {...field}
                   onKeyDown={onEnterPress}
                 />

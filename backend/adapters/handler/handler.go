@@ -9,7 +9,7 @@ import (
 )
 
 func handleGetIndex(w http.ResponseWriter, _ *http.Request) {
-	tm := time.Now().Format(time.RFC1123)
+	tm := time.Now().UTC().Format(time.RFC1123)
 	w.Header().Set("x-datetime", tm)
 	w.WriteHeader(http.StatusOK)
 	_, err := w.Write([]byte("ok"))
@@ -85,16 +85,16 @@ func NewServer(
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/labels/{labelId}/{$}",
 		NewEnsureMemberAuth(th.handleGetLabelledThreadChats, authService))
 	mux.Handle("POST /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
-		NewEnsureMemberAuth(th.handleCreateThChatMessage, authService))
+		NewEnsureMemberAuth(th.handleCreateThreadChatMessage, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
-		NewEnsureMemberAuth(th.handleGetThChatMessages, authService))
+		NewEnsureMemberAuth(th.handleGetThreadChatMessages, authService))
 
 	mux.Handle("PUT /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
 		NewEnsureMemberAuth(th.handleSetThreadChatLabel, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
-		NewEnsureMemberAuth(th.handleGetThChatLabels, authService))
+		NewEnsureMemberAuth(th.handleGetThreadChatLabels, authService))
 	mux.Handle("DELETE /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{labelId}/{$}",
-		NewEnsureMemberAuth(th.handleDeleteThChatLabel, authService))
+		NewEnsureMemberAuth(th.handleDeleteThreadChatLabel, authService))
 
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/metrics/{$}",
 		NewEnsureMemberAuth(th.handleGetThreadChatMetrics, authService))

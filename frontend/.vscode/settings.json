@@ -12,5 +12,10 @@
     "strings": "on"
   },
   "files.autoSave": "afterDelay",
-  "files.autoSaveDelay": 1000
+  "files.autoSaveDelay": 1000,
+  "cSpell.enableFiletypes": ["typescriptreact"],
+  "cSpell.words": ["hookform", "overscan", "sidenav", "signin", "signout"],
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  }
 }
