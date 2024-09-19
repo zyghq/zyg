@@ -243,11 +243,10 @@ func (th *Thread) CreateNewThread(
 }
 
 // AssignMember assigns the member to the thread and when the assignment was made.
-// TODO: pass MemberActor instead of memberId and name.
-func (th *Thread) AssignMember(memberId string, name string, assignedAt time.Time) {
+func (th *Thread) AssignMember(member MemberActor, assignedAt time.Time) {
 	th.AssignedMember = &AssignedMember{
-		MemberId:   memberId,
-		Name:       name,
+		MemberId:   member.MemberId,
+		Name:       member.Name,
 		AssignedAt: assignedAt,
 	}
 }
@@ -258,14 +257,13 @@ func (th *Thread) ClearAssignedMember() {
 
 // AddInboundMessage adds the inbound message info to the Thread.
 // Inbound messages are messages from the Customer.
-// TODO: use CustomerActor instead of passing customerId and customerName.
-func (th *Thread) AddInboundMessage(messageId string, customerId string, customerName string,
+func (th *Thread) AddInboundMessage(messageId string, customer CustomerActor,
 	previewText string,
 	firstSeqId string, lastSeqId string,
 	createdAt time.Time, updatedAt time.Time,
 ) {
 	th.InboundMessage = &InboundMessage{
-		MessageId: messageId, CustomerId: customerId, CustomerName: customerName,
+		MessageId: messageId, CustomerId: customer.CustomerId, CustomerName: customer.Name,
 		PreviewText: previewText,
 		FirstSeqId:  firstSeqId, LastSeqId: lastSeqId,
 		CreatedAt: createdAt,
@@ -279,14 +277,13 @@ func (th *Thread) ClearInboundMessage() {
 
 // AddOutboundMessage adds the outbound message info to the Thread.
 // Outbound messages are messages from the Member.
-// TODO: use MemberActor instead of passing memberId and memberName.
-func (th *Thread) AddOutboundMessage(messageId string, memberId string, memberName string,
+func (th *Thread) AddOutboundMessage(messageId string, member MemberActor,
 	previewText string,
 	firstSeqId string, lastSeqId string,
 	createdAt time.Time, updatedAt time.Time,
 ) {
 	th.OutboundMessage = &OutboundMessage{
-		MessageId: messageId, MemberId: memberId, MemberName: memberName,
+		MessageId: messageId, MemberId: member.MemberId, MemberName: member.Name,
 		PreviewText: previewText,
 		FirstSeqId:  firstSeqId, LastSeqId: lastSeqId,
 		CreatedAt: createdAt,
