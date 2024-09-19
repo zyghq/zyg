@@ -564,7 +564,7 @@ export default function SideNavLinks({
             <Link
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
-                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+                className: "bg-green-100 hover:bg-green-200 dark:bg-accent",
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
@@ -580,14 +580,14 @@ export default function SideNavLinks({
                   {isActive ? (
                     <>
                       <div className="flex gap-x-2">
-                        <CheckCircleIcon className="my-auto h-4 w-4 text-green-500" />
+                        <CheckCircleIcon className="my-auto h-4 w-4 text-green-600" />
                         <div className="font-semibold">Done</div>
                       </div>
                     </>
                   ) : (
                     <>
                       <div className="flex gap-x-2">
-                        <CheckCircleIcon className="my-auto h-4 w-4 text-green-500" />
+                        <CheckCircleIcon className="my-auto h-4 w-4 text-green-600" />
                         <div className="font-normal">Done</div>
                       </div>
                     </>

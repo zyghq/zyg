@@ -243,12 +243,9 @@ type ThreadResp struct {
 	Customer           CustomerActorResp
 	Title              string
 	Description        string
-	Sequence           int
 	Status             string
-	Read               bool
 	Replied            bool
 	Priority           string
-	Spam               bool
 	Channel            string
 	PreviewText        string
 	Assignee           *MemberActorResp
@@ -268,12 +265,9 @@ func (th ThreadResp) MarshalJSON() ([]byte, error) {
 		Customer           CustomerActorResp  `json:"customer"`
 		Title              string             `json:"title"`
 		Description        string             `json:"description"`
-		Sequence           int                `json:"sequence"`
 		Status             string             `json:"status"`
-		Read               bool               `json:"read"`
 		Replied            bool               `json:"replied"`
 		Priority           string             `json:"priority"`
-		Spam               bool               `json:"spam"`
 		Channel            string             `json:"channel"`
 		PreviewText        string             `json:"previewText"`
 		Assignee           *MemberActorResp   `json:"assignee,omitempty"`
@@ -290,12 +284,9 @@ func (th ThreadResp) MarshalJSON() ([]byte, error) {
 		Customer:           th.Customer,
 		Title:              th.Title,
 		Description:        th.Description,
-		Sequence:           th.Sequence,
 		Status:             th.Status,
-		Read:               th.Read,
 		Replied:            th.Replied,
 		Priority:           th.Priority,
-		Spam:               th.Spam,
 		Channel:            th.Channel,
 		PreviewText:        th.PreviewText,
 		Assignee:           th.Assignee,
@@ -348,16 +339,13 @@ func (th ThreadResp) NewResponse(thread *models.Thread) ThreadResp {
 	}
 
 	return ThreadResp{
-		ThreadId:    thread.ThreadId,
-		Customer:    customer,
-		Title:       thread.Title,
-		Description: thread.Description,
-		//Sequence:           thread.Sequence,
-		Status: thread.ThreadStatus.Status,
-		//Read:               thread.Read,
-		Replied:  thread.Replied,
-		Priority: thread.Priority,
-		//Spam:               thread.Spam,
+		ThreadId:           thread.ThreadId,
+		Customer:           customer,
+		Title:              thread.Title,
+		Description:        thread.Description,
+		Status:             thread.ThreadStatus.Status,
+		Replied:            thread.Replied,
+		Priority:           thread.Priority,
 		Channel:            thread.Channel,
 		PreviewText:        thread.PreviewText(),
 		Assignee:           threadAssignee,

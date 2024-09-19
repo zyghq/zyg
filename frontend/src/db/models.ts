@@ -45,17 +45,15 @@ export type WorkspaceMetrics = {
   labels: LabelMetrics[] | [];
 };
 
+// Represents the thread model stored in local state, diff from the zod schema
 export type Thread = {
   threadId: string;
   customerId: string;
   title: string;
   description: string;
-  sequence: number;
   status: string;
-  read: boolean;
   replied: boolean;
   priority: string;
-  spam: boolean;
   channel: string;
   previewText: string;
   assigneeId: string | null;

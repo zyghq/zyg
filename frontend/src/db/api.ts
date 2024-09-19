@@ -766,6 +766,9 @@ export async function deletePat(
   }
 }
 
+// @sanchitrk:
+// improve usage of react query with zustand store.
+// can we do this better?
 export async function bootstrapWorkspace(
   token: string,
   workspaceId: string

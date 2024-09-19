@@ -203,20 +203,12 @@ type Thread struct {
 	WorkspaceId     string           // WorkspaceId is the ID of the Workspace this Thread belongs to.
 	ThreadId        string           // ThreadId represents the unique ID of the Thread.
 	Customer        CustomerActor    // The attached Customer.
-	CustomerId      string           // Deprecated: CustomerId represents the ID of the Customer this Thread is part of.
-	CustomerName    string           // Deprecated: CustomerName represents the name of the Customer as per CustomerId.
 	AssignedMember  *AssignedMember  // The Member assigned to the Thread.
-	AssigneeId      sql.NullString   // Deprecated: AssignedId represents the Member this Thread is assigned to.
-	AssigneeName    sql.NullString   // Deprecated: AssigneeName represents the name of the Member as per AssigneeId.
 	Title           string           // The Title of the Thread, which allows to quickly identify what it is about.
 	Description     string           // The Description of the Thread could be descriptive.
-	Sequence        int              // Deprecated: will be removed in the next release.
-	Status          string           // Deprecated: use ThreadStatus instead.
 	ThreadStatus    ThreadStatus     // The status of the Thread. TODO: rename to `Status` post removal.
-	Read            bool             // Deprecated: use upcoming stages instead.
 	Replied         bool             // If the Member has anytime replied to the Thread.
 	Priority        string           // The Priority of the Thread as per ThreadPriority.
-	Spam            bool             // Deprecated: will be removed in the next release.
 	Channel         string           // The channel this Thread belongs to as per ThreadChannel.
 	InboundMessage  *InboundMessage  // InboundMessage tracks the inbound message from Customer
 	OutboundMessage *OutboundMessage // OutboundMessage tracks the outbound message from Member
