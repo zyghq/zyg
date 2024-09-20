@@ -206,7 +206,7 @@ type Thread struct {
 	AssignedMember  *AssignedMember  // The Member assigned to the Thread.
 	Title           string           // The Title of the Thread, which allows to quickly identify what it is about.
 	Description     string           // The Description of the Thread could be descriptive.
-	ThreadStatus    ThreadStatus     // The status of the Thread. TODO: rename to `Status` post removal.
+	ThreadStatus    ThreadStatus     // The status of the Thread.
 	Replied         bool             // If the Member has anytime replied to the Thread.
 	Priority        string           // The Priority of the Thread as per ThreadPriority.
 	Channel         string           // The channel this Thread belongs to as per ThreadChannel.
