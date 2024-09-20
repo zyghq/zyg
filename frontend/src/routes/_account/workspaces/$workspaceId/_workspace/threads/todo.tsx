@@ -6,9 +6,8 @@ import { useWorkspaceStore } from "@/providers";
 import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
 import { ThreadListV3 } from "@/components/workspace/thread-list";
-
 import {
-  ReasonsFiltersType,
+  StagesFiltersType,
   AssigneesFiltersType,
   PrioritiesFiltersType,
 } from "@/db/store";
@@ -22,7 +21,8 @@ export const Route = createFileRoute(
 
 function Threads() {
   const workspaceStore = useWorkspaceStore();
-  const { reasons, sort, assignees, priorities } = Route.useSearch();
+  const { stages, sort, assignees, priorities } = Route.useSearch();
+  const navigate = Route.useNavigate();
 
   const workspaceId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.getWorkspaceId(state)
@@ -32,7 +32,7 @@ function Threads() {
       state,
       "todo",
       assignees as AssigneesFiltersType,
-      reasons as ReasonsFiltersType,
+      stages as StagesFiltersType,
       priorities as PrioritiesFiltersType,
       sort
     )
@@ -49,13 +49,182 @@ function Threads() {
       .applyThreadFilters(
         "todo",
         assignees as AssigneesFiltersType,
-        reasons as ReasonsFiltersType,
+        stages as StagesFiltersType,
         priorities as PrioritiesFiltersType,
         sort,
         null,
         null
       );
-  }, [workspaceStore, assignees, reasons, priorities, sort]);
+  }, [workspaceStore, assignees, stages, priorities, sort]);
+
+  function onStatusChecked(stage: string) {
+    return navigate({
+      search: (prev) => {
+        const { stages, ...others } = prev;
+
+        // no existing stages - add new stage
+        if (!stages || stages === "") {
+          return { stages: stage, ...others };
+        }
+
+        // found a stage - merge with existing
+        if (typeof stages === "string") {
+          return { stages: [stages, stage], ...others };
+        }
+        // multiple stages selected add more to existing
+        if (Array.isArray(stages)) {
+          return { stages: [...stages, stage], ...others };
+        }
+        // return without side effects
+        return prev;
+      },
+    });
+  }
+
+  function onStatusUnchecked(stage: string) {
+    return navigate({
+      search: (prev) => {
+        const { stages, ...others } = prev;
+
+        // no existing stages - nothing to do
+        if (!stages || stages === "") {
+          return { ...others };
+        }
+
+        // found a stage - remove it
+        if (typeof stages === "string" && stages === stage) {
+          return { ...others };
+        }
+
+        // multiple stages selected - remove the stage
+        if (Array.isArray(stages)) {
+          const filtered = stages.filter((r) => r !== stage);
+          if (filtered.length === 0) {
+            return { ...others };
+          }
+          if (filtered.length === 1) {
+            return { stages: filtered[0], ...others };
+          }
+          return { stages: filtered, ...others };
+        }
+
+        // return without side effects
+        return prev;
+      },
+    });
+  }
+
+  function onPriorityChecked(priority: string) {
+    return navigate({
+      search: (prev) => {
+        const { priorities, ...others } = prev;
+
+        // no existing priorities - add new priority
+        if (!priorities || priorities === "") {
+          return { priorities: priority, ...others };
+        }
+
+        // found a priority - merge with existing
+        if (typeof priorities === "string") {
+          return { priorities: [priorities, priority], ...others };
+        }
+        // multiple priorities selected add more to existing
+        if (Array.isArray(priorities)) {
+          return { priorities: [...priorities, priority], ...others };
+        }
+        // return without side effects
+        return prev;
+      },
+    });
+  }
+
+  function onPriorityUnchecked(priority: string) {
+    return navigate({
+      search: (prev) => {
+        const { priorities, ...others } = prev;
+
+        // no existing priorities - nothing to do
+        if (!priorities || priorities === "") {
+          return { ...others };
+        }
+
+        // found a priority - remove it
+        if (typeof priorities === "string" && priorities === priority) {
+          return { ...others };
+        }
+
+        // multiple priorities selected - remove the priority
+        if (Array.isArray(priorities)) {
+          const filtered = priorities.filter((r) => r !== priority);
+          if (filtered.length === 0) {
+            return { ...others };
+          }
+          if (filtered.length === 1) {
+            return { priorities: filtered[0], ...others };
+          }
+          return { priorities: filtered, ...others };
+        }
+        // return without side effects
+        return prev;
+      },
+    });
+  }
+
+  function onAssigneeChecked(member: string) {
+    return navigate({
+      search: (prev) => {
+        // search params
+        const { assignees, ...others } = prev;
+
+        // no existing members - add new member
+        if (!assignees || assignees === "") {
+          return { assignees: member, ...others };
+        }
+
+        // found a member - merge with existing
+        if (typeof assignees === "string") {
+          return { assignees: [assignees, member], ...others };
+        }
+        // multiple members selected add more to existing
+        if (Array.isArray(assignees)) {
+          const uniques = [...new Set([member, ...assignees])];
+          return { assignees: uniques, ...others };
+        }
+        return prev;
+      },
+    });
+  }
+
+  function onAssigneeUnchecked(member: string) {
+    return navigate({
+      search: (prev) => {
+        const { assignees, ...others } = prev;
+
+        // no existing members - nothing to do
+        if (!assignees || assignees === "") {
+          return { ...others };
+        }
+
+        // found a member - remove it
+        if (typeof assignees === "string" && assignees === member) {
+          return { ...others };
+        }
+
+        // multiple members selected - remove the member
+        if (Array.isArray(assignees)) {
+          const filtered = assignees.filter((r) => r !== member);
+          if (filtered.length === 0) {
+            return { ...others };
+          }
+          if (filtered.length === 1) {
+            return { assignees: filtered[0], ...others };
+          }
+          return { assignees: filtered, ...others };
+        }
+        return prev;
+      },
+    });
+  }
 
   return (
     <React.Fragment>
@@ -67,7 +236,18 @@ function Threads() {
           </div>
         </div>
         <div className="flex gap-1 my-auto">
-          <Filters assignedMembers={assignedMembers} />
+          <Filters
+            stages={stages as StagesFiltersType}
+            priorities={priorities as PrioritiesFiltersType}
+            assignedMembers={assignedMembers}
+            assignees={assignees as AssigneesFiltersType}
+            statusOnChecked={onStatusChecked}
+            statusOnUnchecked={onStatusUnchecked}
+            priorityOnChecked={onPriorityChecked}
+            priorityOnUnchecked={onPriorityUnchecked}
+            assigneeOnChecked={onAssigneeChecked}
+            assigneeOnUnchecked={onAssigneeUnchecked}
+          />
           <Sorts />
         </div>
       </div>

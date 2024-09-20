@@ -84,6 +84,7 @@ export const threadResponseSchema = z.object({
   title: z.string(),
   description: z.string(),
   status: z.string(),
+  stage: z.string(),
   replied: z.boolean(),
   priority: z.string(),
   channel: z.string(),

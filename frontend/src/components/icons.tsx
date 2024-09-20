@@ -1,4 +1,11 @@
 import { cn } from "@/lib/utils";
+import {
+  LocateIcon,
+  ClockIcon,
+  PauseIcon,
+  ReplyIcon,
+  CheckCircleIcon,
+} from "lucide-react";
 
 export interface IconProps {
   className?: string;
@@ -288,3 +295,21 @@ export const PriorityIcons = {
     </svg>
   ),
 };
+
+// TODO: add other icons for `spam`
+export function stageIcon(stage: string, props: IconProps): JSX.Element {
+  switch (stage) {
+    case "needs_first_response":
+      return <LocateIcon {...props} />;
+    case "waiting_on_customer":
+      return <ClockIcon {...props} />;
+    case "hold":
+      return <PauseIcon {...props} />;
+    case "needs_next_response":
+      return <ReplyIcon {...props} />;
+    case "resolved":
+      return <CheckCircleIcon {...props} />;
+    default:
+      return <></>;
+  }
+}

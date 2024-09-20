@@ -244,6 +244,7 @@ type ThreadResp struct {
 	Title              string
 	Description        string
 	Status             string
+	Stage              string
 	Replied            bool
 	Priority           string
 	Channel            string
@@ -266,6 +267,7 @@ func (th ThreadResp) MarshalJSON() ([]byte, error) {
 		Title              string             `json:"title"`
 		Description        string             `json:"description"`
 		Status             string             `json:"status"`
+		Stage              string             `json:"stage"`
 		Replied            bool               `json:"replied"`
 		Priority           string             `json:"priority"`
 		Channel            string             `json:"channel"`
@@ -285,6 +287,7 @@ func (th ThreadResp) MarshalJSON() ([]byte, error) {
 		Title:              th.Title,
 		Description:        th.Description,
 		Status:             th.Status,
+		Stage:              th.Stage,
 		Replied:            th.Replied,
 		Priority:           th.Priority,
 		Channel:            th.Channel,
@@ -344,6 +347,7 @@ func (th ThreadResp) NewResponse(thread *models.Thread) ThreadResp {
 		Title:              thread.Title,
 		Description:        thread.Description,
 		Status:             thread.ThreadStatus.Status,
+		Stage:              thread.ThreadStatus.Stage,
 		Replied:            thread.Replied,
 		Priority:           thread.Priority,
 		Channel:            thread.Channel,

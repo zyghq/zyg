@@ -52,6 +52,7 @@ export type Thread = {
   title: string;
   description: string;
   status: string;
+  stage: string;
   replied: boolean;
   priority: string;
   channel: string;
