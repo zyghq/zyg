@@ -10,6 +10,7 @@ import {
   StagesFiltersType,
   AssigneesFiltersType,
   PrioritiesFiltersType,
+  SortBy,
 } from "@/db/store";
 import { CircleIcon } from "lucide-react";
 
@@ -226,6 +227,12 @@ function Threads() {
     });
   }
 
+  function onSortChecked(sort: string) {
+    return navigate({
+      search: (prev) => ({ ...prev, sort }),
+    });
+  }
+
   return (
     <React.Fragment>
       <div className="px-4 sm:px-8 flex justify-between my-4">
@@ -248,7 +255,7 @@ function Threads() {
             assigneeOnChecked={onAssigneeChecked}
             assigneeOnUnchecked={onAssigneeUnchecked}
           />
-          <Sorts />
+          <Sorts sort={sort as SortBy} onChecked={onSortChecked} />
         </div>
       </div>
       <ThreadListV3 workspaceId={workspaceId} threads={todoThreads} />

@@ -7,38 +7,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DoubleArrowUpIcon } from "@radix-ui/react-icons";
-import { getRouteApi, useNavigate } from "@tanstack/react-router";
+import { sortKeys, ThreadSortKeyHumanized } from "@/db/helpers";
 import React from "react";
 
-const routeApi = getRouteApi(
-  "/_account/workspaces/$workspaceId/_workspace/threads"
-);
-
-export function Sorts() {
-  const navigate = useNavigate();
+export function Sorts({
+  sort,
+  onChecked = () => {},
+}: {
+  sort: string;
+  onChecked?: (sort: string) => void;
+}) {
   const [selectedSort, setSelectedSort] = React.useState<string>("");
-  const routeSearch = routeApi.useSearch();
-  const { sort } = routeSearch;
-
   React.useEffect(() => {
-    setSelectedSort(sort || "");
+    setSelectedSort(sort);
   }, [sort]);
-
-  const sortDescription = (v: string) => {
-    if (status === "todo" && v === "created-dsc")
-      return "In Todo, Latest First";
-    if (status === "todo" && v === "created-asc")
-      return "In Todo, Oldest First";
-    if (status === "done" && v === "created-dsc")
-      return "In Done, Latest First";
-    if (status === "done" && v === "created-asc")
-      return "In Done, Oldest First";
-    if (status === "snoozed" && v === "created-dsc")
-      return "In Snoozed, Latest First";
-    if (status === "snoozed" && v === "created-asc")
-      return "In Snoozed, Oldest First";
-    return "";
-  };
 
   return (
     <DropdownMenu>
@@ -48,36 +30,21 @@ export function Sorts() {
           Sort
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-58 mx-1">
+      <DropdownMenuContent align="end" className="w-64 mx-1">
         <DropdownMenuRadioGroup
           onSelect={(e) => e.preventDefault()}
-          onValueChange={(value) =>
-            navigate({
-              search: (prev: any) => {
-                return { ...prev, sort: value };
-              },
-            })
-          }
+          onValueChange={(value) => onChecked(value)}
           value={selectedSort}
         >
-          <DropdownMenuRadioItem
-            onSelect={(e) => e.preventDefault()}
-            value="last-message-dsc"
-          >
-            Most Recent Message
-          </DropdownMenuRadioItem>
-          <DropdownMenuRadioItem
-            onSelect={(e) => e.preventDefault()}
-            value="created-dsc"
-          >
-            {sortDescription("created-dsc")}
-          </DropdownMenuRadioItem>
-          <DropdownMenuRadioItem
-            onSelect={(e) => e.preventDefault()}
-            value="created-asc"
-          >
-            {sortDescription("created-asc")}
-          </DropdownMenuRadioItem>
+          {sortKeys.map((sortKey) => (
+            <DropdownMenuRadioItem
+              key={sortKey}
+              onSelect={(e) => e.preventDefault()}
+              value={sortKey}
+            >
+              {ThreadSortKeyHumanized(sortKey)}
+            </DropdownMenuRadioItem>
+          ))}
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>

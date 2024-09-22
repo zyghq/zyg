@@ -2,7 +2,7 @@ import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
 import { ThreadListV3 } from "@/components/workspace/thread-list";
 import { WorkspaceStoreState } from "@/db/store";
-import { PrioritiesFiltersType, StagesFiltersType } from "@/db/store";
+import { PrioritiesFiltersType, StagesFiltersType, SortBy } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
 import { createFileRoute } from "@tanstack/react-router";
 import * as React from "react";
@@ -165,6 +165,12 @@ function MyThreads() {
     });
   }
 
+  function onSortChecked(sort: string) {
+    return navigate({
+      search: (prev) => ({ ...prev, sort }),
+    });
+  }
+
   return (
     <React.Fragment>
       <div className="px-4 sm:px-8 flex justify-between my-4">
@@ -183,7 +189,8 @@ function MyThreads() {
             assignees={undefined}
             disableAssigneeFilter={true}
           />
-          <Sorts />
+
+          <Sorts sort={sort as SortBy} onChecked={onSortChecked} />
         </div>
       </div>
       <ThreadListV3 workspaceId={workspaceId} threads={todoThreads} />

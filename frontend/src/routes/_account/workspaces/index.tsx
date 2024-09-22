@@ -11,7 +11,6 @@ import { ExitIcon } from "@radix-ui/react-icons";
 import { Icons } from "@/components/icons";
 import { buttonVariants } from "@/components/ui/button";
 import { queryOptions } from "@tanstack/react-query";
-import { defaultSortOp } from "@/lib/search-params";
 
 type Workspace = {
   workspaceId: string;
@@ -116,7 +115,6 @@ function Workspaces() {
                       <Link
                         to={"/workspaces/$workspaceId/threads/todo"}
                         params={{ workspaceId: workspace.workspaceId }}
-                        search={{ sort: defaultSortOp }}
                       >
                         Open
                       </Link>

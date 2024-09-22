@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { fallback } from "@tanstack/router-zod-adapter";
+import { todoThreadStages, sortKeys } from "@/db/helpers";
+import { defaultSortKey } from "@/db/store";
 //
 // for more: https://tanstack.com/router/latest/docs/framework/react/guide/search-params
 // usage of `.catch` or `default` matters.
@@ -63,28 +65,16 @@ const assigneesScheme = z.union([
   z.undefined(),
 ]);
 
-// TODO: deprecate this usage, as we have modified the search params validations. 
-export const defaultSortOp = "last-message-dsc";
-
 // const sortEnum = z.enum(["last-message-dsc", "created-asc", "created-dsc"]);
 // const sortSchema = z.union([sortEnum, z.undefined()]);
 
 // using fallback to avoid the unknown
 // see https://tanstack.com/router/latest/docs/framework/react/guide/search-params#:~:text=However%20the%20use%20of%20catch%20here%20overrides%20the%20types%20and%20makes%20page%2C%20filter%20and%20sort%20unknown%20causing%20type%20loss.%20We%20have%20handled
 export const threadSearchSchema = z.object({
-  stages: fallback(
-    stagesSchema([
-      "needs_first_response",
-      "waiting_on_customer",
-      "hold",
-      "needs_next_response",
-    ]),
+  stages: fallback(stagesSchema([...todoThreadStages]), undefined).catch(
     undefined
-  ).catch(undefined),
-  sort: fallback(
-    z.enum(["last-message-dsc", "created-asc", "created-dsc"]),
-    defaultSortOp
-  ).catch(defaultSortOp),
+  ),
+  sort: z.enum([...sortKeys]).catch(defaultSortKey),
   priorities: fallback(
     prioritiesSchema(["urgent", "high", "normal", "low"]),
     undefined

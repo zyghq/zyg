@@ -5,7 +5,7 @@ import { WorkspaceStoreState } from "@/db/store";
 
 import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
-import { StagesFiltersType, PrioritiesFiltersType } from "@/db/store";
+import { StagesFiltersType, PrioritiesFiltersType, SortBy } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
 import { ThreadListV3 } from "@/components/workspace/thread-list";
 
@@ -161,6 +161,12 @@ function UnassignedThreads() {
     });
   }
 
+  function onSortChecked(sort: string) {
+    return navigate({
+      search: (prev) => ({ ...prev, sort }),
+    });
+  }
+
   return (
     <React.Fragment>
       <div className="px-4 sm:px-8 flex justify-between my-4">
@@ -179,7 +185,7 @@ function UnassignedThreads() {
             assignees={undefined}
             disableAssigneeFilter={true}
           />
-          <Sorts />
+          <Sorts sort={sort as SortBy} onChecked={onSortChecked} />
         </div>
       </div>
       <ThreadListV3 workspaceId={workspaceId} threads={todoThreads} />
