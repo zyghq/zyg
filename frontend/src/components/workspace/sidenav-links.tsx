@@ -17,7 +17,6 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { WorkspaceMetrics } from "@/db/models";
 import { LabelMetrics } from "@/db/models";
-import { defaultSortOp } from "@/lib/search-params";
 import { cn } from "@/lib/utils";
 import {
   BarChartIcon,
@@ -46,7 +45,12 @@ import {
   PauseIcon,
   CheckCircleIcon,
 } from "lucide-react";
+import { getRouteApi } from "@tanstack/react-router";
 import React from "react";
+
+const routeApi = getRouteApi(
+  "/_account/workspaces/$workspaceId/_workspace/threads"
+);
 
 function SideNavLabelLinks({
   labels,
@@ -89,7 +93,6 @@ function SideNavLabelLinks({
             )}
             key={label.labelId}
             params={{ labelId: label.labelId, workspaceId }}
-            search={{ sort: defaultSortOp }}
             to="/workspaces/$workspaceId/threads/labels/$labelId"
           >
             {({ isActive }) => (
@@ -145,6 +148,8 @@ export default function SideNavLinks({
   workspaceId: string;
   workspaceName: string;
 }) {
+  const routeSearch = routeApi.useSearch();
+  const { sort } = routeSearch;
   return (
     <React.Fragment>
       <ScrollArea className={maxHeight}>
@@ -280,7 +285,7 @@ export default function SideNavLinks({
               )}
               onClick={() => openClose(false)}
               params={{ workspaceId }}
-              search={{ sort: defaultSortOp }}
+              search={{ sort }}
               to="/workspaces/$workspaceId/threads/me"
             >
               {({ isActive }: { isActive: boolean }) => (
@@ -332,7 +337,7 @@ export default function SideNavLinks({
               )}
               onClick={() => openClose(false)}
               params={{ workspaceId }}
-              search={{ sort: defaultSortOp }}
+              search={{ sort }}
               to="/workspaces/$workspaceId/threads/unassigned"
             >
               {({ isActive }: { isActive: boolean }) => (
@@ -372,7 +377,7 @@ export default function SideNavLinks({
               )}
               onClick={() => openClose(false)}
               params={{ workspaceId }}
-              search={{ sort: defaultSortOp }}
+              search={{ sort }}
               to="/workspaces/$workspaceId/threads/todo"
             >
               {({ isActive }: { isActive: boolean }) => (
@@ -412,7 +417,7 @@ export default function SideNavLinks({
               )}
               onClick={() => openClose(false)}
               params={{ workspaceId }}
-              search={{ sort: defaultSortOp }}
+              search={{ sort }}
               to="/workspaces/$workspaceId/threads/needs-first-response"
             >
               {({ isActive }: { isActive: boolean }) => (
@@ -452,7 +457,7 @@ export default function SideNavLinks({
               )}
               onClick={() => openClose(false)}
               params={{ workspaceId }}
-              search={{ sort: defaultSortOp }}
+              search={{ sort }}
               to="/workspaces/$workspaceId/threads/needs-next-response"
             >
               {({ isActive }: { isActive: boolean }) => (
@@ -492,7 +497,7 @@ export default function SideNavLinks({
               )}
               onClick={() => openClose(false)}
               params={{ workspaceId }}
-              search={{ sort: defaultSortOp }}
+              search={{ sort }}
               to="/workspaces/$workspaceId/threads/hold"
             >
               {({ isActive }: { isActive: boolean }) => (
@@ -532,7 +537,7 @@ export default function SideNavLinks({
               )}
               onClick={() => openClose(false)}
               params={{ workspaceId }}
-              search={{ sort: defaultSortOp }}
+              search={{ sort }}
               to="/workspaces/$workspaceId/threads/waiting-on-customer"
             >
               {({ isActive }: { isActive: boolean }) => (
@@ -564,7 +569,7 @@ export default function SideNavLinks({
             <Link
               activeOptions={{ exact: true, includeSearch: false }}
               activeProps={{
-                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+                className: "bg-green-100 hover:bg-green-200 dark:bg-accent",
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
@@ -572,7 +577,7 @@ export default function SideNavLinks({
               )}
               onClick={() => openClose(false)}
               params={{ workspaceId }}
-              search={{ sort: defaultSortOp }}
+              search={{ sort }}
               to="/workspaces/$workspaceId/threads/done"
             >
               {({ isActive }: { isActive: boolean }) => (
@@ -580,14 +585,14 @@ export default function SideNavLinks({
                   {isActive ? (
                     <>
                       <div className="flex gap-x-2">
-                        <CheckCircleIcon className="my-auto h-4 w-4 text-green-500" />
+                        <CheckCircleIcon className="my-auto h-4 w-4 text-green-600" />
                         <div className="font-semibold">Done</div>
                       </div>
                     </>
                   ) : (
                     <>
                       <div className="flex gap-x-2">
-                        <CheckCircleIcon className="my-auto h-4 w-4 text-green-500" />
+                        <CheckCircleIcon className="my-auto h-4 w-4 text-green-600" />
                         <div className="font-normal">Done</div>
                       </div>
                     </>

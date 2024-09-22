@@ -134,7 +134,7 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 				return
 			}
-			thread.AssignMember(member.MemberId, member.Name, time.Now().UTC())
+			thread.AssignMember(member.AsMemberActor(), time.Now().UTC())
 			fields = append(fields, "assignee")
 		}
 	}

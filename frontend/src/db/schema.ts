@@ -79,22 +79,21 @@ export const threadResponseSchema = z.object({
   threadId: z.string(),
   customer: z.object({
     customerId: z.string(),
-    name: z.string(),
+    name: z.string(), // TODO: add support for avatarUrl
   }),
   title: z.string(),
   description: z.string(),
-  sequence: z.number(),
   status: z.string(),
-  read: z.boolean(),
+  statusChangedAt: z.string(),
+  stage: z.string(),
   replied: z.boolean(),
   priority: z.string(),
-  spam: z.boolean(),
   channel: z.string(),
   previewText: z.string(),
   assignee: z
     .object({
       memberId: z.string(),
-      name: z.string(),
+      name: z.string(), // TODO: add support for avatarUrl
     })
     .nullable()
     .default(null),

@@ -24,126 +24,74 @@ import { Separator } from "@/components/ui/separator";
 import { Assignee } from "@/db/store";
 import { cn } from "@/lib/utils";
 import { CheckIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
-import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { PriorityIcons, stageIcon } from "@/components/icons";
+import {
+  PrioritiesFiltersType,
+  AssigneesFiltersType,
+  StagesFiltersType,
+} from "@/db/store";
+import { todoThreadStages, threadStageHumanized } from "@/db/helpers";
 import React from "react";
 
-const routeApi = getRouteApi(
-  "/_account/workspaces/$workspaceId/_workspace/threads"
-);
-
-function ReasonsSubMenu({
-  reasons,
+function StagesSubMenu({
+  stages,
+  onChecked = () => {},
+  onUnchecked = () => {},
 }: {
-  reasons: string | string[] | undefined;
+  stages: string | string[] | undefined;
+  onChecked?: (stage: string) => void;
+  onUnchecked?: (stage: string) => void;
 }) {
-  const navigate = useNavigate();
-  const [selectedReasons, setSelectedReasons] = React.useState<
-    string | string[]
+  const [selectedStages, setSelectedStages] = React.useState<
+    string | string[] | undefined
   >("");
 
   React.useEffect(() => {
-    // check if multiple reasons are selected
-    if (reasons && Array.isArray(reasons)) {
-      setSelectedReasons([...reasons]);
-      // check if only 1 reason(s) is selected
-    } else if (reasons && typeof reasons === "string") {
-      setSelectedReasons([reasons]);
-      // if no reasons are selected
+    // check if multiple stages are selected
+    if (stages && Array.isArray(stages)) {
+      setSelectedStages([...stages]);
+      // check if only 1 stage(s) is selected
+    } else if (stages && typeof stages === "string") {
+      setSelectedStages([stages]);
+      // if no stages are selected
     } else {
-      setSelectedReasons("");
+      setSelectedStages(undefined);
     }
-  }, [reasons, setSelectedReasons]);
-
-  function onChecked(reason: string) {
-    return navigate({
-      search: (prev: { reasons: string | string[] }) => {
-        const { reasons, ...others } = prev;
-
-        // no existing reasons - add new reason
-        if (!reasons || reasons === "") {
-          return { reasons: reason, ...others };
-        }
-
-        // found a reason - merge with existing
-        if (typeof reasons === "string") {
-          return { reasons: [reasons, reason], ...others };
-        }
-        // multiple reasons selected add more to existing
-        if (Array.isArray(reasons)) {
-          return { reasons: [...reasons, reason], ...others };
-        }
-      },
-    });
-  }
-
-  function onUnchecked(reason: string) {
-    return navigate({
-      search: (prev: { reasons: null | string | string[] }) => {
-        const { reasons, ...others } = prev;
-
-        // no existing reasons - nothing to do
-        if (!reasons || reasons === "") {
-          return { ...others };
-        }
-
-        // found a reason - remove it
-        if (typeof reasons === "string" && reasons === reason) {
-          return { ...others };
-        }
-
-        // multiple reasons selected - remove the reason
-        if (Array.isArray(reasons)) {
-          const filtered = reasons.filter((r) => r !== reason);
-          if (filtered.length === 0) {
-            return { ...others };
-          }
-          if (filtered.length === 1) {
-            return { reasons: filtered[0], ...others };
-          }
-          return { reasons: filtered, ...others };
-        }
-      },
-    });
-  }
+  }, [stages, setSelectedStages]);
 
   return (
     <DropdownMenuSub>
       <DropdownMenuSubTrigger>
-        Reason
-        {selectedReasons && selectedReasons.length > 0 && (
+        Status
+        {selectedStages && selectedStages.length > 0 && (
           <React.Fragment>
             <Separator className="mx-1 h-3" orientation="vertical" />
             <Badge className="px-1 text-xs font-normal p-0" variant="secondary">
-              {selectedReasons.length} selected
+              {selectedStages.length} selected
             </Badge>
           </React.Fragment>
         )}
       </DropdownMenuSubTrigger>
       <DropdownMenuPortal>
-        <DropdownMenuSubContent className="mx-2 w-44 sm:w-56">
-          <DropdownMenuCheckboxItem
-            checked={
-              selectedReasons ? selectedReasons.includes("unreplied") : false
-            }
-            onCheckedChange={(checked) => {
-              checked ? onChecked("unreplied") : onUnchecked("unreplied");
-            }}
-            onSelect={(e) => e.preventDefault()}
-          >
-            Awaiting Reply
-          </DropdownMenuCheckboxItem>
-          <DropdownMenuCheckboxItem
-            checked={
-              selectedReasons ? selectedReasons.includes("replied") : false
-            }
-            onCheckedChange={(checked) => {
-              checked ? onChecked("replied") : onUnchecked("replied");
-            }}
-            onSelect={(e) => e.preventDefault()}
-          >
-            Replied
-          </DropdownMenuCheckboxItem>
+        <DropdownMenuSubContent className="mx-2 w-56">
+          {todoThreadStages.map((stage) => (
+            <DropdownMenuCheckboxItem
+              key={stage}
+              checked={selectedStages ? selectedStages.includes(stage) : false}
+              onCheckedChange={(checked) => {
+                checked ? onChecked(stage) : onUnchecked(stage);
+              }}
+              onSelect={(e) => e.preventDefault()}
+            >
+              <div className="flex items-center gap-x-2">
+                {stageIcon(stage, {
+                  className: "w-4 h-4 text-indigo-500",
+                })}
+                <span>{threadStageHumanized(stage)}</span>
+              </div>
+            </DropdownMenuCheckboxItem>
+          ))}
         </DropdownMenuSubContent>
       </DropdownMenuPortal>
     </DropdownMenuSub>
@@ -152,10 +100,13 @@ function ReasonsSubMenu({
 
 function PrioritiesSubMenu({
   priorities,
+  onChecked = () => {},
+  onUnchecked = () => {},
 }: {
-  priorities: string | string[] | undefined;
+  priorities: PrioritiesFiltersType;
+  onChecked?: (priority: string) => void;
+  onUnchecked?: (priority: string) => void;
 }) {
-  const navigate = useNavigate();
   const [selectedPriorities, setSelectedPriorities] = React.useState<
     string | string[]
   >("");
@@ -173,58 +124,6 @@ function PrioritiesSubMenu({
     }
   }, [priorities]);
 
-  function onChecked(priority: string) {
-    return navigate({
-      search: (prev: { priorities: string | string[] }) => {
-        const { priorities, ...others } = prev;
-
-        // no existing priorities - add new priority
-        if (!priorities || priorities === "") {
-          return { priorities: priority, ...others };
-        }
-
-        // found a priority - merge with existing
-        if (typeof priorities === "string") {
-          return { priorities: [priorities, priority], ...others };
-        }
-        // multiple priorities selected add more to existing
-        if (Array.isArray(priorities)) {
-          return { priorities: [...priorities, priority], ...others };
-        }
-      },
-    });
-  }
-
-  function onUnchecked(priority: string) {
-    return navigate({
-      search: (prev: { priorities: null | string | string[] }) => {
-        const { priorities, ...others } = prev;
-
-        // no existing priorities - nothing to do
-        if (!priorities || priorities === "") {
-          return { ...others };
-        }
-
-        // found a priority - remove it
-        if (typeof priorities === "string" && priorities === priority) {
-          return { ...others };
-        }
-
-        // multiple priorities selected - remove the priority
-        if (Array.isArray(priorities)) {
-          const filtered = priorities.filter((r) => r !== priority);
-          if (filtered.length === 0) {
-            return { ...others };
-          }
-          if (filtered.length === 1) {
-            return { priorities: filtered[0], ...others };
-          }
-          return { priorities: filtered, ...others };
-        }
-      },
-    });
-  }
-
   return (
     <DropdownMenuSub>
       <DropdownMenuSubTrigger>
@@ -239,7 +138,7 @@ function PrioritiesSubMenu({
         )}
       </DropdownMenuSubTrigger>
       <DropdownMenuPortal>
-        <DropdownMenuSubContent className="mx-2 w-44 sm:w-56">
+        <DropdownMenuSubContent className="mx-2 w-48" alignOffset={4}>
           <DropdownMenuCheckboxItem
             checked={
               selectedPriorities ? selectedPriorities.includes("urgent") : false
@@ -249,7 +148,10 @@ function PrioritiesSubMenu({
             }}
             onSelect={(e) => e.preventDefault()}
           >
-            Urgent
+            <div className="flex items-center gap-1">
+              <PriorityIcons.urgent className="h-5 w-5" />
+              <span>Urgent</span>
+            </div>
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={
@@ -260,7 +162,10 @@ function PrioritiesSubMenu({
             }}
             onSelect={(e) => e.preventDefault()}
           >
-            High
+            <div className="flex items-center gap-1">
+              <PriorityIcons.high className="h-5 w-5" />
+              <span>High</span>
+            </div>
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={
@@ -271,7 +176,10 @@ function PrioritiesSubMenu({
             }}
             onSelect={(e) => e.preventDefault()}
           >
-            Normal
+            <div className="flex items-center gap-1">
+              <PriorityIcons.normal className="h-5 w-5" />
+              <span>Normal</span>
+            </div>
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={
@@ -282,7 +190,10 @@ function PrioritiesSubMenu({
             }}
             onSelect={(e) => e.preventDefault()}
           >
-            low
+            <div className="flex items-center gap-1">
+              <PriorityIcons.low className="h-5 w-5" />
+              <span>Low</span>
+            </div>
           </DropdownMenuCheckboxItem>
         </DropdownMenuSubContent>
       </DropdownMenuPortal>
@@ -293,11 +204,14 @@ function PrioritiesSubMenu({
 function AssigneeSubMenu({
   assignedMembers,
   assignees,
+  onChecked = () => {},
+  onUnchecked = () => {},
 }: {
   assignedMembers: Assignee[];
-  assignees: string | string[] | undefined;
+  assignees: AssigneesFiltersType;
+  onChecked?: (member: string) => void;
+  onUnchecked?: (member: string) => void;
 }) {
-  const navigate = useNavigate();
   const [selectedMembers, setSelectedMembers] = React.useState<
     string | string[]
   >("");
@@ -314,60 +228,6 @@ function AssigneeSubMenu({
       setSelectedMembers("");
     }
   }, [assignees]);
-
-  function onChecked(member: string) {
-    return navigate({
-      search: (prev: { assignees: string | string[] }) => {
-        // search params
-        const { assignees, ...others } = prev;
-
-        // no existing members - add new member
-        if (!assignees || assignees === "") {
-          return { assignees: member, ...others };
-        }
-
-        // found a member - merge with existing
-        if (typeof assignees === "string") {
-          return { assignees: [assignees, member], ...others };
-        }
-        // multiple members selected add more to existing
-        if (Array.isArray(assignees)) {
-          const uniques = [...new Set([member, ...assignees])];
-          return { assignees: uniques, ...others };
-        }
-      },
-    });
-  }
-
-  function onUnchecked(member: string) {
-    return navigate({
-      search: (prev: { assignees: null | string | string[] }) => {
-        const { assignees, ...others } = prev;
-
-        // no existing members - nothing to do
-        if (!assignees || assignees === "") {
-          return { ...others };
-        }
-
-        // found a member - remove it
-        if (typeof assignees === "string" && assignees === member) {
-          return { ...others };
-        }
-
-        // multiple members selected - remove the member
-        if (Array.isArray(assignees)) {
-          const filtered = assignees.filter((r) => r !== member);
-          if (filtered.length === 0) {
-            return { ...others };
-          }
-          if (filtered.length === 1) {
-            return { assignees: filtered[0], ...others };
-          }
-          return { assignees: filtered, ...others };
-        }
-      },
-    });
-  }
 
   function onSelect(member: string) {
     const isChecked =
@@ -402,7 +262,7 @@ function AssigneeSubMenu({
         )}
       </DropdownMenuSubTrigger>
       <DropdownMenuPortal>
-        <DropdownMenuSubContent className="mx-2">
+        <DropdownMenuSubContent className="mx-2" alignOffset={4}>
           <Command>
             <CommandList>
               <CommandInput placeholder="Filter" />
@@ -441,14 +301,30 @@ function AssigneeSubMenu({
 }
 
 export function Filters({
+  stages,
+  priorities,
   assignedMembers,
+  assignees,
+  statusOnChecked = () => {},
+  statusOnUnchecked = () => {},
+  priorityOnChecked = () => {},
+  priorityOnUnchecked = () => {},
+  assigneeOnChecked = () => {},
+  assigneeOnUnchecked = () => {},
   disableAssigneeFilter = false,
 }: {
+  stages: StagesFiltersType;
+  priorities: PrioritiesFiltersType;
   assignedMembers: Assignee[];
+  assignees: AssigneesFiltersType;
+  statusOnChecked?: (stage: string) => void;
+  statusOnUnchecked?: (stage: string) => void;
+  priorityOnChecked?: (priority: string) => void;
+  priorityOnUnchecked?: (priority: string) => void;
+  assigneeOnChecked?: (member: string) => void;
+  assigneeOnUnchecked?: (member: string) => void;
   disableAssigneeFilter?: boolean;
 }) {
-  const routeSearch = routeApi.useSearch();
-  const { assignees, priorities, reasons } = routeSearch;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -457,10 +333,18 @@ export function Filters({
           Filters
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="sm:58 w-48 mx-1">
+      <DropdownMenuContent align="end" className="w-48 mx-1">
         <DropdownMenuGroup>
-          <ReasonsSubMenu reasons={reasons} />
-          <PrioritiesSubMenu priorities={priorities} />
+          <StagesSubMenu
+            stages={stages}
+            onChecked={statusOnChecked}
+            onUnchecked={statusOnUnchecked}
+          />
+          <PrioritiesSubMenu
+            priorities={priorities}
+            onChecked={priorityOnChecked}
+            onUnchecked={priorityOnUnchecked}
+          />
         </DropdownMenuGroup>
         {!disableAssigneeFilter && (
           <React.Fragment>
@@ -469,6 +353,8 @@ export function Filters({
               <AssigneeSubMenu
                 assignedMembers={assignedMembers}
                 assignees={assignees}
+                onChecked={assigneeOnChecked}
+                onUnchecked={assigneeOnUnchecked}
               />
             </DropdownMenuGroup>
           </React.Fragment>

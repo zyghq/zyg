@@ -203,20 +203,12 @@ type Thread struct {
 	WorkspaceId     string           // WorkspaceId is the ID of the Workspace this Thread belongs to.
 	ThreadId        string           // ThreadId represents the unique ID of the Thread.
 	Customer        CustomerActor    // The attached Customer.
-	CustomerId      string           // Deprecated: CustomerId represents the ID of the Customer this Thread is part of.
-	CustomerName    string           // Deprecated: CustomerName represents the name of the Customer as per CustomerId.
 	AssignedMember  *AssignedMember  // The Member assigned to the Thread.
-	AssigneeId      sql.NullString   // Deprecated: AssignedId represents the Member this Thread is assigned to.
-	AssigneeName    sql.NullString   // Deprecated: AssigneeName represents the name of the Member as per AssigneeId.
 	Title           string           // The Title of the Thread, which allows to quickly identify what it is about.
 	Description     string           // The Description of the Thread could be descriptive.
-	Sequence        int              // Deprecated: will be removed in the next release.
-	Status          string           // Deprecated: use ThreadStatus instead.
-	ThreadStatus    ThreadStatus     // The status of the Thread. TODO: rename to `Status` post removal.
-	Read            bool             // Deprecated: use upcoming stages instead.
+	ThreadStatus    ThreadStatus     // The status of the Thread.
 	Replied         bool             // If the Member has anytime replied to the Thread.
 	Priority        string           // The Priority of the Thread as per ThreadPriority.
-	Spam            bool             // Deprecated: will be removed in the next release.
 	Channel         string           // The channel this Thread belongs to as per ThreadChannel.
 	InboundMessage  *InboundMessage  // InboundMessage tracks the inbound message from Customer
 	OutboundMessage *OutboundMessage // OutboundMessage tracks the outbound message from Member
@@ -251,11 +243,10 @@ func (th *Thread) CreateNewThread(
 }
 
 // AssignMember assigns the member to the thread and when the assignment was made.
-// TODO: pass MemberActor instead of memberId and name.
-func (th *Thread) AssignMember(memberId string, name string, assignedAt time.Time) {
+func (th *Thread) AssignMember(member MemberActor, assignedAt time.Time) {
 	th.AssignedMember = &AssignedMember{
-		MemberId:   memberId,
-		Name:       name,
+		MemberId:   member.MemberId,
+		Name:       member.Name,
 		AssignedAt: assignedAt,
 	}
 }
@@ -266,14 +257,13 @@ func (th *Thread) ClearAssignedMember() {
 
 // AddInboundMessage adds the inbound message info to the Thread.
 // Inbound messages are messages from the Customer.
-// TODO: use CustomerActor instead of passing customerId and customerName.
-func (th *Thread) AddInboundMessage(messageId string, customerId string, customerName string,
+func (th *Thread) AddInboundMessage(messageId string, customer CustomerActor,
 	previewText string,
 	firstSeqId string, lastSeqId string,
 	createdAt time.Time, updatedAt time.Time,
 ) {
 	th.InboundMessage = &InboundMessage{
-		MessageId: messageId, CustomerId: customerId, CustomerName: customerName,
+		MessageId: messageId, CustomerId: customer.CustomerId, CustomerName: customer.Name,
 		PreviewText: previewText,
 		FirstSeqId:  firstSeqId, LastSeqId: lastSeqId,
 		CreatedAt: createdAt,
@@ -287,14 +277,13 @@ func (th *Thread) ClearInboundMessage() {
 
 // AddOutboundMessage adds the outbound message info to the Thread.
 // Outbound messages are messages from the Member.
-// TODO: use MemberActor instead of passing memberId and memberName.
-func (th *Thread) AddOutboundMessage(messageId string, memberId string, memberName string,
+func (th *Thread) AddOutboundMessage(messageId string, member MemberActor,
 	previewText string,
 	firstSeqId string, lastSeqId string,
 	createdAt time.Time, updatedAt time.Time,
 ) {
 	th.OutboundMessage = &OutboundMessage{
-		MessageId: messageId, MemberId: memberId, MemberName: memberName,
+		MessageId: messageId, MemberId: member.MemberId, MemberName: member.Name,
 		PreviewText: previewText,
 		FirstSeqId:  firstSeqId, LastSeqId: lastSeqId,
 		CreatedAt: createdAt,

@@ -60,7 +60,7 @@ import {
   ThreadResponse,
   ThreadLabelResponse,
 } from "@/db/schema";
-import { defaultSortOp } from "@/lib/search-params";
+import { defaultSortKey } from "@/db/store";
 
 export const Route = createFileRoute(
   "/_account/workspaces/$workspaceId/threads/$threadId"
@@ -519,7 +519,7 @@ function ThreadDetail() {
                 <Link
                   to={"/workspaces/$workspaceId/threads/todo"}
                   params={{ workspaceId }}
-                  search={{ sort: defaultSortOp }}
+                  search={{ sort: defaultSortKey }}
                 >
                   <ArrowLeftIcon className="h-4 w-4" />
                 </Link>

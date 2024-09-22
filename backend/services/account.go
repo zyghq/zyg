@@ -96,6 +96,8 @@ func (s *AccountService) CreateWorkspace(
 	workspace := models.Workspace{}.NewWorkspace(account.AccountId, workspaceName)
 	now := time.Now().UTC() // transactions in the same time space.
 
+	// Ideally account name should be available during account creation.
+	// If not then we can generate a name for the account.
 	var memberName string
 	if account.Name != "" {
 		memberName = account.Name

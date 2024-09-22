@@ -48,12 +48,11 @@ func (s *ThreadChatService) CreateNewInboundThreadChat(
 	chat.CreatedAt = now
 	chat.UpdatedAt = now
 
-	// TODO: directly pass the customer actor, once method is updated.
 	messageId := models.InboundMessage{}.GenId()
 	seqId := ksuid.New().String()
 
 	thread.AddInboundMessage(
-		messageId, customerActor.CustomerId, customerActor.Name,
+		messageId, customerActor,
 		chat.PreviewText(), seqId, seqId,
 		now, now,
 	)
