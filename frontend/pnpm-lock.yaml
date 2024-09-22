@@ -77,6 +77,9 @@ importers:
       '@tanstack/react-virtual':
         specifier: ^3.10.7
         version: 3.10.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@tanstack/router-zod-adapter':
+        specifier: ^1.58.3
+        version: 1.58.3(@tanstack/react-router@1.57.9(@tanstack/router-generator@1.57.9)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(zod@3.23.8)
       '@types/lodash':
         specifier: ^4.17.7
         version: 4.17.7
@@ -105,8 +108,8 @@ importers:
         specifier: ^4.17.21
         version: 4.17.21
       lucide-react:
-        specifier: ^0.379.0
-        version: 0.379.0(react@18.3.1)
+        specifier: ^0.435.0
+        version: 0.435.0(react@18.3.1)
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -1541,6 +1544,13 @@ packages:
     resolution: {integrity: sha512-t9fsjEmQgoXWumFxTkqiid1CE0i1s1SUQF7VSfbDRdsiiya64WbHs+e8xUTy8mSXfnyq6tgauPagmT3VeEDdRQ==}
     engines: {node: '>=12'}
 
+  '@tanstack/router-zod-adapter@1.58.3':
+    resolution: {integrity: sha512-S7TWOWUa13JKBQJPULH3azvD/yX6SHr0I1rPcpL1Jsh5hprboGeR7w7qKTo/78aX+cwAwOM0MtB1uQz+tqQ5zw==}
+    engines: {node: '>=12'}
+    peerDependencies:
+      '@tanstack/react-router': '>=1.43.2'
+      zod: '>=3'
+
   '@tanstack/store@0.5.5':
     resolution: {integrity: sha512-EOSrgdDAJExbvRZEQ/Xhh9iZchXpMN+ga1Bnk8Nmygzs8TfiE6hbzThF+Pr2G19uHL6+DTDTHhJ8VQiOd7l4tA==}
 
@@ -2316,10 +2326,10 @@ packages:
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
 
-  lucide-react@0.379.0:
-    resolution: {integrity: sha512-KcdeVPqmhRldldAAgptb8FjIunM2x2Zy26ZBh1RsEUcdLIvsEmbcw7KpzFYUy5BbpGeWhPu9Z9J5YXfStiXwhg==}
+  lucide-react@0.435.0:
+    resolution: {integrity: sha512-we5GKfzjMDw9m9SsyZJvWim9qaT+Ya5kaRS+OGFqgLqXUrPM1h+7CiMw5pKdEIoaBqfXz2pyv9TASAdpIAJs0Q==}
     peerDependencies:
-      react: ^16.5.1 || ^17.0.0 || ^18.0.0
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0-rc
 
   merge2@1.4.1:
     resolution: {integrity: sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg==}
@@ -4159,6 +4169,11 @@ snapshots:
       - webpack
       - webpack-sources
 
+  '@tanstack/router-zod-adapter@1.58.3(@tanstack/react-router@1.57.9(@tanstack/router-generator@1.57.9)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(zod@3.23.8)':
+    dependencies:
+      '@tanstack/react-router': 1.57.9(@tanstack/router-generator@1.57.9)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      zod: 3.23.8
+
   '@tanstack/store@0.5.5': {}
 
   '@tanstack/virtual-core@3.10.7': {}
@@ -4979,7 +4994,7 @@ snapshots:
     dependencies:
       yallist: 3.1.1
 
-  lucide-react@0.379.0(react@18.3.1):
+  lucide-react@0.435.0(react@18.3.1):
     dependencies:
       react: 18.3.1
 

@@ -5,7 +5,6 @@ import { QueueSize, Volume } from "@/components/workspace/insights/overview";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,

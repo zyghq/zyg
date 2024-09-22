@@ -363,7 +363,11 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 	// Sets the assigned member if a valid assigned member exists,
 	// otherwise clears the assigned member.
 	if assignedMemberId.Valid {
-		thread.AssignMember(assignedMemberId.String, assignedMemberName.String, assignedAt.Time)
+		memberActor := models.MemberActor{
+			MemberId: assignedMemberId.String,
+			Name:     assignedMemberName.String,
+		}
+		thread.AssignMember(memberActor, assignedAt.Time)
 	} else {
 		thread.ClearAssignedMember()
 	}
@@ -371,7 +375,11 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 	// Sets the inbound message if a valid inbound message exists,
 	// otherwise clears the inbound message.
 	if inboundMessageId.Valid {
-		thread.AddInboundMessage(inboundMessageId.String, inboundCustomerId.String, inboundCustomerName.String,
+		customer := models.CustomerActor{
+			CustomerId: inboundCustomerId.String,
+			Name:       inboundCustomerName.String,
+		}
+		thread.AddInboundMessage(inboundMessageId.String, customer,
 			inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
 			inboundCreatedAt.Time,
 			inboundUpdatedAt.Time,
@@ -383,7 +391,11 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 	// Sets the outbound message if a valid outbound message exists,
 	// otherwise clears the outbound message.
 	if outboundMessageId.Valid {
-		thread.AddOutboundMessage(outboundMessageId.String, outboundMemberId.String, outboundMemberName.String,
+		member := models.MemberActor{
+			MemberId: outboundMemberId.String,
+			Name:     outboundMemberName.String,
+		}
+		thread.AddOutboundMessage(outboundMessageId.String, member,
 			outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
 			outboundCreatedAt.Time,
 			outboundUpdatedAt.Time,
@@ -580,7 +592,11 @@ func (tc *ThreadChatDB) ModifyThreadById(
 	// Sets the assigned member if a valid assigned member exists,
 	// otherwise clears the assigned member.
 	if assignedMemberId.Valid {
-		thread.AssignMember(assignedMemberId.String, assignedMemberName.String, assignedAt.Time)
+		memberActor := models.MemberActor{
+			MemberId: assignedMemberId.String,
+			Name:     assignedMemberName.String,
+		}
+		thread.AssignMember(memberActor, assignedAt.Time)
 	} else {
 		thread.ClearAssignedMember()
 	}
@@ -588,7 +604,11 @@ func (tc *ThreadChatDB) ModifyThreadById(
 	// Sets the inbound message if a valid inbound message exists,
 	// otherwise clears the inbound message.
 	if inboundMessageId.Valid {
-		thread.AddInboundMessage(inboundMessageId.String, inboundCustomerId.String, inboundCustomerName.String,
+		customer := models.CustomerActor{
+			CustomerId: inboundCustomerId.String,
+			Name:       inboundCustomerName.String,
+		}
+		thread.AddInboundMessage(inboundMessageId.String, customer,
 			inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
 			inboundCreatedAt.Time,
 			inboundUpdatedAt.Time,
@@ -600,7 +620,11 @@ func (tc *ThreadChatDB) ModifyThreadById(
 	// Sets the outbound message if a valid outbound message exists,
 	// otherwise clears the outbound message.
 	if outboundMessageId.Valid {
-		thread.AddOutboundMessage(outboundMessageId.String, outboundMemberId.String, outboundMemberName.String,
+		member := models.MemberActor{
+			MemberId: outboundMemberId.String,
+			Name:     outboundMemberName.String,
+		}
+		thread.AddOutboundMessage(outboundMessageId.String, member,
 			outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
 			outboundCreatedAt.Time,
 			outboundUpdatedAt.Time,
@@ -700,7 +724,11 @@ func (tc *ThreadChatDB) LookupByWorkspaceThreadId(
 	// Sets the assigned member if a valid assigned member exists,
 	// otherwise clears the assigned member.
 	if assignedMemberId.Valid {
-		thread.AssignMember(assignedMemberId.String, assignedMemberName.String, assignedAt.Time)
+		memberActor := models.MemberActor{
+			MemberId: assignedMemberId.String,
+			Name:     assignedMemberName.String,
+		}
+		thread.AssignMember(memberActor, assignedAt.Time)
 	} else {
 		thread.ClearAssignedMember()
 	}
@@ -708,7 +736,11 @@ func (tc *ThreadChatDB) LookupByWorkspaceThreadId(
 	// Sets the inbound message if a valid inbound message exists,
 	// otherwise clears the inbound message.
 	if inboundMessageId.Valid {
-		thread.AddInboundMessage(inboundMessageId.String, inboundCustomerId.String, inboundCustomerName.String,
+		customer := models.CustomerActor{
+			CustomerId: inboundCustomerId.String,
+			Name:       inboundCustomerName.String,
+		}
+		thread.AddInboundMessage(inboundMessageId.String, customer,
 			inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
 			inboundCreatedAt.Time,
 			inboundUpdatedAt.Time,
@@ -720,7 +752,11 @@ func (tc *ThreadChatDB) LookupByWorkspaceThreadId(
 	// Sets the outbound message if a valid outbound message exists,
 	// otherwise clears the outbound message.
 	if outboundMessageId.Valid {
-		thread.AddOutboundMessage(outboundMessageId.String, outboundMemberId.String, outboundMemberName.String,
+		member := models.MemberActor{
+			MemberId: outboundMemberId.String,
+			Name:     outboundMemberName.String,
+		}
+		thread.AddOutboundMessage(outboundMessageId.String, member,
 			outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
 			outboundCreatedAt.Time,
 			outboundUpdatedAt.Time,
@@ -821,14 +857,22 @@ func (tc *ThreadChatDB) FetchThreadsByCustomerId(
 		// Sets the assigned member if a valid assigned member exists,
 		// otherwise clears the assigned member.
 		if assignedMemberId.Valid {
-			thread.AssignMember(assignedMemberId.String, assignedMemberName.String, assignedAt.Time)
+			memberActor := models.MemberActor{
+				MemberId: assignedMemberId.String,
+				Name:     assignedMemberName.String,
+			}
+			thread.AssignMember(memberActor, assignedAt.Time)
 		} else {
 			thread.ClearAssignedMember()
 		}
 		// Sets the inbound message an if valid inbound message exists,
 		// otherwise clears the inbound message.
 		if inboundMessageId.Valid {
-			thread.AddInboundMessage(inboundMessageId.String, inboundCustomerId.String, inboundCustomerName.String,
+			customer := models.CustomerActor{
+				CustomerId: inboundCustomerId.String,
+				Name:       inboundCustomerName.String,
+			}
+			thread.AddInboundMessage(inboundMessageId.String, customer,
 				inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
 				inboundCreatedAt.Time,
 				inboundUpdatedAt.Time,
@@ -839,7 +883,11 @@ func (tc *ThreadChatDB) FetchThreadsByCustomerId(
 		// Sets the outbound message if a valid outbound message exists,
 		// otherwise clears the outbound message.
 		if outboundMessageId.Valid {
-			thread.AddOutboundMessage(outboundMessageId.String, outboundMemberId.String, outboundMemberName.String,
+			member := models.MemberActor{
+				MemberId: outboundMemberId.String,
+				Name:     outboundMemberName.String,
+			}
+			thread.AddOutboundMessage(outboundMessageId.String, member,
 				outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
 				outboundCreatedAt.Time,
 				outboundUpdatedAt.Time,
@@ -954,14 +1002,22 @@ func (tc *ThreadChatDB) FetchThreadsByWorkspaceId(
 		// Sets the assigned member if a valid assigned member exists,
 		// otherwise clears the assigned member.
 		if assignedMemberId.Valid {
-			thread.AssignMember(assignedMemberId.String, assignedMemberName.String, assignedAt.Time)
+			memberActor := models.MemberActor{
+				MemberId: assignedMemberId.String,
+				Name:     assignedMemberName.String,
+			}
+			thread.AssignMember(memberActor, assignedAt.Time)
 		} else {
 			thread.ClearAssignedMember()
 		}
 		// Sets the inbound message an if valid inbound message exists,
 		// otherwise clears the inbound message.
 		if inboundMessageId.Valid {
-			thread.AddInboundMessage(inboundMessageId.String, inboundCustomerId.String, inboundCustomerName.String,
+			customer := models.CustomerActor{
+				CustomerId: inboundCustomerId.String,
+				Name:       inboundCustomerName.String,
+			}
+			thread.AddInboundMessage(inboundMessageId.String, customer,
 				inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
 				inboundCreatedAt.Time,
 				inboundUpdatedAt.Time,
@@ -972,7 +1028,11 @@ func (tc *ThreadChatDB) FetchThreadsByWorkspaceId(
 		// Sets the outbound message if a valid outbound message exists,
 		// otherwise clears the outbound message.
 		if outboundMessageId.Valid {
-			thread.AddOutboundMessage(outboundMessageId.String, outboundMemberId.String, outboundMemberName.String,
+			member := models.MemberActor{
+				MemberId: outboundMemberId.String,
+				Name:     outboundMemberName.String,
+			}
+			thread.AddOutboundMessage(outboundMessageId.String, member,
 				outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
 				outboundCreatedAt.Time,
 				outboundUpdatedAt.Time,
@@ -1087,14 +1147,22 @@ func (tc *ThreadChatDB) FetchThreadsByAssignedMemberId(
 		// Sets the assigned member if a valid assigned member exists,
 		// otherwise clears the assigned member.
 		if assignedMemberId.Valid {
-			thread.AssignMember(assignedMemberId.String, assignedMemberName.String, assignedAt.Time)
+			memberActor := models.MemberActor{
+				MemberId: assignedMemberId.String,
+				Name:     assignedMemberName.String,
+			}
+			thread.AssignMember(memberActor, assignedAt.Time)
 		} else {
 			thread.ClearAssignedMember()
 		}
 		// Sets the inbound message an if valid inbound message exists,
 		// otherwise clears the inbound message.
 		if inboundMessageId.Valid {
-			thread.AddInboundMessage(inboundMessageId.String, inboundCustomerId.String, inboundCustomerName.String,
+			customer := models.CustomerActor{
+				CustomerId: inboundCustomerId.String,
+				Name:       inboundCustomerName.String,
+			}
+			thread.AddInboundMessage(inboundMessageId.String, customer,
 				inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
 				inboundCreatedAt.Time,
 				inboundUpdatedAt.Time,
@@ -1105,7 +1173,11 @@ func (tc *ThreadChatDB) FetchThreadsByAssignedMemberId(
 		// Sets the outbound message if a valid outbound message exists,
 		// otherwise clears the outbound message.
 		if outboundMessageId.Valid {
-			thread.AddOutboundMessage(outboundMessageId.String, outboundMemberId.String, outboundMemberName.String,
+			member := models.MemberActor{
+				MemberId: outboundMemberId.String,
+				Name:     outboundMemberName.String,
+			}
+			thread.AddOutboundMessage(outboundMessageId.String, member,
 				outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
 				outboundCreatedAt.Time,
 				outboundUpdatedAt.Time,
@@ -1221,14 +1293,22 @@ func (tc *ThreadChatDB) FetchThreadsByMemberUnassigned(
 		// Sets the assigned member if a valid assigned member exists,
 		// otherwise clears the assigned member.
 		if assignedMemberId.Valid {
-			thread.AssignMember(assignedMemberId.String, assignedMemberName.String, assignedAt.Time)
+			memberActor := models.MemberActor{
+				MemberId: assignedMemberId.String,
+				Name:     assignedMemberName.String,
+			}
+			thread.AssignMember(memberActor, assignedAt.Time)
 		} else {
 			thread.ClearAssignedMember()
 		}
 		// Sets the inbound message an if valid inbound message exists,
 		// otherwise clears the inbound message.
 		if inboundMessageId.Valid {
-			thread.AddInboundMessage(inboundMessageId.String, inboundCustomerId.String, inboundCustomerName.String,
+			customer := models.CustomerActor{
+				CustomerId: inboundCustomerId.String,
+				Name:       inboundCustomerName.String,
+			}
+			thread.AddInboundMessage(inboundMessageId.String, customer,
 				inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
 				inboundCreatedAt.Time,
 				inboundUpdatedAt.Time,
@@ -1239,7 +1319,11 @@ func (tc *ThreadChatDB) FetchThreadsByMemberUnassigned(
 		// Sets the outbound message if a valid outbound message exists,
 		// otherwise clears the outbound message.
 		if outboundMessageId.Valid {
-			thread.AddOutboundMessage(outboundMessageId.String, outboundMemberId.String, outboundMemberName.String,
+			member := models.MemberActor{
+				MemberId: outboundMemberId.String,
+				Name:     outboundMemberName.String,
+			}
+			thread.AddOutboundMessage(outboundMessageId.String, member,
 				outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
 				outboundCreatedAt.Time,
 				outboundUpdatedAt.Time,
@@ -1355,14 +1439,22 @@ func (tc *ThreadChatDB) FetchThreadsByLabelId(
 		// Sets the assigned member if a valid assigned member exists,
 		// otherwise clears the assigned member.
 		if assignedMemberId.Valid {
-			thread.AssignMember(assignedMemberId.String, assignedMemberName.String, assignedAt.Time)
+			memberActor := models.MemberActor{
+				MemberId: assignedMemberId.String,
+				Name:     assignedMemberName.String,
+			}
+			thread.AssignMember(memberActor, assignedAt.Time)
 		} else {
 			thread.ClearAssignedMember()
 		}
 		// Sets the inbound message an if valid inbound message exists,
 		// otherwise clears the inbound message.
 		if inboundMessageId.Valid {
-			thread.AddInboundMessage(inboundMessageId.String, inboundCustomerId.String, inboundCustomerName.String,
+			customer := models.CustomerActor{
+				CustomerId: inboundCustomerId.String,
+				Name:       inboundCustomerName.String,
+			}
+			thread.AddInboundMessage(inboundMessageId.String, customer,
 				inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
 				inboundCreatedAt.Time,
 				inboundUpdatedAt.Time,
@@ -1373,7 +1465,11 @@ func (tc *ThreadChatDB) FetchThreadsByLabelId(
 		// Sets the outbound message if a valid outbound message exists,
 		// otherwise clears the outbound message.
 		if outboundMessageId.Valid {
-			thread.AddOutboundMessage(outboundMessageId.String, outboundMemberId.String, outboundMemberName.String,
+			member := models.MemberActor{
+				MemberId: outboundMemberId.String,
+				Name:     outboundMemberName.String,
+			}
+			thread.AddOutboundMessage(outboundMessageId.String, member,
 				outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
 				outboundCreatedAt.Time,
 				outboundUpdatedAt.Time,
