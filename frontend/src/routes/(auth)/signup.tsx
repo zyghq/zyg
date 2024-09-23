@@ -1,16 +1,3 @@
-import {
-  createFileRoute,
-  Link,
-  useNavigate,
-  useRouter,
-  useRouterState,
-  redirect,
-} from "@tanstack/react-router";
-import { zodResolver } from "@hookform/resolvers/zod";
-
-import { useForm, SubmitHandler } from "react-hook-form";
-import { z } from "zod";
-
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,28 +10,38 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-
-import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { getOrCreateZygAccount } from "@/db/api";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
+import {
+  createFileRoute,
+  Link,
+  redirect,
+  useNavigate,
+  useRouter,
+  useRouterState,
+} from "@tanstack/react-router";
+import { SubmitHandler, useForm } from "react-hook-form";
+import { z } from "zod";
 
 type FormInputs = {
-  name: string;
   email: string;
+  name: string;
   password: string;
 };
 
 export const Route = createFileRoute("/(auth)/signup")({
   beforeLoad: async ({ context }) => {
     const { supabaseClient } = context;
-    const { error, data } = await supabaseClient.auth.getSession();
+    const { data, error } = await supabaseClient.auth.getSession();
     const isAuthenticated = !error && data?.session;
     if (isAuthenticated) {
       throw redirect({ to: "/workspaces" });
@@ -54,8 +51,8 @@ export const Route = createFileRoute("/(auth)/signup")({
 });
 
 const formSchema = z.object({
-  name: z.string().min(2),
   email: z.string().email(),
+  name: z.string().min(2),
   password: z.string().min(6),
 });
 
@@ -67,73 +64,73 @@ function SignUpComponent() {
   const { toast } = useToast();
 
   const form = useForm<FormInputs>({
-    resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
       email: "",
+      name: "",
       password: "",
     },
+    resolver: zodResolver(formSchema),
   });
 
   const { formState } = form;
-  const { isSubmitting, errors, isSubmitSuccessful } = formState;
+  const { errors, isSubmitSuccessful, isSubmitting } = formState;
 
   const isSigningUp = isLoading || isSubmitting;
 
   const onSubmit: SubmitHandler<FormInputs> = async (inputs) => {
     try {
-      const { name, email, password } = inputs;
+      const { email, name, password } = inputs;
       const { data, error: errSupabase } = await supabaseClient.auth.signUp({
         email: email,
-        password: password,
         options: {
           data: {
             name: name,
           },
         },
+        password: password,
       });
       if (errSupabase) {
         console.error(errSupabase);
-        const { name, message } = errSupabase;
+        const { message, name } = errSupabase;
         if (name === "AuthWeakPasswordError") {
           form.setError("password", {
-            type: "weakPassword",
             message: message,
+            type: "weakPassword",
           });
           return;
         }
         if (name === "AuthApiError") {
           form.setError("root", {
-            type: "authError",
             message: message,
+            type: "authError",
           });
           return;
         } else {
           form.setError("root", {
-            type: "serverError",
             message: "Please try again later.",
+            type: "serverError",
           });
           return;
         }
       }
       if (!data || !data?.session) {
         form.setError("root", {
-          type: "serverError",
           message: "Please try again later.",
+          type: "serverError",
         });
         return;
       }
       const { session } = data;
       const { access_token: token } = session;
-      const { error: errAccount, data: account } = await getOrCreateZygAccount(
+      const { data: account, error: errAccount } = await getOrCreateZygAccount(
         token,
         { name }
       );
       if (errAccount || !account) {
         console.error(errAccount);
         form.setError("root", {
-          type: "serverError",
           message: "Something went wrong. Please try again later.",
+          type: "serverError",
         });
         return;
       }
@@ -143,12 +140,12 @@ function SignUpComponent() {
       });
 
       await router.invalidate();
-      await navigate({ to: "/workspaces", replace: true });
+      await navigate({ replace: true, to: "/workspaces" });
     } catch (err) {
       console.error(err);
       form.setError("root", {
-        type: "serverError",
         message: "Something went wrong. Please try again later.",
+        type: "serverError",
       });
     }
   };
@@ -204,8 +201,8 @@ function SignUpComponent() {
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
-                        type="email"
                         placeholder="name@example.com"
+                        type="email"
                         {...field}
                         required
                       />
@@ -222,8 +219,8 @@ function SignUpComponent() {
                     <FormLabel>Password</FormLabel>
                     <FormControl>
                       <Input
-                        type="password"
                         placeholder="VeryS3Cure"
+                        type="password"
                         {...field}
                         required
                       />
@@ -235,16 +232,16 @@ function SignUpComponent() {
               />
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Button variant="outline" aria-label="Log In" asChild>
-                <Link to="/signin" preload={false}>
+              <Button aria-label="Log In" asChild variant="outline">
+                <Link preload={false} to="/signin">
                   Sign In
                 </Link>
               </Button>
               <Button
-                type="submit"
-                disabled={isSigningUp || isSubmitSuccessful}
                 aria-disabled={isSigningUp || isSubmitSuccessful}
                 aria-label="Submit"
+                disabled={isSigningUp || isSubmitSuccessful}
+                type="submit"
               >
                 Submit
               </Button>

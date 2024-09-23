@@ -1,10 +1,5 @@
-import * as React from "react";
-import { createFileRoute, useRouterState, Link } from "@tanstack/react-router";
-import { Separator } from "@/components/ui/separator";
-import { z } from "zod";
-import { useToast } from "@/components/ui/use-toast";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, SubmitHandler } from "react-hook-form";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -13,19 +8,24 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  ExclamationTriangleIcon,
-  ClipboardCopyIcon,
-  CheckCircledIcon,
-} from "@radix-ui/react-icons";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/use-toast";
 import { createPat } from "@/db/api";
 import { useWorkspaceStore } from "@/providers";
-import { ArrowLeftIcon } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  CheckCircledIcon,
+  ClipboardCopyIcon,
+  ExclamationTriangleIcon,
+} from "@radix-ui/react-icons";
+import { createFileRoute, Link, useRouterState } from "@tanstack/react-router";
 import { useCopyToClipboard } from "@uidotdev/usehooks";
+import { ArrowLeftIcon } from "lucide-react";
+import * as React from "react";
+import { SubmitHandler, useForm } from "react-hook-form";
+import { z } from "zod";
 
 export const Route = createFileRoute(
   "/_account/workspaces/$workspaceId/settings/pats/add"
@@ -34,13 +34,13 @@ export const Route = createFileRoute(
 });
 
 type FormInputs = {
-  name: string;
   description: string;
+  name: string;
 };
 
 const formSchema = z.object({
-  name: z.string().min(3),
   description: z.string().default(""),
+  name: z.string().min(3),
 });
 
 function AddNewPat() {
@@ -55,30 +55,30 @@ function AddNewPat() {
   const hasCopiedText = Boolean(copiedText);
 
   const form = useForm<FormInputs>({
-    resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
       description: "",
+      name: "",
     },
+    resolver: zodResolver(formSchema),
   });
 
   const { formState } = form;
-  const { isSubmitting, errors, isSubmitSuccessful } = formState;
+  const { errors, isSubmitSuccessful, isSubmitting } = formState;
 
   const isAdding = isLoading || isSubmitting;
 
   const onSubmit: SubmitHandler<FormInputs> = async (inputs) => {
     try {
-      const { name, description } = inputs;
-      const { error, data } = await createPat(token, {
-        name,
+      const { description, name } = inputs;
+      const { data, error } = await createPat(token, {
         description,
+        name,
       });
       if (error) {
         console.error(error);
         form.setError("root", {
-          type: "serverError",
           message: "Something went wrong. Please try again later.",
+          type: "serverError",
         });
         return;
       }
@@ -93,8 +93,8 @@ function AddNewPat() {
     } catch (err) {
       console.error(err);
       form.setError("root", {
-        type: "serverError",
         message: "Something went wrong. Please try again later.",
+        type: "serverError",
       });
     }
   };
@@ -111,7 +111,7 @@ function AddNewPat() {
           <Separator />
         </div>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form className="space-y-8" onSubmit={form.handleSubmit(onSubmit)}>
             {errors?.root?.type === "serverError" && (
               <Alert variant="destructive">
                 <ExclamationTriangleIcon className="h-4 w-4" />
@@ -167,12 +167,12 @@ function AddNewPat() {
                   </div>
                 </div>
                 <Button
+                  aria-disabled={hasCopiedText}
+                  disabled={hasCopiedText}
+                  onClick={() => copyToClipboard(generatedToken)}
+                  size="sm"
                   type="button"
                   variant="ghost"
-                  size="sm"
-                  disabled={hasCopiedText}
-                  aria-disabled={hasCopiedText}
-                  onClick={() => copyToClipboard(generatedToken)}
                 >
                   {hasCopiedText ? (
                     <CheckCircledIcon className="h-5 w-5 text-green-500" />
@@ -186,8 +186,8 @@ function AddNewPat() {
               {isSubmitSuccessful ? (
                 <Button asChild>
                   <Link
-                    to={`/workspaces/${workspaceId}/settings/pats`}
                     params={{ workspaceId }}
+                    to={`/workspaces/${workspaceId}/settings/pats`}
                   >
                     <ArrowLeftIcon className="h-4 w-4 mr-1" />
                     Yes, Copied
@@ -195,10 +195,10 @@ function AddNewPat() {
                 </Button>
               ) : (
                 <Button
-                  type="submit"
-                  disabled={isAdding}
                   aria-disabled={isAdding}
                   aria-label="Add new Personal Access Token"
+                  disabled={isAdding}
+                  type="submit"
                 >
                   Add Token
                 </Button>

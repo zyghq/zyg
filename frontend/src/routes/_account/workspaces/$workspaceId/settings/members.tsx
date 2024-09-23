@@ -1,14 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlusIcon, DotsHorizontalIcon } from "@radix-ui/react-icons";
-import { useWorkspaceStore } from "@/providers";
-import { useStore } from "zustand";
-import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useWorkspaceStore } from "@/providers";
+import { DotsHorizontalIcon, PlusIcon } from "@radix-ui/react-icons";
+import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
+import React from "react";
+import { useStore } from "zustand";
 
 export const Route = createFileRoute(
   "/_account/workspaces/$workspaceId/settings/members"
@@ -31,7 +30,7 @@ function MemberSettings() {
         <div className="my-12">
           <div className="flex items-center justify-between my-12">
             <header className="text-xl font-semibold">Members</header>
-            <Button size="sm" className="h-7">
+            <Button className="h-7" size="sm">
               <PlusIcon className="mr-1 h-4 w-4" />
               Invite
             </Button>
@@ -51,8 +50,8 @@ function MemberSettings() {
                 <React.Fragment>
                   {members.map((member) => (
                     <div
-                      key={member.memberId}
                       className="flex flex-col items-start gap-2 rounded-lg border p-3 text-left"
+                      key={member.memberId}
                     >
                       <div className="flex w-full flex-col gap-1">
                         <div className="flex items-center">
@@ -71,7 +70,7 @@ function MemberSettings() {
                           <div className="ml-auto mr-2 text-sm text-muted-foreground capitalize">
                             {member.role}
                           </div>
-                          <Button variant="ghost" size="sm">
+                          <Button size="sm" variant="ghost">
                             <DotsHorizontalIcon className="h-4 w-4" />
                           </Button>
                         </div>

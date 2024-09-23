@@ -1,10 +1,4 @@
-import { createFileRoute, useRouterState } from "@tanstack/react-router";
-import { Separator } from "@/components/ui/separator";
-
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, SubmitHandler } from "react-hook-form";
-import { z } from "zod";
-
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -16,14 +10,18 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ExclamationTriangleIcon, CheckIcon } from "@radix-ui/react-icons";
-import { ClipboardCopyIcon, CheckCircledIcon } from "@radix-ui/react-icons";
-import { useStore } from "zustand";
-import { useWorkspaceStore } from "@/providers";
-import { WorkspaceStoreState } from "@/db/store";
+import { Separator } from "@/components/ui/separator";
 import { updateWorkspace } from "@/db/api";
+import { WorkspaceStoreState } from "@/db/store";
+import { useWorkspaceStore } from "@/providers";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { CheckIcon, ExclamationTriangleIcon } from "@radix-ui/react-icons";
+import { CheckCircledIcon, ClipboardCopyIcon } from "@radix-ui/react-icons";
+import { createFileRoute, useRouterState } from "@tanstack/react-router";
 import { useCopyToClipboard } from "@uidotdev/usehooks";
+import { SubmitHandler, useForm } from "react-hook-form";
+import { z } from "zod";
+import { useStore } from "zustand";
 
 const formSchema = z.object({
   name: z.string().min(3),
@@ -53,29 +51,29 @@ function GeneralSettings() {
   const hasCopiedText = Boolean(copiedText);
 
   const form = useForm({
-    resolver: zodResolver(formSchema),
     defaultValues: {
       name: workspaceName,
     },
+    resolver: zodResolver(formSchema),
   });
 
   const { formState } = form;
 
-  const { isSubmitting, errors, isSubmitSuccessful } = formState;
+  const { errors, isSubmitSuccessful, isSubmitting } = formState;
 
   const isUpdating = isLoading || isSubmitting;
 
   const onSubmit: SubmitHandler<FormInputs> = async (inputs) => {
     try {
       const { name } = inputs;
-      const { error, data } = await updateWorkspace(token, workspaceId, {
+      const { data, error } = await updateWorkspace(token, workspaceId, {
         name,
       });
       if (error) {
         console.error(error);
         form.setError("root", {
-          type: "serverError",
           message: "Something went wrong. Please try again later.",
+          type: "serverError",
         });
         return;
       }
@@ -86,8 +84,8 @@ function GeneralSettings() {
     } catch (err) {
       console.error(err);
       form.setError("root", {
-        type: "serverError",
         message: "Something went wrong. Please try again later.",
+        type: "serverError",
       });
     }
   };
@@ -102,7 +100,7 @@ function GeneralSettings() {
           <Separator />
         </div>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form className="space-y-8" onSubmit={form.handleSubmit(onSubmit)}>
             {errors?.root?.type === "serverError" && (
               <Alert variant="destructive">
                 <ExclamationTriangleIcon className="h-4 w-4" />
@@ -138,12 +136,12 @@ function GeneralSettings() {
                   {workspaceId}
                 </code>
                 <Button
-                  disabled={hasCopiedText}
                   aria-disabled={hasCopiedText}
+                  disabled={hasCopiedText}
                   onClick={() => copyToClipboard(workspaceId)}
+                  size="sm"
                   type="button"
                   variant="ghost"
-                  size="sm"
                 >
                   {hasCopiedText ? (
                     <CheckCircledIcon className="h-5 w-5 text-green-500" />
@@ -155,10 +153,10 @@ function GeneralSettings() {
             </div>
             <div className="flex space-x-4">
               <Button
-                type="submit"
-                disabled={isUpdating}
                 aria-disabled={isUpdating}
                 aria-label="Create Workspace"
+                disabled={isUpdating}
+                type="submit"
               >
                 Save
               </Button>

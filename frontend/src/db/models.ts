@@ -1,17 +1,18 @@
 import { z } from "zod";
+
 import {
   accountResponseSchema,
-  workspaceResponseSchema,
   authMemberResponseSchema,
-  memberResponseSchema,
-  patResponseSchema,
-  customerResponseSchema,
-  labelResponseSchema,
-  ThreadResponse,
-  LabelResponse,
   CustomerResponse,
+  customerResponseSchema,
+  LabelResponse,
+  labelResponseSchema,
   MemberResponse,
+  memberResponseSchema,
   PatResponse,
+  patResponseSchema,
+  ThreadResponse,
+  workspaceResponseSchema,
 } from "./schema";
 
 export type Account = z.infer<typeof accountResponseSchema>;
@@ -29,54 +30,54 @@ export type Label = z.infer<typeof labelResponseSchema>;
 export type Member = z.infer<typeof memberResponseSchema>;
 
 export type LabelMetrics = {
+  count: number;
+  icon: string;
   labelId: string;
   name: string;
-  icon: string;
-  count: number;
 };
 
 export type WorkspaceMetrics = {
   active: number;
-  done: number;
-  snoozed: number;
   assignedToMe: number;
-  unassigned: number;
+  done: number;
+  labels: [] | LabelMetrics[];
   otherAssigned: number;
-  labels: LabelMetrics[] | [];
+  snoozed: number;
+  unassigned: number;
 };
 
 // Represents the thread model stored in local state, diff from the zod schema
 export type Thread = {
-  threadId: string;
-  customerId: string;
-  title: string;
-  description: string;
-  status: string;
-  stage: string;
-  replied: boolean;
-  priority: string;
+  assigneeId: null | string;
   channel: string;
-  previewText: string;
-  assigneeId: string | null;
-  inboundFirstSeqId: string | null;
-  inboundLastSeqId: string | null;
-  inboundCustomerId: string | null;
-  outboundFirstSeqId: string | null;
-  outboundLastSeqId: string | null;
-  outboundMemberId: string | null;
   createdAt: string;
+  customerId: string;
+  description: string;
+  inboundCustomerId: null | string;
+  inboundFirstSeqId: null | string;
+  inboundLastSeqId: null | string;
+  outboundFirstSeqId: null | string;
+  outboundLastSeqId: null | string;
+  outboundMemberId: null | string;
+  previewText: string;
+  priority: string;
+  replied: boolean;
+  stage: string;
+  status: string;
+  threadId: string;
+  title: string;
   updatedAt: string;
 };
 
 export type ThreadChat = {
-  threadId: string;
-  chatId: string;
   body: string;
-  sequence: number;
-  customerId: string | null;
-  memberId: string | null;
-  isHead: boolean;
+  chatId: string;
   createdAt: string;
+  customerId: null | string;
+  isHead: boolean;
+  memberId: null | string;
+  sequence: number;
+  threadId: string;
   updatedAt: string;
 };
 
@@ -86,15 +87,15 @@ export function threadTransformer() {
   return {
     normalize(thread: ThreadResponse): [Pk, Thread] {
       const {
-        threadId,
-        customer,
         assignee,
+        customer,
+        inboundCustomer,
         inboundFirstSeqId,
         inboundLastSeqId,
-        inboundCustomer,
-        outboundMember,
         outboundFirstSeqId,
         outboundLastSeqId,
+        outboundMember,
+        threadId,
         ...rest
       } = thread;
       const customerId = customer.customerId;
@@ -106,11 +107,11 @@ export function threadTransformer() {
         {
           threadId,
           ...rest,
-          customerId: customerId,
           assigneeId: assigneeId,
+          customerId: customerId,
+          inboundCustomerId: inboundCustomerId || null,
           inboundFirstSeqId: inboundFirstSeqId || null,
           inboundLastSeqId: inboundLastSeqId || null,
-          inboundCustomerId: inboundCustomerId || null,
           outboundFirstSeqId: outboundFirstSeqId || null,
           outboundLastSeqId: outboundLastSeqId || null,
           outboundMemberId: outboundMemberId || null,
@@ -123,14 +124,14 @@ export function threadTransformer() {
 export function labelTransformer() {
   return {
     normalize(label: LabelResponse): [Pk, Label] {
-      const { labelId, name, icon, createdAt, updatedAt } = label;
+      const { createdAt, icon, labelId, name, updatedAt } = label;
       return [
         labelId,
         {
+          createdAt,
+          icon,
           labelId,
           name,
-          icon,
-          createdAt,
           updatedAt,
         },
       ];

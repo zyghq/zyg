@@ -2,94 +2,80 @@ import { z } from "zod";
 
 export const accountResponseSchema = z.object({
   accountId: z.string(),
-  email: z.string(),
-  provider: z.string(),
-  name: z.string(),
   createdAt: z.string(),
+  email: z.string(),
+  name: z.string(),
+  provider: z.string(),
   updatedAt: z.string(),
 });
 
 export const workspaceResponseSchema = z.object({
-  workspaceId: z.string(),
-  name: z.string(),
   createdAt: z.string(),
+  name: z.string(),
   updatedAt: z.string(),
+  workspaceId: z.string(),
 });
 
 export const authMemberResponseSchema = z.object({
+  createdAt: z.string(),
   memberId: z.string(),
   name: z.string(),
   role: z.string(),
-  createdAt: z.string(),
   updatedAt: z.string(),
 });
 
 export const patResponseSchema = z.object({
   accountId: z.string(),
+  createdAt: z.string(),
+  description: z.string().nullable().default(null),
+  name: z.string(),
   patId: z.string(),
   token: z.string(),
-  name: z.string(),
-  description: z.string().nullable().default(null),
-  createdAt: z.string(),
   updatedAt: z.string(),
 });
 
 export const memberResponseSchema = z.object({
+  createdAt: z.string(),
   memberId: z.string(),
   name: z.string(),
   role: z.string(),
-  createdAt: z.string(),
   updatedAt: z.string(),
 });
 
 export const workspaceMetricsResponseSchema = z.object({
   count: z.object({
     active: z.number().default(0),
-    done: z.number().default(0),
-    snoozed: z.number().default(0),
     assignedToMe: z.number().default(0),
-    unassigned: z.number().default(0),
-    otherAssigned: z.number().default(0),
+    done: z.number().default(0),
     labels: z
       .array(
         z.object({
+          count: z.number().default(0),
+          icon: z.string().default(""),
           labelId: z.string(),
           name: z.string().default(""),
-          icon: z.string().default(""),
-          count: z.number().default(0),
         })
       )
       .default([]),
+    otherAssigned: z.number().default(0),
+    snoozed: z.number().default(0),
+    unassigned: z.number().default(0),
   }),
 });
 
 export const customerResponseSchema = z.object({
-  customerId: z.string(),
-  externalId: z.string().nullable().default(null),
-  email: z.string().nullable().default(null),
-  phone: z.string().nullable().default(null),
-  name: z.string(),
-  isVerified: z.boolean(),
-  role: z.string(),
   createdAt: z.string(),
+  customerId: z.string(),
+  email: z.string().nullable().default(null),
+  externalId: z.string().nullable().default(null),
+  isVerified: z.boolean(),
+  name: z.string(),
+  phone: z.string().nullable().default(null),
+  role: z.string(),
   updatedAt: z.string(),
 });
 
 export const threadResponseSchema = z.object({
-  threadId: z.string(),
-  customer: z.object({
-    customerId: z.string(),
-    name: z.string(), // TODO: add support for avatarUrl
-  }),
-  title: z.string(),
-  description: z.string(),
-  status: z.string(),
-  statusChangedAt: z.string(),
-  stage: z.string(),
-  replied: z.boolean(),
-  priority: z.string(),
-  channel: z.string(),
-  previewText: z.string(),
   assignee: z
     .object({
       memberId: z.string(),
@@ -97,8 +83,13 @@ export const threadResponseSchema = z.object({
     })
     .nullable()
     .default(null),
-  inboundFirstSeqId: z.string().nullable().default(null),
-  inboundLastSeqId: z.string().nullable().default(null),
+  channel: z.string(),
+  createdAt: z.string(),
+  customer: z.object({
+    customerId: z.string(),
+    name: z.string(), // TODO: add support for avatarUrl
+  }),
+  description: z.string(),
   inboundCustomer: z
     .object({
       customerId: z.string(),
@@ -106,6 +97,8 @@ export const threadResponseSchema = z.object({
     })
     .nullable()
     .default(null),
+  inboundFirstSeqId: z.string().nullable().default(null),
+  inboundLastSeqId: z.string().nullable().default(null),
   outboundFirstSeqId: z.string().nullable().default(null),
   outboundLastSeqId: z.string().nullable().default(null),
   outboundMember: z
@@ -115,34 +108,40 @@ export const threadResponseSchema = z.object({
     })
     .nullable()
     .default(null),
-  createdAt: z.string(),
+  previewText: z.string(),
+  priority: z.string(),
+  replied: z.boolean(),
+  stage: z.string(),
+  status: z.string(),
+  statusChangedAt: z.string(),
+  threadId: z.string(),
+  title: z.string(),
   updatedAt: z.string(),
 });
 
 export const labelResponseSchema = z.object({
+  createdAt: z.string(),
+  icon: z.string(),
   labelId: z.string(),
   name: z.string(),
-  icon: z.string(),
-  createdAt: z.string(),
   updatedAt: z.string(),
 });
 
 export const threadLabelResponseSchema = z.object({
-  threadLabelId: z.string(),
-  threadId: z.string(),
-  labelId: z.string(),
-  name: z.string(),
-  icon: z.string(),
   addedBy: z.string(),
   createdAt: z.string(),
+  icon: z.string(),
+  labelId: z.string(),
+  name: z.string(),
+  threadId: z.string(),
+  threadLabelId: z.string(),
   updatedAt: z.string(),
 });
 
 export const threadChatResponseSchema = z.object({
-  threadId: z.string(),
-  chatId: z.string(),
   body: z.string(),
-  sequence: z.number(),
+  chatId: z.string(),
+  createdAt: z.string(),
   customer: z
     .object({
       customerId: z.string(),
@@ -150,6 +149,7 @@ export const threadChatResponseSchema = z.object({
     })
     .nullable()
     .default(null),
+  isHead: z.boolean(),
   member: z
     .object({
       memberId: z.string(),
@@ -157,8 +157,8 @@ export const threadChatResponseSchema = z.object({
     })
     .nullable()
     .default(null),
-  isHead: z.boolean(),
-  createdAt: z.string(),
+  sequence: z.number(),
+  threadId: z.string(),
   updatedAt: z.string(),
 });
 

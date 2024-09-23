@@ -1,7 +1,6 @@
+import { buildAccountStore, buildStore } from "@/db/store";
 import React from "react";
 import { StoreApi } from "zustand";
-
-import { buildStore, buildAccountStore } from "@/db/store";
 
 const createZustandContext = <TInitial, TStore extends StoreApi<any>>(
   getStore: (initial: TInitial) => TStore
@@ -18,9 +17,9 @@ const createZustandContext = <TInitial, TStore extends StoreApi<any>>(
   };
 
   return {
-    useContext: () => React.useContext(Context),
     Context,
     Provider,
+    useContext: () => React.useContext(Context),
   };
 };
 
@@ -39,11 +38,11 @@ export function useWorkspaceStore() {
 }
 
 const accountStore = createZustandContext(buildAccountStore);
-export const AccoutStoreContext = accountStore.Context;
+export const AccountStoreContext = accountStore.Context;
 export const AccountStoreProvider = accountStore.Provider;
 
 export function useAccountStore() {
-  const context = React.useContext(AccoutStoreContext);
+  const context = React.useContext(AccountStoreContext);
   if (!context) {
     throw new Error(
       "useAccountStore must be used within an AccountStoreProvider"
@@ -62,13 +61,13 @@ type ThemeProviderProps = {
 };
 
 type ThemeProviderState = {
-  theme: Theme;
   setTheme: (theme: Theme) => void;
+  theme: Theme;
 };
 
 const initialState: ThemeProviderState = {
-  theme: "system",
   setTheme: () => null,
+  theme: "system",
 };
 
 export const ThemeProviderContext =
@@ -103,11 +102,11 @@ export function ThemeProvider({
   }, [theme]);
 
   const value = {
-    theme,
     setTheme: (theme: Theme) => {
       localStorage.setItem(storageKey, theme);
       setTheme(theme);
     },
+    theme,
   };
 
   return (

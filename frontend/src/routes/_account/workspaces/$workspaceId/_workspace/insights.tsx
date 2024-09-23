@@ -1,7 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { TrendingUp } from "lucide-react";
-import { QueueSize, Volume } from "@/components/workspace/insights/overview";
-
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,7 +6,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { QueueSize, Volume } from "@/components/workspace/insights/overview";
+import { createFileRoute } from "@tanstack/react-router";
+import { TrendingUp } from "lucide-react";
 import { AlertCircle, MessageCircle } from "lucide-react";
 
 export const Route = createFileRoute(
@@ -36,12 +35,12 @@ export default function InDevelopment() {
       <CardFooter className="flex flex-col sm:flex-row gap-4">
         <Button className="w-full sm:w-auto">Talk to Us</Button>
         <a
-          href="https://github.com/zyghq/zyg/discussions"
-          target="_blank"
-          rel="noopener noreferrer"
           className="w-full sm:w-auto"
+          href="https://github.com/zyghq/zyg/discussions"
+          rel="noopener noreferrer"
+          target="_blank"
         >
-          <Button variant="outline" className="w-full">
+          <Button className="w-full" variant="outline">
             <MessageCircle className="mr-2 h-4 w-4" />
             Start Discussion in GitHub
           </Button>

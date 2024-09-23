@@ -1,3 +1,5 @@
+import { PriorityIcons, stageIcon } from "@/components/icons";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,27 +23,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
+import { threadStageHumanized, todoThreadStages } from "@/db/helpers";
 import { Assignee } from "@/db/store";
-import { cn } from "@/lib/utils";
-import { CheckIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { PriorityIcons, stageIcon } from "@/components/icons";
 import {
-  PrioritiesFiltersType,
   AssigneesFiltersType,
+  PrioritiesFiltersType,
   StagesFiltersType,
 } from "@/db/store";
-import { todoThreadStages, threadStageHumanized } from "@/db/helpers";
+import { cn } from "@/lib/utils";
+import { CheckIcon, MixerHorizontalIcon } from "@radix-ui/react-icons";
 import React from "react";
 
 function StagesSubMenu({
-  stages,
   onChecked = () => {},
   onUnchecked = () => {},
+  stages,
 }: {
-  stages: string | string[] | undefined;
   onChecked?: (stage: string) => void;
   onUnchecked?: (stage: string) => void;
+  stages: string | string[] | undefined;
 }) {
   const [selectedStages, setSelectedStages] = React.useState<
     string | string[] | undefined
@@ -77,8 +77,8 @@ function StagesSubMenu({
         <DropdownMenuSubContent className="mx-2 w-56">
           {todoThreadStages.map((stage) => (
             <DropdownMenuCheckboxItem
-              key={stage}
               checked={selectedStages ? selectedStages.includes(stage) : false}
+              key={stage}
               onCheckedChange={(checked) => {
                 checked ? onChecked(stage) : onUnchecked(stage);
               }}
@@ -99,13 +99,13 @@ function StagesSubMenu({
 }
 
 function PrioritiesSubMenu({
-  priorities,
   onChecked = () => {},
   onUnchecked = () => {},
+  priorities,
 }: {
-  priorities: PrioritiesFiltersType;
   onChecked?: (priority: string) => void;
   onUnchecked?: (priority: string) => void;
+  priorities: PrioritiesFiltersType;
 }) {
   const [selectedPriorities, setSelectedPriorities] = React.useState<
     string | string[]
@@ -138,7 +138,7 @@ function PrioritiesSubMenu({
         )}
       </DropdownMenuSubTrigger>
       <DropdownMenuPortal>
-        <DropdownMenuSubContent className="mx-2 w-48" alignOffset={4}>
+        <DropdownMenuSubContent alignOffset={4} className="mx-2 w-48">
           <DropdownMenuCheckboxItem
             checked={
               selectedPriorities ? selectedPriorities.includes("urgent") : false
@@ -262,7 +262,7 @@ function AssigneeSubMenu({
         )}
       </DropdownMenuSubTrigger>
       <DropdownMenuPortal>
-        <DropdownMenuSubContent className="mx-2" alignOffset={4}>
+        <DropdownMenuSubContent alignOffset={4} className="mx-2">
           <Command>
             <CommandList>
               <CommandInput placeholder="Filter" />
@@ -301,29 +301,29 @@ function AssigneeSubMenu({
 }
 
 export function Filters({
-  stages,
-  priorities,
   assignedMembers,
-  assignees,
-  statusOnChecked = () => {},
-  statusOnUnchecked = () => {},
-  priorityOnChecked = () => {},
-  priorityOnUnchecked = () => {},
   assigneeOnChecked = () => {},
   assigneeOnUnchecked = () => {},
+  assignees,
   disableAssigneeFilter = false,
+  priorities,
+  priorityOnChecked = () => {},
+  priorityOnUnchecked = () => {},
+  stages,
+  statusOnChecked = () => {},
+  statusOnUnchecked = () => {},
 }: {
-  stages: StagesFiltersType;
-  priorities: PrioritiesFiltersType;
   assignedMembers: Assignee[];
-  assignees: AssigneesFiltersType;
-  statusOnChecked?: (stage: string) => void;
-  statusOnUnchecked?: (stage: string) => void;
-  priorityOnChecked?: (priority: string) => void;
-  priorityOnUnchecked?: (priority: string) => void;
   assigneeOnChecked?: (member: string) => void;
   assigneeOnUnchecked?: (member: string) => void;
+  assignees: AssigneesFiltersType;
   disableAssigneeFilter?: boolean;
+  priorities: PrioritiesFiltersType;
+  priorityOnChecked?: (priority: string) => void;
+  priorityOnUnchecked?: (priority: string) => void;
+  stages: StagesFiltersType;
+  statusOnChecked?: (stage: string) => void;
+  statusOnUnchecked?: (stage: string) => void;
 }) {
   return (
     <DropdownMenu>
@@ -336,14 +336,14 @@ export function Filters({
       <DropdownMenuContent align="end" className="w-48 mx-1">
         <DropdownMenuGroup>
           <StagesSubMenu
-            stages={stages}
             onChecked={statusOnChecked}
             onUnchecked={statusOnUnchecked}
+            stages={stages}
           />
           <PrioritiesSubMenu
-            priorities={priorities}
             onChecked={priorityOnChecked}
             onUnchecked={priorityOnUnchecked}
+            priorities={priorities}
           />
         </DropdownMenuGroup>
         {!disableAssigneeFilter && (

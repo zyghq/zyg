@@ -1,31 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { cn } from "@/lib/utils";
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
+import { Icons } from "@/components/icons";
+import { NotFound } from "@/components/notfound";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  ChatBubbleIcon,
-  ArrowLeftIcon,
-  ResetIcon,
-  DotsHorizontalIcon,
-  PlusIcon,
-} from "@radix-ui/react-icons";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { CheckIcon } from "@radix-ui/react-icons";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -34,33 +11,56 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SidePanelThreadList } from "@/components/workspace/thread/sidepanel-thread-list";
-import { useStore } from "zustand";
-import { WorkspaceStoreState } from "@/db/store";
-import { useWorkspaceStore } from "@/providers";
-import { ThreadList } from "@/components/workspace/thread/threads";
-import { formatDistanceToNow } from "date-fns";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { MessageForm } from "@/components/workspace/thread/message-form";
+import { PropertiesForm } from "@/components/workspace/thread/properties-form";
+import { SidePanelThreadList } from "@/components/workspace/thread/sidepanel-thread-list";
+import { ThreadList } from "@/components/workspace/thread/threads";
+import {
+  deleteThreadLabel,
+  getThreadLabels,
   getWorkspaceThreadChatMessages,
   putThreadLabel,
-  getThreadLabels,
-  deleteThreadLabel,
 } from "@/db/api";
-import { NotFound } from "@/components/notfound";
-import { PropertiesForm } from "@/components/workspace/thread/properties-form";
-import { CheckCircleIcon, EclipseIcon, CircleIcon } from "lucide-react";
-import { Icons } from "@/components/icons";
 import { updateThread } from "@/db/api";
-import { useMutation } from "@tanstack/react-query";
 import { Thread, threadTransformer } from "@/db/models";
-import { MessageForm } from "@/components/workspace/thread/message-form";
 import {
   ThreadChatResponse,
-  ThreadResponse,
   ThreadLabelResponse,
+  ThreadResponse,
 } from "@/db/schema";
+import { WorkspaceStoreState } from "@/db/store";
 import { defaultSortKey } from "@/db/store";
+import { cn } from "@/lib/utils";
+import { useWorkspaceStore } from "@/providers";
+import {
+  ArrowDownIcon,
+  ArrowLeftIcon,
+  ArrowUpIcon,
+  ChatBubbleIcon,
+  DotsHorizontalIcon,
+  PlusIcon,
+  ResetIcon,
+} from "@radix-ui/react-icons";
+import { CheckIcon } from "@radix-ui/react-icons";
+import { useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { formatDistanceToNow } from "date-fns";
+import { CheckCircleIcon, CircleIcon, EclipseIcon } from "lucide-react";
+import React from "react";
+import { useStore } from "zustand";
 
 export const Route = createFileRoute(
   "/_account/workspaces/$workspaceId/threads/$threadId"
@@ -68,8 +68,8 @@ export const Route = createFileRoute(
   component: ThreadDetail,
 });
 
-function getPrevNextFromCurrent(threads: Thread[] | null, threadId: string) {
-  if (!threads) return { prevItem: null, nextItem: null };
+function getPrevNextFromCurrent(threads: null | Thread[], threadId: string) {
+  if (!threads) return { nextItem: null, prevItem: null };
 
   const currentIndex = threads.findIndex(
     (thread) => thread.threadId === threadId
@@ -78,7 +78,7 @@ function getPrevNextFromCurrent(threads: Thread[] | null, threadId: string) {
   const prevItem = threads[currentIndex - 1] || null;
   const nextItem = threads[currentIndex + 1] || null;
 
-  return { prevItem, nextItem };
+  return { nextItem, prevItem };
 }
 
 function Chat({
@@ -110,19 +110,19 @@ function Chat({
             <div className="text-md font-semibold">
               {isMe ? `You` : customerOrMemberName}
             </div>
-            <Separator orientation="vertical" className="mx-2 h-3" />
+            <Separator className="mx-2 h-3" orientation="vertical" />
             <div className="text-muted-foreground text-xs">
               {`${when} via chat`}
             </div>
           </div>
-          <Button variant="ghost" size="sm">
+          <Button size="sm" variant="ghost">
             <DotsHorizontalIcon className="h-4 w-4" />
           </Button>
         </div>
         <div className="text-xs text-muted-foreground"></div>
         <Separator
-          orientation="horizontal"
           className="mt-3 mb-3 dark:bg-zinc-700"
+          orientation="horizontal"
         />
         <div>{chat.body}</div>
       </div>
@@ -154,9 +154,9 @@ function SettingThreadLabel() {
     <div className="flex mr-1">
       <svg
         className="animate-spin h-3 w-3 text-indigo-500"
-        xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
       >
         <circle
           className="opacity-25"
@@ -168,8 +168,8 @@ function SettingThreadLabel() {
         ></circle>
         <path
           className="opacity-75"
-          fill="currentColor"
           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          fill="currentColor"
         ></path>
       </svg>
     </div>
@@ -177,13 +177,13 @@ function SettingThreadLabel() {
 }
 
 function ThreadLabels({
+  threadId,
   token,
   workspaceId,
-  threadId,
 }: {
+  threadId: string;
   token: string;
   workspaceId: string;
-  threadId: string;
 }) {
   const workspaceStore = useWorkspaceStore();
   const workspaceLabels = useStore(
@@ -192,14 +192,14 @@ function ThreadLabels({
   );
 
   const {
-    isPending,
     data: threadLabels,
     error,
+    isPending,
     refetch,
   } = useQuery({
-    queryKey: ["threadLabels", workspaceId, threadId, token],
+    enabled: !!threadId,
     queryFn: async () => {
-      const { error, data } = await getThreadLabels(
+      const { data, error } = await getThreadLabels(
         token,
         workspaceId,
         threadId
@@ -207,12 +207,12 @@ function ThreadLabels({
       if (error) throw new Error("failed to fetch thread labels");
       return data as ThreadLabelResponse[];
     },
-    enabled: !!threadId,
+    queryKey: ["threadLabels", workspaceId, threadId, token],
   });
 
   const threadLabelMutation = useMutation({
-    mutationFn: async (values: { name: string; icon: string }) => {
-      const { error, data } = await putThreadLabel(
+    mutationFn: async (values: { icon: string; name: string }) => {
+      const { data, error } = await putThreadLabel(
         token,
         workspaceId,
         threadId,
@@ -237,7 +237,7 @@ function ThreadLabels({
 
   const deleteThreadLabelMutation = useMutation({
     mutationFn: async (labelId: string) => {
-      const { error, data } = await deleteThreadLabel(
+      const { data, error } = await deleteThreadLabel(
         token,
         workspaceId,
         threadId,
@@ -268,7 +268,7 @@ function ThreadLabels({
     if (isChecked(labelId)) {
       deleteThreadLabelMutation.mutate(labelId);
     } else {
-      threadLabelMutation.mutate({ name, icon: icon || "" });
+      threadLabelMutation.mutate({ icon: icon || "", name });
     }
   }
 
@@ -310,7 +310,7 @@ function ThreadLabels({
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="border-dashed h-7">
+            <Button className="border-dashed h-7" size="sm" variant="outline">
               {threadLabelMutation.isPending ? (
                 <SettingThreadLabel />
               ) : (
@@ -319,7 +319,7 @@ function ThreadLabels({
               Add
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="sm:58 w-48" align="end">
+          <DropdownMenuContent align="end" className="sm:58 w-48">
             <Command>
               <CommandList>
                 <CommandInput placeholder="Filter" />
@@ -327,11 +327,11 @@ function ThreadLabels({
                 <CommandGroup>
                   {workspaceLabels.map((label) => (
                     <CommandItem
+                      className="text-sm"
                       key={label.labelId}
                       onSelect={() =>
                         onSelect(label.labelId, label.name, label.icon)
                       }
-                      className="text-sm"
                     >
                       <div className="flex gap-2">
                         <div>{label.icon}</div>
@@ -364,9 +364,9 @@ function ChatLoading() {
     <div className="flex justify-center mt-12">
       <svg
         className="animate-spin h-5 w-5 text-indigo-500"
-        xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
       >
         <circle
           className="opacity-25"
@@ -378,8 +378,8 @@ function ChatLoading() {
         ></circle>
         <path
           className="opacity-75"
-          fill="currentColor"
           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          fill="currentColor"
         ></path>
       </svg>
     </div>
@@ -388,9 +388,9 @@ function ChatLoading() {
 
 function ThreadDetail() {
   const { token } = Route.useRouteContext();
-  const { workspaceId, threadId } = Route.useParams();
+  const { threadId, workspaceId } = Route.useParams();
 
-  const bottomRef = React.useRef<null | HTMLDivElement>(null);
+  const bottomRef = React.useRef<HTMLDivElement | null>(null);
   const workspaceStore = useWorkspaceStore();
 
   const currentQueue = useStore(workspaceStore, (state: WorkspaceStoreState) =>
@@ -412,17 +412,17 @@ function ThreadDetail() {
   const threadStatus = activeThread?.status || "";
   const isAwaitingReply = activeThread?.replied === false;
 
-  const { prevItem, nextItem } = getPrevNextFromCurrent(currentQueue, threadId);
+  const { nextItem, prevItem } = getPrevNextFromCurrent(currentQueue, threadId);
 
   const {
-    isPending,
-    error,
     data: chats,
+    error,
+    isPending,
     refetch,
   } = useQuery({
-    queryKey: ["chats", threadId, workspaceId, token],
+    enabled: !!activeThread,
     queryFn: async () => {
-      const { error, data } = await getWorkspaceThreadChatMessages(
+      const { data, error } = await getWorkspaceThreadChatMessages(
         token,
         workspaceId,
         threadId
@@ -430,7 +430,7 @@ function ThreadDetail() {
       if (error) throw new Error("failed to fetch thread messages");
       return data as ThreadChatResponse[];
     },
-    enabled: !!activeThread,
+    queryKey: ["chats", threadId, workspaceId, token],
   });
 
   const assigneeId = activeThread?.assigneeId || "unassigned";
@@ -444,7 +444,7 @@ function ThreadDetail() {
 
   const statusMutation = useMutation({
     mutationFn: async (values: { status: string }) => {
-      const { error, data } = await updateThread(token, workspaceId, threadId, {
+      const { data, error } = await updateThread(token, workspaceId, threadId, {
         ...values,
       });
       if (error) {
@@ -474,7 +474,7 @@ function ThreadDetail() {
       return (
         <div className="p-4 space-y-4">
           {chatsReversed.map((chat) => (
-            <Chat key={chat.chatId} chat={chat} memberId={memberId} />
+            <Chat chat={chat} key={chat.chatId} memberId={memberId} />
           ))}
           <div ref={bottomRef}></div>
         </div>
@@ -515,11 +515,11 @@ function ThreadDetail() {
         >
           <div className="flex">
             <div className="flex flex-col gap-4 px-2 py-4">
-              <Button variant="outline" size="icon" asChild>
+              <Button asChild size="icon" variant="outline">
                 <Link
-                  to={"/workspaces/$workspaceId/threads/todo"}
                   params={{ workspaceId }}
                   search={{ sort: defaultSortKey }}
+                  to={"/workspaces/$workspaceId/threads/todo"}
                 >
                   <ArrowLeftIcon className="h-4 w-4" />
                 </Link>
@@ -532,20 +532,20 @@ function ThreadDetail() {
                 />
               )}
               {prevItem ? (
-                <Button variant="outline" size="icon" asChild>
+                <Button asChild size="icon" variant="outline">
                   <Link
+                    params={{ threadId: prevItem.threadId, workspaceId }}
                     to="/workspaces/$workspaceId/threads/$threadId"
-                    params={{ workspaceId, threadId: prevItem.threadId }}
                   >
                     <ArrowUpIcon className="h-4 w-4" />
                   </Link>
                 </Button>
               ) : null}
               {nextItem ? (
-                <Button variant="outline" size="icon" asChild>
+                <Button asChild size="icon" variant="outline">
                   <Link
+                    params={{ threadId: nextItem.threadId, workspaceId }}
                     to="/workspaces/$workspaceId/threads/$threadId"
-                    params={{ workspaceId, threadId: nextItem.threadId }}
                   >
                     <ArrowDownIcon className="h-4 w-4" />
                   </Link>
@@ -557,10 +557,10 @@ function ThreadDetail() {
         <main className="flex flex-col flex-1">
           <ResizablePanelGroup direction="horizontal">
             <ResizablePanel
-              defaultSize={25}
-              minSize={20}
-              maxSize={30}
               className={cn("hidden", currentQueue ? "sm:block" : "")}
+              defaultSize={25}
+              maxSize={30}
+              minSize={20}
             >
               <div className="flex h-14 flex-col justify-center border-b px-4">
                 <div className="font-semibold">Threads</div>
@@ -568,15 +568,15 @@ function ThreadDetail() {
               <ScrollArea className="h-[calc(100dvh-4rem)]">
                 {currentQueue && (
                   <ThreadList
-                    workspaceId={workspaceId}
                     threads={currentQueue}
                     variant="compress"
+                    workspaceId={workspaceId}
                   />
                 )}
               </ScrollArea>
             </ResizablePanel>
             <ResizableHandle withHandle={true} />
-            <ResizablePanel defaultSize={50} className="flex flex-col">
+            <ResizablePanel className="flex flex-col" defaultSize={50}>
               <ResizablePanelGroup direction="vertical">
                 <ResizablePanel defaultSize={75}>
                   <div className="flex h-full flex-col">
@@ -591,25 +591,25 @@ function ThreadDetail() {
                         <span className="items-center text-xs capitalize">
                           {threadStatus}
                         </span>
-                        <Separator orientation="vertical" className="mx-2" />
+                        <Separator className="mx-2" orientation="vertical" />
                         <ChatBubbleIcon className="h-3 w-3" />
                         {isAwaitingReply && (
                           <React.Fragment>
                             <Separator
-                              orientation="vertical"
                               className="mx-2"
+                              orientation="vertical"
                             />
                             <Badge
-                              variant="outline"
                               className="bg-indigo-100 font-normal dark:bg-indigo-500"
+                              variant="outline"
                             >
                               <div className="flex items-center gap-1">
                                 <ResetIcon className="h-2 w-2" />
                               </div>
                             </Badge>
                             <Separator
-                              orientation="vertical"
                               className="mx-2"
+                              orientation="vertical"
                             />
                             <div className="text-xs">
                               {formatDistanceToNow(
@@ -632,11 +632,11 @@ function ThreadDetail() {
                 <ResizablePanel defaultSize={25} maxSize={50} minSize={20}>
                   <div className="flex flex-col h-full p-2 overflow-auto gap-2">
                     <MessageForm
-                      token={token}
-                      workspaceId={workspaceId}
-                      threadId={threadId}
                       customerName={customerName}
                       refetch={refetch}
+                      threadId={threadId}
+                      token={token}
+                      workspaceId={workspaceId}
                     />
                     <div className="flex flex-col mt-auto">
                       <div className="flex justify-end gap-2">
@@ -646,12 +646,12 @@ function ThreadDetail() {
                         </Button>
                         {threadStatus === "todo" && (
                           <Button
+                            disabled={isStatusMutPending}
                             onClick={() => {
                               statusMutation.mutate({
                                 status: "done",
                               });
                             }}
-                            disabled={isStatusMutPending}
                             size="sm"
                             variant="outline"
                           >
@@ -661,12 +661,12 @@ function ThreadDetail() {
                         )}
                         {threadStatus === "done" && (
                           <Button
+                            disabled={isStatusMutPending}
                             onClick={() => {
                               statusMutation.mutate({
                                 status: "todo",
                               });
                             }}
-                            disabled={isStatusMutPending}
                             size="sm"
                             variant="outline"
                           >
@@ -689,24 +689,24 @@ function ThreadDetail() {
             </ResizablePanel>
             <ResizableHandle withHandle={true} />
             <ResizablePanel
-              defaultSize={25}
-              minSize={20}
-              maxSize={30}
               className="hidden sm:block bg-gray-100 dark:bg-background p-2"
+              defaultSize={25}
+              maxSize={30}
+              minSize={20}
             >
               <div className="flex flex-col gap-2 bg-white dark:bg-background rounded-lg">
                 <ThreadPreview activeThread={activeThread} />
                 <PropertiesForm
+                  assigneeId={assigneeId}
+                  priority={priority}
+                  threadId={threadId as string}
                   token={token}
                   workspaceId={workspaceId as string}
-                  threadId={threadId as string}
-                  priority={priority}
-                  assigneeId={assigneeId}
                 />
                 <ThreadLabels
+                  threadId={threadId}
                   token={token}
                   workspaceId={workspaceId}
-                  threadId={threadId}
                 />
               </div>
             </ResizablePanel>

@@ -2,12 +2,11 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
-  SheetTrigger,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
+  SheetTrigger,
 } from "@/components/ui/sheet";
-
 import SideNavLinks from "@/components/workspace/settings/sidenav-links";
 import { cn } from "@/lib/utils";
 import { ArrowLeftIcon, HamburgerMenuIcon } from "@radix-ui/react-icons";

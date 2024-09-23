@@ -1,95 +1,97 @@
 import { z } from "zod";
-import {
-  workspaceResponseSchema,
-  workspaceMetricsResponseSchema,
-  threadResponseSchema,
-  accountResponseSchema,
-  authMemberResponseSchema,
-  customerResponseSchema,
-  labelResponseSchema,
-  memberResponseSchema,
-  patResponseSchema,
-  threadChatResponseSchema,
-  ThreadResponse,
-  LabelResponse,
-  MemberResponse,
-  ThreadChatResponse,
-  WorkspaceMetricsResponse,
-  ThreadLabelResponse,
-  threadLabelResponseSchema,
-} from "./schema";
-import {
-  IWorkspaceEntities,
-  IWorkspaceValueObjects,
-  ThreadMap,
-  CustomerMap,
-  LabelMap,
-  MemberMap,
-  PatMap,
-} from "./store";
 
 import {
   Account,
-  Workspace,
   AuthMember,
-  Pat,
   Customer,
-  threadTransformer,
-  labelTransformer,
   customerTransformer,
+  labelTransformer,
   memberTransformer,
+  Pat,
   patTransformer,
+  threadTransformer,
+  Workspace,
 } from "./models";
+import {
+  accountResponseSchema,
+  authMemberResponseSchema,
+  customerResponseSchema,
+  LabelResponse,
+  labelResponseSchema,
+  MemberResponse,
+  memberResponseSchema,
+  patResponseSchema,
+  ThreadChatResponse,
+  threadChatResponseSchema,
+  ThreadLabelResponse,
+  threadLabelResponseSchema,
+  ThreadResponse,
+  threadResponseSchema,
+  WorkspaceMetricsResponse,
+  workspaceMetricsResponseSchema,
+  workspaceResponseSchema,
+} from "./schema";
+import {
+  CustomerMap,
+  IWorkspaceEntities,
+  IWorkspaceValueObjects,
+  LabelMap,
+  MemberMap,
+  PatMap,
+  ThreadMap,
+} from "./store";
 
+// Returns the default state of the workspace store.
 function initialWorkspaceData(): IWorkspaceEntities & IWorkspaceValueObjects {
   return {
+    customers: null,
+    error: null,
     hasData: false,
     isPending: true,
-    error: null,
-    threadAppliedFilters: null,
-    workspace: null,
+    labels: null,
     member: null,
+    members: null,
     metrics: {
       active: 0,
-      done: 0,
-      snoozed: 0,
       assignedToMe: 0,
-      unassigned: 0,
-      otherAssigned: 0,
+      done: 0,
       labels: [],
+      otherAssigned: 0,
+      snoozed: 0,
+      unassigned: 0,
     },
-    threads: null,
-    customers: null,
-    labels: null,
-    members: null,
     pats: null,
+    threadAppliedFilters: null,
+    threads: null,
+    threadSortKey: null,
+    workspace: null,
   };
 }
 
 export async function getWorkspace(
   token: string,
   workspaceId: string
-): Promise<{ data: Workspace | null; error: Error | null }> {
+): Promise<{ data: null | Workspace; error: Error | null }> {
   try {
     // make a request
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/`,
       {
-        method: "GET",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
+        method: "GET",
       }
     );
 
     if (!response.ok) {
       const { status, statusText } = response;
       return {
+        data: null,
         error: new Error(
           `error fetching workspace details: ${status} ${statusText}`
         ),
-        data: null,
       };
     }
 
@@ -98,23 +100,23 @@ export async function getWorkspace(
     // parse into schema
     try {
       const workspace = workspaceResponseSchema.parse({ ...data });
-      return { error: null, data: workspace };
+      return { data: workspace, error: null };
     } catch (err) {
       if (err instanceof z.ZodError) {
         console.error(err.message);
       } else console.error(err);
       return {
-        error: new Error("error parsing workspace schema"),
         data: null,
+        error: new Error("error parsing workspace schema"),
       };
     }
   } catch (error) {
     console.error(error);
     return {
+      data: null,
       error: new Error(
         "error fetching workspace details - something went wrong"
       ),
-      data: null,
     };
   }
 }
@@ -128,20 +130,20 @@ export async function getWorkspaceMember(
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/members/me/`,
       {
-        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        method: "GET",
       }
     );
 
     if (!response.ok) {
       const { status, statusText } = response;
       return {
+        data: null,
         error: new Error(
           `error fetching workspace member details: ${status} ${statusText}`
         ),
-        data: null,
       };
     }
 
@@ -150,23 +152,23 @@ export async function getWorkspaceMember(
     // parse into schema
     try {
       const member = authMemberResponseSchema.parse({ ...data });
-      return { error: null, data: member };
+      return { data: member, error: null };
     } catch (err) {
       if (err instanceof z.ZodError) {
         console.error(err.message);
       } else console.error(err);
       return {
-        error: new Error("error parsing workspace membership schema"),
         data: null,
+        error: new Error("error parsing workspace membership schema"),
       };
     }
   } catch (error) {
     console.error(error);
     return {
+      data: null,
       error: new Error(
         "error fetching workspace member details - something went wrong"
       ),
-      data: null,
     };
   }
 }
@@ -174,48 +176,48 @@ export async function getWorkspaceMember(
 export async function getWorkspaceMetrics(
   token: string,
   workspaceId: string
-): Promise<{ data: WorkspaceMetricsResponse | null; error: Error | null }> {
+): Promise<{ data: null | WorkspaceMetricsResponse; error: Error | null }> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/metrics/`,
       {
-        method: "GET",
         headers: {
           // "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        method: "GET",
       }
     );
 
     if (!response.ok) {
       const { status, statusText } = response;
       return {
+        data: null,
         error: new Error(
           `error fetching workspace metrics: ${status} ${statusText}`
         ),
-        data: null,
       };
     }
     const data = await response.json();
     try {
       const metrics = workspaceMetricsResponseSchema.parse({ ...data });
-      return { error: null, data: metrics };
+      return { data: metrics, error: null };
     } catch (err) {
       if (err instanceof z.ZodError) {
         console.error(err.message);
       } else console.error(err);
       return {
-        error: new Error("error parsing workspace metrics schema"),
         data: null,
+        error: new Error("error parsing workspace metrics schema"),
       };
     }
   } catch (error) {
     console.error(error);
     return {
+      data: null,
       error: new Error(
         "error fetching workspace metrics - something went wrong"
       ),
-      data: null,
     };
   }
 }
@@ -223,26 +225,26 @@ export async function getWorkspaceMetrics(
 export async function getWorkspaceThreads(
   token: string,
   workspaceId: string
-): Promise<{ data: ThreadResponse[] | null; error: Error | null }> {
+): Promise<{ data: null | ThreadResponse[]; error: Error | null }> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/`,
       {
-        method: "GET",
         headers: {
           // "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        method: "GET",
       }
     );
 
     if (!response.ok) {
       const { status, statusText } = response;
       return {
+        data: null,
         error: new Error(
           `error fetching workspace threads: ${status} ${statusText}`
         ),
-        data: null,
       };
     }
 
@@ -253,23 +255,23 @@ export async function getWorkspaceThreads(
       const threads = data.map((item: any) => {
         return threadResponseSchema.parse({ ...item });
       });
-      return { error: null, data: threads };
+      return { data: threads, error: null };
     } catch (err) {
       if (err instanceof z.ZodError) {
         console.error(err.message);
       } else console.error(err);
       return {
-        error: new Error("error parsing workspace threads schema"),
         data: null,
+        error: new Error("error parsing workspace threads schema"),
       };
     }
   } catch (err) {
     console.error(err);
     return {
+      data: null,
       error: new Error(
         "error fetching workspace threads - something went wrong"
       ),
-      data: null,
     };
   }
 }
@@ -285,21 +287,21 @@ export async function getWorkspaceLabels(
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/labels/`,
       {
-        method: "GET",
         headers: {
           // "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        method: "GET",
       }
     );
 
     if (!response.ok) {
       const { status, statusText } = response;
       return {
+        data: null,
         error: new Error(
           `error fetching workspace labels: ${status} ${statusText}`
         ),
-        data: null,
       };
     }
 
@@ -310,47 +312,47 @@ export async function getWorkspaceLabels(
       const labels = data.map((item: any) => {
         return labelResponseSchema.parse({ ...item });
       });
-      return { error: null, data: labels };
+      return { data: labels, error: null };
     } catch (err) {
       if (err instanceof z.ZodError) {
         console.error(err.message);
       } else console.error(err);
       return {
-        error: new Error("error parsing workspace labels schema"),
         data: null,
+        error: new Error("error parsing workspace labels schema"),
       };
     }
   } catch (err) {
     console.error(err);
     return {
+      data: null,
       error: new Error(
         "error fetching workspace labels - something went wrong"
       ),
-      data: null,
     };
   }
 }
 
 export async function getPats(token: string): Promise<{
-  data: Pat[] | null;
+  data: null | Pat[];
   error: Error | null;
 }> {
   try {
     const response = await fetch(`${import.meta.env.VITE_ZYG_URL}/pats/`, {
-      method: "GET",
       headers: {
         // "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
+      method: "GET",
     });
 
     if (!response.ok) {
       const { status, statusText } = response;
       return {
+        data: null,
         error: new Error(
           `error fetching account pats: ${status} ${statusText}`
         ),
-        data: null,
       };
     }
 
@@ -361,68 +363,68 @@ export async function getPats(token: string): Promise<{
       const pats = data.map((item: any) => {
         return patResponseSchema.parse({ ...item });
       });
-      return { error: null, data: pats };
+      return { data: pats, error: null };
     } catch (err) {
       if (err instanceof z.ZodError) {
         console.error(err.message);
       } else console.error(err);
       return {
-        error: new Error("error parsing account pat schema"),
         data: null,
+        error: new Error("error parsing account pat schema"),
       };
     }
   } catch (err) {
     console.error(err);
     return {
-      error: new Error("error fetching account pats - something went wrong"),
       data: null,
+      error: new Error("error fetching account pats - something went wrong"),
     };
   }
 }
 
 export async function createPat(
   token: string,
-  body: { name: string; description: string }
+  body: { description: string; name: string }
 ): Promise<{
-  data: Pat | null;
+  data: null | Pat;
   error: Error | null;
 }> {
   try {
     const response = await fetch(`${import.meta.env.VITE_ZYG_URL}/pats/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
       body: JSON.stringify({ ...body }),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
     });
     if (!response.ok) {
       const { status, statusText } = response;
       const error = new Error(
         `error creating account pat with status: ${status} and statusText: ${statusText}`
       );
-      return { error, data: null };
+      return { data: null, error };
     }
     try {
       const data = await response.json();
 
       console.log(data);
       const pat = patResponseSchema.parse({ ...data });
-      return { error: null, data: pat };
+      return { data: pat, error: null };
     } catch (err) {
       if (err instanceof z.ZodError) {
         console.error(err.message);
       } else console.error(err);
       return {
-        error: new Error("error parsing account pat schema"),
         data: null,
+        error: new Error("error parsing account pat schema"),
       };
     }
   } catch (err) {
     console.error(err);
     return {
-      error: new Error("error creating account pat - something went wrong"),
       data: null,
+      error: new Error("error creating account pat - something went wrong"),
     };
   }
 }
@@ -489,12 +491,12 @@ export async function getOrCreateZygAccount(
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/accounts/auth/`,
       {
-        method: "POST",
+        body: reqBody,
         headers: {
           // "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: reqBody,
+        method: "POST",
       }
     );
     if (!response.ok) {
@@ -502,7 +504,7 @@ export async function getOrCreateZygAccount(
       const error = new Error(
         `error creating Zyg auth account with with status: ${status} and statusText: ${statusText}`
       );
-      return { error, data: null };
+      return { data: null, error };
     }
 
     try {
@@ -510,23 +512,23 @@ export async function getOrCreateZygAccount(
 
       console.log(data);
       const account = accountResponseSchema.parse({ ...data });
-      return { error: null, data: account };
+      return { data: account, error: null };
     } catch (err) {
       if (err instanceof z.ZodError) {
         console.error(err.message);
       } else console.error(err);
       return {
-        error: new Error("error parsing account schema"),
         data: null,
+        error: new Error("error parsing account schema"),
       };
     }
   } catch (err) {
     console.error(err);
     return {
+      data: null,
       error: new Error(
         "error fetching auth account details - something went wrong"
       ),
-      data: null,
     };
   }
 }
@@ -542,20 +544,20 @@ export async function getWorkspaceCustomers(
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/customers/`,
       {
-        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        method: "GET",
       }
     );
 
     if (!response.ok) {
       const { status, statusText } = response;
       return {
+        data: null,
         error: new Error(
           `error fetching workspace customers: ${status} ${statusText}`
         ),
-        data: null,
       };
     }
 
@@ -567,23 +569,23 @@ export async function getWorkspaceCustomers(
       const customers = data.map((item: any) => {
         return customerResponseSchema.parse({ ...item });
       });
-      return { error: null, data: customers };
+      return { data: customers, error: null };
     } catch (err) {
       if (err instanceof z.ZodError) {
         console.error(err.message);
       } else console.error(err);
       return {
-        error: new Error("error parsing workspace customers schema"),
         data: null,
+        error: new Error("error parsing workspace customers schema"),
       };
     }
   } catch (err) {
     console.error(err);
     return {
+      data: null,
       error: new Error(
         "error fetching workspace customers - something went wrong"
       ),
-      data: null,
     };
   }
 }
@@ -599,12 +601,12 @@ export async function createWorkspace(
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/`,
       {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({ ...body }),
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
       }
     );
     if (!response.ok) {
@@ -612,21 +614,21 @@ export async function createWorkspace(
       const error = new Error(
         `error creating workspace with status: ${status} and statusText: ${statusText}`
       );
-      return { error, data: null };
+      return { data: null, error };
     }
     const data = await response.json();
 
     console.log(data);
-    const { workspaceId, name } = data;
+    const { name, workspaceId } = data;
     return {
-      error: null,
       data: { workspaceId, workspaceName: name },
+      error: null,
     };
   } catch (err) {
     console.error(err);
     return {
-      error: new Error("error creating workspace - something went wrong"),
       data: null,
+      error: new Error("error creating workspace - something went wrong"),
     };
   }
 }
@@ -643,12 +645,12 @@ export async function updateWorkspace(
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/`,
       {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({ ...body }),
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        method: "PATCH",
       }
     );
     if (!response.ok) {
@@ -656,21 +658,21 @@ export async function updateWorkspace(
       const error = new Error(
         `error updating workspace with status: ${status} and statusText: ${statusText}`
       );
-      return { error, data: null };
+      return { data: null, error };
     }
     const data = await response.json();
 
     console.log(data);
-    const { workspaceId: id, name } = data;
+    const { name, workspaceId: id } = data;
     return {
-      error: null,
       data: { workspaceId: id, workspaceName: name },
+      error: null,
     };
   } catch (err) {
     console.error(err);
     return {
-      error: new Error("error updating workspace - something went wrong"),
       data: null,
+      error: new Error("error updating workspace - something went wrong"),
     };
   }
 }
@@ -686,20 +688,20 @@ export async function getWorkspaceMembers(
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/members/`,
       {
-        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        method: "GET",
       }
     );
 
     if (!response.ok) {
       const { status, statusText } = response;
       return {
+        data: null,
         error: new Error(
           `error fetching workspace members: ${status} ${statusText}`
         ),
-        data: null,
       };
     }
 
@@ -711,23 +713,23 @@ export async function getWorkspaceMembers(
       const members = data.map((item: any) => {
         return memberResponseSchema.parse({ ...item });
       });
-      return { error: null, data: members };
+      return { data: members, error: null };
     } catch (err) {
       if (err instanceof z.ZodError) {
         console.error(err.message);
       } else console.error(err);
       return {
-        error: new Error("error parsing workspace members schema"),
         data: null,
+        error: new Error("error parsing workspace members schema"),
       };
     }
   } catch (err) {
     console.error(err);
     return {
+      data: null,
       error: new Error(
         "error fetching workspace members - something went wrong"
       ),
-      data: null,
     };
   }
 }
@@ -742,10 +744,10 @@ export async function deletePat(
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/pats/${patId}/`,
       {
-        method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        method: "DELETE",
       }
     );
 
@@ -804,14 +806,14 @@ export async function bootstrapWorkspace(
     getAccountPatsP,
   ]);
 
-  const { error: errWorkspace, data: workspace } = workspaceData;
-  const { error: errMember, data: member } = memberData;
-  const { error: errCustomer, data: customers } = customerData;
-  const { error: errMetrics, data: metrics } = metricsData;
-  const { error: errThreads, data: threads } = threadsData;
-  const { error: errLabels, data: labels } = labelsData;
-  const { error: errMembers, data: members } = membersData;
-  const { error: errPats, data: pats } = patsData;
+  const { data: workspace, error: errWorkspace } = workspaceData;
+  const { data: member, error: errMember } = memberData;
+  const { data: customers, error: errCustomer } = customerData;
+  const { data: metrics, error: errMetrics } = metricsData;
+  const { data: threads, error: errThreads } = threadsData;
+  const { data: labels, error: errLabels } = labelsData;
+  const { data: members, error: errMembers } = membersData;
+  const { data: pats, error: errPats } = patsData;
 
   const hasErr =
     errWorkspace ||
@@ -877,27 +879,27 @@ export async function getWorkspaceThreadChatMessages(
   workspaceId: string,
   threadId: string
 ): Promise<{
-  data: ThreadChatResponse[] | null;
+  data: null | ThreadChatResponse[];
   error: Error | null;
 }> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadId}/messages/`,
       {
-        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        method: "GET",
       }
     );
 
     if (!response.ok) {
       const { status, statusText } = response;
       return {
+        data: null,
         error: new Error(
           `error fetching workspace thread chat messages: ${status} ${statusText}`
         ),
-        data: null,
       };
     }
 
@@ -907,23 +909,23 @@ export async function getWorkspaceThreadChatMessages(
       const messages = data.map((item: any) => {
         return threadChatResponseSchema.parse({ ...item });
       });
-      return { error: null, data: messages };
+      return { data: messages, error: null };
     } catch (err) {
       if (err instanceof z.ZodError) {
         console.error(err.message);
       } else console.error(err);
       return {
-        error: new Error("error parsing workspace thread chat messages schema"),
         data: null,
+        error: new Error("error parsing workspace thread chat messages schema"),
       };
     }
   } catch (err) {
     console.error(err);
     return {
+      data: null,
       error: new Error(
         "error fetching workspace thread chat messages - something went wrong"
       ),
-      data: null,
     };
   }
 }
@@ -937,12 +939,12 @@ export async function createWorkspaceLabel(
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/labels/`,
       {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({ ...body }),
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
       }
     );
     if (!response.ok) {
@@ -950,28 +952,28 @@ export async function createWorkspaceLabel(
       const error = new Error(
         `error creating label with status: ${status} and statusText: ${statusText}`
       );
-      return { error, data: null };
+      return { data: null, error };
     }
     try {
       const data = await response.json();
 
       console.log(data);
       const parsed = labelResponseSchema.parse({ ...data });
-      return { error: null, data: parsed };
+      return { data: parsed, error: null };
     } catch (err) {
       if (err instanceof z.ZodError) {
         console.error(err.message);
       } else console.error(err);
       return {
-        error: new Error("error parsing workspace label schema"),
         data: null,
+        error: new Error("error parsing workspace label schema"),
       };
     }
   } catch (err) {
     console.error(err);
     return {
-      error: new Error("error creating label - something went wrong"),
       data: null,
+      error: new Error("error creating label - something went wrong"),
     };
   }
 }
@@ -986,12 +988,12 @@ export async function updateWorkspaceLabel(
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/labels/${labelId}/`,
       {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({ ...body }),
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        method: "PATCH",
       }
     );
     if (!response.ok) {
@@ -999,28 +1001,28 @@ export async function updateWorkspaceLabel(
       const error = new Error(
         `error updating label with status: ${status} and statusText: ${statusText}`
       );
-      return { error, data: null };
+      return { data: null, error };
     }
     try {
       const data = await response.json();
 
       console.log(data);
       const parsed = labelResponseSchema.parse({ ...data });
-      return { error: null, data: parsed };
+      return { data: parsed, error: null };
     } catch (err) {
       if (err instanceof z.ZodError) {
         console.error(err.message);
       } else console.error(err);
       return {
-        error: new Error("error parsing workspace label schema"),
         data: null,
+        error: new Error("error parsing workspace label schema"),
       };
     }
   } catch (err) {
     console.error(err);
     return {
-      error: new Error("error workspace label - something went wrong"),
       data: null,
+      error: new Error("error workspace label - something went wrong"),
     };
   }
 }
@@ -1030,17 +1032,17 @@ export async function updateThread(
   workspaceId: string,
   threadId: string,
   body: object
-): Promise<{ data: ThreadResponse | null; error: Error | null }> {
+): Promise<{ data: null | ThreadResponse; error: Error | null }> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadId}/`,
       {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({ ...body }),
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        method: "PATCH",
       }
     );
     if (!response.ok) {
@@ -1048,28 +1050,28 @@ export async function updateThread(
       const error = new Error(
         `error updating thread with status: ${status} and statusText: ${statusText}`
       );
-      return { error, data: null };
+      return { data: null, error };
     }
     try {
       const data = await response.json();
 
       console.log("updateThread data", data);
       const parsed = threadResponseSchema.parse({ ...data });
-      return { error: null, data: parsed };
+      return { data: parsed, error: null };
     } catch (err) {
       if (err instanceof z.ZodError) {
         console.error(err.message);
       } else console.error(err);
       return {
-        error: new Error("error parsing thread chat schema"),
         data: null,
+        error: new Error("error parsing thread chat schema"),
       };
     }
   } catch (err) {
     console.error(err);
     return {
-      error: new Error("error thread - something went wrong"),
       data: null,
+      error: new Error("error thread - something went wrong"),
     };
   }
 }
@@ -1079,27 +1081,27 @@ export async function getThreadLabels(
   workspaceId: string,
   threadId: string
 ): Promise<{
-  data: ThreadLabelResponse[] | null;
+  data: null | ThreadLabelResponse[];
   error: Error | null;
 }> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadId}/labels/`,
       {
-        method: "GET",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
+        method: "GET",
       }
     );
     if (!response.ok) {
       const { status, statusText } = response;
       return {
+        data: null,
         error: new Error(
           `error fetching workspace thread labels: ${status} ${statusText}`
         ),
-        data: null,
       };
     }
 
@@ -1109,23 +1111,23 @@ export async function getThreadLabels(
       const labels = data.map((item: any) => {
         return threadLabelResponseSchema.parse({ ...item });
       });
-      return { error: null, data: labels };
+      return { data: labels, error: null };
     } catch (err) {
       if (err instanceof z.ZodError) {
         console.error(err.message);
       } else console.log(err);
       return {
-        error: new Error("error parsing workspace thread label schema"),
         data: null,
+        error: new Error("error parsing workspace thread label schema"),
       };
     }
   } catch (err) {
     console.error(err);
     return {
+      data: null,
       error: new Error(
         "error fetching workspace thread labels - something went wrong"
       ),
-      data: null,
     };
   }
 }
@@ -1134,28 +1136,28 @@ export async function putThreadLabel(
   token: string,
   workspaceId: string,
   threadId: string,
-  body: { name: string; icon: string }
+  body: { icon: string; name: string }
 ): Promise<{
-  data: ThreadLabelResponse | null;
+  data: null | ThreadLabelResponse;
   error: Error | null;
 }> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadId}/labels/`,
       {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({ ...body }),
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        method: "PUT",
       }
     );
     if (!response.ok) {
       const { status, statusText } = response;
       return {
-        error: new Error(`error setting thread label: ${status} ${statusText}`),
         data: null,
+        error: new Error(`error setting thread label: ${status} ${statusText}`),
       };
     }
 
@@ -1163,21 +1165,21 @@ export async function putThreadLabel(
       const data = await response.json();
       console.log(data);
       const label = threadLabelResponseSchema.parse({ ...data });
-      return { error: null, data: label };
+      return { data: label, error: null };
     } catch (err) {
       if (err instanceof z.ZodError) {
         console.error(err.message);
       } else console.log(err);
       return {
-        error: new Error("error parsing workspace thread label schema"),
         data: null,
+        error: new Error("error parsing workspace thread label schema"),
       };
     }
   } catch (err) {
     console.error(err);
     return {
-      error: new Error("error setting thread label - something went wrong"),
       data: null,
+      error: new Error("error setting thread label - something went wrong"),
     };
   }
 }
@@ -1195,31 +1197,31 @@ export async function deleteThreadLabel(
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadId}/labels/${labelId}/`,
       {
-        method: "DELETE",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
+        method: "DELETE",
       }
     );
     if (!response.ok) {
       const { status, statusText } = response;
       return {
+        data: null,
         error: new Error(
           `error deleting thread label: ${status} ${statusText}`
         ),
-        data: null,
       };
     }
     return {
-      error: null,
       data: true,
+      error: null,
     };
   } catch (err) {
     console.error(err);
     return {
-      error: new Error("error deleting thread label - something went wrong"),
       data: null,
+      error: new Error("error deleting thread label - something went wrong"),
     };
   }
 }
@@ -1230,28 +1232,28 @@ export async function sendThreadChatMessage(
   threadId: string,
   body: { message: string }
 ): Promise<{
-  data: ThreadChatResponse | null;
+  data: null | ThreadChatResponse;
   error: Error | null;
 }> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadId}/messages/`,
       {
-        method: "POST",
+        body: JSON.stringify({ ...body }),
         headers: {
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ ...body }),
+        method: "POST",
       }
     );
 
     if (!response.ok) {
       const { status, statusText } = response;
       return {
+        data: null,
         error: new Error(
           `error fetching workspace thread chat messages: ${status} ${statusText}`
         ),
-        data: null,
       };
     }
 
@@ -1260,23 +1262,23 @@ export async function sendThreadChatMessage(
 
       console.log(data);
       const parsed = threadChatResponseSchema.parse({ ...data });
-      return { error: null, data: parsed };
+      return { data: parsed, error: null };
     } catch (err) {
       if (err instanceof z.ZodError) {
         console.error(err.message);
       } else console.error(err);
       return {
-        error: new Error("error parsing workspace thread chat messages schema"),
         data: null,
+        error: new Error("error parsing workspace thread chat messages schema"),
       };
     }
   } catch (err) {
     console.error(err);
     return {
+      data: null,
       error: new Error(
         "error sending workspace thread chat messages - something went wrong"
       ),
-      data: null,
     };
   }
 }

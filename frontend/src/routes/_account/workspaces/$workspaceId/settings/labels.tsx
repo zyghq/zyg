@@ -1,13 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { LabelItem } from "@/components/workspace/settings/label";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { z } from "zod";
-import { useForm, SubmitHandler } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useStore } from "zustand";
-import { useWorkspaceStore } from "@/providers";
-import { createWorkspaceLabel } from "@/db/api";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -15,11 +6,20 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useMutation } from "@tanstack/react-query";
-import { WorkspaceStoreState } from "@/db/store";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LabelItem } from "@/components/workspace/settings/label";
+import { createWorkspaceLabel } from "@/db/api";
 import { Label } from "@/db/models";
+import { WorkspaceStoreState } from "@/db/store";
+import { useWorkspaceStore } from "@/providers";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { SubmitHandler, useForm } from "react-hook-form";
+import { z } from "zod";
+import { useStore } from "zustand";
 
 export const Route = createFileRoute(
   "/_account/workspaces/$workspaceId/settings/labels"
@@ -44,16 +44,16 @@ function LabelSettings() {
   ) as Label[];
 
   const form = useForm({
-    resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
     },
+    resolver: zodResolver(formSchema),
   });
 
   const mutation = useMutation({
     mutationFn: async (inputs: { name: string }) => {
       const { name } = inputs;
-      const { error, data } = await createWorkspaceLabel(token, workspaceId, {
+      const { data, error } = await createWorkspaceLabel(token, workspaceId, {
         name,
       });
       if (error) {
@@ -67,8 +67,8 @@ function LabelSettings() {
     onError: (error) => {
       console.error(error);
       form.setError("name", {
-        type: "serverError",
         message: "Something went wrong. Please try again later.",
+        type: "serverError",
       });
     },
     onSuccess: (data) => {
@@ -116,8 +116,8 @@ function LabelSettings() {
             <div className="mt-8 flex flex-col gap-4">
               <Form {...form}>
                 <form
-                  onSubmit={form.handleSubmit(onSubmit)}
                   className="flex space-x-2"
+                  onSubmit={form.handleSubmit(onSubmit)}
                 >
                   <FormField
                     control={form.control}
@@ -126,9 +126,9 @@ function LabelSettings() {
                       <FormItem className="w-full">
                         <FormControl>
                           <Input
-                            required
                             autoComplete="off"
                             placeholder="Label"
+                            required
                             {...field}
                           />
                         </FormControl>
@@ -146,10 +146,10 @@ function LabelSettings() {
                   {labels.map((label) => (
                     <LabelItem
                       key={label.labelId}
+                      label={label.name}
+                      labelId={label.labelId}
                       token={token}
                       workspaceId={workspaceId}
-                      labelId={label.labelId}
-                      label={label.name}
                     />
                   ))}
                 </div>

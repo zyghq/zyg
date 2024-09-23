@@ -1,18 +1,18 @@
-import * as React from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { useStore } from "zustand";
-import { WorkspaceStoreState } from "@/db/store";
-import { useWorkspaceStore } from "@/providers";
 import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
 import { ThreadListV3 } from "@/components/workspace/thread-list";
+import { WorkspaceStoreState } from "@/db/store";
 import {
-  StagesFiltersType,
   AssigneesFiltersType,
   PrioritiesFiltersType,
   SortBy,
+  StagesFiltersType,
 } from "@/db/store";
+import { useWorkspaceStore } from "@/providers";
+import { createFileRoute } from "@tanstack/react-router";
 import { CircleIcon } from "lucide-react";
+import * as React from "react";
+import { useStore } from "zustand";
 
 export const Route = createFileRoute(
   "/_account/workspaces/$workspaceId/_workspace/threads/todo"
@@ -22,7 +22,7 @@ export const Route = createFileRoute(
 
 function Threads() {
   const workspaceStore = useWorkspaceStore();
-  const { stages, sort, assignees, priorities } = Route.useSearch();
+  const { assignees, priorities, sort, stages } = Route.useSearch();
   const navigate = Route.useNavigate();
 
   const workspaceId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
@@ -244,21 +244,21 @@ function Threads() {
         </div>
         <div className="flex gap-1 my-auto">
           <Filters
-            stages={stages as StagesFiltersType}
-            priorities={priorities as PrioritiesFiltersType}
             assignedMembers={assignedMembers}
-            assignees={assignees as AssigneesFiltersType}
-            statusOnChecked={onStatusChecked}
-            statusOnUnchecked={onStatusUnchecked}
-            priorityOnChecked={onPriorityChecked}
-            priorityOnUnchecked={onPriorityUnchecked}
             assigneeOnChecked={onAssigneeChecked}
             assigneeOnUnchecked={onAssigneeUnchecked}
+            assignees={assignees as AssigneesFiltersType}
+            priorities={priorities as PrioritiesFiltersType}
+            priorityOnChecked={onPriorityChecked}
+            priorityOnUnchecked={onPriorityUnchecked}
+            stages={stages as StagesFiltersType}
+            statusOnChecked={onStatusChecked}
+            statusOnUnchecked={onStatusUnchecked}
           />
-          <Sorts sort={sort as SortBy} onChecked={onSortChecked} />
+          <Sorts onChecked={onSortChecked} sort={sort as SortBy} />
         </div>
       </div>
-      <ThreadListV3 workspaceId={workspaceId} threads={todoThreads} />
+      <ThreadListV3 threads={todoThreads} workspaceId={workspaceId} />
     </React.Fragment>
   );
 }

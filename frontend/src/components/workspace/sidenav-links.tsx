@@ -17,6 +17,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { WorkspaceMetrics } from "@/db/models";
 import { LabelMetrics } from "@/db/models";
+import { SortBy } from "@/db/store";
 import { cn } from "@/lib/utils";
 import {
   BarChartIcon,
@@ -35,22 +36,17 @@ import { Link } from "@tanstack/react-router";
 import {
   Bug as BugIcon,
   Building2Icon,
-  LifeBuoy as LifeBuoyIcon,
-  TagIcon,
-  Users as UsersIcon,
-  LocateIcon,
-  TagsIcon,
-  ReplyIcon,
-  ClockIcon,
-  PauseIcon,
   CheckCircleIcon,
+  ClockIcon,
+  LifeBuoy as LifeBuoyIcon,
+  LocateIcon,
+  PauseIcon,
+  ReplyIcon,
+  TagIcon,
+  TagsIcon,
+  Users as UsersIcon,
 } from "lucide-react";
-import { getRouteApi } from "@tanstack/react-router";
 import React from "react";
-
-const routeApi = getRouteApi(
-  "/_account/workspaces/$workspaceId/_workspace/threads"
-);
 
 function SideNavLabelLinks({
   labels,
@@ -137,6 +133,7 @@ export default function SideNavLinks({
   memberId,
   metrics,
   openClose = () => {},
+  sort,
   workspaceId,
   workspaceName,
 }: {
@@ -145,11 +142,10 @@ export default function SideNavLinks({
   memberId: string;
   metrics: WorkspaceMetrics;
   openClose?: (isOpen: boolean) => undefined | void;
+  sort: SortBy;
   workspaceId: string;
   workspaceName: string;
 }) {
-  const routeSearch = routeApi.useSearch();
-  const { sort } = routeSearch;
   return (
     <React.Fragment>
       <ScrollArea className={maxHeight}>

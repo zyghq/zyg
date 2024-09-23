@@ -1,12 +1,3 @@
-import React from "react";
-import {
-  createFileRoute,
-  Link,
-  useRouterState,
-  useRouter,
-  redirect,
-} from "@tanstack/react-router";
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,13 +6,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
+import {
+  createFileRoute,
+  Link,
+  redirect,
+  useRouter,
+  useRouterState,
+} from "@tanstack/react-router";
+import React from "react";
 
 export const Route = createFileRoute("/(auth)/signout")({
   beforeLoad: async ({ context }) => {
     const { supabaseClient } = context;
-    const { error, data } = await supabaseClient.auth.getSession();
+    const { data, error } = await supabaseClient.auth.getSession();
     const isAuthenticated = !error && data?.session;
     if (!isAuthenticated) {
       throw redirect({ to: "/signin" });
@@ -59,7 +57,7 @@ function SignOutComponent() {
           </p>
         </CardContent>
         <CardFooter className="flex justify-between">
-          <Button variant="outline" aria-label="Log In" asChild>
+          <Button aria-label="Log In" asChild variant="outline">
             <Link to="/workspaces">
               <ArrowLeftIcon className="mr-1 h-4 w-4" />
               <span>Workspaces</span>
@@ -67,8 +65,8 @@ function SignOutComponent() {
           </Button>
           <Button
             aria-label="Sign Out"
-            onClick={() => confirmSignOut()}
             disabled={isLoading}
+            onClick={() => confirmSignOut()}
           >
             Yes, I'll be back
           </Button>

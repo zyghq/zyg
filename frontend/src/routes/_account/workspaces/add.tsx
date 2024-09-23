@@ -1,14 +1,12 @@
-import {
-  createFileRoute,
-  useNavigate,
-  useRouter,
-  useRouterState,
-  Link,
-} from "@tanstack/react-router";
-import { useToast } from "@/components/ui/use-toast";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -18,18 +16,20 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { ExclamationTriangleIcon, ArrowRightIcon } from "@radix-ui/react-icons";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, SubmitHandler } from "react-hook-form";
-import { z } from "zod";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/use-toast";
 import { createWorkspace } from "@/db/api";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowRightIcon, ExclamationTriangleIcon } from "@radix-ui/react-icons";
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+  useRouter,
+  useRouterState,
+} from "@tanstack/react-router";
+import { SubmitHandler, useForm } from "react-hook-form";
+import { z } from "zod";
 
 export const Route = createFileRoute("/_account/workspaces/add")({
   component: CreateWorkspaceComponent,
@@ -51,26 +51,26 @@ function CreateWorkspaceComponent() {
   const { toast } = useToast();
 
   const form = useForm({
-    resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
     },
+    resolver: zodResolver(formSchema),
   });
 
   const { formState } = form;
-  const { isSubmitting, errors, isSubmitSuccessful } = formState;
+  const { errors, isSubmitSuccessful, isSubmitting } = formState;
 
   const isCreating = isLoading || isSubmitting;
 
   const onSubmit: SubmitHandler<FormInputs> = async (inputs) => {
     try {
       const { name } = inputs;
-      const { error, data } = await createWorkspace(token, { name });
+      const { data, error } = await createWorkspace(token, { name });
       if (error) {
         console.error(error);
         form.setError("root", {
-          type: "serverError",
           message: "Something went wrong. Please try again later.",
+          type: "serverError",
         });
         return;
       }
@@ -80,15 +80,15 @@ function CreateWorkspaceComponent() {
         });
         await router.invalidate();
         await navigate({
-          to: "/workspaces/$workspaceId",
           params: { workspaceId: data.workspaceId },
+          to: "/workspaces/$workspaceId",
         });
       }
     } catch (err) {
       console.error(err);
       form.setError("root", {
-        type: "serverError",
         message: "Something went wrong. Please try again later.",
+        type: "serverError",
       });
     }
   };
@@ -130,17 +130,17 @@ function CreateWorkspaceComponent() {
             </CardContent>
             <CardFooter className="flex justify-between">
               <Button
-                type="submit"
-                disabled={isCreating || isSubmitSuccessful}
                 aria-disabled={isCreating || isSubmitSuccessful}
                 aria-label="Create Workspace"
+                disabled={isCreating || isSubmitSuccessful}
+                type="submit"
               >
                 Save & Continue
                 <ArrowRightIcon className="ml-2 h-4 w-4" />
               </Button>
             </CardFooter>
             <CardFooter className="flex justify-center">
-              <Button variant="link" asChild>
+              <Button asChild variant="link">
                 <Link to="/workspaces">Go Back</Link>
               </Button>
             </CardFooter>

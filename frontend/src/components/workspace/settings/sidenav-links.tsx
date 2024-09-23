@@ -1,4 +1,5 @@
 import { Icons } from "@/components/icons";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -17,8 +18,6 @@ import {
   ReaderIcon,
 } from "@radix-ui/react-icons";
 import { Link, useParams } from "@tanstack/react-router";
-
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BlocksIcon } from "lucide-react";
 import {
   Bug as BugIcon,

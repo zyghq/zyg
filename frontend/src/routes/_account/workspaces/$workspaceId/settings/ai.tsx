@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { MagicWandIcon } from "@radix-ui/react-icons";
+import { createFileRoute } from "@tanstack/react-router";
 import { FlaskConicalIcon } from "lucide-react";
 
 export const Route = createFileRoute(

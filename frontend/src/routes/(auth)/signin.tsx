@@ -1,17 +1,3 @@
-import {
-  createFileRoute,
-  redirect,
-  Link,
-  useNavigate,
-  useRouter,
-  useRouterState,
-} from "@tanstack/react-router";
-
-import { zodResolver } from "@hookform/resolvers/zod";
-
-import { useForm, SubmitHandler } from "react-hook-form";
-import { z } from "zod";
-
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,9 +17,19 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-
-import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { getOrCreateZygAccount } from "@/db/api";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
+import {
+  createFileRoute,
+  Link,
+  redirect,
+  useNavigate,
+  useRouter,
+  useRouterState,
+} from "@tanstack/react-router";
+import { SubmitHandler, useForm } from "react-hook-form";
+import { z } from "zod";
 
 const searchSearchSchema = z.object({
   redirect: z.string().optional().catch(""),
@@ -47,16 +43,16 @@ type FormInputs = {
 const fallback = "/workspaces" as const;
 
 export const Route = createFileRoute("/(auth)/signin")({
-  validateSearch: searchSearchSchema,
   beforeLoad: async ({ context, search }) => {
     const { supabaseClient } = context;
-    const { error, data } = await supabaseClient.auth.getSession();
+    const { data, error } = await supabaseClient.auth.getSession();
     const isAuthenticated = !error && data?.session;
     if (isAuthenticated) {
       throw redirect({ to: search.redirect || fallback });
     }
   },
   component: SignInComponent,
+  validateSearch: searchSearchSchema,
 });
 
 const formSchema = z.object({
@@ -73,36 +69,36 @@ function SignInComponent() {
   const { toast } = useToast();
 
   const form = useForm<FormInputs>({
-    resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
       password: "",
     },
+    resolver: zodResolver(formSchema),
   });
 
   const { formState } = form;
-  const { isSubmitting, errors, isSubmitSuccessful } = formState;
+  const { errors, isSubmitSuccessful, isSubmitting } = formState;
 
   const isLoggingIn = isLoading || isSubmitting;
 
   const onSubmit: SubmitHandler<FormInputs> = async (inputs) => {
     try {
       const { email, password } = inputs;
-      const { error: errSupabase, data } =
+      const { data, error: errSupabase } =
         await supabaseClient.auth.signInWithPassword({ email, password });
       if (errSupabase) {
         console.error(errSupabase);
-        const { name, message } = errSupabase;
+        const { message, name } = errSupabase;
         if (name === "AuthApiError") {
           form.setError("root", {
-            type: "authError",
             message: message,
+            type: "authError",
           });
           return;
         } else {
           form.setError("root", {
-            type: "serverError",
             message: "Please try again later.",
+            type: "serverError",
           });
           return;
         }
@@ -110,13 +106,13 @@ function SignInComponent() {
       const { session } = data;
       if (session) {
         const { access_token: token } = session;
-        const { error: errAccount, data: account } =
+        const { data: account, error: errAccount } =
           await getOrCreateZygAccount(token);
         if (errAccount || !account) {
           console.error(errAccount);
           form.setError("root", {
-            type: "serverError",
             message: "Something went wrong. Please try again later.",
+            type: "serverError",
           });
           return;
         }
@@ -129,8 +125,8 @@ function SignInComponent() {
     } catch (err) {
       console.error(err);
       form.setError("root", {
-        type: "serverError",
         message: "Something went wrong. Please try again later.",
+        type: "serverError",
       });
     }
   };
@@ -170,8 +166,8 @@ function SignInComponent() {
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
-                        type="email"
                         placeholder="name@example.com"
+                        type="email"
                         {...field}
                         required
                       />
@@ -188,8 +184,8 @@ function SignInComponent() {
                     <FormLabel>Password</FormLabel>
                     <FormControl>
                       <Input
-                        type="password"
                         placeholder="VeryS3Cure"
+                        type="password"
                         {...field}
                         required
                       />
@@ -201,23 +197,23 @@ function SignInComponent() {
               />
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Button variant="outline" aria-label="Sign Up" asChild>
-                <Link to="/signup" preload={false}>
+              <Button aria-label="Sign Up" asChild variant="outline">
+                <Link preload={false} to="/signup">
                   Sign Up
                 </Link>
               </Button>
               <Button
-                type="submit"
-                disabled={isLoggingIn || isSubmitSuccessful}
                 aria-disabled={isLoggingIn || isSubmitSuccessful}
                 aria-label="Submit"
+                disabled={isLoggingIn || isSubmitSuccessful}
+                type="submit"
               >
                 Submit
               </Button>
             </CardFooter>
             <CardFooter className="flex justify-center">
-              <Button variant="link" asChild>
-                <Link to="/recover" preload={false}>
+              <Button asChild variant="link">
+                <Link preload={false} to="/recover">
                   Forgot Password?
                 </Link>
               </Button>

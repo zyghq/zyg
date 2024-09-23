@@ -1,7 +1,7 @@
-import { z } from "zod";
-import { fallback } from "@tanstack/router-zod-adapter";
-import { todoThreadStages, sortKeys } from "@/db/helpers";
+import { sortKeys, todoThreadStages } from "@/db/helpers";
 import { defaultSortKey } from "@/db/store";
+import { fallback } from "@tanstack/router-zod-adapter";
+import { z } from "zod";
 //
 // for more: https://tanstack.com/router/latest/docs/framework/react/guide/search-params
 // usage of `.catch` or `default` matters.
@@ -71,15 +71,15 @@ const assigneesScheme = z.union([
 // using fallback to avoid the unknown
 // see https://tanstack.com/router/latest/docs/framework/react/guide/search-params#:~:text=However%20the%20use%20of%20catch%20here%20overrides%20the%20types%20and%20makes%20page%2C%20filter%20and%20sort%20unknown%20causing%20type%20loss.%20We%20have%20handled
 export const threadSearchSchema = z.object({
-  stages: fallback(stagesSchema([...todoThreadStages]), undefined).catch(
-    undefined
-  ),
-  sort: z.enum([...sortKeys]).catch(defaultSortKey),
+  assignees: fallback(assigneesScheme, undefined).catch(undefined),
   priorities: fallback(
     prioritiesSchema(["urgent", "high", "normal", "low"]),
     undefined
   ).catch(undefined),
-  assignees: fallback(assigneesScheme, undefined).catch(undefined),
+  sort: z.enum([...sortKeys]).catch(defaultSortKey),
+  stages: fallback(stagesSchema([...todoThreadStages]), undefined).catch(
+    undefined
+  ),
 });
 
 export type ThreadSearch = z.infer<typeof threadSearchSchema>;

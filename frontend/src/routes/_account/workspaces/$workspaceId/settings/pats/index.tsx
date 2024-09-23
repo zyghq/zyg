@@ -1,12 +1,3 @@
-import * as React from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
-import { PlusIcon } from "@radix-ui/react-icons";
-import { useWorkspaceStore } from "@/providers";
-import { useStore } from "zustand";
-import { KeyRoundIcon } from "lucide-react";
-import { format } from "date-fns";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,7 +9,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { deletePat } from "@/db/api";
+import { useWorkspaceStore } from "@/providers";
+import { PlusIcon } from "@radix-ui/react-icons";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { format } from "date-fns";
+import { KeyRoundIcon } from "lucide-react";
+import * as React from "react";
+import { useStore } from "zustand";
 
 export const Route = createFileRoute(
   "/_account/workspaces/$workspaceId/settings/pats/"
@@ -33,16 +33,16 @@ const formatDate = (date: string) => {
 
 function DeleteConfirmationDialog({
   deleteFunc,
-  resetFunc,
-  isError,
-  isDeleting,
   isDeleted,
+  isDeleting,
+  isError,
+  resetFunc,
 }: {
   deleteFunc: () => void;
-  resetFunc: () => void;
-  isError: boolean;
-  isDeleting: boolean;
   isDeleted: boolean;
+  isDeleting: boolean;
+  isError: boolean;
+  resetFunc: () => void;
 }) {
   const [open, setOpen] = React.useState(false);
 
@@ -71,9 +71,9 @@ function DeleteConfirmationDialog({
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
+    <AlertDialog onOpenChange={setOpen} open={open}>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" size="sm">
+        <Button size="sm" variant="destructive">
           Delete
         </Button>
       </AlertDialogTrigger>
@@ -92,7 +92,7 @@ function DeleteConfirmationDialog({
           <AlertDialogCancel onClick={() => onCancel()}>
             Cancel
           </AlertDialogCancel>
-          <AlertDialogAction onClick={onDelete} disabled={isDeleting}>
+          <AlertDialogAction disabled={isDeleting} onClick={onDelete}>
             I understand, delete it
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -145,10 +145,10 @@ function PatSettings() {
             <header className="text-xl font-semibold">
               Personal Access Tokens
             </header>
-            <Button size="sm" asChild>
+            <Button asChild size="sm">
               <Link
-                to="/workspaces/$workspaceId/settings/pats/add"
                 params={{ workspaceId }}
+                to="/workspaces/$workspaceId/settings/pats/add"
               >
                 <PlusIcon className="mr-1 h-4 w-4" />
                 Add Token
@@ -162,8 +162,8 @@ function PatSettings() {
             <React.Fragment>
               {pats.map((pat) => (
                 <div
-                  key={pat.patId}
                   className="flex flex-col items-start gap-2 rounded-lg border p-3 text-left"
+                  key={pat.patId}
                 >
                   <div className="flex w-full flex-col gap-1">
                     <div className="flex items-center">
@@ -177,10 +177,10 @@ function PatSettings() {
                       <div className="ml-auto">
                         <DeleteConfirmationDialog
                           deleteFunc={onDelete(token, pat.patId)}
-                          resetFunc={reset}
-                          isError={isError}
-                          isDeleting={isDeleting}
                           isDeleted={isDeleted}
+                          isDeleting={isDeleting}
+                          isError={isError}
+                          resetFunc={reset}
                         />
                       </div>
                     </div>

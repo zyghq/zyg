@@ -1,33 +1,32 @@
-import { Area, AreaChart, CartesianGrid, XAxis, Bar, BarChart } from "recharts";
-
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 
 export const description = "A snapshot of the number of threads in Todo.";
 
 const chartData = [
-  { month: "January", desktop: 186 },
-  { month: "February", desktop: 305 },
-  { month: "March", desktop: 237 },
-  { month: "April", desktop: 73 },
-  { month: "May", desktop: 209 },
-  { month: "June", desktop: 214 },
+  { desktop: 186, month: "January" },
+  { desktop: 305, month: "February" },
+  { desktop: 237, month: "March" },
+  { desktop: 73, month: "April" },
+  { desktop: 209, month: "May" },
+  { desktop: 214, month: "June" },
 ];
 
 const chartConfig = {
   desktop: {
-    label: "Desktop",
     color: "hsl(var(--chart-1))",
+    label: "Desktop",
   },
 } satisfies ChartConfig;
 
 export function QueueSize({ className }: { className?: string }) {
   return (
-    <ChartContainer config={chartConfig} className={className}>
+    <ChartContainer className={className} config={chartConfig}>
       <AreaChart
         accessibilityLayer
         data={chartData}
@@ -38,22 +37,22 @@ export function QueueSize({ className }: { className?: string }) {
       >
         <CartesianGrid vertical={false} />
         <XAxis
-          dataKey="month"
-          tickLine={false}
           axisLine={false}
-          tickMargin={8}
+          dataKey="month"
           tickFormatter={(value) => value.slice(0, 3)}
+          tickLine={false}
+          tickMargin={8}
         />
         <ChartTooltip
+          content={<ChartTooltipContent hideLabel indicator="dot" />}
           cursor={false}
-          content={<ChartTooltipContent indicator="dot" hideLabel />}
         />
         <Area
           dataKey="desktop"
-          type="linear"
           fill="var(--color-desktop)"
           fillOpacity={0.4}
           stroke="var(--color-desktop)"
+          type="linear"
         />
       </AreaChart>
     </ChartContainer>
@@ -61,29 +60,29 @@ export function QueueSize({ className }: { className?: string }) {
 }
 
 const volumeData = [
-  { month: "January", desktop: 186 },
-  { month: "February", desktop: 305 },
-  { month: "March", desktop: 237 },
-  { month: "April", desktop: 73 },
-  { month: "May", desktop: 209 },
-  { month: "June", desktop: 214 },
+  { desktop: 186, month: "January" },
+  { desktop: 305, month: "February" },
+  { desktop: 237, month: "March" },
+  { desktop: 73, month: "April" },
+  { desktop: 209, month: "May" },
+  { desktop: 214, month: "June" },
 ];
 
 export function Volume({ className }: { className?: string }) {
   return (
-    <ChartContainer config={chartConfig} className={className}>
+    <ChartContainer className={className} config={chartConfig}>
       <BarChart accessibilityLayer data={volumeData}>
         <CartesianGrid vertical={false} />
         <XAxis
+          axisLine={false}
           dataKey="month"
+          tickFormatter={(value) => value.slice(0, 3)}
           tickLine={false}
           tickMargin={10}
-          axisLine={false}
-          tickFormatter={(value) => value.slice(0, 3)}
         />
         <ChartTooltip
-          cursor={false}
           content={<ChartTooltipContent hideLabel />}
+          cursor={false}
         />
         <Bar dataKey="desktop" fill="var(--color-desktop)" radius={8} />
       </BarChart>

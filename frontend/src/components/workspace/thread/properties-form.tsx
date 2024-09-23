@@ -1,4 +1,5 @@
 import { PriorityIcons } from "@/components/icons";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -52,7 +53,6 @@ import {
   PlusCircledIcon,
 } from "@radix-ui/react-icons";
 import { useMutation } from "@tanstack/react-query";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import * as React from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 import { z } from "zod";

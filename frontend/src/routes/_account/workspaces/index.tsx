@@ -1,23 +1,23 @@
+import { Icons } from "@/components/icons";
+import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { ExitIcon } from "@radix-ui/react-icons";
+import { queryOptions } from "@tanstack/react-query";
 import {
   createFileRoute,
   Link,
   redirect,
   useRouterState,
 } from "@tanstack/react-router";
-import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
-import { ExitIcon } from "@radix-ui/react-icons";
-import { Icons } from "@/components/icons";
-import { buttonVariants } from "@/components/ui/button";
-import { queryOptions } from "@tanstack/react-query";
 
 type Workspace = {
-  workspaceId: string;
   accountId: string;
-  name: string;
   createdAt: string;
+  name: string;
   updatedAt: string;
+  workspaceId: string;
 };
 
 async function fetchWorkspaces(token: string) {
@@ -25,10 +25,10 @@ async function fetchWorkspaces(token: string) {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/`,
       {
-        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        method: "GET",
       }
     );
     // handle 4xx-5xx errors
@@ -48,23 +48,23 @@ async function fetchWorkspaces(token: string) {
 
 const workspacesQueryOptions = (token: string) =>
   queryOptions({
-    queryKey: ["workspaces", token],
+    enabled: !!token,
     queryFn: async () => {
       return await fetchWorkspaces(token);
     },
-    enabled: !!token,
+    queryKey: ["workspaces", token],
   });
 
 // TODO: do error handling
 // https://tanstack.com/router/latest/docs/framework/react/guide/external-data-loading#error-handling-with-tanstack-query
 export const Route = createFileRoute("/_account/workspaces/")({
+  component: Workspaces,
   loader: async ({ context: { queryClient, supabaseClient } }) => {
-    const { error, data } = await supabaseClient.auth.getSession();
+    const { data, error } = await supabaseClient.auth.getSession();
     if (error || !data?.session) throw redirect({ to: "/signin" });
     const token = data.session.access_token as string;
     return queryClient.ensureQueryData(workspacesQueryOptions(token));
   },
-  component: Workspaces,
 });
 
 function Workspaces() {
@@ -81,9 +81,9 @@ function Workspaces() {
           </div>
           <div className="flex justify-between space-x-2 md:justify-end">
             <Link
-              to="/signout"
-              preload={false}
               className={buttonVariants({ size: "icon", variant: "outline" })}
+              preload={false}
+              to="/signout"
             >
               <ExitIcon />
             </Link>
@@ -97,7 +97,7 @@ function Workspaces() {
           live and test environments.
           <br /> Customers and team members are specific to a workspace.
         </p>
-        <Button variant="default" asChild disabled={isLoading}>
+        <Button asChild disabled={isLoading} variant="default">
           <Link to={"/workspaces/add"}>Create Workspace</Link>
         </Button>
         {workspaces && workspaces.length > 0 && (
@@ -113,8 +113,8 @@ function Workspaces() {
                   <CardFooter className="justify-end">
                     <Button asChild>
                       <Link
-                        to={"/workspaces/$workspaceId/threads/todo"}
                         params={{ workspaceId: workspace.workspaceId }}
+                        to={"/workspaces/$workspaceId/threads/todo"}
                       >
                         Open
                       </Link>

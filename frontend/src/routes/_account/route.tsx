@@ -1,22 +1,22 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { queryOptions, useQuery } from "@tanstack/react-query";
 import { getOrCreateZygAccount } from "@/db/api";
 import { AccountStoreProvider } from "@/providers";
+import { queryOptions, useQuery } from "@tanstack/react-query";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 const accountQueryOptions = (token: string) =>
   queryOptions({
-    queryKey: ["account", token],
     queryFn: async () => {
-      const { error, data } = await getOrCreateZygAccount(token);
+      const { data, error } = await getOrCreateZygAccount(token);
       if (error) throw new Error("failed to authenticate user account.");
       return data;
     },
+    queryKey: ["account", token],
   });
 
 export const Route = createFileRoute("/_account")({
   beforeLoad: async ({ context }) => {
     const { supabaseClient } = context;
-    const { error, data } = await supabaseClient.auth.getSession();
+    const { data, error } = await supabaseClient.auth.getSession();
     if (error || !data?.session) {
       throw redirect({ to: "/signin" });
     }
@@ -24,13 +24,13 @@ export const Route = createFileRoute("/_account")({
     const token = data.session.access_token as string;
     return { token };
   },
+  component: AuthLayout,
   loader: async ({ context: { queryClient, supabaseClient } }) => {
-    const { error, data } = await supabaseClient.auth.getSession();
+    const { data, error } = await supabaseClient.auth.getSession();
     if (error || !data?.session) throw redirect({ to: "/signin" });
     const token = data.session.access_token;
     return queryClient.ensureQueryData(accountQueryOptions(token));
   },
-  component: AuthLayout,
 });
 
 function AuthLayout() {
@@ -38,14 +38,14 @@ function AuthLayout() {
   const initialData = Route.useLoaderData();
 
   const response = useQuery({
-    queryKey: ["account", token],
+    enabled: !!token,
+    initialData: initialData,
     queryFn: async () => {
-      const { error, data } = await getOrCreateZygAccount(token);
+      const { data, error } = await getOrCreateZygAccount(token);
       if (error) throw new Error("failed to authenticate user account.");
       return data;
     },
-    initialData: initialData,
-    enabled: !!token,
+    queryKey: ["account", token],
     staleTime: 1000 * 60 * 1,
   });
 
@@ -54,18 +54,18 @@ function AuthLayout() {
   return (
     <AccountStoreProvider
       initialValue={{
-        hasData: data ? true : false,
-        error: data ? null : new Error("failed to fetch account details"),
         account: data
           ? {
-              email: data.email,
               accountId: data.accountId,
+              createdAt: data.createdAt,
+              email: data.email,
               name: data.name,
               provider: data.provider,
-              createdAt: data.createdAt,
               updatedAt: data.updatedAt,
             }
           : null,
+        error: data ? null : new Error("failed to fetch account details"),
+        hasData: data ? true : false,
       }}
     >
       <Outlet />

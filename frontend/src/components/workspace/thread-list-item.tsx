@@ -1,13 +1,13 @@
+import { stageIcon } from "@/components/icons";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { threadStageHumanized } from "@/db/helpers";
 import { Thread } from "@/db/models";
 import { useWorkspaceStore } from "@/providers";
 import { ChatBubbleIcon, PersonIcon } from "@radix-ui/react-icons";
 import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { useStore } from "zustand";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { threadStageHumanized } from "@/db/helpers";
-import { stageIcon } from "@/components/icons";
 
 export function ThreadLinkItem({
   thread,

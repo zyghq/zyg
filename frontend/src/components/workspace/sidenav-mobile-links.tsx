@@ -2,10 +2,10 @@ import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
-  SheetTrigger,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
+  SheetTrigger,
 } from "@/components/ui/sheet";
 import SideNavLinks from "@/components/workspace/sidenav-links";
 import { WorkspaceMetrics } from "@/db/models";

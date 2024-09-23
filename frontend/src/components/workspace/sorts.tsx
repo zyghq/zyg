@@ -6,16 +6,16 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DoubleArrowUpIcon } from "@radix-ui/react-icons";
 import { sortKeys, ThreadSortKeyHumanized } from "@/db/helpers";
+import { DoubleArrowUpIcon } from "@radix-ui/react-icons";
 import React from "react";
 
 export function Sorts({
-  sort,
   onChecked = () => {},
+  sort,
 }: {
-  sort: string;
   onChecked?: (sort: string) => void;
+  sort: string;
 }) {
   const [selectedSort, setSelectedSort] = React.useState<string>("");
   React.useEffect(() => {

@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { Separator } from "@/components/ui/separator";
+import { createFileRoute } from "@tanstack/react-router";
 import { CookingPotIcon } from "lucide-react";
 
 export const Route = createFileRoute(

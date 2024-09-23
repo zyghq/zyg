@@ -1,3 +1,4 @@
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Thread } from "@/db/models";
 import { WorkspaceStoreState } from "@/db/store";
@@ -5,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { useWorkspaceStore } from "@/providers";
 import { ChatBubbleIcon, ResetIcon } from "@radix-ui/react-icons";
 import { Link } from "@tanstack/react-router";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { useStore } from "zustand";
 

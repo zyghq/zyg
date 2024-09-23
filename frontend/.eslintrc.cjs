@@ -7,7 +7,7 @@ module.exports = {
     "plugin:react-hooks/recommended",
     "plugin:perfectionist/recommended-natural-legacy",
   ],
-  ignorePatterns: ["dist", ".eslintrc.cjs"],
+  ignorePatterns: ["dist", ".eslintrc.cjs", "**/components/ui/**"],
   parser: "@typescript-eslint/parser",
   plugins: ["react-refresh", "perfectionist"],
   rules: {
@@ -17,5 +17,5 @@ module.exports = {
     // ],
     "@typescript-eslint/no-explicit-any": "off",
   },
-  ignores: ["**/components/ui/**"],
+  // ignores: ["**/components/ui/**"],
 };
