@@ -273,7 +273,7 @@ function Threads() {
           <div className="container mt-4 sm:mt-24 max-w-md">
             <div className="border p-4 rounded-xl">
               <div className="font-medium text-sm">
-                No threads are waiting on the customer.
+                No threads are waiting for the customer.
               </div>
               <div className="text-muted-foreground text-sm">
                 When you are waiting for a reply from a customer in order to
