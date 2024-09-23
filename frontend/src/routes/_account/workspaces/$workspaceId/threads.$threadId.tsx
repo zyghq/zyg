@@ -34,6 +34,7 @@ import {
   putThreadLabel,
 } from "@/db/api";
 import { updateThread } from "@/db/api";
+import { getFromLocalStorage } from "@/db/helpers";
 import { Thread, threadTransformer } from "@/db/models";
 import {
   ThreadChatResponse,
@@ -41,7 +42,6 @@ import {
   ThreadResponse,
 } from "@/db/schema";
 import { WorkspaceStoreState } from "@/db/store";
-import { defaultSortKey } from "@/db/store";
 import { cn } from "@/lib/utils";
 import { useWorkspaceStore } from "@/providers";
 import {
@@ -409,6 +409,14 @@ function ThreadDetail() {
     state.getMemberId(state)
   );
 
+  const sort = useStore(workspaceStore, (state) =>
+    state.viewThreadSortKey(state)
+  );
+
+  const threadsPath =
+    getFromLocalStorage("zyg:threadsQueuePath") ||
+    "/workspaces/$workspaceId/threads/todo";
+
   const threadStatus = activeThread?.status || "";
   const isAwaitingReply = activeThread?.replied === false;
 
@@ -504,6 +512,8 @@ function ThreadDetail() {
     );
   }
 
+  // const navigateToThreads = () => {};
+
   return (
     <React.Fragment>
       <div className="flex min-h-screen">
@@ -518,8 +528,8 @@ function ThreadDetail() {
               <Button asChild size="icon" variant="outline">
                 <Link
                   params={{ workspaceId }}
-                  search={{ sort: defaultSortKey }}
-                  to={"/workspaces/$workspaceId/threads/todo"}
+                  search={{ sort }}
+                  to={threadsPath as string}
                 >
                   <ArrowLeftIcon className="h-4 w-4" />
                 </Link>

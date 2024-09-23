@@ -1,6 +1,8 @@
 import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
 import { ThreadListV3 } from "@/components/workspace/thread-list";
+import { STATUS_TODO } from "@/db/constants";
+import { setInLocalStorage } from "@/db/helpers";
 import { WorkspaceStoreState } from "@/db/store";
 import { PrioritiesFiltersType, SortBy, StagesFiltersType } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
@@ -29,7 +31,7 @@ function MyThreads() {
   const todoThreads = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.viewMyThreads(
       state,
-      "todo",
+      STATUS_TODO,
       memberId,
       undefined,
       stages as StagesFiltersType,
@@ -42,7 +44,7 @@ function MyThreads() {
     workspaceStore
       .getState()
       .applyThreadFilters(
-        "todo",
+        STATUS_TODO,
         undefined,
         stages as StagesFiltersType,
         priorities as PrioritiesFiltersType,
@@ -51,6 +53,12 @@ function MyThreads() {
         null
       );
   }, [workspaceStore, stages, priorities, sort, memberId]);
+
+  React.useEffect(() => {
+    setTimeout(() => {
+      setInLocalStorage("zyg:threadsQueuePath", Route.fullPath);
+    }, 0);
+  }, []);
 
   function onStatusChecked(stage: string) {
     return navigate({

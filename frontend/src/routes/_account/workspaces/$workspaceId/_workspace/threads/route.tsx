@@ -14,6 +14,7 @@ export const Route = createFileRoute(
 function ThreadRoute() {
   const { sort } = Route.useSearch();
   const workspaceStore = useWorkspaceStore();
+
   React.useEffect(() => {
     workspaceStore.getState().setThreadSortKey(sort);
   }, [sort, workspaceStore]);

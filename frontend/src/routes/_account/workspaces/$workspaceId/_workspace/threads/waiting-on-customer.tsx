@@ -2,6 +2,7 @@ import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
 import { ThreadListV3 } from "@/components/workspace/thread-list";
 import { STATUS_TODO, WAITING_ON_CUSTOMER } from "@/db/constants";
+import { setInLocalStorage } from "@/db/helpers";
 import { WorkspaceStoreState } from "@/db/store";
 import {
   AssigneesFiltersType,
@@ -57,6 +58,12 @@ function Threads() {
         null
       );
   }, [workspaceStore, assignees, priorities, sort]);
+
+  React.useEffect(() => {
+    setTimeout(() => {
+      setInLocalStorage("zyg:threadsQueuePath", Route.fullPath);
+    }, 0);
+  }, []);
 
   function onStatusChecked(stage: string) {
     return navigate({

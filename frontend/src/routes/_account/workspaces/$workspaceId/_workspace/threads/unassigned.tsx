@@ -1,6 +1,7 @@
 import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
 import { ThreadListV3 } from "@/components/workspace/thread-list";
+import { setInLocalStorage } from "@/db/helpers";
 import { WorkspaceStoreState } from "@/db/store";
 import { PrioritiesFiltersType, SortBy, StagesFiltersType } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
@@ -46,6 +47,12 @@ function UnassignedThreads() {
         true
       );
   }, [workspaceStore, stages, priorities, sort]);
+
+  React.useEffect(() => {
+    setTimeout(() => {
+      setInLocalStorage("zyg:threadsQueuePath", Route.fullPath);
+    }, 0);
+  }, []);
 
   function onStatusChecked(stage: string) {
     return navigate({

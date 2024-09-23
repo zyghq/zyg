@@ -50,9 +50,11 @@ import React from "react";
 
 function SideNavLabelLinks({
   labels,
+  sort,
   workspaceId,
 }: {
   labels: LabelMetrics[];
+  sort: SortBy;
   workspaceId: string;
 }) {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -89,6 +91,7 @@ function SideNavLabelLinks({
             )}
             key={label.labelId}
             params={{ labelId: label.labelId, workspaceId }}
+            search={{ sort }}
             to="/workspaces/$workspaceId/threads/labels/$labelId"
           >
             {({ isActive }) => (
@@ -602,6 +605,7 @@ export default function SideNavLinks({
             <div className="flex">
               <SideNavLabelLinks
                 labels={metrics.labels}
+                sort={sort}
                 workspaceId={workspaceId}
               />
             </div>
