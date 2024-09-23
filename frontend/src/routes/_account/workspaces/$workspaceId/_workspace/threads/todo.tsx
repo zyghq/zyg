@@ -238,7 +238,7 @@ function Threads() {
       <div className="px-4 sm:px-8 flex justify-between my-4">
         <div className="text-lg sm:text-xl font-medium items-center">
           <div className="flex items-center gap-x-2">
-            <CircleIcon className="h-4 w-4 text-indigo-500 mt-1" />
+            <CircleIcon className="h-5 w-5 text-indigo-500" />
             <span>Todo</span>
           </div>
         </div>
