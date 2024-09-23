@@ -306,6 +306,7 @@ export function Filters({
   assigneeOnUnchecked = () => {},
   assignees,
   disableAssigneeFilter = false,
+  disableStagesFilter = false,
   priorities,
   priorityOnChecked = () => {},
   priorityOnUnchecked = () => {},
@@ -318,6 +319,7 @@ export function Filters({
   assigneeOnUnchecked?: (member: string) => void;
   assignees: AssigneesFiltersType;
   disableAssigneeFilter?: boolean;
+  disableStagesFilter?: boolean;
   priorities: PrioritiesFiltersType;
   priorityOnChecked?: (priority: string) => void;
   priorityOnUnchecked?: (priority: string) => void;
@@ -335,11 +337,13 @@ export function Filters({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48 mx-1">
         <DropdownMenuGroup>
-          <StagesSubMenu
-            onChecked={statusOnChecked}
-            onUnchecked={statusOnUnchecked}
-            stages={stages}
-          />
+          {!disableStagesFilter && (
+            <StagesSubMenu
+              onChecked={statusOnChecked}
+              onUnchecked={statusOnUnchecked}
+              stages={stages}
+            />
+          )}
           <PrioritiesSubMenu
             onChecked={priorityOnChecked}
             onUnchecked={priorityOnUnchecked}
