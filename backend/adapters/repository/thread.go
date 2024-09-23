@@ -149,7 +149,7 @@ func threadChatJoinedCols() builq.Columns {
 // Then, insert the Thread with in persisted inbound message ID.
 // Finally, insert the chat with in persisted thread ID.
 //
-// The IDs are already generated with the time space.
+// The IDs are already generated within the time space.
 func (tc *ThreadChatDB) InsertInboundThreadChat(
 	ctx context.Context, thread models.Thread, chat models.Chat) (models.Thread, models.Chat, error) {
 	// start transaction
@@ -793,9 +793,8 @@ func (tc *ThreadChatDB) FetchThreadsByCustomerId(
 		params = append(params, *channel)
 	}
 
-	// TODO:
-	//  fix order by for proper pagination support.
-	q("ORDER BY inb.last_seq_id DESC")
+	// Sort by earliest created threads.
+	q("ORDER BY th.created_at ASC")
 	q("LIMIT %d", limit)
 
 	stmt, _, err := q.Build()
@@ -938,9 +937,8 @@ func (tc *ThreadChatDB) FetchThreadsByWorkspaceId(
 	q("AND c.role <> %$", models.Customer{}.Visitor())
 	params = append(params, models.Customer{}.Visitor())
 
-	// TODO:
-	//  fix order by for proper pagination support.
-	q("ORDER BY inb.last_seq_id DESC")
+	// Sort by earliest created threads.
+	q("ORDER BY th.created_at ASC")
 	q("LIMIT %d", limit)
 
 	stmt, _, err := q.Build()
@@ -1083,9 +1081,8 @@ func (tc *ThreadChatDB) FetchThreadsByAssignedMemberId(
 	q("AND c.role <> %$", models.Customer{}.Visitor())
 	params = append(params, models.Customer{}.Visitor())
 
-	// TODO:
-	//  fix order by for proper pagination support.
-	q("ORDER BY inb.last_seq_id DESC")
+	// Sort by earliest created threads.
+	q("ORDER BY th.created_at ASC")
 	q("LIMIT %d", limit)
 
 	stmt, _, err := q.Build()
@@ -1229,9 +1226,8 @@ func (tc *ThreadChatDB) FetchThreadsByMemberUnassigned(
 	q("AND c.role <> %$", models.Customer{}.Visitor())
 	params = append(params, models.Customer{}.Visitor())
 
-	// TODO:
-	//  fix order by for proper pagination support.
-	q("ORDER BY inb.last_seq_id DESC")
+	// Sort by earliest created threads.
+	q("ORDER BY th.created_at ASC")
 	q("LIMIT %d", limit)
 
 	stmt, _, err := q.Build()
@@ -1375,9 +1371,8 @@ func (tc *ThreadChatDB) FetchThreadsByLabelId(
 	q("AND c.role <> %$", models.Customer{}.Visitor())
 	params = append(params, models.Customer{}.Visitor())
 
-	// TODO:
-	//  fix order by for proper pagination support.
-	q("ORDER BY inb.last_seq_id DESC")
+	// Sort by earliest created threads.
+	q("ORDER BY th.created_at ASC")
 	q("LIMIT %d", limit)
 
 	stmt, _, err := q.Build()

@@ -38,7 +38,7 @@ export function ThreadLinkItem({
       <div className="col-span-1 xl:col-span-1 xl:order-last">
         <div className="flex justify-end gap-4 items-center">
           <div className="text-xs font-mono">
-            {formatDistanceToNow(new Date(thread.updatedAt), {
+            {formatDistanceToNow(new Date(thread.createdAt), {
               addSuffix: true,
             })}
           </div>
