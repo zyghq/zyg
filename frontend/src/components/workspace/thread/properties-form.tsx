@@ -50,6 +50,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   CaretSortIcon,
   CheckIcon,
+  PersonIcon,
   PlusCircledIcon,
 } from "@radix-ui/react-icons";
 import { useMutation } from "@tanstack/react-query";
@@ -113,10 +114,7 @@ function SetAssignee({
             variant="outline"
           >
             {value === "unassigned" || !value ? (
-              <Avatar className="h-5 w-5">
-                <AvatarImage src={`https://avatar.vercel.sh/unassigned`} />
-                <AvatarFallback>U</AvatarFallback>
-              </Avatar>
+              <PersonIcon className="w-4 h-4 text-muted-foreground" />
             ) : (
               <Avatar className="h-5 w-5">
                 <AvatarImage src={`https://avatar.vercel.sh/${value}`} />
@@ -142,12 +140,7 @@ function SetAssignee({
                   }}
                 >
                   {member.memberId === "unassigned" || !member.memberId ? (
-                    <Avatar className="h-5 w-5">
-                      <AvatarImage
-                        src={`https://avatar.vercel.sh/unassigned`}
-                      />
-                      <AvatarFallback>M</AvatarFallback>
-                    </Avatar>
+                    <PersonIcon className="w-4 h-4 text-muted-foreground" />
                   ) : (
                     <Avatar className="h-5 w-5">
                       <AvatarImage
