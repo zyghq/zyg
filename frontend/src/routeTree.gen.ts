@@ -28,6 +28,8 @@ import { Route as AccountWorkspacesWorkspaceIdWorkspaceIndexImport } from './rou
 import { Route as AccountWorkspacesWorkspaceIdThreadsThreadIdImport } from './routes/_account/workspaces/$workspaceId/threads.$threadId'
 import { Route as AccountWorkspacesWorkspaceIdSettingsWebhooksImport } from './routes/_account/workspaces/$workspaceId/settings/webhooks'
 import { Route as AccountWorkspacesWorkspaceIdSettingsSlackImport } from './routes/_account/workspaces/$workspaceId/settings/slack'
+import { Route as AccountWorkspacesWorkspaceIdSettingsPreferencesImport } from './routes/_account/workspaces/$workspaceId/settings/preferences'
+import { Route as AccountWorkspacesWorkspaceIdSettingsNotificationsImport } from './routes/_account/workspaces/$workspaceId/settings/notifications'
 import { Route as AccountWorkspacesWorkspaceIdSettingsMembersImport } from './routes/_account/workspaces/$workspaceId/settings/members'
 import { Route as AccountWorkspacesWorkspaceIdSettingsLinearImport } from './routes/_account/workspaces/$workspaceId/settings/linear'
 import { Route as AccountWorkspacesWorkspaceIdSettingsLabelsImport } from './routes/_account/workspaces/$workspaceId/settings/labels'
@@ -146,6 +148,18 @@ const AccountWorkspacesWorkspaceIdSettingsWebhooksRoute =
 const AccountWorkspacesWorkspaceIdSettingsSlackRoute =
   AccountWorkspacesWorkspaceIdSettingsSlackImport.update({
     path: '/slack',
+    getParentRoute: () => AccountWorkspacesWorkspaceIdSettingsRouteRoute,
+  } as any)
+
+const AccountWorkspacesWorkspaceIdSettingsPreferencesRoute =
+  AccountWorkspacesWorkspaceIdSettingsPreferencesImport.update({
+    path: '/preferences',
+    getParentRoute: () => AccountWorkspacesWorkspaceIdSettingsRouteRoute,
+  } as any)
+
+const AccountWorkspacesWorkspaceIdSettingsNotificationsRoute =
+  AccountWorkspacesWorkspaceIdSettingsNotificationsImport.update({
+    path: '/notifications',
     getParentRoute: () => AccountWorkspacesWorkspaceIdSettingsRouteRoute,
   } as any)
 
@@ -468,6 +482,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSettingsMembersImport
       parentRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteImport
     }
+    '/_account/workspaces/$workspaceId/settings/notifications': {
+      id: '/_account/workspaces/$workspaceId/settings/notifications'
+      path: '/notifications'
+      fullPath: '/workspaces/$workspaceId/settings/notifications'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSettingsNotificationsImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteImport
+    }
+    '/_account/workspaces/$workspaceId/settings/preferences': {
+      id: '/_account/workspaces/$workspaceId/settings/preferences'
+      path: '/preferences'
+      fullPath: '/workspaces/$workspaceId/settings/preferences'
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSettingsPreferencesImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteImport
+    }
     '/_account/workspaces/$workspaceId/settings/slack': {
       id: '/_account/workspaces/$workspaceId/settings/slack'
       path: '/slack'
@@ -675,6 +703,8 @@ interface AccountWorkspacesWorkspaceIdSettingsRouteRouteChildren {
   AccountWorkspacesWorkspaceIdSettingsLabelsRoute: typeof AccountWorkspacesWorkspaceIdSettingsLabelsRoute
   AccountWorkspacesWorkspaceIdSettingsLinearRoute: typeof AccountWorkspacesWorkspaceIdSettingsLinearRoute
   AccountWorkspacesWorkspaceIdSettingsMembersRoute: typeof AccountWorkspacesWorkspaceIdSettingsMembersRoute
+  AccountWorkspacesWorkspaceIdSettingsNotificationsRoute: typeof AccountWorkspacesWorkspaceIdSettingsNotificationsRoute
+  AccountWorkspacesWorkspaceIdSettingsPreferencesRoute: typeof AccountWorkspacesWorkspaceIdSettingsPreferencesRoute
   AccountWorkspacesWorkspaceIdSettingsSlackRoute: typeof AccountWorkspacesWorkspaceIdSettingsSlackRoute
   AccountWorkspacesWorkspaceIdSettingsWebhooksRoute: typeof AccountWorkspacesWorkspaceIdSettingsWebhooksRoute
   AccountWorkspacesWorkspaceIdSettingsIndexRoute: typeof AccountWorkspacesWorkspaceIdSettingsIndexRoute
@@ -702,6 +732,10 @@ const AccountWorkspacesWorkspaceIdSettingsRouteRouteChildren: AccountWorkspacesW
       AccountWorkspacesWorkspaceIdSettingsLinearRoute,
     AccountWorkspacesWorkspaceIdSettingsMembersRoute:
       AccountWorkspacesWorkspaceIdSettingsMembersRoute,
+    AccountWorkspacesWorkspaceIdSettingsNotificationsRoute:
+      AccountWorkspacesWorkspaceIdSettingsNotificationsRoute,
+    AccountWorkspacesWorkspaceIdSettingsPreferencesRoute:
+      AccountWorkspacesWorkspaceIdSettingsPreferencesRoute,
     AccountWorkspacesWorkspaceIdSettingsSlackRoute:
       AccountWorkspacesWorkspaceIdSettingsSlackRoute,
     AccountWorkspacesWorkspaceIdSettingsWebhooksRoute:
@@ -783,6 +817,8 @@ export interface FileRoutesByFullPath {
   '/workspaces/$workspaceId/settings/labels': typeof AccountWorkspacesWorkspaceIdSettingsLabelsRoute
   '/workspaces/$workspaceId/settings/linear': typeof AccountWorkspacesWorkspaceIdSettingsLinearRoute
   '/workspaces/$workspaceId/settings/members': typeof AccountWorkspacesWorkspaceIdSettingsMembersRoute
+  '/workspaces/$workspaceId/settings/notifications': typeof AccountWorkspacesWorkspaceIdSettingsNotificationsRoute
+  '/workspaces/$workspaceId/settings/preferences': typeof AccountWorkspacesWorkspaceIdSettingsPreferencesRoute
   '/workspaces/$workspaceId/settings/slack': typeof AccountWorkspacesWorkspaceIdSettingsSlackRoute
   '/workspaces/$workspaceId/settings/webhooks': typeof AccountWorkspacesWorkspaceIdSettingsWebhooksRoute
   '/workspaces/$workspaceId/threads/$threadId': typeof AccountWorkspacesWorkspaceIdThreadsThreadIdRoute
@@ -825,6 +861,8 @@ export interface FileRoutesByTo {
   '/workspaces/$workspaceId/settings/labels': typeof AccountWorkspacesWorkspaceIdSettingsLabelsRoute
   '/workspaces/$workspaceId/settings/linear': typeof AccountWorkspacesWorkspaceIdSettingsLinearRoute
   '/workspaces/$workspaceId/settings/members': typeof AccountWorkspacesWorkspaceIdSettingsMembersRoute
+  '/workspaces/$workspaceId/settings/notifications': typeof AccountWorkspacesWorkspaceIdSettingsNotificationsRoute
+  '/workspaces/$workspaceId/settings/preferences': typeof AccountWorkspacesWorkspaceIdSettingsPreferencesRoute
   '/workspaces/$workspaceId/settings/slack': typeof AccountWorkspacesWorkspaceIdSettingsSlackRoute
   '/workspaces/$workspaceId/settings/webhooks': typeof AccountWorkspacesWorkspaceIdSettingsWebhooksRoute
   '/workspaces/$workspaceId/threads/$threadId': typeof AccountWorkspacesWorkspaceIdThreadsThreadIdRoute
@@ -869,6 +907,8 @@ export interface FileRoutesById {
   '/_account/workspaces/$workspaceId/settings/labels': typeof AccountWorkspacesWorkspaceIdSettingsLabelsRoute
   '/_account/workspaces/$workspaceId/settings/linear': typeof AccountWorkspacesWorkspaceIdSettingsLinearRoute
   '/_account/workspaces/$workspaceId/settings/members': typeof AccountWorkspacesWorkspaceIdSettingsMembersRoute
+  '/_account/workspaces/$workspaceId/settings/notifications': typeof AccountWorkspacesWorkspaceIdSettingsNotificationsRoute
+  '/_account/workspaces/$workspaceId/settings/preferences': typeof AccountWorkspacesWorkspaceIdSettingsPreferencesRoute
   '/_account/workspaces/$workspaceId/settings/slack': typeof AccountWorkspacesWorkspaceIdSettingsSlackRoute
   '/_account/workspaces/$workspaceId/settings/webhooks': typeof AccountWorkspacesWorkspaceIdSettingsWebhooksRoute
   '/_account/workspaces/$workspaceId/threads/$threadId': typeof AccountWorkspacesWorkspaceIdThreadsThreadIdRoute
@@ -914,6 +954,8 @@ export interface FileRouteTypes {
     | '/workspaces/$workspaceId/settings/labels'
     | '/workspaces/$workspaceId/settings/linear'
     | '/workspaces/$workspaceId/settings/members'
+    | '/workspaces/$workspaceId/settings/notifications'
+    | '/workspaces/$workspaceId/settings/preferences'
     | '/workspaces/$workspaceId/settings/slack'
     | '/workspaces/$workspaceId/settings/webhooks'
     | '/workspaces/$workspaceId/threads/$threadId'
@@ -955,6 +997,8 @@ export interface FileRouteTypes {
     | '/workspaces/$workspaceId/settings/labels'
     | '/workspaces/$workspaceId/settings/linear'
     | '/workspaces/$workspaceId/settings/members'
+    | '/workspaces/$workspaceId/settings/notifications'
+    | '/workspaces/$workspaceId/settings/preferences'
     | '/workspaces/$workspaceId/settings/slack'
     | '/workspaces/$workspaceId/settings/webhooks'
     | '/workspaces/$workspaceId/threads/$threadId'
@@ -997,6 +1041,8 @@ export interface FileRouteTypes {
     | '/_account/workspaces/$workspaceId/settings/labels'
     | '/_account/workspaces/$workspaceId/settings/linear'
     | '/_account/workspaces/$workspaceId/settings/members'
+    | '/_account/workspaces/$workspaceId/settings/notifications'
+    | '/_account/workspaces/$workspaceId/settings/preferences'
     | '/_account/workspaces/$workspaceId/settings/slack'
     | '/_account/workspaces/$workspaceId/settings/webhooks'
     | '/_account/workspaces/$workspaceId/threads/$threadId'
@@ -1120,6 +1166,8 @@ export const routeTree = rootRoute
         "/_account/workspaces/$workspaceId/settings/labels",
         "/_account/workspaces/$workspaceId/settings/linear",
         "/_account/workspaces/$workspaceId/settings/members",
+        "/_account/workspaces/$workspaceId/settings/notifications",
+        "/_account/workspaces/$workspaceId/settings/preferences",
         "/_account/workspaces/$workspaceId/settings/slack",
         "/_account/workspaces/$workspaceId/settings/webhooks",
         "/_account/workspaces/$workspaceId/settings/",
@@ -1185,6 +1233,14 @@ export const routeTree = rootRoute
     },
     "/_account/workspaces/$workspaceId/settings/members": {
       "filePath": "_account/workspaces/$workspaceId/settings/members.tsx",
+      "parent": "/_account/workspaces/$workspaceId/settings"
+    },
+    "/_account/workspaces/$workspaceId/settings/notifications": {
+      "filePath": "_account/workspaces/$workspaceId/settings/notifications.tsx",
+      "parent": "/_account/workspaces/$workspaceId/settings"
+    },
+    "/_account/workspaces/$workspaceId/settings/preferences": {
+      "filePath": "_account/workspaces/$workspaceId/settings/preferences.tsx",
       "parent": "/_account/workspaces/$workspaceId/settings"
     },
     "/_account/workspaces/$workspaceId/settings/slack": {

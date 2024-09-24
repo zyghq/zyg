@@ -56,30 +56,35 @@ export default function SideNavLinks({
               <div className="text-xs text-muted-foreground">Account</div>
             </div>
           </div>
-          {/* G1 Items */}
           <div className="flex flex-col gap-1">
-            <Button
-              asChild
-              className="flex w-full justify-between"
-              variant="ghost"
+            <Link
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              params={{ workspaceId }}
+              to="/workspaces/$workspaceId/settings/preferences"
             >
-              <a href={`/`}>
-                <div className="flex">
-                  <div className="my-auto">Appearance</div>
-                </div>
-              </a>
-            </Button>
-            <Button
-              asChild
-              className="flex w-full justify-between"
-              variant="ghost"
+              <div className="flex">Preferences</div>
+            </Link>
+            <Link
+              activeOptions={{ exact: true, includeSearch: false }}
+              activeProps={{
+                className: "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+              }}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "flex w-full justify-between px-3 dark:text-accent-foreground"
+              )}
+              params={{ workspaceId }}
+              to="/workspaces/$workspaceId/settings/notifications"
             >
-              <a href={`/`}>
-                <div className="flex">
-                  <div className="my-auto">Personal Notifications</div>
-                </div>
-              </a>
-            </Button>
+              <div className="flex">Personal Notifications</div>
+            </Link>
           </div>
           {/* G2 */}
           <div className="my-4 flex items-center gap-1">
