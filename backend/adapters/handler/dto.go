@@ -143,14 +143,15 @@ type ThreadLabelCountResp struct {
 }
 
 type ThreadCountResp struct {
-	ActiveCount   int                    `json:"active"`
-	DoneCount     int                    `json:"done"`
-	TodoCount     int                    `json:"todo"`
-	SnoozedCount  int                    `json:"snoozed"`
-	AssignedToMe  int                    `json:"assignedToMe"`
-	Unassigned    int                    `json:"unassigned"`
-	OtherAssigned int                    `json:"otherAssigned"`
-	Labels        []ThreadLabelCountResp `json:"labels"`
+	Active             int                    `json:"active"`
+	NeedsFirstResponse int                    `json:"needsFirstResponse"`
+	WaitingOnCustomer  int                    `json:"waitingOnCustomer"`
+	HoldCount          int                    `json:"hold"`
+	NeedsNextResponse  int                    `json:"needsNextResponse"`
+	AssignedToMe       int                    `json:"assignedToMe"`
+	Unassigned         int                    `json:"unassigned"`
+	OtherAssigned      int                    `json:"otherAssigned"`
+	Labels             []ThreadLabelCountResp `json:"labels"`
 }
 
 type ThreadMetricsResp struct {

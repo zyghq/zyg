@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { defaultSortKey } from "@/db/store";
 import { ExitIcon } from "@radix-ui/react-icons";
 import { queryOptions } from "@tanstack/react-query";
 import {
@@ -114,6 +115,7 @@ function Workspaces() {
                     <Button asChild>
                       <Link
                         params={{ workspaceId: workspace.workspaceId }}
+                        search={{ sort: defaultSortKey }}
                         to={"/workspaces/$workspaceId/threads/todo"}
                       >
                         Open

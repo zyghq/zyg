@@ -428,7 +428,7 @@ export default function SideNavLinks({
                         <div className="font-medium">Needs First Response</div>
                       </div>
                       <span className="font-mono text-muted-foreground pr-2">
-                        {"00"}
+                        {metrics.needsFirstResponse}
                       </span>
                     </>
                   ) : (
@@ -438,7 +438,7 @@ export default function SideNavLinks({
                         <div className="font-normal">Needs First Response</div>
                       </div>
                       <span className="font-mono text-muted-foreground pr-2">
-                        {"00"}
+                        {metrics.needsFirstResponse}
                       </span>
                     </>
                   )}
@@ -468,7 +468,7 @@ export default function SideNavLinks({
                         <div className="font-medium">Needs Next Response</div>
                       </div>
                       <span className="font-mono text-muted-foreground pr-2">
-                        {"00"}
+                        {metrics.needsNextResponse}
                       </span>
                     </>
                   ) : (
@@ -478,7 +478,7 @@ export default function SideNavLinks({
                         <div className="font-normal">Needs Next Response</div>
                       </div>
                       <span className="font-mono text-muted-foreground pr-2">
-                        {"00"}
+                        {metrics.needsNextResponse}
                       </span>
                     </>
                   )}
@@ -508,7 +508,7 @@ export default function SideNavLinks({
                         <div className="font-medium">Hold</div>
                       </div>
                       <span className="font-mono text-muted-foreground pr-2">
-                        {"00"}
+                        {metrics.hold}
                       </span>
                     </>
                   ) : (
@@ -518,7 +518,7 @@ export default function SideNavLinks({
                         <div className="font-normal">Hold</div>
                       </div>
                       <span className="font-mono text-muted-foreground pr-2">
-                        {"00"}
+                        {metrics.hold}
                       </span>
                     </>
                   )}
@@ -548,7 +548,7 @@ export default function SideNavLinks({
                         <div className="font-medium">Waiting on Customer</div>
                       </div>
                       <span className="font-mono text-muted-foreground pr-2">
-                        {"00"}
+                        {metrics.waitingOnCustomer}
                       </span>
                     </>
                   ) : (
@@ -558,7 +558,7 @@ export default function SideNavLinks({
                         <div className="font-normal">Waiting on Customer</div>
                       </div>
                       <span className="font-mono text-muted-foreground pr-2">
-                        {"00"}
+                        {metrics.waitingOnCustomer}
                       </span>
                     </>
                   )}

@@ -1,6 +1,7 @@
 import { buttonVariants } from "@/components/ui/button";
 import SideNavLinks from "@/components/workspace/settings/sidenav-links";
 import SideNavMobileLinks from "@/components/workspace/settings/sidenav-mobile-links";
+import { defaultSortKey } from "@/db/store";
 import { cn } from "@/lib/utils";
 import { useAccountStore } from "@/providers";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
@@ -30,7 +31,8 @@ function SettingsLayout() {
             <Link
               className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
               params={{ workspaceId }}
-              to="/workspaces/$workspaceId"
+              search={{ sort: defaultSortKey }}
+              to="/workspaces/$workspaceId/threads/todo"
             >
               <ArrowLeftIcon className="mr-2 h-4 w-4" />
               Settings

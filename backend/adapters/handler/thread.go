@@ -596,14 +596,15 @@ func (h *ThreadChatHandler) handleGetThreadChatMetrics(
 	}
 
 	count := ThreadCountResp{
-		ActiveCount:   metrics.ActiveCount,
-		DoneCount:     metrics.DoneCount,
-		TodoCount:     metrics.TodoCount,
-		SnoozedCount:  metrics.SnoozedCount,
-		AssignedToMe:  metrics.MeCount,
-		Unassigned:    metrics.UnAssignedCount,
-		OtherAssigned: metrics.OtherAssignedCount,
-		Labels:        labels,
+		Active:             metrics.ActiveCount,
+		NeedsFirstResponse: metrics.NeedsFirstResponseCount,
+		WaitingOnCustomer:  metrics.WaitingOnCustomerCount,
+		HoldCount:          metrics.HoldCount,
+		NeedsNextResponse:  metrics.NeedsNextResponseCount,
+		AssignedToMe:       metrics.MeCount,
+		Unassigned:         metrics.UnAssignedCount,
+		OtherAssigned:      metrics.OtherAssignedCount,
+		Labels:             labels,
 	}
 	resp := ThreadMetricsResp{
 		Count: count,

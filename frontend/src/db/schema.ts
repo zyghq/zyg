@@ -42,25 +42,28 @@ export const memberResponseSchema = z.object({
   updatedAt: z.string(),
 });
 
+export const threadLabelMetricsSchema = z.object({
+  count: z.number().default(0),
+  icon: z.string().default(""),
+  labelId: z.string(),
+  name: z.string().default(""),
+});
+
+export const threadCountMetricsSchema = z.object({
+  active: z.number().default(0),
+  assignedToMe: z.number().default(0),
+  hold: z.number().default(0),
+  labels: z.array(threadLabelMetricsSchema).default([]),
+  needsFirstResponse: z.number().default(0),
+  needsNextResponse: z.number().default(0),
+  otherAssigned: z.number().default(0),
+  snoozed: z.number().default(0),
+  unassigned: z.number().default(0),
+  waitingOnCustomer: z.number().default(0),
+});
+
 export const workspaceMetricsResponseSchema = z.object({
-  count: z.object({
-    active: z.number().default(0),
-    assignedToMe: z.number().default(0),
-    done: z.number().default(0),
-    labels: z
-      .array(
-        z.object({
-          count: z.number().default(0),
-          icon: z.string().default(""),
-          labelId: z.string(),
-          name: z.string().default(""),
-        })
-      )
-      .default([]),
-    otherAssigned: z.number().default(0),
-    snoozed: z.number().default(0),
-    unassigned: z.number().default(0),
-  }),
+  count: threadCountMetricsSchema,
 });
 
 export const customerResponseSchema = z.object({

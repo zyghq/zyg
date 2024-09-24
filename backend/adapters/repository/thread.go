@@ -1902,14 +1902,19 @@ func (tc *ThreadChatDB) FetchThChatMessagesByThreadId(
 	return messages, nil
 }
 
+// ComputeStatusMetricsByWorkspaceId computes the thread count metrics for the workspace.
+// Returns the count of active threads, needs first response threads, waiting on customer threads,
+// hold threads, and needs next response threads.
+// Ignores visitor customer threads.
 func (tc *ThreadChatDB) ComputeStatusMetricsByWorkspaceId(
 	ctx context.Context, workspaceId string) (models.ThreadMetrics, error) {
 	var metrics models.ThreadMetrics
 	stmt := `SELECT
-		COALESCE(SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END), 0) AS done_count,
-		COALESCE(SUM(CASE WHEN status = 'todo' THEN 1 ELSE 0 END), 0) AS todo_count,
-		COALESCE(SUM(CASE WHEN status = 'snoozed' THEN 1 ELSE 0 END), 0) AS snoozed_count,
-		COALESCE(SUM(CASE WHEN status = 'todo' OR status = 'snoozed' THEN 1 ELSE 0 END), 0) AS active_count
+		COALESCE(SUM(CASE WHEN status = 'todo' THEN 1 ELSE 0 END), 0) AS active_count,
+		COALESCE(SUM(CASE WHEN status = 'todo' AND stage = 'needs_first_response' THEN 1 ELSE 0 END), 0) AS needs_first_response_count,
+		COALESCE(SUM(CASE WHEN status = 'todo' AND stage = 'waiting_on_customer' THEN 1 ELSE 0 END), 0) AS waiting_on_customer_count,
+		COALESCE(SUM(CASE WHEN status = 'todo' AND stage = 'hold' THEN 1 ELSE 0 END), 0) AS hold_count,
+		COALESCE(SUM(CASE WHEN status = 'todo' AND stage = 'needs_next_response' THEN 1 ELSE 0 END), 0) AS needs_next_response_count
 	FROM 
 		thread th
 	INNER JOIN customer c ON th.customer_id = c.customer_id
@@ -1917,8 +1922,9 @@ func (tc *ThreadChatDB) ComputeStatusMetricsByWorkspaceId(
 		th.workspace_id = $1 AND c.role <> 'visitor'`
 
 	err := tc.db.QueryRow(ctx, stmt, workspaceId).Scan(
-		&metrics.DoneCount, &metrics.TodoCount,
-		&metrics.SnoozedCount, &metrics.ActiveCount,
+		&metrics.ActiveCount, &metrics.NeedsFirstResponseCount,
+		&metrics.WaitingOnCustomerCount, &metrics.HoldCount,
+		&metrics.NeedsNextResponseCount,
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -1929,20 +1935,22 @@ func (tc *ThreadChatDB) ComputeStatusMetricsByWorkspaceId(
 		slog.Error("failed to query", slog.Any("err", err))
 		return models.ThreadMetrics{}, ErrQuery
 	}
-
 	return metrics, nil
 }
 
+// ComputeAssigneeMetricsByMember computes the thread count metrics for the member.
+// Returns the count of member assigned threads, unassigned threads, and other assigned threads.
+// Ignores visitor customer threads.
 func (tc *ThreadChatDB) ComputeAssigneeMetricsByMember(
 	ctx context.Context, workspaceId string, memberId string) (models.ThreadAssigneeMetrics, error) {
 	var metrics models.ThreadAssigneeMetrics
 	stmt := `SELECT
 			COALESCE(SUM(
-				CASE WHEN assignee_id = $2 AND status = 'todo' OR status = 'snoozed' THEN 1 ELSE 0 END), 0) AS member_assigned_count,
+				CASE WHEN assignee_id = $2 AND status = 'todo' THEN 1 ELSE 0 END), 0) AS member_assigned_count,
 			COALESCE(SUM(
-				CASE WHEN assignee_id IS NULL AND status = 'todo' OR status = 'snoozed' THEN 1 ELSE 0 END), 0) AS unassigned_count,
+				CASE WHEN assignee_id IS NULL AND status = 'todo' THEN 1 ELSE 0 END), 0) AS unassigned_count,
 			COALESCE(SUM(
-				CASE WHEN assignee_id IS NOT NULL AND assignee_id <> $2 AND status = 'todo' OR status = 'snoozed' THEN 1 ELSE 0 END), 0) AS other_assigned_count
+				CASE WHEN assignee_id IS NOT NULL AND assignee_id <> $2 AND status = 'todo' THEN 1 ELSE 0 END), 0) AS other_assigned_count
 		FROM
 			thread th
 		INNER JOIN customer c ON th.customer_id = c.customer_id
@@ -1962,7 +1970,6 @@ func (tc *ThreadChatDB) ComputeAssigneeMetricsByMember(
 		slog.Error("failed to query", slog.Any("err", err))
 		return models.ThreadAssigneeMetrics{}, ErrQuery
 	}
-
 	return metrics, nil
 }
 

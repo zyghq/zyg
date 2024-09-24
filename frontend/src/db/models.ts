@@ -11,6 +11,8 @@ import {
   memberResponseSchema,
   PatResponse,
   patResponseSchema,
+  threadCountMetricsSchema,
+  threadLabelMetricsSchema,
   ThreadResponse,
   workspaceResponseSchema,
 } from "./schema";
@@ -29,22 +31,25 @@ export type Label = z.infer<typeof labelResponseSchema>;
 
 export type Member = z.infer<typeof memberResponseSchema>;
 
-export type LabelMetrics = {
-  count: number;
-  icon: string;
-  labelId: string;
-  name: string;
-};
+export type WorkspaceMetrics = z.infer<typeof threadCountMetricsSchema>;
+export type LabelMetrics = z.infer<typeof threadLabelMetricsSchema>;
 
-export type WorkspaceMetrics = {
-  active: number;
-  assignedToMe: number;
-  done: number;
-  labels: [] | LabelMetrics[];
-  otherAssigned: number;
-  snoozed: number;
-  unassigned: number;
-};
+// export type LabelMetrics = {
+//   count: number;
+//   icon: string;
+//   labelId: string;
+//   name: string;
+// };
+
+// export type WorkspaceMetrics = {
+//   active: number;
+//   assignedToMe: number;
+//   done: number;
+//   labels: [] | LabelMetrics[];
+//   otherAssigned: number;
+//   snoozed: number;
+//   unassigned: number;
+// };
 
 // Represents the thread model stored in local state, diff from the zod schema
 export type Thread = {
