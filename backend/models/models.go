@@ -14,6 +14,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/rs/xid"
+	"github.com/sanchitrk/namingo"
 	"github.com/zyghq/zyg"
 )
 
@@ -332,7 +333,7 @@ func (c Customer) IsVisitor() bool {
 }
 
 func (c Customer) AnonName() string {
-	return "Anon User"
+	return namingo.Generate(2, " ", namingo.TitleCase())
 }
 
 func (c Customer) AvatarUrl() string {

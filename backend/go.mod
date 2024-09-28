@@ -9,7 +9,7 @@ require (
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/rs/cors v1.10.1
 	github.com/rs/xid v1.5.0
-	github.com/sanchitrk/namingo v0.1.1
+	github.com/sanchitrk/namingo v0.1.2
 	github.com/segmentio/ksuid v1.0.4
 )
 

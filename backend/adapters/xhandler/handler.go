@@ -43,8 +43,8 @@ func handleGetIndex(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
+// TODO: get widget configuration from db/redis.
 func (h *CustomerHandler) handleGetWidgetConfig(w http.ResponseWriter, _ *http.Request) {
-	// TODO: probably get widget configuration from db/redis cache.
 	resp := WidgetConfig{
 		DomainsOnly:    false,
 		Domains:        []string{},
