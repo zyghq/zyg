@@ -1,8 +1,10 @@
 import { cn } from "@/lib/utils";
+import { ChatBubbleIcon } from "@radix-ui/react-icons";
 import {
   CheckCircleIcon,
   ClockIcon,
   LocateIcon,
+  MailIcon,
   PauseIcon,
   ReplyIcon,
 } from "lucide-react";
@@ -296,7 +298,7 @@ export const PriorityIcons = {
   ),
 };
 
-// TODO: add other icons for `spam`
+// TODO: add other icons for `spam` or `ignored`
 export function stageIcon(stage: string, props: IconProps): JSX.Element {
   switch (stage) {
     case "hold":
@@ -309,6 +311,17 @@ export function stageIcon(stage: string, props: IconProps): JSX.Element {
       return <CheckCircleIcon {...props} />;
     case "waiting_on_customer":
       return <ClockIcon {...props} />;
+    default:
+      return <></>;
+  }
+}
+
+export function channelIcon(channel: string, props: IconProps) {
+  switch (channel) {
+    case "chat":
+      return <ChatBubbleIcon {...props} />;
+    case "email":
+      return <MailIcon {...props} />;
     default:
       return <></>;
   }
