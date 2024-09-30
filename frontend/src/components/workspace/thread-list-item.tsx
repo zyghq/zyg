@@ -1,7 +1,7 @@
 import { stageIcon } from "@/components/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { threadStageHumanized } from "@/db/helpers";
+import { threadStatusVerboseName } from "@/db/helpers";
 import { Thread } from "@/db/models";
 import { useWorkspaceStore } from "@/providers";
 import { ChatBubbleIcon, PersonIcon } from "@radix-ui/react-icons";
@@ -75,7 +75,7 @@ export function ThreadLinkItem({
                   "w-4 h-4 text-indigo-500 dark:text-accent-foreground",
               })}
             </span>
-            {threadStageHumanized(thread.stage)}
+            {threadStatusVerboseName(thread.stage)}
           </Badge>
         </div>
       </div>

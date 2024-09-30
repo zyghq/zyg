@@ -24,8 +24,12 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { MessageForm } from "@/components/workspace/thread/message-form";
-import { PropertiesForm } from "@/components/workspace/thread/properties-form";
 import { SidePanelThreadList } from "@/components/workspace/thread/sidepanel-thread-list";
+import {
+  SetThreadAssigneeForm,
+  SetThreadPriorityForm,
+  SetThreadStatusForm,
+} from "@/components/workspace/thread/thread-properties-forms";
 import { ThreadList } from "@/components/workspace/thread/threads";
 import {
   deleteThreadLabel,
@@ -176,6 +180,7 @@ function SettingThreadLabel() {
   );
 }
 
+// TODO: Pass in the store and functions as props, move the logic outside the component.
 function ThreadLabels({
   threadId,
   token,
@@ -419,6 +424,7 @@ function ThreadDetail() {
 
   const threadStatus = activeThread?.status || "";
   const isAwaitingReply = activeThread?.replied === false;
+  const threadStage = activeThread?.stage || "";
 
   const { nextItem, prevItem } = getPrevNextFromCurrent(currentQueue, threadId);
 
@@ -704,15 +710,30 @@ function ThreadDetail() {
               maxSize={30}
               minSize={20}
             >
-              <div className="flex flex-col gap-2 bg-white dark:bg-background rounded-lg">
+              <div className="flex flex-col gap-1 bg-white dark:bg-background rounded-lg">
                 <ThreadPreview activeThread={activeThread} />
-                <PropertiesForm
-                  assigneeId={assigneeId}
-                  priority={priority}
-                  threadId={threadId as string}
-                  token={token}
-                  workspaceId={workspaceId as string}
-                />
+                <div className="flex flex-col px-4 gap-2">
+                  <div className="flex gap-2">
+                    <SetThreadPriorityForm
+                      priority={priority}
+                      threadId={threadId}
+                      token={token}
+                      workspaceId={workspaceId}
+                    />
+                    <SetThreadAssigneeForm
+                      assigneeId={assigneeId}
+                      threadId={threadId}
+                      token={token}
+                      workspaceId={workspaceId}
+                    />
+                  </div>
+                  <SetThreadStatusForm
+                    stage={threadStage}
+                    threadId={threadId}
+                    token={token}
+                    workspaceId={workspaceId}
+                  />
+                </div>
                 <ThreadLabels
                   threadId={threadId}
                   token={token}

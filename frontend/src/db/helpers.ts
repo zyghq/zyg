@@ -1,6 +1,6 @@
 import { SortBy } from "@/db/store";
 
-export function threadStageHumanized(key: string): string {
+export function threadStatusVerboseName(key: string): string {
   switch (key) {
     case "hold":
       return "Hold";
