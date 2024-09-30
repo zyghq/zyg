@@ -139,7 +139,8 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(
 		}
 	}
 
-	// Modify the replied state if present, otherwise set default replied state.
+	// Modify the replied state if present, otherwise set default replied state
+	// TODO: #61 @sanchitrk shouldn't allow replied state of the thread to be modified by external APIs, instead should be part of thread status/stage overflow.
 	if replied, found := reqp["replied"]; found {
 		if replied == nil {
 			// set default replied

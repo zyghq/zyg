@@ -494,7 +494,10 @@ func (tc *ThreadChatDB) ModifyThreadById(
 			upsertQ("status = %$,", thread.ThreadStatus.Status)
 			upsertQ("status_changed_at = %$,", thread.ThreadStatus.StatusChangedAt)
 			upsertQ("status_changed_by_id = %$,", thread.ThreadStatus.StatusChangedBy.MemberId)
+			upsertParams = append(upsertParams, thread.ThreadStatus.Stage)
 			upsertParams = append(upsertParams, thread.ThreadStatus.Status)
+			upsertParams = append(upsertParams, thread.ThreadStatus.StatusChangedAt)
+			upsertParams = append(upsertParams, thread.ThreadStatus.StatusChangedBy.MemberId)
 		case "replied":
 			upsertQ("replied = %$,", field)
 			upsertParams = append(upsertParams, thread.Replied)

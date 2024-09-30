@@ -23,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
-import { threadStageHumanized, todoThreadStages } from "@/db/helpers";
+import { threadStatusVerboseName, todoThreadStages } from "@/db/helpers";
 import { Assignee } from "@/db/store";
 import {
   AssigneesFiltersType,
@@ -88,7 +88,7 @@ function StagesSubMenu({
                 {stageIcon(stage, {
                   className: "w-4 h-4 text-indigo-500",
                 })}
-                <span>{threadStageHumanized(stage)}</span>
+                <span>{threadStatusVerboseName(stage)}</span>
               </div>
             </DropdownMenuCheckboxItem>
           ))}
