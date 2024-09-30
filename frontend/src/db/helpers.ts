@@ -1,6 +1,6 @@
 import { SortBy } from "@/db/store";
 
-export function threadStageHumanized(key: string): string {
+export function threadStatusVerboseName(key: string): string {
   switch (key) {
     case "hold":
       return "Hold";
@@ -96,4 +96,19 @@ export function setInLocalStorage(key: string, value: any) {
 
 export function isSortKeyValid(sortKey: SortBy | string) {
   return sortKeys.includes(sortKey as SortBy);
+}
+
+export function getInitials(name: string): string {
+  // Split the name by spaces
+  const nameParts = name.trim().split(/\s+/);
+
+  if (nameParts.length === 1) {
+    // If there's only one name, return the first character
+    return nameParts[0].charAt(0).toUpperCase();
+  } else {
+    // Otherwise, return the first letter of the first and last names
+    const firstInitial = nameParts[0].charAt(0).toUpperCase();
+    const lastInitial = nameParts[nameParts.length - 1].charAt(0).toUpperCase();
+    return firstInitial + lastInitial;
+  }
 }

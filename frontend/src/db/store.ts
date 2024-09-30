@@ -2,6 +2,14 @@ import _ from "lodash";
 import { immer } from "zustand/middleware/immer";
 import { createStore } from "zustand/vanilla";
 
+import {
+  HOLD,
+  NEEDS_FIRST_RESPONSE,
+  NEEDS_NEXT_RESPONSE,
+  RESOLVED,
+  SPAM,
+  WAITING_ON_CUSTOMER,
+} from "./constants";
 import { getFromLocalStorage, setInLocalStorage } from "./helpers";
 import {
   Account,
@@ -167,44 +175,27 @@ export type WorkspaceStoreState = IWorkspaceEntities &
   IWorkspaceValueObjects;
 
 function filterByStages(threads: Thread[], stages: StagesFiltersType) {
-  if (stages && Array.isArray(stages)) {
-    const uniqueReasons = [...new Set(stages)];
-    const filtered = [];
-    for (const stage of uniqueReasons) {
-      if (stage === "needs_first_response") {
-        filtered.push(...threads.filter((t) => t.stage));
-      } else if (stage === "needs_next_response") {
-        filtered.push(...threads.filter((t) => !t.stage));
-      } else if (stage === "waiting_on_customer") {
-        filtered.push(...threads.filter((t) => !t.stage));
-      } else if (stage === "hold") {
-        filtered.push(...threads.filter((t) => !t.stage));
-      } else if (stage === "resolved") {
-        filtered.push(...threads.filter((t) => !t.stage));
-      }
+  const stageMap: Record<string, string> = {
+    hold: HOLD,
+    needs_first_response: NEEDS_FIRST_RESPONSE,
+    needs_next_response: NEEDS_NEXT_RESPONSE,
+    resolved: RESOLVED,
+    spam: SPAM,
+    waiting_on_customer: WAITING_ON_CUSTOMER,
+  };
+
+  if (stages) {
+    if (Array.isArray(stages)) {
+      const uniqueStages = [...new Set(stages)];
+      return threads.filter((t) =>
+        uniqueStages.some((stage) => t.stage === stageMap[stage])
+      );
     }
-    return filtered;
-  }
-  if (stages && typeof stages === "string") {
-    if (stages === "needs_first_response") {
-      return threads.filter((t) => t.stage);
-    }
-    if (stages === "needs_next_response") {
-      return threads.filter((t) => !t.stage);
-    }
-    if (stages === "waiting_on_customer") {
-      return threads.filter((t) => !t.stage);
-    }
-    if (stages === "hold") {
-      return threads.filter((t) => !t.stage);
-    }
-    if (stages === "resolved") {
-      return threads.filter((t) => !t.stage);
-    }
-    if (stages === "spam") {
-      return threads.filter((t) => !t.stage);
+    if (typeof stages === "string" && stageMap[stages]) {
+      return threads.filter((t) => t.stage === stageMap[stages]);
     }
   }
+
   // no change
   return threads;
 }
