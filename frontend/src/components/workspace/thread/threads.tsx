@@ -25,7 +25,7 @@ function ThreadItem({
   // });
   const workspaceStore = useWorkspaceStore();
   const customerName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-    state.viewCustomerName(state, item.customerId)
+    state.viewCustomerName(state, item.customerId),
   );
 
   // const bottomRef = React.useRef<null | HTMLDivElement>(null);
@@ -44,7 +44,7 @@ function ThreadItem({
       }}
       className={cn(
         "flex flex-col items-start gap-2 rounded-lg px-3 py-3 text-left text-sm transition-all hover:bg-accent",
-        variant === "compress" && "gap-0 rounded-none py-2 border-b"
+        variant === "compress" && "gap-0 rounded-none border-b py-2",
       )}
       params={{ threadId: item.threadId, workspaceId }}
       to={"/workspaces/$workspaceId/threads/$threadId"}
@@ -55,10 +55,10 @@ function ThreadItem({
             <Avatar className="h-7 w-7">
               <AvatarImage
                 src={`https://avatar.vercel.sh/${item.customerId}.svg?text=${getInitials(
-                  customerName
+                  customerName,
                 )}`}
               />
-              <AvatarFallback>CS</AvatarFallback>
+              <AvatarFallback>{getInitials(customerName)}</AvatarFallback>
             </Avatar>
             <div className="font-medium">{customerName}</div>
           </div>
@@ -71,8 +71,8 @@ function ThreadItem({
           {item.previewText}
         </div>
       </div>
-      <div className="flex flex-col w-full gap-2">
-        <div className="flex justify-end w-full">
+      <div className="flex w-full flex-col gap-2">
+        <div className="flex w-full justify-end">
           <div className="flex gap-2">
             {channelIcon(item.channel, {
               className: "h-4 w-4 text-muted-foreground",
@@ -90,7 +90,7 @@ function ThreadItem({
                 <AvatarFallback>M</AvatarFallback>
               </Avatar>
             ) : (
-              <PersonIcon className="w-5 h-5 text-muted-foreground" />
+              <PersonIcon className="h-5 w-5 text-muted-foreground" />
             )}
           </div>
         </div>

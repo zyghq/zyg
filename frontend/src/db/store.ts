@@ -110,7 +110,7 @@ interface IWorkspaceStoreActions {
     priorities: PrioritiesFiltersType,
     sortBy: SortBy,
     memberId: null | string,
-    isUnassigned: boolean | null
+    isUnassigned: boolean | null,
   ): void;
   deletePat(patId: string): void;
   getMemberId(state: WorkspaceStoreState): string;
@@ -125,7 +125,20 @@ interface IWorkspaceStoreActions {
   updateWorkspaceName(name: string): void;
   viewAssignees(state: WorkspaceStoreState): Assignee[];
   viewCurrentThreadQueue(state: WorkspaceStoreState): null | Thread[];
+  viewCustomerEmail(
+    state: WorkspaceStoreState,
+    customerId: string,
+  ): null | string;
+  viewCustomerExternalId(
+    state: WorkspaceStoreState,
+    customerId: string,
+  ): null | string;
   viewCustomerName(state: WorkspaceStoreState, customerId: string): string;
+  viewCustomerPhone(
+    state: WorkspaceStoreState,
+    customerId: string,
+  ): null | string;
+  viewCustomerRole(state: WorkspaceStoreState, customerId: string): string;
   viewLabels(state: WorkspaceStoreState): Label[];
   viewMemberName(state: WorkspaceStoreState, memberId: string): string;
   viewMembers(state: WorkspaceStoreState): Member[];
@@ -136,12 +149,12 @@ interface IWorkspaceStoreActions {
     assignees: AssigneesFiltersType,
     stages: StagesFiltersType,
     priorities: PrioritiesFiltersType,
-    sortBy: SortBy
+    sortBy: SortBy,
   ): Thread[];
   viewPats(state: WorkspaceStoreState): Pat[];
   viewThreadAssigneeId(
     state: WorkspaceStoreState,
-    threadId: string
+    threadId: string,
   ): null | string;
   viewThreads(
     state: WorkspaceStoreState,
@@ -149,7 +162,7 @@ interface IWorkspaceStoreActions {
     assignees: AssigneesFiltersType,
     stages: StagesFiltersType,
     priorities: PrioritiesFiltersType,
-    sortBy: SortBy
+    sortBy: SortBy,
   ): Thread[];
   viewThreadSortKey(state: WorkspaceStoreState): SortBy;
   viewUnassignedThreads(
@@ -158,7 +171,7 @@ interface IWorkspaceStoreActions {
     assignees: AssigneesFiltersType,
     stages: StagesFiltersType,
     priorities: PrioritiesFiltersType,
-    sortBy: SortBy
+    sortBy: SortBy,
   ): Thread[];
 }
 
@@ -188,7 +201,7 @@ function filterByStages(threads: Thread[], stages: StagesFiltersType) {
     if (Array.isArray(stages)) {
       const uniqueStages = [...new Set(stages)];
       return threads.filter((t) =>
-        uniqueStages.some((stage) => t.stage === stageMap[stage])
+        uniqueStages.some((stage) => t.stage === stageMap[stage]),
       );
     }
     if (typeof stages === "string" && stageMap[stages]) {
@@ -202,7 +215,7 @@ function filterByStages(threads: Thread[], stages: StagesFiltersType) {
 
 function filterByPriorities(
   threads: Thread[],
-  priorities: PrioritiesFiltersType
+  priorities: PrioritiesFiltersType,
 ) {
   if (priorities && Array.isArray(priorities)) {
     const uniquePriorities = [...new Set(priorities)];
@@ -270,7 +283,7 @@ function sortThreads(threads: Thread[], sortBy: SortBy): Thread[] {
 //
 // @sanchitrk: shall we rename it to `buildWorkspaceStore` ?
 export const buildStore = (
-  initialState: IWorkspaceEntities & IWorkspaceValueObjects
+  initialState: IWorkspaceEntities & IWorkspaceValueObjects,
 ) => {
   return createStore<WorkspaceStoreState>()(
     immer((set) => ({
@@ -306,7 +319,7 @@ export const buildStore = (
         priorities: PrioritiesFiltersType,
         sortBy: SortBy,
         memberId: null | string,
-        isUnassigned: boolean | null
+        isUnassigned: boolean | null,
       ) => {
         set((state) => {
           if (state.threadAppliedFilters) {
@@ -407,7 +420,7 @@ export const buildStore = (
         const assigneeIds = _.uniq(
           threads
             .map((t) => t.assigneeId)
-            .filter((a): a is string => a !== undefined)
+            .filter((a): a is string => a !== undefined),
         );
 
         // Map assignee IDs to members
@@ -444,11 +457,11 @@ export const buildStore = (
 
           if (memberId) {
             results = threads.filter(
-              (t) => t.status === status && t.assigneeId === memberId
+              (t) => t.status === status && t.assigneeId === memberId,
             );
           } else if (isUnassigned) {
             results = threads.filter(
-              (t) => t.status === status && !t.assigneeId
+              (t) => t.status === status && !t.assigneeId,
             );
           }
 
@@ -460,9 +473,28 @@ export const buildStore = (
         }
         return null;
       },
+      viewCustomerEmail: (state: WorkspaceStoreState, customerId: string) => {
+        const customer = state.customers?.[customerId];
+        return customer ? customer.email : null;
+      },
+      viewCustomerExternalId: (
+        state: WorkspaceStoreState,
+        customerId: string,
+      ) => {
+        const customer = state.customers?.[customerId];
+        return customer ? customer.externalId : null;
+      },
       viewCustomerName: (state: WorkspaceStoreState, customerId: string) => {
         const customer = state.customers?.[customerId];
         return customer ? customer.name : "";
+      },
+      viewCustomerPhone: (state: WorkspaceStoreState, customerId: string) => {
+        const customer = state.customers?.[customerId];
+        return customer ? customer.phone : null;
+      },
+      viewCustomerRole: (state: WorkspaceStoreState, customerId: string) => {
+        const customer = state.customers?.[customerId];
+        return customer ? customer.role : "";
       },
       viewLabels: (state: WorkspaceStoreState) => {
         const labels = state.labels ? Object.values(state.labels) : [];
@@ -483,17 +515,17 @@ export const buildStore = (
         assignees: AssigneesFiltersType,
         stages: StagesFiltersType,
         priorities: PrioritiesFiltersType,
-        sortBy: SortBy = defaultSortKey
+        sortBy: SortBy = defaultSortKey,
       ) => {
         const threads = state.threads ? Object.values(state.threads) : [];
         const myThreads = threads.filter(
-          (t) => t.status === status && t.assigneeId === memberId
+          (t) => t.status === status && t.assigneeId === memberId,
         );
         const assigneesFiltered = filterByAssignees(myThreads, assignees);
         const stagesFiltered = filterByStages(assigneesFiltered, stages);
         const prioritiesFiltered = filterByPriorities(
           stagesFiltered,
-          priorities
+          priorities,
         );
         const sortedThreads = sortThreads(prioritiesFiltered, sortBy);
         return sortedThreads;
@@ -510,7 +542,7 @@ export const buildStore = (
         assignees: AssigneesFiltersType,
         stages: StagesFiltersType,
         priorities: PrioritiesFiltersType,
-        sortBy: SortBy = defaultSortKey
+        sortBy: SortBy = defaultSortKey,
       ) => {
         const threads = state.threads ? Object.values(state.threads) : [];
         const statusFiltered = threads.filter((t) => t.status === status);
@@ -518,7 +550,7 @@ export const buildStore = (
         const stagesFiltered = filterByStages(assigneesFiltered, stages);
         const prioritiesFiltered = filterByPriorities(
           stagesFiltered,
-          priorities
+          priorities,
         );
         const sortedThreads = sortThreads(prioritiesFiltered, sortBy);
         return sortedThreads;
@@ -542,25 +574,25 @@ export const buildStore = (
         assignees: AssigneesFiltersType,
         stages: StagesFiltersType,
         priorities: PrioritiesFiltersType,
-        sortBy = defaultSortKey
+        sortBy = defaultSortKey,
       ) => {
         const threads = state.threads ? Object.values(state.threads) : [];
         const unassignedThreads = threads.filter(
-          (t) => t.status === status && !t.assigneeId
+          (t) => t.status === status && !t.assigneeId,
         );
         const assigneesFiltered = filterByAssignees(
           unassignedThreads,
-          assignees
+          assignees,
         );
         const stagesFiltered = filterByStages(assigneesFiltered, stages);
         const prioritiesFiltered = filterByPriorities(
           stagesFiltered,
-          priorities
+          priorities,
         );
         const sortedThreads = sortThreads(prioritiesFiltered, sortBy);
         return sortedThreads;
       },
-    }))
+    })),
   );
 };
 

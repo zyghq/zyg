@@ -35,6 +35,7 @@ func NewServer(
 	mux.HandleFunc("GET /{$}", handleGetIndex)
 	mux.HandleFunc("POST /accounts/auth/{$}", ah.handleGetOrCreateAccount)
 
+	// Todo: deprecate PAT usage, instead create workspace member tokens, with permissions.
 	mux.Handle("POST /pats/{$}", NewEnsureAuthAccount(ah.handleCreatePat, authService))
 	mux.Handle("GET /pats/{$}", NewEnsureAuthAccount(ah.handleGetPatList, authService))
 	mux.Handle("DELETE /pats/{patId}/{$}", NewEnsureAuthAccount(ah.handleDeletePat, authService))
@@ -56,7 +57,6 @@ func NewServer(
 		NewEnsureMemberAuth(wh.handleGetWorkspaceMembers, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/members/me/{$}",
 		NewEnsureMemberAuth(wh.handleGetWorkspaceMembership, authService))
-
 	mux.Handle("GET /workspaces/{workspaceId}/members/{memberId}/{$}",
 		NewEnsureMemberAuth(wh.handleGetWorkspaceMember, authService))
 
@@ -69,6 +69,7 @@ func NewServer(
 		NewEnsureMemberAuth(wh.handleCreateWorkspaceLabel, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/labels/{$}",
 		NewEnsureMemberAuth(wh.handleGetWorkspaceLabels, authService))
+
 	mux.Handle("PATCH /workspaces/{workspaceId}/labels/{labelId}/{$}",
 		NewEnsureMemberAuth(wh.handleUpdateWorkspaceLabel, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/labels/{labelId}/{$}",
@@ -78,12 +79,15 @@ func NewServer(
 		NewEnsureMemberAuth(th.handleGetThreadChats, authService))
 	mux.Handle("PATCH /workspaces/{workspaceId}/threads/chat/{threadId}/{$}",
 		NewEnsureMemberAuth(th.handleUpdateThreadChat, authService))
+
+	// TODO: #67 rename route to **/chat/parts/** instead of **/with/**
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/me/{$}",
 		NewEnsureMemberAuth(th.handleGetMyThreadChats, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/unassigned/{$}",
 		NewEnsureMemberAuth(th.handleGetUnassignedThChats, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/labels/{labelId}/{$}",
 		NewEnsureMemberAuth(th.handleGetLabelledThreadChats, authService))
+
 	mux.Handle("POST /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
 		NewEnsureMemberAuth(th.handleCreateThreadChatMessage, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",

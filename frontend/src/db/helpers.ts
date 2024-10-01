@@ -42,6 +42,19 @@ export function ThreadSortKeyHumanized(key: string): string {
   }
 }
 
+export function customerRoleVerboseName(key: string): string {
+  switch (key) {
+    case "engaged":
+      return "Engaged";
+    case "lead":
+      return "Lead";
+    case "visitor":
+      return "Visitor";
+    default:
+      return key;
+  }
+}
+
 export const sortKeys = [
   "created-dsc",
   "created-asc",

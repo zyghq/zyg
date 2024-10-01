@@ -38,8 +38,12 @@ import {
   putThreadLabel,
 } from "@/db/api";
 import { updateThread } from "@/db/api";
-import { getFromLocalStorage } from "@/db/helpers";
-import { Thread, threadTransformer } from "@/db/models";
+import {
+  customerRoleVerboseName,
+  getFromLocalStorage,
+  getInitials,
+} from "@/db/helpers";
+import { Label, Thread, threadTransformer } from "@/db/models";
 import {
   ThreadChatResponse,
   ThreadLabelResponse,
@@ -53,21 +57,27 @@ import {
   ArrowLeftIcon,
   ArrowUpIcon,
   ChatBubbleIcon,
+  CopyIcon,
   DotsHorizontalIcon,
   PlusIcon,
   ResetIcon,
 } from "@radix-ui/react-icons";
-import { CheckIcon } from "@radix-ui/react-icons";
+import {
+  BorderDashedIcon,
+  CheckIcon,
+  InfoCircledIcon,
+} from "@radix-ui/react-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useCopyToClipboard } from "@uidotdev/usehooks";
 import { formatDistanceToNow } from "date-fns";
 import { CheckCircleIcon, CircleIcon, EclipseIcon } from "lucide-react";
 import React from "react";
 import { useStore } from "zustand";
 
 export const Route = createFileRoute(
-  "/_account/workspaces/$workspaceId/threads/$threadId"
+  "/_account/workspaces/$workspaceId/threads/$threadId",
 )({
   component: ThreadDetail,
 });
@@ -76,7 +86,7 @@ function getPrevNextFromCurrent(threads: null | Thread[], threadId: string) {
   if (!threads) return { nextItem: null, prevItem: null };
 
   const currentIndex = threads.findIndex(
-    (thread) => thread.threadId === threadId
+    (thread) => thread.threadId === threadId,
   );
 
   const prevItem = threads[currentIndex - 1] || null;
@@ -103,19 +113,25 @@ function Chat({
   const isMe = chat.member?.memberId === memberId;
 
   return (
-    <div className="flex rounded-lg px-3 py-4 space-x-2 bg-white dark:bg-accent">
+    <div className="flex space-x-2 rounded-lg bg-white px-3 py-4 dark:bg-accent">
       <Avatar className="h-7 w-7">
-        <AvatarImage src={`https://avatar.vercel.sh/${customerOrMemberId}`} />
-        <AvatarFallback>{isMe ? "M" : "U"}</AvatarFallback>
+        <AvatarImage
+          src={`https://avatar.vercel.sh/${customerOrMemberId}.svg?text=${getInitials(
+            customerOrMemberName || "",
+          )}`}
+        />
+        <AvatarFallback>
+          {getInitials(customerOrMemberName || "")}
+        </AvatarFallback>
       </Avatar>
-      <div className="flex flex-col flex-1">
+      <div className="flex flex-1 flex-col">
         <div className="flex justify-between">
           <div className="flex items-center">
             <div className="text-md font-semibold">
               {isMe ? `You` : customerOrMemberName}
             </div>
             <Separator className="mx-2 h-3" orientation="vertical" />
-            <div className="text-muted-foreground text-xs">
+            <div className="text-xs text-muted-foreground">
               {`${when} via chat`}
             </div>
           </div>
@@ -125,7 +141,7 @@ function Chat({
         </div>
         <div className="text-xs text-muted-foreground"></div>
         <Separator
-          className="mt-3 mb-3 dark:bg-zinc-700"
+          className="mb-3 mt-3 dark:bg-zinc-700"
           orientation="horizontal"
         />
         <div>{chat.body}</div>
@@ -134,30 +150,11 @@ function Chat({
   );
 }
 
-function ThreadPreview({
-  activeThread,
-}: {
-  activeThread: Thread;
-}): JSX.Element {
-  return (
-    <div className="flex flex-col px-4 py-2">
-      {activeThread.title && (
-        <div className="font-semibold text-md">{activeThread.title}</div>
-      )}
-      {activeThread.previewText && (
-        <div className="text-md text-muted-foreground">
-          {activeThread.previewText}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function SettingThreadLabel() {
   return (
-    <div className="flex mr-1">
+    <div className="mr-1 flex">
       <svg
-        className="animate-spin h-3 w-3 text-indigo-500"
+        className="h-3 w-3 animate-spin text-indigo-500"
         fill="none"
         viewBox="0 0 24 24"
         xmlns="http://www.w3.org/2000/svg"
@@ -180,22 +177,17 @@ function SettingThreadLabel() {
   );
 }
 
-// TODO: Pass in the store and functions as props, move the logic outside the component.
 function ThreadLabels({
   threadId,
   token,
   workspaceId,
+  workspaceLabels,
 }: {
   threadId: string;
   token: string;
   workspaceId: string;
+  workspaceLabels: Label[];
 }) {
-  const workspaceStore = useWorkspaceStore();
-  const workspaceLabels = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreState) => state.viewLabels(state)
-  );
-
   const {
     data: threadLabels,
     error,
@@ -207,7 +199,7 @@ function ThreadLabels({
       const { data, error } = await getThreadLabels(
         token,
         workspaceId,
-        threadId
+        threadId,
       );
       if (error) throw new Error("failed to fetch thread labels");
       return data as ThreadLabelResponse[];
@@ -221,7 +213,7 @@ function ThreadLabels({
         token,
         workspaceId,
         threadId,
-        values
+        values,
       );
       if (error) {
         throw new Error(error.message);
@@ -246,7 +238,7 @@ function ThreadLabels({
         token,
         workspaceId,
         threadId,
-        labelId
+        labelId,
       );
       if (error) {
         throw new Error(error.message);
@@ -279,7 +271,11 @@ function ThreadLabels({
 
   const renderLabels = () => {
     if (isPending) {
-      return null;
+      return (
+        <Badge variant="outline">
+          <BorderDashedIcon className="h-4 w-4" />
+        </Badge>
+      );
     }
 
     if (error) {
@@ -293,29 +289,35 @@ function ThreadLabels({
 
     return (
       <React.Fragment>
-        {threadLabels?.map((label) => (
-          <Badge key={label.labelId} variant="outline">
-            <div className="flex items-center gap-1">
-              <div>{label.icon}</div>
-              <div className="text-muted-foreground capitalize">
-                {label.name}
+        {threadLabels.length > 0 ? (
+          threadLabels?.map((label) => (
+            <Badge key={label.labelId} variant="outline">
+              <div className="flex items-center gap-1">
+                <div>{label.icon}</div>
+                <div className="capitalize text-muted-foreground">
+                  {label.name}
+                </div>
               </div>
-            </div>
+            </Badge>
+          ))
+        ) : (
+          <Badge variant="outline">
+            <BorderDashedIcon className="h-4 w-4" />
           </Badge>
-        ))}
+        )}
       </React.Fragment>
     );
   };
 
   return (
-    <div className="flex flex-col px-4 py-2 gap-1">
+    <div className="flex flex-col pb-2">
       <div className="flex justify-between">
-        <div className="text-muted-foreground font-semibold items-center">
+        <div className="items-center text-sm font-semibold text-muted-foreground">
           Labels
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button className="border-dashed h-7" size="sm" variant="outline">
+            <Button className="h-7 border-dashed" size="sm" variant="outline">
               {threadLabelMutation.isPending ? (
                 <SettingThreadLabel />
               ) : (
@@ -324,7 +326,7 @@ function ThreadLabels({
               Add
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="sm:58 w-48">
+          <DropdownMenuContent align="end" className="w-48">
             <Command>
               <CommandList>
                 <CommandInput placeholder="Filter" />
@@ -345,7 +347,9 @@ function ThreadLabels({
                       <CheckIcon
                         className={cn(
                           "ml-auto h-4 w-4",
-                          isChecked(label.labelId) ? "opacity-100" : "opacity-0"
+                          isChecked(label.labelId)
+                            ? "opacity-100"
+                            : "opacity-0",
                         )}
                       />
                     </CommandItem>
@@ -356,9 +360,9 @@ function ThreadLabels({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="flex gap-1 flex-wrap">{renderLabels()}</div>
+      <div className="flex flex-wrap gap-1">{renderLabels()}</div>
       {threadLabelMutation.isError && (
-        <div className="text-xs text-red-500">Something went wrong</div>
+        <div className="mt-1 text-xs text-red-500">Something went wrong</div>
       )}
     </div>
   );
@@ -366,9 +370,9 @@ function ThreadLabels({
 
 function ChatLoading() {
   return (
-    <div className="flex justify-center mt-12">
+    <div className="mt-12 flex justify-center">
       <svg
-        className="animate-spin h-5 w-5 text-indigo-500"
+        className="h-5 w-5 animate-spin text-indigo-500"
         fill="none"
         viewBox="0 0 24 24"
         xmlns="http://www.w3.org/2000/svg"
@@ -399,24 +403,51 @@ function ThreadDetail() {
   const workspaceStore = useWorkspaceStore();
 
   const currentQueue = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-    state.viewCurrentThreadQueue(state)
+    state.viewCurrentThreadQueue(state),
   );
 
   const activeThread = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-    state.getThreadItem(state, threadId)
+    state.getThreadItem(state, threadId),
   );
 
   const customerName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-    state.viewCustomerName(state, activeThread?.customerId || "")
+    state.viewCustomerName(state, activeThread?.customerId || ""),
+  );
+
+  const customerEmail = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.viewCustomerEmail(state, activeThread?.customerId || ""),
+  );
+
+  const customerExternalId = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) =>
+      state.viewCustomerExternalId(state, activeThread?.customerId || ""),
+  );
+
+  const customerPhone = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.viewCustomerPhone(state, activeThread?.customerId || ""),
+  );
+
+  const customerRole = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.viewCustomerRole(state, activeThread?.customerId || ""),
   );
 
   const memberId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-    state.getMemberId(state)
+    state.getMemberId(state),
   );
 
   const sort = useStore(workspaceStore, (state) =>
-    state.viewThreadSortKey(state)
+    state.viewThreadSortKey(state),
   );
+
+  const workspaceLabels = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.viewLabels(state),
+  );
+
+  const [, copyEmail] = useCopyToClipboard();
+  const [, copyExternalId] = useCopyToClipboard();
+  const [, copyPhone] = useCopyToClipboard();
 
   const threadsPath =
     getFromLocalStorage("zyg:threadsQueuePath") ||
@@ -439,7 +470,7 @@ function ThreadDetail() {
       const { data, error } = await getWorkspaceThreadChatMessages(
         token,
         workspaceId,
-        threadId
+        threadId,
       );
       if (error) throw new Error("failed to fetch thread messages");
       return data as ThreadChatResponse[];
@@ -486,7 +517,7 @@ function ThreadDetail() {
     if (chats && chats.length > 0) {
       const chatsReversed = Array.from(chats).reverse();
       return (
-        <div className="p-4 space-y-4">
+        <div className="space-y-4 p-4">
           {chatsReversed.map((chat) => (
             <Chat chat={chat} key={chat.chatId} memberId={memberId} />
           ))}
@@ -495,7 +526,7 @@ function ThreadDetail() {
       );
     }
     return (
-      <div className="flex justify-center mt-12 text-muted-foreground">
+      <div className="mt-12 flex justify-center text-muted-foreground">
         No results
       </div>
     );
@@ -507,8 +538,8 @@ function ThreadDetail() {
 
   if (error) {
     return (
-      <div className="flex flex-col container h-screen">
-        <div className="my-auto mx-auto">
+      <div className="container flex h-screen flex-col">
+        <div className="mx-auto my-auto">
           <h1 className="mb-1 text-3xl font-bold">Error</h1>
           <p className="mb-4 text-red-500">
             There was an error fetching thread details. Try again later.
@@ -526,7 +557,7 @@ function ThreadDetail() {
         <aside
           className={cn(
             "sticky overflow-y-auto",
-            currentQueue ? "border-r" : ""
+            currentQueue ? "border-r" : "",
           )}
         >
           <div className="flex">
@@ -570,7 +601,7 @@ function ThreadDetail() {
             </div>
           </div>
         </aside>
-        <main className="flex flex-col flex-1">
+        <main className="flex flex-1 flex-col">
           <ResizablePanelGroup direction="horizontal">
             <ResizablePanel
               className={cn("hidden", currentQueue ? "sm:block" : "")}
@@ -632,21 +663,21 @@ function ThreadDetail() {
                                 new Date(activeThread.createdAt),
                                 {
                                   addSuffix: true,
-                                }
+                                },
                               )}
                             </div>
                           </React.Fragment>
                         )}
                       </div>
                     </div>
-                    <ScrollArea className="flex h-[calc(100dvh-4rem)] flex-col p-1 bg-gray-100 dark:bg-background">
+                    <ScrollArea className="flex h-[calc(100dvh-4rem)] flex-col bg-gray-100 p-1 dark:bg-background">
                       {isPending ? <ChatLoading /> : renderChats(chats)}
                     </ScrollArea>
                   </div>
                 </ResizablePanel>
                 <ResizableHandle withHandle />
                 <ResizablePanel defaultSize={25} maxSize={50} minSize={20}>
-                  <div className="flex flex-col h-full p-2 overflow-auto gap-2">
+                  <div className="flex h-full flex-col gap-2 overflow-auto p-2">
                     <MessageForm
                       customerName={customerName}
                       refetch={refetch}
@@ -654,7 +685,7 @@ function ThreadDetail() {
                       token={token}
                       workspaceId={workspaceId}
                     />
-                    <div className="flex flex-col mt-auto">
+                    <div className="mt-auto flex flex-col">
                       <div className="flex justify-end gap-2">
                         <Button size="sm" variant="outline">
                           <EclipseIcon className="mr-1 h-4 w-4 text-fuchsia-500" />
@@ -705,14 +736,25 @@ function ThreadDetail() {
             </ResizablePanel>
             <ResizableHandle withHandle={true} />
             <ResizablePanel
-              className="hidden sm:block bg-gray-100 dark:bg-background p-2"
+              className="hidden flex-col gap-2 bg-accent p-2 sm:flex"
               defaultSize={25}
               maxSize={30}
               minSize={20}
             >
-              <div className="flex flex-col gap-1 bg-white dark:bg-background rounded-lg">
-                <ThreadPreview activeThread={activeThread} />
-                <div className="flex flex-col px-4 gap-2">
+              <div className="flex flex-col gap-4 rounded-lg bg-white px-4 py-2 dark:bg-background">
+                <div className="flex flex-col">
+                  {activeThread.title && (
+                    <div className="text-md font-medium">
+                      {activeThread.title}
+                    </div>
+                  )}
+                  {activeThread.previewText && (
+                    <div className="text-sm text-muted-foreground">
+                      {activeThread.previewText}
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
                   <div className="flex gap-2">
                     <SetThreadPriorityForm
                       priority={priority}
@@ -738,7 +780,106 @@ function ThreadDetail() {
                   threadId={threadId}
                   token={token}
                   workspaceId={workspaceId}
+                  workspaceLabels={workspaceLabels}
                 />
+              </div>
+              <div className="flex flex-col gap-4 rounded-lg bg-white px-4 py-2 dark:bg-background">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Avatar className="h-7 w-7">
+                        <AvatarImage
+                          src={`https://avatar.vercel.sh/${activeThread?.customerId || ""}.svg?text=${getInitials(
+                            customerName,
+                          )}`}
+                        />
+                        <AvatarFallback>
+                          {getInitials(customerName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <div className="text-sm font-semibold">
+                          {customerName}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {customerRoleVerboseName(customerRole)}
+                        </div>
+                      </div>
+                    </div>
+                    <Button size="icon" variant="ghost">
+                      <DotsHorizontalIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">Email</div>
+                    <div className="flex items-center space-x-2">
+                      <div className="text-sm">{customerEmail || "n/a"}</div>
+                      <Button
+                        className="text-muted-foreground"
+                        onClick={() => copyEmail(customerEmail || "n/a")}
+                        size="icon"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <CopyIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      External ID
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="text-sm">
+                        {customerExternalId || "n/a"}
+                      </div>
+                      <Button
+                        className="text-muted-foreground"
+                        onClick={() =>
+                          copyExternalId(customerExternalId || "n/a")
+                        }
+                        size="icon"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <CopyIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">Phone</div>
+                    <div className="flex items-center space-x-2">
+                      <div className="text-sm">{customerPhone || "n/a"}</div>
+                      <Button
+                        className="text-muted-foreground"
+                        onClick={() => copyPhone(customerPhone || "n/a")}
+                        size="icon"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <CopyIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col space-y-2">
+                  <div className="text-xs font-semibold">Recent Events</div>
+                  <div className="flex items-center gap-2">
+                    <InfoCircledIcon className="h-4 w-4" />
+                    <div className="font-mono text-sm">No events yet.</div>
+                  </div>
+                  <div className="pb-2 text-xs">
+                    Learn{" "}
+                    <a
+                      className="underline"
+                      href="https://zyg.ai/docs/events?utm_source=app&utm_medium=docs&utm_campaign=onboarding"
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      how to send customer events to Zyg.
+                    </a>
+                  </div>
+                </div>
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>
