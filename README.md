@@ -1,4 +1,4 @@
-<img width="1440" alt="zyg-dashboard" src="https://github.com/user-attachments/assets/46ab833c-2258-4c05-8f48-719066319614">
+<img width="1440" alt="zyg-dashboard" src="https://github.com/user-attachments/assets/b2edcb26-c15d-4c94-a49d-5035a9b8004a">
 <sup><i>(Note: The image above is how the Zyg looks like, perhaps might be outdated as we are adding more enhancements.)</i></sup>
 
 # Zyg: The OS support infrastructure for B2B companies.
