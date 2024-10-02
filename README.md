@@ -1,21 +1,10 @@
-<p align="center">
-  <a href="https://www.zyg.ai">
-    <h1 align="center">Zyg</h1>
-  </a>
-  <p align="center">
-    Zyg is purpose-built customer support for your SaaS products.
-    <br />
-    <a href="https://www.zyg.ai">Website</a>
-    ·
-    <a href="https://x.com/_sanchitrk">X</a>
-    ·
-    <a href="https://github.com/zyghq/zyg/issues">Issues</a>
-  </p>
-</p>
+<img width="1440" alt="zyg-dashboard" src="https://github.com/user-attachments/assets/46ab833c-2258-4c05-8f48-719066319614">
+<sup><i>(Note: The image above is how the Zyg looks like, perhaps might be outdated as we are adding more enhancements.)</i></sup>
 
-## About
+# Zyg: The OS support infrastructure for B2B companies.
 
-Meet SaaS support for modern products. Streamline customer conversations and gain product insights with AI-powered suggestions.
+<b>Get
+involved: [Discord](https://discord.gg/dnK9zA5Rz8) • [Website](https://zyg.ai) • [Issues](https://github.com/zyghq/zyg/issues)</b>
 
 ## Key Features
 
