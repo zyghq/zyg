@@ -74,10 +74,9 @@ yarn-error.log*
 next-env.d.ts
 
 # Local directories and files
-scratch.txt
 secrets/
 pqdb/
 redisdb/
-bkps/
 
+# IDEs
 .idea/
