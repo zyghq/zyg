@@ -18,16 +18,16 @@ export function ThreadLinkItem({
 }) {
   const workspaceStore = useWorkspaceStore();
   const customerName = useStore(workspaceStore, (state) =>
-    state.viewCustomerName(state, thread.customerId)
+    state.viewCustomerName(state, thread.customerId),
   );
   return (
     <Link
-      className="grid grid-cols-custom-thread-list-default xl:grid-cols-custom-thread-list-xl grid-rows-custom-thread-list-default xl:grid-rows-custom-thread-list-xl px-4 py-4 border-b xl:px-8 gap-x-4 gap-y-2 hover:bg-zinc-50 dark:hover:bg-accent"
+      className="grid grid-cols-custom-thread-list-default grid-rows-custom-thread-list-default gap-x-4 gap-y-2 border-b px-4 py-4 hover:bg-accent dark:hover:bg-accent xl:grid-cols-custom-thread-list-xl xl:grid-rows-custom-thread-list-xl xl:px-8"
       params={{ threadId: thread.threadId, workspaceId }}
       to={"/workspaces/$workspaceId/threads/$threadId"}
     >
       <div className="col-span-1 xl:col-span-1">
-        <ChatBubbleIcon className="w-4 h-4 text-muted-foreground" />
+        <ChatBubbleIcon className="h-4 w-4 text-muted-foreground" />
       </div>
       <div className="col-span-1 xl:col-span-1">
         <div className="flex flex-col">
@@ -35,9 +35,9 @@ export function ThreadLinkItem({
           <div className="text-xs text-muted-foreground"></div>
         </div>
       </div>
-      <div className="col-span-1 xl:col-span-1 xl:order-last">
-        <div className="flex justify-end gap-4 items-center">
-          <div className="text-xs font-mono">
+      <div className="col-span-1 xl:order-last xl:col-span-1">
+        <div className="flex items-center justify-end gap-4">
+          <div className="font-mono text-xs">
             {formatDistanceToNow(new Date(thread.createdAt), {
               addSuffix: true,
             })}
@@ -51,22 +51,22 @@ export function ThreadLinkItem({
               <AvatarFallback>M</AvatarFallback>
             </Avatar>
           ) : (
-            <PersonIcon className="w-4 h-4 text-muted-foreground" />
+            <PersonIcon className="h-4 w-4 text-muted-foreground" />
           )}
         </div>
       </div>
-      <div className="col-span-3 xl:col-span-1 xl:order-3">
-        <span className="flex whitespace-nowrap overflow-hidden text-ellipsis">
-          <span className="text-sm font-medium break-words">
+      <div className="col-span-3 xl:order-3 xl:col-span-1">
+        <span className="flex overflow-hidden text-ellipsis whitespace-nowrap">
+          <span className="break-words text-sm font-medium">
             {thread.title}
           </span>
-          <span className="text-sm ml-2 text-muted-foreground truncate">
+          <span className="ml-2 max-w-xl truncate text-sm text-muted-foreground">
             {thread.previewText}
           </span>
         </span>
-        <div className="flex flex-wrap justify-start gap-1 mt-1">
+        <div className="mt-1 flex flex-wrap justify-start gap-1">
           <Badge
-            className="p-1 bg-indigo-100 font-normal border-indigo-200 dark:bg-indigo-700 dark:border-indigo-600"
+            className="border-indigo-200 bg-indigo-100 p-1 font-normal dark:border-indigo-600 dark:bg-indigo-700"
             variant="outline"
           >
             <span className="mr-1">

@@ -44,7 +44,7 @@ function ThreadItem({
       }}
       className={cn(
         "flex flex-col items-start gap-2 rounded-lg px-3 py-3 text-left text-sm transition-all hover:bg-accent",
-        variant === "compress" && "gap-0 rounded-none border-b py-2",
+        variant === "compress" && "gap-1 rounded-none border-b py-2",
       )}
       params={{ threadId: item.threadId, workspaceId }}
       to={"/workspaces/$workspaceId/threads/$threadId"}
@@ -73,7 +73,7 @@ function ThreadItem({
       </div>
       <div className="flex w-full flex-col gap-2">
         <div className="flex w-full justify-end">
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             {channelIcon(item.channel, {
               className: "h-4 w-4 text-muted-foreground",
             })}
