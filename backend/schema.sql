@@ -109,17 +109,20 @@ CREATE TABLE customer (
     CONSTRAINT customer_workspace_id_phone_key UNIQUE (workspace_id, phone)
 );
 
-CREATE TABLE email_identity (
-    email_identity_id VARCHAR(255) NOT NULL,
+CREATE TABLE email_magic_token (
+    magic_token_id VARCHAR(255) NOT NULL,
+    workspace_id VARCHAR(255) NOT NULL,
     customer_id VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
-    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
-    has_conflict BOOLEAN NOT NULL DEFAULT FALSE,
+    has_conflict BOOLEAN NOT NULL DEFAULT TRUE,
+    expires_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    token TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT email_identity_id_pkey PRIMARY KEY (email_identity_id),
-    CONSTRAINT email_identity_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer
+    CONSTRAINT email_magic_token_id_pkey PRIMARY KEY (magic_token_id),
+    CONSTRAINT email_magic_token_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace,
+    CONSTRAINT email_magic_token_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer
 );
 
 -- @sanchitrk: changed usage?

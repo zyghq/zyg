@@ -446,7 +446,7 @@ func (t ThreadChatResp) NewResponse(thread *models.Thread, chat *models.Chat) Th
 }
 
 type CustomerIdentitiesReq struct {
-	Email      *string `json:"email"`
-	Phone      *string `json:"phone"`
-	ExternalId *string `json:"externalId"`
+	Host  *string `json:"host"`  // required for redirects.
+	Email *string `json:"email"` // claimed email identity.
+	Phone *string `json:"phone"` // claimed phone identity.
 }

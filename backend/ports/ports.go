@@ -2,6 +2,7 @@ package ports
 
 import (
 	"context"
+	"time"
 
 	"github.com/zyghq/zyg/models"
 )
@@ -92,6 +93,8 @@ type WorkspaceServicer interface {
 		ctx context.Context, widgetId string) (models.Widget, error)
 	GetCustomer(
 		ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error)
+	GetCustomerByEmail(
+		ctx context.Context, workspaceId string, email string) (models.Customer, error)
 	DoesEmailConflict(
 		ctx context.Context, workspaceId string, email string) (bool, error)
 	ValidateWidgetSession(
@@ -112,9 +115,18 @@ type CustomerServicer interface {
 		sk string, hash string, phone string) bool
 	UpdateCustomer(
 		ctx context.Context, customer models.Customer) (models.Customer, error)
-	AddCustomerEmailIdentity(
-		ctx context.Context, emailIdentity models.EmailIdentity) (models.EmailIdentity, error)
-	HasProvidedEmailIdentity(ctx context.Context, customerId string) (bool, error)
+	AddMagicEmailToken(
+		ctx context.Context, magicToken models.EmailMagicToken) (models.EmailMagicToken, error)
+	RemoveMagicEmailToken(
+		ctx context.Context, workspaceId string, customerId string, email string) error
+	HasProvidedEmailIdentity(
+		ctx context.Context, workspaceId string, customerId string) (bool, error)
+	GenerateKycMailVerifyToken(
+		sk string, workspaceId string, customerId string,
+		email string, expiresAt time.Time, redirectUrl string,
+	) (string, error)
+	VerifyKycMailToken(token string, hmacSecret []byte) (models.KycMailJWTClaims, error)
+	GetKycMailToken(ctx context.Context, token string) (models.EmailMagicToken, error)
 }
 
 type ThreadServicer interface {
@@ -222,6 +234,8 @@ type MemberRepositorer interface {
 type CustomerRepositorer interface {
 	LookupWorkspaceCustomerById(
 		ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error)
+	LookupWorkspaceCustomerByEmail(
+		ctx context.Context, workspaceId string, email string, role *string) (models.Customer, error)
 	UpsertCustomerByExtId(
 		ctx context.Context, customer models.Customer) (models.Customer, bool, error)
 	UpsertCustomerByEmail(
@@ -238,8 +252,10 @@ type CustomerRepositorer interface {
 		ctx context.Context, customer models.Customer) (models.Customer, error)
 	CheckEmailExists(
 		ctx context.Context, workspaceId string, email string) (bool, error)
-	InsertEmailIdentity(ctx context.Context, identity models.EmailIdentity) (models.EmailIdentity, error)
-	EmailIdentityExists(ctx context.Context, customerId string) (bool, error)
+	InsertEmailMagicToken(ctx context.Context, magicToken models.EmailMagicToken) (models.EmailMagicToken, error)
+	DeleteMagicEmailToken(ctx context.Context, workspaceId string, customerId string, email string) error
+	EmailIdentityExists(ctx context.Context, workspaceId string, customerId string) (bool, error)
+	LookupEmailMagicTokenByToken(ctx context.Context, token string) (models.EmailMagicToken, error)
 }
 
 type ThreadRepositorer interface {

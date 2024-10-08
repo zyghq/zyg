@@ -366,8 +366,8 @@ func (ws *WorkspaceService) DoesEmailConflict(
 	ctx context.Context, workspaceId string, email string) (bool, error) {
 	exists, err := ws.customerRepo.CheckEmailExists(ctx, workspaceId, email)
 	if err != nil {
-		// Be pessimistic when checking for email conflict, let us assume email already exists;
-		// hence there is conflict.
+		// any error assume that the email is exists.
+		// be pessimistic.
 		return true, ErrCustomer
 	}
 	return exists, nil
@@ -430,4 +430,16 @@ func (ws *WorkspaceService) CreateWidgetSession(
 		return models.Customer{}, created, ErrWidgetSession
 	}
 	return customer, created, nil
+}
+
+func (ws *WorkspaceService) GetCustomerByEmail(
+	ctx context.Context, workspaceId string, email string) (models.Customer, error) {
+	customer, err := ws.customerRepo.LookupWorkspaceCustomerByEmail(ctx, workspaceId, email, nil)
+	if errors.Is(err, repository.ErrEmpty) {
+		return models.Customer{}, ErrCustomerNotFound
+	}
+	if err != nil {
+		return models.Customer{}, ErrCustomer
+	}
+	return customer, nil
 }

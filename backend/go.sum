@@ -17,12 +17,12 @@ github.com/jackc/puddle/v2 v2.2.1 h1:RhxXJtFG022u4ibrCSMSiu5aOq1i77R3OHKNJj77OAk
 github.com/jackc/puddle/v2 v2.2.1/go.mod h1:vriiEXHvEE654aYKXXjOvZM39qJ0q+azkZFrfEOc3H4=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+github.com/resend/resend-go/v2 v2.12.0 h1:JsLqnzOvcrIFxBc3PyxVI9CueCJ2Ls6pEFN5Ki+PB4c=
+github.com/resend/resend-go/v2 v2.12.0/go.mod h1:3YCb8c8+pLiqhtRFXTyFwlLvfjQtluxOr9HEh2BwCkQ=
 github.com/rs/cors v1.10.1 h1:L0uuZVXIKlI1SShY2nhFfo44TYvDPQ1w4oFkUJNfhyo=
 github.com/rs/cors v1.10.1/go.mod h1:XyqrcTp5zjWr1wsJ8PIRZssZ8b/WMcMf71DJnit4EMU=
 github.com/rs/xid v1.5.0 h1:mKX4bl4iPYJtEIxp6CYiUuLQ/8DYMoz0PUdtGgMFRVc=
 github.com/rs/xid v1.5.0/go.mod h1:trrq9SKmegXys3aeAKXMUTdJsYXVwGY3RLcfgqegfbg=
-github.com/sanchitrk/namingo v0.1.1 h1:tfFzVQPgutW8lj4Kl5UvbZ7Jwl26br6Rp6Ttwx6zIWM=
-github.com/sanchitrk/namingo v0.1.1/go.mod h1:IlSiX+9e8+JKI5hEZVUlpuBej82Ka8qBRZeCexIaI5Q=
 github.com/sanchitrk/namingo v0.1.2 h1:Z7vmJpAI/PtD6gQkrxeEJcgt9HMK0fW2+KMTF+eTHVA=
 github.com/sanchitrk/namingo v0.1.2/go.mod h1:IlSiX+9e8+JKI5hEZVUlpuBej82Ka8qBRZeCexIaI5Q=
 github.com/segmentio/ksuid v1.0.4 h1:sBo2BdShXjmcugAMwjugoGUdUV0pcxY5mW4xKRn3v4c=

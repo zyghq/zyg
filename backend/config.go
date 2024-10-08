@@ -31,3 +31,27 @@ func DBQueryDebug() bool {
 	}
 	return debug
 }
+
+func GetXServerUrl() string {
+	value, ok := os.LookupEnv("ZYG_XSERVER_URL")
+	if !ok {
+		return "http://localhost:8000"
+	}
+	return value
+}
+
+func ZygUrl() string {
+	value, ok := os.LookupEnv("ZYG_URL")
+	if !ok {
+		return "https://zyg.ai"
+	}
+	return value
+}
+
+func ResendApiKey() string {
+	value, ok := os.LookupEnv("RESEND_API_KEY")
+	if !ok {
+		return ""
+	}
+	return value
+}

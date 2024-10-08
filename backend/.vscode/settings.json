@@ -6,6 +6,10 @@
     "oubm",
     "segmentio",
     "sess",
+    "templ",
     "xhandler"
+  ],
+  "cSpell.ignoreWords": [
+    "mpim"
   ]
 }

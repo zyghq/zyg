@@ -43,6 +43,13 @@ type CustomerJWTClaims struct {
 	jwt.RegisteredClaims
 }
 
+type KycMailJWTClaims struct {
+	WorkspaceId string `json:"workspaceId"`
+	Email       string `json:"email"`
+	RedirectUrl string `json:"redirectUrl"`
+	jwt.RegisteredClaims
+}
+
 // NullString custom data type wrapper for SQL nullable string
 func NullString(s *string) sql.NullString {
 	if s == nil {
@@ -492,26 +499,40 @@ func (sk WorkspaceSecret) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
-type CustomerEmailConflict struct {
-	Email      string
-	CustomerId string
-	Name       string
-	AvatarUrl  string
+// EmailMagicToken is a magic token that is sent to the claimed customer's email address
+// verified by the customer signed token.
+type EmailMagicToken struct {
+	MagicTokenId string
+	WorkspaceId  string
+	CustomerId   string
+	Email        string
+	HasConflict  bool
+	ExpiresAt    time.Time
+	Token        string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	Conflicts    []CustomerActor
 }
 
-type EmailIdentity struct {
-	EmailIdentityId string
-	CustomerId      string
-	Email           string
-	IsVerified      bool
-	HasConflict     bool
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	Conflicts       []CustomerEmailConflict
-}
-
-func (ei EmailIdentity) GenId() string {
+func (ei EmailMagicToken) GenId() string {
 	return "ei" + xid.New().String()
+}
+
+func (ei EmailMagicToken) NewMagicToken(
+	workspaceId string, customerId string, email string,
+	hasConflict bool, expiresAt time.Time, token string,
+) EmailMagicToken {
+	return EmailMagicToken{
+		MagicTokenId: ei.GenId(),
+		WorkspaceId:  workspaceId,
+		CustomerId:   customerId,
+		Email:        email,
+		HasConflict:  hasConflict,
+		ExpiresAt:    expiresAt,
+		Token:        token,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}
 }
 
 type WidgetSessionData struct {

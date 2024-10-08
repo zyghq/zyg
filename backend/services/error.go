@@ -23,6 +23,8 @@ const (
 	ErrThChatMessage        = serviceErr("thread chat message error")
 	ErrThChatLabel          = serviceErr("thread chat label error")
 	ErrCustomer             = serviceErr("customer error")
+	ErrKycMailToken         = serviceErr("kyc mail token error")
+	ErrKycMailTokenExpired  = serviceErr("kyc mail token expired error")
 	ErrCustomerNotFound     = serviceErr("customer not found")
 	ErrSecretKeyNotFound    = serviceErr("secret key not found")
 	ErrSecretKey            = serviceErr("secret key error")
