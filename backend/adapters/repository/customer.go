@@ -27,12 +27,13 @@ func customerCols() builq.Columns {
 	}
 }
 
-// emailMagicTokenCols returns required columns for the `email_magic_token` table.
-func emailMagicTokenCols() builq.Columns {
+func claimedMailVerificationCols() builq.Columns {
 	return builq.Columns{
-		"magic_token_id", "workspace_id", "customer_id",
-		"email", "has_conflict",
-		"expires_at", "token", "created_at", "updated_at",
+		"verification_id", "workspace_id", "customer_id", "email",
+		"has_conflict", "expires_at", "token",
+		"is_mail_sent", "platform", "sender_id",
+		"sender_status", "sent_at",
+		"created_at", "updated_at",
 	}
 }
 
@@ -105,7 +106,6 @@ func (c *CustomerDB) LookupWorkspaceCustomerByEmail(
 		&customer.CreatedAt, &customer.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		slog.Error("no rows returned", slog.Any("error", err))
 		return models.Customer{}, ErrEmpty
 	}
 	if err != nil {
@@ -429,24 +429,28 @@ func (c *CustomerDB) CheckEmailExists(
 	return exists, nil
 }
 
-// InsertEmailMagicToken inserts the email magic token.
-func (c *CustomerDB) InsertEmailMagicToken(
-	ctx context.Context, magicToken models.EmailMagicToken) (models.EmailMagicToken, error) {
-	magicId := magicToken.GenId()
+// InsertClaimedMailVerification inserts claimed mail for verification
+func (c *CustomerDB) InsertClaimedMailVerification(
+	ctx context.Context, claimed models.ClaimedEmailVerification) (models.ClaimedEmailVerification, error) {
+	verificationId := claimed.GenId()
 
 	q := builq.New()
-	cols := emailMagicTokenCols()
+	cols := claimedMailVerificationCols()
 
-	q("INSERT INTO %s (%s)", "email_magic_token", cols)
-	q("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$)",
-		magicId, magicToken.WorkspaceId, magicToken.CustomerId, magicToken.Email, magicToken.HasConflict,
-		magicToken.ExpiresAt, magicToken.Token, magicToken.CreatedAt, magicToken.UpdatedAt)
+	q("INSERT INTO %s (%s)", "claimed_mail_verification", cols)
+	q("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$)",
+		verificationId, claimed.WorkspaceId, claimed.CustomerId, claimed.Email,
+		claimed.HasConflict, claimed.ExpiresAt, claimed.Token,
+		claimed.IsMailSent, claimed.Platform, claimed.SenderId,
+		claimed.SenderStatus, claimed.SentAt,
+		claimed.CreatedAt, claimed.UpdatedAt,
+	)
 	q("RETURNING %s", cols)
 
 	stmt, _, err := q.Build()
 	if err != nil {
 		slog.Error("failed to build query", slog.Any("err", err))
-		return models.EmailMagicToken{}, ErrQuery
+		return models.ClaimedEmailVerification{}, ErrQuery
 	}
 
 	if zyg.DBQueryDebug() {
@@ -455,41 +459,44 @@ func (c *CustomerDB) InsertEmailMagicToken(
 	}
 
 	err = c.db.QueryRow(ctx, stmt,
-		magicId, magicToken.WorkspaceId, magicToken.CustomerId, magicToken.Email, magicToken.HasConflict,
-		magicToken.ExpiresAt, magicToken.Token, magicToken.CreatedAt, magicToken.UpdatedAt,
+		verificationId, claimed.WorkspaceId, claimed.CustomerId, claimed.Email,
+		claimed.HasConflict, claimed.ExpiresAt, claimed.Token,
+		claimed.IsMailSent, claimed.Platform, claimed.SenderId,
+		claimed.SenderStatus, claimed.SentAt,
+		claimed.CreatedAt, claimed.UpdatedAt,
 	).Scan(
-		&magicToken.MagicTokenId, &magicToken.WorkspaceId,
-		&magicToken.CustomerId, &magicToken.Email, &magicToken.HasConflict,
-		&magicToken.ExpiresAt, &magicToken.Token,
-		&magicToken.CreatedAt, &magicToken.UpdatedAt,
+		&claimed.VerificationId, &claimed.WorkspaceId, &claimed.CustomerId, &claimed.Email,
+		&claimed.HasConflict, &claimed.ExpiresAt, &claimed.Token,
+		&claimed.IsMailSent, &claimed.Platform, &claimed.SenderId,
+		&claimed.SenderStatus, &claimed.SentAt,
+		&claimed.CreatedAt, &claimed.UpdatedAt,
 	)
-
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("error", err))
-		return magicToken, ErrEmpty
+		return models.ClaimedEmailVerification{}, ErrEmpty
 	}
 	if err != nil {
 		slog.Error("failed to query", slog.Any("error", err))
-		return magicToken, ErrQuery
+		return models.ClaimedEmailVerification{}, ErrQuery
 	}
-	return magicToken, nil
+	return claimed, nil
 }
 
-// LookupEmailMagicTokenByToken returns the email magic token by token.
+// LookupClaimedEmailByToken returns the claimed email verification by token.
 // Always make sure the signed token is verified before usage.
-func (c *CustomerDB) LookupEmailMagicTokenByToken(
-	ctx context.Context, token string) (models.EmailMagicToken, error) {
-	var magicToken models.EmailMagicToken
+func (c *CustomerDB) LookupClaimedEmailByToken(
+	ctx context.Context, token string) (models.ClaimedEmailVerification, error) {
+	var claimed models.ClaimedEmailVerification
 	q := builq.New()
-	cols := emailMagicTokenCols()
+	cols := claimedMailVerificationCols()
 
-	q("SELECT %s FROM %s", cols, "email_magic_token")
+	q("SELECT %s FROM %s", cols, "claimed_mail_verification")
 	q("WHERE token = %$", token)
 
 	stmt, _, err := q.Build()
 	if err != nil {
 		slog.Error("failed to build query", slog.Any("err", err))
-		return models.EmailMagicToken{}, ErrQuery
+		return models.ClaimedEmailVerification{}, ErrQuery
 	}
 
 	if zyg.DBQueryDebug() {
@@ -498,29 +505,28 @@ func (c *CustomerDB) LookupEmailMagicTokenByToken(
 	}
 
 	err = c.db.QueryRow(ctx, stmt, token).Scan(
-		&magicToken.MagicTokenId, &magicToken.WorkspaceId,
-		&magicToken.CustomerId, &magicToken.Email, &magicToken.HasConflict,
-		&magicToken.ExpiresAt, &magicToken.Token,
-		&magicToken.CreatedAt, &magicToken.UpdatedAt,
+		&claimed.VerificationId, &claimed.WorkspaceId, &claimed.CustomerId, &claimed.Email,
+		&claimed.HasConflict, &claimed.ExpiresAt, &claimed.Token,
+		&claimed.IsMailSent, &claimed.Platform, &claimed.SenderId,
+		&claimed.SenderStatus, &claimed.SentAt,
+		&claimed.CreatedAt, &claimed.UpdatedAt,
 	)
-
 	if errors.Is(err, pgx.ErrNoRows) {
-		slog.Error("no rows returned", slog.Any("error", err))
-		return models.EmailMagicToken{}, ErrEmpty
+		return models.ClaimedEmailVerification{}, ErrEmpty
 	}
 	if err != nil {
 		slog.Error("failed to query", slog.Any("error", err))
-		return models.EmailMagicToken{}, ErrQuery
+		return models.ClaimedEmailVerification{}, ErrQuery
 	}
-	return magicToken, nil
+	return claimed, nil
 }
 
-// DeleteMagicEmailToken deletes the email magic token for workspace customer by email.
-func (c *CustomerDB) DeleteMagicEmailToken(
+// DeleteCustomerClaimedEmail deletes the claimed email token for workspace customer by email.
+func (c *CustomerDB) DeleteCustomerClaimedEmail(
 	ctx context.Context, workspaceId string, customerId string, email string) error {
 
 	q := builq.New()
-	q("DELETE FROM %s", "email_magic_token")
+	q("DELETE FROM %s", "claimed_mail_verification")
 	q("WHERE workspace_id = %$", workspaceId)
 	q("AND customer_id = %$", customerId)
 	q("AND email = %$", email)
@@ -538,31 +544,65 @@ func (c *CustomerDB) DeleteMagicEmailToken(
 
 	_, err = c.db.Exec(ctx, stmt, workspaceId, customerId, email)
 	if err != nil {
-		slog.Error("failed to delete email magic token", slog.Any("error", err))
+		slog.Error("failed to delete claimed mail verification", slog.Any("error", err))
 		return ErrQuery
 	}
 	return nil
 }
 
-// EmailIdentityExists checks if the customer has provided an email identity for magic token.
-func (c *CustomerDB) EmailIdentityExists(
-	ctx context.Context, workspaceId string, customerId string) (bool, error) {
-	var exists bool
-	stmt := `select exists (
-        select 1
-        from email_magic_token
-        where workspace_id = $1 and customer_id = $2
-    ) as exists`
+// ClaimedEmailExists checks if the customer has provided an email identity for magic token.
+// func (c *CustomerDB) ClaimedEmailExists(
+// 	ctx context.Context, workspaceId string, customerId string) (bool, error) {
+// 	var exists bool
+// 	stmt := `select exists (
+//         select 1
+//         from claimed_mail_verification
+//         where workspace_id = $1 and customer_id = $2
+//     ) as exists`
 
-	err := c.db.QueryRow(ctx, stmt, workspaceId, customerId).Scan(&exists)
+// 	err := c.db.QueryRow(ctx, stmt, workspaceId, customerId).Scan(&exists)
 
+// 	if errors.Is(err, pgx.ErrNoRows) {
+// 		slog.Error("no rows returned", slog.Any("error", err))
+// 		return exists, ErrEmpty
+// 	}
+// 	if err != nil {
+// 		slog.Error("failed to query", slog.Any("error", err))
+// 		return exists, ErrQuery
+// 	}
+// 	return exists, nil
+// }
+
+func (c *CustomerDB) LookupLatestClaimedEmail(
+	ctx context.Context, workspaceId string, customerId string) (models.ClaimedEmailVerification, error) {
+	var claimed models.ClaimedEmailVerification
+	q := builq.New()
+	cols := claimedMailVerificationCols()
+
+	q("SELECT %s FROM %s", cols, "claimed_mail_verification")
+	q("WHERE workspace_id = %$", workspaceId)
+	q("AND customer_id = %$", customerId)
+	q("ORDER BY created_at DESC LIMIT 1")
+
+	stmt, _, err := q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return models.ClaimedEmailVerification{}, ErrQuery
+	}
+
+	err = c.db.QueryRow(ctx, stmt, workspaceId, customerId).Scan(
+		&claimed.VerificationId, &claimed.WorkspaceId, &claimed.CustomerId, &claimed.Email,
+		&claimed.HasConflict, &claimed.ExpiresAt, &claimed.Token,
+		&claimed.IsMailSent, &claimed.Platform, &claimed.SenderId,
+		&claimed.SenderStatus, &claimed.SentAt,
+		&claimed.CreatedAt, &claimed.UpdatedAt,
+	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		slog.Error("no rows returned", slog.Any("error", err))
-		return exists, ErrEmpty
+		return models.ClaimedEmailVerification{}, ErrEmpty
 	}
 	if err != nil {
 		slog.Error("failed to query", slog.Any("error", err))
-		return exists, ErrQuery
+		return models.ClaimedEmailVerification{}, ErrQuery
 	}
-	return exists, nil
+	return claimed, nil
 }

@@ -45,7 +45,7 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("db query failed got error: %v", err)
 	}
 
-	slog.Info("database up and running", slog.Any("time", tm.Format(time.RFC1123)))
+	slog.Info("database", slog.Any("db time", tm.Format(time.RFC1123)))
 
 	// init stores
 	accountStore := repository.NewAccountDB(db)

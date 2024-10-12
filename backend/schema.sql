@@ -109,20 +109,41 @@ CREATE TABLE customer (
     CONSTRAINT customer_workspace_id_phone_key UNIQUE (workspace_id, phone)
 );
 
-CREATE TABLE email_magic_token (
-    magic_token_id VARCHAR(255) NOT NULL,
+-- CREATE TABLE email_magic_token (
+--     magic_token_id VARCHAR(255) NOT NULL,
+--     workspace_id VARCHAR(255) NOT NULL,
+--     customer_id VARCHAR(255) NOT NULL,
+--     email VARCHAR(255) NOT NULL,
+--     has_conflict BOOLEAN NOT NULL DEFAULT TRUE,
+--     expires_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     token TEXT NOT NULL,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+--     CONSTRAINT email_magic_token_id_pkey PRIMARY KEY (magic_token_id),
+--     CONSTRAINT email_magic_token_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace,
+--     CONSTRAINT email_magic_token_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer
+-- );
+
+CREATE TABLE claimed_mail_verification(
+    verification_id VARCHAR(255) NOT NULL,
     workspace_id VARCHAR(255) NOT NULL,
     customer_id VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
     has_conflict BOOLEAN NOT NULL DEFAULT TRUE,
     expires_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     token TEXT NOT NULL,
+    is_mail_sent BOOLEAN NOT NULL DEFAULT FALSE,
+    platform VARCHAR(255) NULL,
+    sender_id VARCHAR(255) NULL,
+    sender_status VARCHAR(255) NULL,
+    sent_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT email_magic_token_id_pkey PRIMARY KEY (magic_token_id),
-    CONSTRAINT email_magic_token_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace,
-    CONSTRAINT email_magic_token_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer
+    CONSTRAINT claimed_mail_verification_id_pkey PRIMARY KEY (verification_id),
+    CONSTRAINT claimed_mail_verification_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace,
+    CONSTRAINT claimed_mail_verification_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer
 );
 
 -- @sanchitrk: changed usage?

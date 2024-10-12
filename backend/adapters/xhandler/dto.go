@@ -8,18 +8,19 @@ import (
 	"github.com/zyghq/zyg/models"
 )
 
+// CustomerResp represents the API response for a customer.
 type CustomerResp struct {
-	CustomerId        string
-	ExternalId        sql.NullString
-	Email             sql.NullString
-	Phone             sql.NullString
-	Name              string
-	AvatarUrl         string
-	IsVerified        bool
-	Role              string
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
-	RequireIdentities []string
+	CustomerId      string
+	ExternalId      sql.NullString
+	Email           sql.NullString
+	IsEmailVerified bool
+	IsEmailPrimary  bool
+	Phone           sql.NullString
+	Name            string
+	AvatarUrl       string
+	Role            string
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 func (c CustomerResp) MarshalJSON() ([]byte, error) {
@@ -33,31 +34,31 @@ func (c CustomerResp) MarshalJSON() ([]byte, error) {
 	if c.Phone.Valid {
 		phone = &c.Phone.String
 	}
-
 	aux := &struct {
-		CustomerId        string   `json:"customerId"`
-		ExternalId        *string  `json:"externalId"`
-		Email             *string  `json:"email"`
-		Phone             *string  `json:"phone"`
-		Name              string   `json:"name"`
-		AvatarUrl         string   `json:"avatarUrl"`
-		IsVerified        bool     `json:"isVerified"`
-		Role              string   `json:"role"`
-		CreatedAt         string   `json:"createdAt"`
-		UpdatedAt         string   `json:"updatedAt"`
-		RequireIdentities []string `json:"requireIdentities"`
+		CustomerId      string  `json:"customerId"`
+		ExternalId      *string `json:"externalId"`
+		Email           *string `json:"email"`
+		IsEmailVerified bool    `json:"isEmailVerified"`
+		IsEmailPrimary  bool    `json:"isEmailPrimary"`
+		Phone           *string `json:"phone"`
+		Name            string  `json:"name"`
+		AvatarUrl       string  `json:"avatarUrl"`
+		IsVerified      bool    `json:"isVerified"`
+		Role            string  `json:"role"`
+		CreatedAt       string  `json:"createdAt"`
+		UpdatedAt       string  `json:"updatedAt"`
 	}{
-		CustomerId:        c.CustomerId,
-		ExternalId:        externalId,
-		Email:             email,
-		Phone:             phone,
-		Name:              c.Name,
-		AvatarUrl:         c.AvatarUrl,
-		IsVerified:        c.IsVerified,
-		Role:              c.Role,
-		CreatedAt:         c.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:         c.UpdatedAt.Format(time.RFC3339),
-		RequireIdentities: c.RequireIdentities,
+		CustomerId:      c.CustomerId,
+		ExternalId:      externalId,
+		Email:           email,
+		IsEmailVerified: c.IsEmailVerified,
+		IsEmailPrimary:  c.IsEmailPrimary,
+		Phone:           phone,
+		Name:            c.Name,
+		AvatarUrl:       c.AvatarUrl,
+		Role:            c.Role,
+		CreatedAt:       c.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:       c.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
 }
@@ -110,7 +111,14 @@ func (w WidgetInitResp) MarshalJSON() ([]byte, error) {
 	return json.Marshal(mergedMap)
 }
 
-type ThChatReq struct {
+type CreateThreadChatReq struct {
+	Message      string  `json:"message"`
+	Email        *string `json:"email"`
+	Name         *string `json:"name"`
+	RedirectHost *string `json:"host"`
+}
+
+type MessageThreadReq struct {
 	Message string `json:"message"`
 }
 
@@ -445,8 +453,9 @@ func (t ThreadChatResp) NewResponse(thread *models.Thread, chat *models.Chat) Th
 	}
 }
 
-type CustomerIdentitiesReq struct {
-	Host  *string `json:"host"`  // required for redirects.
-	Email *string `json:"email"` // claimed email identity.
-	Phone *string `json:"phone"` // claimed phone identity.
+type EmailProfileReq struct {
+	Email           string  `json:"email"`           // claimed email identity.
+	Name            string  `json:"name"`            // claimed name identity.
+	RedirectHost    *string `json:"host"`            // redirect host for redirects.
+	ContextThreadId *string `json:"contextThreadId"` // customer identity context thread ID.
 }

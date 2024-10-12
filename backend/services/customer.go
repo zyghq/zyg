@@ -10,9 +10,11 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/zyghq/zyg"
 	"github.com/zyghq/zyg/adapters/repository"
 	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
+	"github.com/zyghq/zyg/services/tasks"
 )
 
 type CustomerService struct {
@@ -97,33 +99,42 @@ func (s *CustomerService) UpdateCustomer(
 	return customer, nil
 }
 
-func (s *CustomerService) AddMagicEmailToken(
-	ctx context.Context, magicToken models.EmailMagicToken) (models.EmailMagicToken, error) {
-	identity, err := s.repo.InsertEmailMagicToken(ctx, magicToken)
+func (s *CustomerService) AddClaimedEmail(
+	ctx context.Context, claimed models.ClaimedEmailVerification) (models.ClaimedEmailVerification, error) {
+	claim, err := s.repo.InsertClaimedMailVerification(ctx, claimed)
 	if err != nil {
-		return models.EmailMagicToken{}, ErrCustomer
+		return models.ClaimedEmailVerification{}, ErrClaimedEmail
 	}
-	return identity, nil
+	return claim, nil
 }
 
-func (s *CustomerService) RemoveMagicEmailToken(
+func (s *CustomerService) RemoveCustomerClaimedEmail(
 	ctx context.Context, workspaceId string, customerId string, email string) error {
-	err := s.repo.DeleteMagicEmailToken(ctx, workspaceId, customerId, email)
+	err := s.repo.DeleteCustomerClaimedEmail(ctx, workspaceId, customerId, email)
 	if err != nil {
-		return ErrCustomer
+		return ErrClaimedEmail
 	}
 	return nil
 }
 
-func (s *CustomerService) HasProvidedEmailIdentity(ctx context.Context, workspaceId string, customerId string) (bool, error) {
-	exists, err := s.repo.EmailIdentityExists(ctx, workspaceId, customerId)
-	if err != nil {
-		return false, ErrEmailIdentityCheck
+func (s *CustomerService) GetLatestValidClaimedEmail(
+	ctx context.Context, workspaceId string, customerId string) (string, error) {
+	claimed, err := s.repo.LookupLatestClaimedEmail(ctx, workspaceId, customerId)
+	if errors.Is(err, repository.ErrEmpty) {
+		return "", ErrClaimedEmailNotFound
 	}
-	return exists, nil
+	if err != nil {
+		return "", ErrClaimedEmail
+	}
+	now := time.Now().UTC()
+	// check if the current time is after the token expiration time.
+	if now.After(claimed.ExpiresAt) {
+		return "", ErrClaimedEmailExpired
+	}
+	return claimed.Email, nil
 }
 
-func (s *CustomerService) GenerateKycMailVerifyToken(
+func (s *CustomerService) GenerateEmailVerificationToken(
 	sk string, workspaceId string, customerId string, email string, expiresAt time.Time, redirectUrl string) (string, error) {
 	claims := models.KycMailJWTClaims{
 		WorkspaceId: workspaceId,
@@ -147,7 +158,7 @@ func (s *CustomerService) GenerateKycMailVerifyToken(
 	return j, nil
 }
 
-func (s *CustomerService) VerifyKycMailToken(token string, hmacSecret []byte) (models.KycMailJWTClaims, error) {
+func (s *CustomerService) VerifyEmailVerificationToken(hmacSecret []byte, token string) (models.KycMailJWTClaims, error) {
 	t, err := jwt.ParseWithClaims(
 		token, &models.KycMailJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -155,7 +166,6 @@ func (s *CustomerService) VerifyKycMailToken(token string, hmacSecret []byte) (m
 			}
 			return hmacSecret, nil
 		})
-
 	if err != nil {
 		return models.KycMailJWTClaims{}, fmt.Errorf("%v", err)
 	} else if claims, ok := t.Claims.(*models.KycMailJWTClaims); ok {
@@ -164,16 +174,58 @@ func (s *CustomerService) VerifyKycMailToken(token string, hmacSecret []byte) (m
 	return models.KycMailJWTClaims{}, fmt.Errorf("error parsing jwt token")
 }
 
-func (s *CustomerService) GetKycMailToken(ctx context.Context, token string) (models.EmailMagicToken, error) {
-	magicToken, err := s.repo.LookupEmailMagicTokenByToken(ctx, token)
+func (s *CustomerService) GetValidClaimedEmailByToken(
+	ctx context.Context, token string) (models.ClaimedEmailVerification, error) {
+	claimed, err := s.repo.LookupClaimedEmailByToken(ctx, token)
+
+	if errors.Is(err, repository.ErrEmpty) {
+		return models.ClaimedEmailVerification{}, ErrClaimedEmailInvalid
+	}
 	if err != nil {
-		return models.EmailMagicToken{}, ErrKycMailToken
+		return models.ClaimedEmailVerification{}, ErrClaimedEmail
 	}
 	now := time.Now().UTC()
 	// check if the current time is after the token expiration time.
-	if now.After(magicToken.ExpiresAt) {
-		return models.EmailMagicToken{}, ErrKycMailTokenExpired
+	if now.After(claimed.ExpiresAt) {
+		return models.ClaimedEmailVerification{}, ErrClaimedEmailExpired
+	}
+	return claimed, err
+}
+
+func (s *CustomerService) ClaimEmailForVerification(
+	ctx context.Context, customer models.Customer, sk string,
+	email string, name *string, hasConflict bool, contextMessage string, redirectTo string,
+) (models.ClaimedEmailVerification, error) {
+	expiresAt := time.Now().UTC().AddDate(0, 0, 2) // 2 days
+	jwt, err := s.GenerateEmailVerificationToken(
+		sk, customer.WorkspaceId, customer.CustomerId,
+		email, expiresAt, redirectTo,
+	)
+	if err != nil {
+		return models.ClaimedEmailVerification{}, ErrClaimedEmail
 	}
 
-	return magicToken, err
+	claim := models.ClaimedEmailVerification{}.NewVerification(
+		customer.WorkspaceId, customer.CustomerId,
+		email, hasConflict, expiresAt, jwt,
+	)
+	claim, err = s.AddClaimedEmail(ctx, claim)
+	if err != nil {
+		return models.ClaimedEmailVerification{}, err
+	}
+
+	if customer.IsVisitor() {
+		dup := customer.MakeCopy()
+		dup.Role = dup.Lead()
+		if name != nil {
+			dup.Name = *name
+		}
+		dup, err = s.UpdateCustomer(ctx, dup)
+		if err != nil {
+			return models.ClaimedEmailVerification{}, ErrCustomer
+		}
+	}
+	verifyLink := zyg.GetXServerUrl() + "/mail/kyc/?t=" + claim.Token
+	tasks.SendKycMail(claim.Email, contextMessage, verifyLink)
+	return claim, nil
 }

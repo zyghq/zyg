@@ -57,7 +57,7 @@ export function MessageForm({
         token,
         workspaceId,
         threadId,
-        { message }
+        { message },
       );
       if (error) {
         throw new Error(error.message);
@@ -100,14 +100,14 @@ export function MessageForm({
   return (
     <Form {...form}>
       <form
-        className="flex justify-between items-center"
+        className="flex items-center justify-between"
         onSubmit={form.handleSubmit(onSubmit)}
       >
         <FormField
           control={form.control}
           name="message"
           render={({ field }) => (
-            <FormItem className="space-y-2 w-full">
+            <FormItem className="w-full space-y-2">
               <FormControl>
                 <Textarea
                   className="resize-none"

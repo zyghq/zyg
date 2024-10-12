@@ -382,10 +382,19 @@ func (c Customer) IdentityHash() string {
 	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }
 
-// HasNaturalIdentity returns true if the customer has any of the following identities:
-// email, phone, externalId are valid.
-func (c Customer) HasNaturalIdentity() bool {
-	return c.Email.Valid || c.Phone.Valid || c.ExternalId.Valid
+func (c Customer) MakeCopy() Customer {
+	return Customer{
+		WorkspaceId: c.WorkspaceId,
+		CustomerId:  c.CustomerId,
+		ExternalId:  c.ExternalId,
+		Email:       c.Email,
+		Phone:       c.Phone,
+		Name:        c.Name,
+		IsVerified:  c.IsVerified,
+		Role:        c.Role,
+		CreatedAt:   c.CreatedAt,
+		UpdatedAt:   c.UpdatedAt,
+	}
 }
 
 func (l Label) MarshalJSON() ([]byte, error) {
@@ -499,39 +508,46 @@ func (sk WorkspaceSecret) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
-// EmailMagicToken is a magic token that is sent to the claimed customer's email address
-// verified by the customer signed token.
-type EmailMagicToken struct {
-	MagicTokenId string
-	WorkspaceId  string
-	CustomerId   string
-	Email        string
-	HasConflict  bool
-	ExpiresAt    time.Time
-	Token        string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	Conflicts    []CustomerActor
+type ClaimedEmailVerification struct {
+	VerificationId string
+	WorkspaceId    string
+	CustomerId     string
+	Email          string
+	HasConflict    bool
+	ExpiresAt      time.Time
+	Token          string
+	IsMailSent     bool
+	Platform       sql.NullString
+	SenderId       sql.NullString
+	SenderStatus   sql.NullString
+	SentAt         sql.NullTime
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
-func (ei EmailMagicToken) GenId() string {
-	return "ei" + xid.New().String()
+func (cl ClaimedEmailVerification) GenId() string {
+	return "vr" + xid.New().String()
 }
 
-func (ei EmailMagicToken) NewMagicToken(
+func (cl ClaimedEmailVerification) NewVerification(
 	workspaceId string, customerId string, email string,
 	hasConflict bool, expiresAt time.Time, token string,
-) EmailMagicToken {
-	return EmailMagicToken{
-		MagicTokenId: ei.GenId(),
-		WorkspaceId:  workspaceId,
-		CustomerId:   customerId,
-		Email:        email,
-		HasConflict:  hasConflict,
-		ExpiresAt:    expiresAt,
-		Token:        token,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+) ClaimedEmailVerification {
+	return ClaimedEmailVerification{
+		VerificationId: cl.GenId(),
+		WorkspaceId:    workspaceId,
+		CustomerId:     customerId,
+		Email:          email,
+		HasConflict:    hasConflict,
+		ExpiresAt:      expiresAt,
+		Token:          token,
+		IsMailSent:     false,
+		Platform:       sql.NullString{},
+		SenderId:       sql.NullString{},
+		SenderStatus:   sql.NullString{},
+		SentAt:         sql.NullTime{},
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 }
 

@@ -107,26 +107,27 @@ type WorkspaceServicer interface {
 type CustomerServicer interface {
 	GenerateCustomerJwt(
 		customer models.Customer, sk string) (string, error)
-	VerifyExternalId(
-		sk string, hash string, externalId string) bool
-	VerifyEmail(
-		sk string, hash string, email string) bool
-	VerifyPhone(
-		sk string, hash string, phone string) bool
-	UpdateCustomer(
-		ctx context.Context, customer models.Customer) (models.Customer, error)
-	AddMagicEmailToken(
-		ctx context.Context, magicToken models.EmailMagicToken) (models.EmailMagicToken, error)
-	RemoveMagicEmailToken(
+	VerifyExternalId(sk string, hash string, externalId string) bool
+	VerifyEmail(sk string, hash string, email string) bool
+	VerifyPhone(sk string, hash string, phone string) bool
+	UpdateCustomer(ctx context.Context, customer models.Customer) (models.Customer, error)
+	AddClaimedEmail(
+		ctx context.Context, claimed models.ClaimedEmailVerification) (models.ClaimedEmailVerification, error)
+	RemoveCustomerClaimedEmail(
 		ctx context.Context, workspaceId string, customerId string, email string) error
-	HasProvidedEmailIdentity(
-		ctx context.Context, workspaceId string, customerId string) (bool, error)
-	GenerateKycMailVerifyToken(
-		sk string, workspaceId string, customerId string,
-		email string, expiresAt time.Time, redirectUrl string,
+	GetLatestValidClaimedEmail(
+		ctx context.Context, workspaceId string, customerId string) (string, error)
+	GenerateEmailVerificationToken(
+		sk string, workspaceId string, customerId string, email string,
+		expiresAt time.Time, redirectUrl string,
 	) (string, error)
-	VerifyKycMailToken(token string, hmacSecret []byte) (models.KycMailJWTClaims, error)
-	GetKycMailToken(ctx context.Context, token string) (models.EmailMagicToken, error)
+	VerifyEmailVerificationToken(hmacSecret []byte, token string) (models.KycMailJWTClaims, error)
+	GetValidClaimedEmailByToken(
+		ctx context.Context, token string) (models.ClaimedEmailVerification, error)
+	ClaimEmailForVerification(
+		ctx context.Context, customer models.Customer, sk string,
+		email string, name *string, hasConflict bool, contextMessage string, redirectTo string,
+	) (models.ClaimedEmailVerification, error)
 }
 
 type ThreadServicer interface {
@@ -252,10 +253,12 @@ type CustomerRepositorer interface {
 		ctx context.Context, customer models.Customer) (models.Customer, error)
 	CheckEmailExists(
 		ctx context.Context, workspaceId string, email string) (bool, error)
-	InsertEmailMagicToken(ctx context.Context, magicToken models.EmailMagicToken) (models.EmailMagicToken, error)
-	DeleteMagicEmailToken(ctx context.Context, workspaceId string, customerId string, email string) error
-	EmailIdentityExists(ctx context.Context, workspaceId string, customerId string) (bool, error)
-	LookupEmailMagicTokenByToken(ctx context.Context, token string) (models.EmailMagicToken, error)
+	InsertClaimedMailVerification(
+		ctx context.Context, claimed models.ClaimedEmailVerification) (models.ClaimedEmailVerification, error)
+	DeleteCustomerClaimedEmail(ctx context.Context, workspaceId string, customerId string, email string) error
+	LookupClaimedEmailByToken(
+		ctx context.Context, token string) (models.ClaimedEmailVerification, error)
+	LookupLatestClaimedEmail(ctx context.Context, workspaceId string, customerId string) (models.ClaimedEmailVerification, error)
 }
 
 type ThreadRepositorer interface {

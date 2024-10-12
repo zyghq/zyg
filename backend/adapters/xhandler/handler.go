@@ -2,6 +2,7 @@ package xhandler
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"io"
@@ -15,7 +16,6 @@ import (
 	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
 	"github.com/zyghq/zyg/services"
-	"github.com/zyghq/zyg/services/tasks"
 )
 
 type CustomerHandler struct {
@@ -36,6 +36,7 @@ func NewCustomerHandler(
 	}
 }
 
+// handleGetIndex returns the API index.
 func handleGetIndex(w http.ResponseWriter, _ *http.Request) {
 	tm := time.Now().UTC().Format(time.RFC1123)
 	w.Header().Set("x-datetime", tm)
@@ -46,6 +47,7 @@ func handleGetIndex(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
+// handleGetWidgetConfig returns the widget configuration.
 // TODO: #71 get widget configuration from db/redis.
 func (h *CustomerHandler) handleGetWidgetConfig(w http.ResponseWriter, _ *http.Request) {
 	resp := WidgetConfig{
@@ -65,6 +67,7 @@ func (h *CustomerHandler) handleGetWidgetConfig(w http.ResponseWriter, _ *http.R
 	}
 }
 
+// handleInitWidget initializes the configured widget with customer details.
 func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Request) {
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
@@ -103,6 +106,7 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 	var isCreated bool
 	var customer models.Customer
 
+	// from request body
 	customerHash := models.NullString(reqp.CustomerHash)
 	customerExternalId := models.NullString(reqp.CustomerExternalId)
 	customerEmail := models.NullString(reqp.CustomerEmail)
@@ -117,6 +121,7 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 	customerName := models.Customer{}.AnonName()
 
 	// if the customer traits are provided, then check for name in traits.
+	// (XXX):simplify parsing of traits?
 	if reqp.Traits != nil {
 		if reqp.Traits.Name != nil {
 			customerName = *reqp.Traits.Name
@@ -142,7 +147,7 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 	// Priority is externalId, then email, then phone.
 	// Other values are ignored.
 	if customerHash.Valid {
-		skipIdentityCheck = true // if the customer has been provided, skip the identity check.
+		skipIdentityCheck = true // if the customer hash is provided, skip the identity check.
 		if customerExternalId.Valid {
 			if h.cs.VerifyExternalId(sk.Hmac, customerHash.String, customerExternalId.String) {
 				customer, isCreated, err = h.ws.CreateCustomerWithExternalId(
@@ -225,40 +230,39 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Check if the customer needs to provide additional identities.
-	// Ask for identities if the customer doesn't have a natural identity and isn't verified yet.
-	//
-	// We should be able to configure the workspace settings to have this enabled or disabled?
-	// for asking for the email or phone.
-	RequireIdentities := make([]string, 0, 3) // email, phone, externalId
-	if !customer.HasNaturalIdentity() && !customer.IsVerified && !skipIdentityCheck {
-		hasEmailIdentity, err := h.cs.HasProvidedEmailIdentity(ctx, customer.WorkspaceId, customer.CustomerId)
-		if err != nil {
-			slog.Error("Failed to check customer email identity", slog.Any("err", err))
-			// If there's an error, we'll ask for email to be safe
-			RequireIdentities = append(RequireIdentities, "email")
-		} else if !hasEmailIdentity {
-			RequireIdentities = append(RequireIdentities, "email")
+	// Shall use the latest claimed email.
+	if !customer.IsVerified && !skipIdentityCheck {
+		claimedEmail, err := h.cs.GetLatestValidClaimedEmail(ctx, customer.WorkspaceId, customer.CustomerId)
+		// customer haven't provided claim able identity yet or is cleared.
+		if errors.Is(err, services.ErrClaimedEmailNotFound) {
+			customer.Email = models.NullString(nil)
 		}
-		// Here you could add checks for other identity types if needed,
-		// For example, phone, external ID, etc.
+		// If there was an error checking claimed email by customer, ask again hence set nil
+		// This might create duplicates, but that is fine.
+		if errors.Is(err, services.ErrClaimedEmail) {
+			customer.Email = models.NullString(nil)
+		}
+		// If claimed email is not empty string, set it to the customer.
+		if claimedEmail != "" {
+			customer.Email = models.NullString(&claimedEmail)
+		}
 	}
 
 	resp := WidgetInitResp{
 		Jwt:    jwt,
 		Create: isCreated,
 		CustomerResp: CustomerResp{
-			CustomerId:        customer.CustomerId,
-			Name:              customer.Name,
-			AvatarUrl:         customer.AvatarUrl(),
-			Email:             customer.Email,
-			Phone:             customer.Phone,
-			ExternalId:        customer.ExternalId,
-			IsVerified:        customer.IsVerified,
-			Role:              customer.Role,
-			CreatedAt:         customer.CreatedAt,
-			UpdatedAt:         customer.UpdatedAt,
-			RequireIdentities: RequireIdentities,
+			CustomerId:      customer.CustomerId,
+			Name:            customer.Name,
+			AvatarUrl:       customer.AvatarUrl(),
+			Email:           customer.Email,
+			IsEmailVerified: false,
+			IsEmailPrimary:  false,
+			Phone:           customer.Phone,
+			ExternalId:      customer.ExternalId,
+			Role:            customer.Role,
+			CreatedAt:       customer.CreatedAt,
+			UpdatedAt:       customer.UpdatedAt,
 		},
 	}
 	if isCreated {
@@ -282,50 +286,53 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 
 func (h *CustomerHandler) handleGetCustomer(
 	w http.ResponseWriter, r *http.Request, customer *models.Customer) {
-	var externalId, email, phone string
-
-	if customer.Email.Valid {
-		email = customer.Email.String
-	}
-	if customer.Phone.Valid {
-		phone = customer.Phone.String
-	}
-	if customer.ExternalId.Valid {
-		externalId = customer.ExternalId.String
-	}
+	var emailOrClaimed sql.NullString
+	var isEmailVerified, IsEmailPrimary bool
 
 	ctx := r.Context()
 
-	// Check if the customer needs to provide additional identities.
-	// Ask for identities if the customer doesn't have a natural identity and isn't verified yet.
-	//
-	// Note: We can configure the workspace settings to have this enabled or disabled?
-	RequireIdentities := make([]string, 0, 3) // email, phone, externalId
-	if !customer.HasNaturalIdentity() && !customer.IsVerified {
-		hasEmailIdentity, err := h.cs.HasProvidedEmailIdentity(ctx, customer.WorkspaceId, customer.CustomerId)
-		if err != nil {
-			slog.Error("Failed to check customer email identity", slog.Any("err", err))
-			// If there's an error, we'll ask for email to be safe
-			RequireIdentities = append(RequireIdentities, "email")
-		} else if !hasEmailIdentity {
-			RequireIdentities = append(RequireIdentities, "email")
-		}
-		// Here you could add checks for other identity types if needed,
-		// For example, phone, external ID, etc.
+	widgetId := r.PathValue("widgetId")
+	widget, err := h.ws.GetWidget(ctx, widgetId)
+	if errors.Is(err, services.ErrWidgetNotFound) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		slog.Error("failed to fetch workspace widget", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
 	}
 
+	if widget.WorkspaceId != customer.WorkspaceId {
+		slog.Error("invalid workspace customer or widget configured")
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	if customer.IsVerified {
+		emailOrClaimed = customer.Email
+		isEmailVerified = true
+		IsEmailPrimary = true
+	} else {
+		claimed, err := h.cs.GetLatestValidClaimedEmail(ctx, customer.WorkspaceId, customer.CustomerId)
+		if err != nil {
+			emailOrClaimed = models.NullString(nil)
+		} else {
+			emailOrClaimed = models.NullString(&claimed)
+		}
+	}
 	resp := CustomerResp{
-		CustomerId:        customer.CustomerId,
-		Name:              customer.Name,
-		AvatarUrl:         customer.AvatarUrl(),
-		Email:             models.NullString(&email),
-		Phone:             models.NullString(&phone),
-		ExternalId:        models.NullString(&externalId),
-		IsVerified:        customer.IsVerified,
-		Role:              customer.Role,
-		CreatedAt:         customer.CreatedAt,
-		UpdatedAt:         customer.UpdatedAt,
-		RequireIdentities: RequireIdentities,
+		CustomerId:      customer.CustomerId,
+		Name:            customer.Name,
+		AvatarUrl:       customer.AvatarUrl(),
+		Email:           emailOrClaimed,
+		IsEmailVerified: isEmailVerified,
+		IsEmailPrimary:  IsEmailPrimary,
+		Phone:           customer.Phone,
+		ExternalId:      customer.ExternalId,
+		Role:            customer.Role,
+		CreatedAt:       customer.CreatedAt,
+		UpdatedAt:       customer.UpdatedAt,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -336,18 +343,14 @@ func (h *CustomerHandler) handleGetCustomer(
 	}
 }
 
-// TODO: improvements:
-// - change the `.IsVerified` to specifics like `.EmailVerified`, `.PhoneVerified`, etc.
-// - deprecate the usage of `IsVerified` once the customer data model is updated.
-func (h *CustomerHandler) handleCustomerIdentities(
+func (h *CustomerHandler) handleCreateThreadChat(
 	w http.ResponseWriter, r *http.Request, customer *models.Customer) {
-
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
 	}(r.Body)
 
-	var reqp CustomerIdentitiesReq
+	var reqp CreateThreadChatReq
 	err := json.NewDecoder(r.Body).Decode(&reqp)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -356,123 +359,38 @@ func (h *CustomerHandler) handleCustomerIdentities(
 
 	ctx := r.Context()
 
-	// Required for generating signing tokens.
-	// Make sure it exists.
-	sk, err := h.ws.GetOrGenerateSecretKey(ctx, customer.WorkspaceId)
-	if err != nil {
-		slog.Error("failed to fetch workspace secret key", slog.Any("err", err))
-	}
+	// Add claimed email for verification, only if the customer's email is not verified yet.
+	if !customer.IsVerified && reqp.Email != nil {
+		redirectTo := zyg.ZygUrl() + "/?utm_source=zyg&utm_medium=kyc"
+		if reqp.RedirectHost != nil {
+			redirectTo = *reqp.RedirectHost + "/?utm_source=zyg&utm_medium=kyc"
+		}
 
-	var redirectTo string
-	if reqp.Host != nil {
-		redirectTo = *reqp.Host
-	} else {
-		redirectTo = zyg.ZygUrl() + "/?utm_source=zyg&utm_medium=kyc"
-	}
-
-	hasEmailIdentity, err := h.cs.HasProvidedEmailIdentity(ctx, customer.WorkspaceId, customer.CustomerId)
-	if err != nil {
-		slog.Error("failed to check email identity", slog.Any("err", err))
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	// Checks if the claimed email has a conflict with an existing customer.
-	// Having a conflict doesn't mean we can't add another email identity.
-	hasConflict, err := h.ws.DoesEmailConflict(ctx, customer.WorkspaceId, *reqp.Email)
-	if err != nil {
-		slog.Error("failed to check email conflict", slog.Any("err", err))
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	var hasUpdates bool
-
-	// Only update if
-	// - if email is provided
-	// - if the customer is not verified TODO: add `.IsEmailVerified` once the customer data model is updated.
-	// - if the email identity is not already provided
-	if reqp.Email != nil && !customer.IsVerified && !hasEmailIdentity {
-		// Verify the email identity using magic tokens.
-		// requires, secret key to sign the token.
-		expiresAt := time.Now().UTC().AddDate(0, 0, 2) // 2 days
-		jwt, err := h.cs.GenerateKycMailVerifyToken(
-			sk.Hmac, customer.WorkspaceId, customer.CustomerId,
-			*reqp.Email, expiresAt, redirectTo)
+		// workspace secret key must exists.
+		sk, err := h.ws.GetOrGenerateSecretKey(ctx, customer.WorkspaceId)
 		if err != nil {
-			slog.Error("failed to generate kyc mail verification link", slog.Any("err", err))
+			slog.Error("failed to fetch workspace secret key", slog.Any("err", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 
-		// create a new email magic token item.
-		// (XXX) probably create in a transaction?
-		emailMagicToken := models.EmailMagicToken{}.NewMagicToken(
-			customer.WorkspaceId, customer.CustomerId, *reqp.Email, hasConflict, expiresAt, jwt,
+		hasConflict, err := h.ws.DoesEmailConflict(ctx, customer.WorkspaceId, *reqp.Email)
+		if err != nil {
+			slog.Error("failed to check email conflict", slog.Any("err", err))
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		_, err = h.cs.ClaimEmailForVerification(
+			ctx, *customer, sk.Hmac, *reqp.Email, reqp.Name,
+			hasConflict, reqp.Message, redirectTo,
 		)
-		emailMagicToken, err = h.cs.AddMagicEmailToken(ctx, emailMagicToken)
 		if err != nil {
+			slog.Error("failed to claim email for verification", slog.Any("err", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
-		// Convert the customer from `visitor` to `lead`.
-		if customer.IsVisitor() {
-			customer.Role = customer.Lead()
-			updatedCustomer, err := h.cs.UpdateCustomer(ctx, *customer)
-			if err != nil {
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				return
-			}
-			customer = &updatedCustomer
-		}
-		hasUpdates = true
-
-		// TODO: run this as bg job.
-		body := "TODO: Need to Work on !!"
-		verifyLink := zyg.GetXServerUrl() + "/mail/kyc/?t=" + emailMagicToken.Token
-		tasks.SendKycMail(emailMagicToken.Email, body, verifyLink)
 	}
-	if hasUpdates {
-		resp := CustomerResp{
-			CustomerId:        customer.CustomerId,
-			ExternalId:        customer.ExternalId,
-			Email:             customer.Email,
-			Phone:             customer.Phone,
-			Name:              customer.Name,
-			AvatarUrl:         customer.AvatarUrl(),
-			IsVerified:        customer.IsVerified,
-			Role:              customer.Role,
-			CreatedAt:         customer.CreatedAt,
-			UpdatedAt:         customer.UpdatedAt,
-			RequireIdentities: []string{},
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			slog.Error("failed to encode response", slog.Any("error", err))
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
-	} else {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-	}
-}
-
-func (h *CustomerHandler) handleCreateCustomerThreadChat(
-	w http.ResponseWriter, r *http.Request, customer *models.Customer) {
-	defer func(r io.ReadCloser) {
-		_, _ = io.Copy(io.Discard, r)
-		_ = r.Close()
-	}(r.Body)
-
-	var message ThChatReq
-	err := json.NewDecoder(r.Body).Decode(&message)
-	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	ctx := r.Context()
 
 	// return the system member for the workspace
 	member, err := h.ws.GetSystemMember(ctx, customer.WorkspaceId)
@@ -485,7 +403,6 @@ func (h *CustomerHandler) handleCreateCustomerThreadChat(
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		}
 	}
-
 	if err != nil {
 		slog.Error("failed to fetch system member", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -494,7 +411,7 @@ func (h *CustomerHandler) handleCreateCustomerThreadChat(
 
 	thread, chat, err := h.ths.CreateNewInboundThreadChat(
 		ctx, customer.WorkspaceId, *customer, member.AsMemberActor(),
-		message.Message,
+		reqp.Message,
 	)
 	if err != nil {
 		slog.Error("failed to create thread chat", slog.Any("err", err))
@@ -546,7 +463,7 @@ func (h *CustomerHandler) handleCreateThreadChatMessage(
 
 	threadId := r.PathValue("threadId")
 
-	var message ThChatReq
+	var message MessageThreadReq
 	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -672,65 +589,74 @@ func (h *CustomerHandler) handleGetThreadChatMessages(
 	}
 }
 
-// (XXX) not a API endpoint, will be used for redirecting from KYC mail.
+// (XXX) not a API endpoint, will be used for redirecting from mail verification URL.
 // In all the cases we redirect to either the default target URL or the URL provided in the JWT token.
-// TODO: change that jwt to encrypted token.
 func (h *CustomerHandler) handleMailRedirectKyc(w http.ResponseWriter, r *http.Request) {
 	t := r.URL.Query().Get("t")
-	defaultTargetUrl := zyg.ZygUrl() + "/?utm_source=zyg&utm_medium=redirect"
+	redirectTo := zyg.ZygUrl() + "/?utm_source=zyg&utm_medium=redirect"
 	if t == "" {
-		http.Redirect(w, r, defaultTargetUrl, http.StatusFound)
+		http.Redirect(w, r, redirectTo, http.StatusFound)
 		return
 	}
 
-	go func(token string) {
+	ctx := r.Context()
+
+	// Get valid claimed email by token.
+	// Makes sure that the token exists in DB and not expired yet.
+	// This is to have backend control on token handling.
+	claimed, err := h.cs.GetValidClaimedEmailByToken(ctx, t)
+	if errors.Is(err, services.ErrClaimedEmailExpired) {
+		slog.Error("claimed email token is expired", slog.Any("err", err))
+		http.Redirect(w, r, redirectTo, http.StatusFound)
+		return
+	}
+	if err != nil {
+		slog.Error("failed to fetch claimed email or does not exists", slog.Any("err", err))
+		http.Redirect(w, r, redirectTo, http.StatusFound)
+		return
+	}
+
+	// Get the secret key associated with the workspace.
+	sk, err := h.ws.GetSecretKey(ctx, claimed.WorkspaceId)
+	if err != nil {
+		slog.Error("failed to fetch workspace secret key", slog.Any("err", err))
+		http.Redirect(w, r, redirectTo, http.StatusFound)
+		return
+	}
+
+	// Verify the jwt token against the secret key.
+	// NEVER trust the token before verifying it.
+	j, err := h.cs.VerifyEmailVerificationToken([]byte(sk.Hmac), t)
+	if err != nil {
+		slog.Error("failed to verify claimed email token", slog.Any("err", err))
+		return
+	}
+
+	// update the redirect URL to the URL provided in the JWT token.
+	redirectTo = j.RedirectUrl + "/?utm_source=zyg&utm_medium=redirect"
+
+	go func(claim models.KycMailJWTClaims) {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 		defer cancel()
 
-		emailToken, err := h.cs.GetKycMailToken(ctx, token)
-		if errors.Is(err, services.ErrKycMailTokenExpired) {
-			slog.Error("kyc mail token expired", slog.Any("err", err))
-			return
-		}
-		if err != nil {
-			slog.Error("failed to get kyc mail token", slog.Any("err", err))
-			return
-		}
-
-		// Get the secret key associated with the workspace.
-		sk, err := h.ws.GetSecretKey(ctx, emailToken.WorkspaceId)
-		if err != nil {
-			slog.Error("failed to fetch workspace secret key", slog.Any("err", err))
-			return
-		}
-
-		// validate the jwt token against the secret key.
-		// NEVER trust the token before verifying it.
-		claim, err := h.cs.VerifyKycMailToken(t, []byte(sk.Hmac))
-		if err != nil {
-			slog.Error("failed to verify kyc mail token", slog.Any("err", err))
-			return
-		}
-
-		// fetch the customer linked with this verification token, this customer is also the lead.
-		// if the customer does not exists or failed, then just return do nothing.
+		// Fetch the workspace customer linked with the claimed email.
+		// If the customer does not exists or failed, then return do nothing.
 		role := models.Customer{}.Lead()
-		leadCustomer, err := h.ws.GetCustomer(ctx, claim.WorkspaceId, claim.Subject, &role)
+		claimedCustomer, err := h.ws.GetCustomer(ctx, claim.WorkspaceId, claim.Subject, &role)
 		if err != nil {
-			slog.Error("failed to fetch subject customer", slog.Any("err", err))
+			slog.Error("failed to fetch subject lead customer", slog.Any("err", err))
 			return
 		}
 
-		// Now that we have the lead customer, check if there are any existing customers with claimed email.
-		// If there are no existing customers with the claimed email, then we can link it to the lead customer.
-		//
-		// This also changes the customer hash, required in the widget session, but that is expected
-		// to keep the user safe as the state of the customer identity has changed.
+		// Check for actual customer associated with this email as primary.
 		_, err = h.ws.GetCustomerByEmail(ctx, claim.WorkspaceId, claim.Email)
+		// If no customer is associated with claimed email as primary, then trust the claimed email and customer
+		// linking them together.
 		if errors.Is(err, services.ErrCustomerNotFound) {
-			leadCustomer.Email = models.NullString(&claim.Email) // set the claimed email for the lead.
-			leadCustomer.IsVerified = true                       // TODO: fix once the customer data model is changed.
-			leadCustomer, err = h.cs.UpdateCustomer(ctx, leadCustomer)
+			claimedCustomer.Email = models.NullString(&claim.Email)
+			claimedCustomer.IsVerified = true
+			claimedCustomer.Role = models.Customer{}.Engaged()
+			claimedCustomer, err = h.cs.UpdateCustomer(ctx, claimedCustomer)
 			if err != nil {
 				slog.Error("failed to update lead customer", slog.Any("err", err))
 				return
@@ -741,14 +667,14 @@ func (h *CustomerHandler) handleMailRedirectKyc(w http.ResponseWriter, r *http.R
 			return
 		}
 		// clear the claimed email identity linked with the lead customer.
-		// err = h.cs.RemoveMagicEmailToken(ctx, leadCustomer.WorkspaceId, leadCustomer.CustomerId, claim.Email)
+		// err = h.cs.RemoveCustomerClaimedEmail(ctx, leadCustomer.WorkspaceId, leadCustomer.CustomerId, claim.Email)
 		// if err != nil {
 		// 	slog.Error("failed to remove email identity", slog.Any("err", err))
 		// 	return
 		// }
-	}(t)
+	}(j)
 
-	http.Redirect(w, r, defaultTargetUrl, http.StatusFound)
+	http.Redirect(w, r, redirectTo, http.StatusFound)
 }
 
 func NewServer(
@@ -769,11 +695,9 @@ func NewServer(
 
 	mux.Handle("GET /widgets/{widgetId}/me/{$}",
 		NewEnsureAuth(ch.handleGetCustomer, authService))
-	mux.Handle("POST /widgets/{widgetId}/me/identities/{$}",
-		NewEnsureAuth(ch.handleCustomerIdentities, authService))
 
 	mux.Handle("POST /widgets/{widgetId}/threads/chat/{$}",
-		NewEnsureAuth(ch.handleCreateCustomerThreadChat, authService))
+		NewEnsureAuth(ch.handleCreateThreadChat, authService))
 	mux.Handle("GET /widgets/{widgetId}/threads/chat/{$}",
 		NewEnsureAuth(ch.handleGetCustomerThreadChats, authService))
 
