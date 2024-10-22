@@ -27,9 +27,9 @@ func customerCols() builq.Columns {
 	}
 }
 
-func claimedMailVerificationCols() builq.Columns {
+func claimedMailCols() builq.Columns {
 	return builq.Columns{
-		"verification_id", "workspace_id", "customer_id", "email",
+		"claim_id", "workspace_id", "customer_id", "email",
 		"has_conflict", "expires_at", "token",
 		"is_mail_sent", "platform", "sender_id",
 		"sender_status", "sent_at",
@@ -430,16 +430,16 @@ func (c *CustomerDB) CheckEmailExists(
 }
 
 // InsertClaimedMailVerification inserts claimed mail for verification
-func (c *CustomerDB) InsertClaimedMailVerification(
-	ctx context.Context, claimed models.ClaimedEmailVerification) (models.ClaimedEmailVerification, error) {
-	verificationId := claimed.GenId()
+func (c *CustomerDB) InsertClaimedMail(
+	ctx context.Context, claimed models.ClaimedMail) (models.ClaimedMail, error) {
+	claimId := claimed.GenId()
 
 	q := builq.New()
-	cols := claimedMailVerificationCols()
+	cols := claimedMailCols()
 
-	q("INSERT INTO %s (%s)", "claimed_mail_verification", cols)
+	q("INSERT INTO %s (%s)", "claimed_mail", cols)
 	q("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$)",
-		verificationId, claimed.WorkspaceId, claimed.CustomerId, claimed.Email,
+		claimId, claimed.WorkspaceId, claimed.CustomerId, claimed.Email,
 		claimed.HasConflict, claimed.ExpiresAt, claimed.Token,
 		claimed.IsMailSent, claimed.Platform, claimed.SenderId,
 		claimed.SenderStatus, claimed.SentAt,
@@ -450,7 +450,7 @@ func (c *CustomerDB) InsertClaimedMailVerification(
 	stmt, _, err := q.Build()
 	if err != nil {
 		slog.Error("failed to build query", slog.Any("err", err))
-		return models.ClaimedEmailVerification{}, ErrQuery
+		return models.ClaimedMail{}, ErrQuery
 	}
 
 	if zyg.DBQueryDebug() {
@@ -459,13 +459,13 @@ func (c *CustomerDB) InsertClaimedMailVerification(
 	}
 
 	err = c.db.QueryRow(ctx, stmt,
-		verificationId, claimed.WorkspaceId, claimed.CustomerId, claimed.Email,
+		claimId, claimed.WorkspaceId, claimed.CustomerId, claimed.Email,
 		claimed.HasConflict, claimed.ExpiresAt, claimed.Token,
 		claimed.IsMailSent, claimed.Platform, claimed.SenderId,
 		claimed.SenderStatus, claimed.SentAt,
 		claimed.CreatedAt, claimed.UpdatedAt,
 	).Scan(
-		&claimed.VerificationId, &claimed.WorkspaceId, &claimed.CustomerId, &claimed.Email,
+		&claimed.ClaimId, &claimed.WorkspaceId, &claimed.CustomerId, &claimed.Email,
 		&claimed.HasConflict, &claimed.ExpiresAt, &claimed.Token,
 		&claimed.IsMailSent, &claimed.Platform, &claimed.SenderId,
 		&claimed.SenderStatus, &claimed.SentAt,
@@ -473,30 +473,30 @@ func (c *CustomerDB) InsertClaimedMailVerification(
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("error", err))
-		return models.ClaimedEmailVerification{}, ErrEmpty
+		return models.ClaimedMail{}, ErrEmpty
 	}
 	if err != nil {
 		slog.Error("failed to query", slog.Any("error", err))
-		return models.ClaimedEmailVerification{}, ErrQuery
+		return models.ClaimedMail{}, ErrQuery
 	}
 	return claimed, nil
 }
 
 // LookupClaimedEmailByToken returns the claimed email verification by token.
 // Always make sure the signed token is verified before usage.
-func (c *CustomerDB) LookupClaimedEmailByToken(
-	ctx context.Context, token string) (models.ClaimedEmailVerification, error) {
-	var claimed models.ClaimedEmailVerification
+func (c *CustomerDB) LookupClaimedMailByToken(
+	ctx context.Context, token string) (models.ClaimedMail, error) {
+	var claimed models.ClaimedMail
 	q := builq.New()
-	cols := claimedMailVerificationCols()
+	cols := claimedMailCols()
 
-	q("SELECT %s FROM %s", cols, "claimed_mail_verification")
+	q("SELECT %s FROM %s", cols, "claimed_mail")
 	q("WHERE token = %$", token)
 
 	stmt, _, err := q.Build()
 	if err != nil {
 		slog.Error("failed to build query", slog.Any("err", err))
-		return models.ClaimedEmailVerification{}, ErrQuery
+		return models.ClaimedMail{}, ErrQuery
 	}
 
 	if zyg.DBQueryDebug() {
@@ -505,28 +505,28 @@ func (c *CustomerDB) LookupClaimedEmailByToken(
 	}
 
 	err = c.db.QueryRow(ctx, stmt, token).Scan(
-		&claimed.VerificationId, &claimed.WorkspaceId, &claimed.CustomerId, &claimed.Email,
+		&claimed.ClaimId, &claimed.WorkspaceId, &claimed.CustomerId, &claimed.Email,
 		&claimed.HasConflict, &claimed.ExpiresAt, &claimed.Token,
 		&claimed.IsMailSent, &claimed.Platform, &claimed.SenderId,
 		&claimed.SenderStatus, &claimed.SentAt,
 		&claimed.CreatedAt, &claimed.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return models.ClaimedEmailVerification{}, ErrEmpty
+		return models.ClaimedMail{}, ErrEmpty
 	}
 	if err != nil {
 		slog.Error("failed to query", slog.Any("error", err))
-		return models.ClaimedEmailVerification{}, ErrQuery
+		return models.ClaimedMail{}, ErrQuery
 	}
 	return claimed, nil
 }
 
 // DeleteCustomerClaimedEmail deletes the claimed email token for workspace customer by email.
-func (c *CustomerDB) DeleteCustomerClaimedEmail(
+func (c *CustomerDB) DeleteCustomerClaimedMail(
 	ctx context.Context, workspaceId string, customerId string, email string) error {
 
 	q := builq.New()
-	q("DELETE FROM %s", "claimed_mail_verification")
+	q("DELETE FROM %s", "claimed_mail")
 	q("WHERE workspace_id = %$", workspaceId)
 	q("AND customer_id = %$", customerId)
 	q("AND email = %$", email)
@@ -550,13 +550,13 @@ func (c *CustomerDB) DeleteCustomerClaimedEmail(
 	return nil
 }
 
-func (c *CustomerDB) LookupLatestClaimedEmail(
-	ctx context.Context, workspaceId string, customerId string) (models.ClaimedEmailVerification, error) {
-	var claimed models.ClaimedEmailVerification
+func (c *CustomerDB) LookupLatestClaimedMail(
+	ctx context.Context, workspaceId string, customerId string) (models.ClaimedMail, error) {
+	var claimed models.ClaimedMail
 	q := builq.New()
-	cols := claimedMailVerificationCols()
+	cols := claimedMailCols()
 
-	q("SELECT %s FROM %s", cols, "claimed_mail_verification")
+	q("SELECT %s FROM %s", cols, "claimed_mail")
 	q("WHERE workspace_id = %$", workspaceId)
 	q("AND customer_id = %$", customerId)
 	q("ORDER BY created_at DESC LIMIT 1")
@@ -564,22 +564,22 @@ func (c *CustomerDB) LookupLatestClaimedEmail(
 	stmt, _, err := q.Build()
 	if err != nil {
 		slog.Error("failed to build query", slog.Any("err", err))
-		return models.ClaimedEmailVerification{}, ErrQuery
+		return models.ClaimedMail{}, ErrQuery
 	}
 
 	err = c.db.QueryRow(ctx, stmt, workspaceId, customerId).Scan(
-		&claimed.VerificationId, &claimed.WorkspaceId, &claimed.CustomerId, &claimed.Email,
+		&claimed.ClaimId, &claimed.WorkspaceId, &claimed.CustomerId, &claimed.Email,
 		&claimed.HasConflict, &claimed.ExpiresAt, &claimed.Token,
 		&claimed.IsMailSent, &claimed.Platform, &claimed.SenderId,
 		&claimed.SenderStatus, &claimed.SentAt,
 		&claimed.CreatedAt, &claimed.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return models.ClaimedEmailVerification{}, ErrEmpty
+		return models.ClaimedMail{}, ErrEmpty
 	}
 	if err != nil {
 		slog.Error("failed to query", slog.Any("error", err))
-		return models.ClaimedEmailVerification{}, ErrQuery
+		return models.ClaimedMail{}, ErrQuery
 	}
 	return claimed, nil
 }

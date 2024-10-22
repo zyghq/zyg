@@ -508,46 +508,46 @@ func (sk WorkspaceSecret) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
-type ClaimedEmailVerification struct {
-	VerificationId string
-	WorkspaceId    string
-	CustomerId     string
-	Email          string
-	HasConflict    bool
-	ExpiresAt      time.Time
-	Token          string
-	IsMailSent     bool
-	Platform       sql.NullString
-	SenderId       sql.NullString
-	SenderStatus   sql.NullString
-	SentAt         sql.NullTime
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+type ClaimedMail struct {
+	ClaimId      string
+	WorkspaceId  string
+	CustomerId   string
+	Email        string
+	HasConflict  bool
+	ExpiresAt    time.Time
+	Token        string
+	IsMailSent   bool
+	Platform     sql.NullString
+	SenderId     sql.NullString
+	SenderStatus sql.NullString
+	SentAt       sql.NullTime
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
-func (cl ClaimedEmailVerification) GenId() string {
-	return "vr" + xid.New().String()
+func (cl ClaimedMail) GenId() string {
+	return "cl" + xid.New().String()
 }
 
-func (cl ClaimedEmailVerification) NewVerification(
+func (cl ClaimedMail) NewVerification(
 	workspaceId string, customerId string, email string,
 	hasConflict bool, expiresAt time.Time, token string,
-) ClaimedEmailVerification {
-	return ClaimedEmailVerification{
-		VerificationId: cl.GenId(),
-		WorkspaceId:    workspaceId,
-		CustomerId:     customerId,
-		Email:          email,
-		HasConflict:    hasConflict,
-		ExpiresAt:      expiresAt,
-		Token:          token,
-		IsMailSent:     false,
-		Platform:       sql.NullString{},
-		SenderId:       sql.NullString{},
-		SenderStatus:   sql.NullString{},
-		SentAt:         sql.NullTime{},
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
+) ClaimedMail {
+	return ClaimedMail{
+		ClaimId:      cl.GenId(),
+		WorkspaceId:  workspaceId,
+		CustomerId:   customerId,
+		Email:        email,
+		HasConflict:  hasConflict,
+		ExpiresAt:    expiresAt,
+		Token:        token,
+		IsMailSent:   false,
+		Platform:     sql.NullString{},
+		SenderId:     sql.NullString{},
+		SenderStatus: sql.NullString{},
+		SentAt:       sql.NullTime{},
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
 	}
 }
 

@@ -22,10 +22,10 @@
 -- This table is used to store the account information of the user pertaining to auth.
 -- Attributes will depend on the auth provider.
 CREATE TABLE account (
-    account_id VARCHAR(255) NOT NULL,
+    account_id VARCHAR(255) NOT NULL, -- primary key
     email VARCHAR(255) NOT NULL,
     provider VARCHAR(255) NOT NULL, 
-    auth_user_id VARCHAR(255) NOT NULL,
+    auth_user_id VARCHAR(255) NOT NULL, -- key to auth provider
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -57,8 +57,8 @@ CREATE TABLE account_pat (
 -- This table is used to store the workspace information linked to the account.
 -- Account can own multiple workspaces.
 CREATE TABLE workspace (
-    workspace_id VARCHAR(255) NOT NULL,
-    account_id VARCHAR(255) NOT NULL,
+    workspace_id VARCHAR(255) NOT NULL, -- primary key
+    account_id VARCHAR(255) NOT NULL, -- fk to account
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -75,7 +75,7 @@ CREATE TABLE member (
     member_id VARCHAR(255) NOT NULL, -- primary key
     workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
     account_id VARCHAR(255) NULL, -- fk to account
-    name VARCHAR (255) NOT NULL, -- name of the member
+    name VARCHAR (255) NOT NULL,
     role VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -86,7 +86,7 @@ CREATE TABLE member (
     CONSTRAINT member_workspace_id_account_id_key UNIQUE (workspace_id, account_id)
 );
 
--- Represents the Customer table
+-- Represents the customer table
 -- There can be multiple customers per workspace
 -- Each customer is uniquely identified by one of
 -- `external_id`, `email` and `phone`, each unique to the workspace
@@ -109,24 +109,8 @@ CREATE TABLE customer (
     CONSTRAINT customer_workspace_id_phone_key UNIQUE (workspace_id, phone)
 );
 
--- CREATE TABLE email_magic_token (
---     magic_token_id VARCHAR(255) NOT NULL,
---     workspace_id VARCHAR(255) NOT NULL,
---     customer_id VARCHAR(255) NOT NULL,
---     email VARCHAR(255) NOT NULL,
---     has_conflict BOOLEAN NOT NULL DEFAULT TRUE,
---     expires_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
---     token TEXT NOT NULL,
---     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
---     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
---     CONSTRAINT email_magic_token_id_pkey PRIMARY KEY (magic_token_id),
---     CONSTRAINT email_magic_token_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace,
---     CONSTRAINT email_magic_token_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer
--- );
-
-CREATE TABLE claimed_mail_verification(
-    verification_id VARCHAR(255) NOT NULL,
+CREATE TABLE claimed_mail(
+    claim_id VARCHAR(255) NOT NULL,
     workspace_id VARCHAR(255) NOT NULL,
     customer_id VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
@@ -141,48 +125,48 @@ CREATE TABLE claimed_mail_verification(
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT claimed_mail_verification_id_pkey PRIMARY KEY (verification_id),
-    CONSTRAINT claimed_mail_verification_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace,
-    CONSTRAINT claimed_mail_verification_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer
+    CONSTRAINT claimed_mail_id_pkey PRIMARY KEY (claim_id),
+    CONSTRAINT claimed_mail_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace,
+    CONSTRAINT claimed_mail_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer
 );
 
 -- @sanchitrk: changed usage?
 -- Represents the workspace Thread QA table
 -- This table is used to store the QA thread information linked to the workspace.
-CREATE TABLE thread_qa (
-    workspace_id VARCHAR(255) NOT NULL,
-    customer_id VARCHAR(255) NOT NULL,
-    thread_id VARCHAR(255) NOT NULL,
-    parent_thread_id VARCHAR(255) NULL,
-    query TEXT NOT NULL,
-    title TEXT NOT NULL,
-    summary TEXT NOT NULL,
-    sequence BIGINT NOT NULL DEFAULT fn_next_id(),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    CONSTRAINT thread_qa_thread_id_pkey PRIMARY KEY (thread_id),
-    CONSTRAINT thread_qa_parent_thread_id_fkey FOREIGN KEY (parent_thread_id) REFERENCES thread_qa (thread_id),
-    CONSTRAINT thread_qa_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
-    CONSTRAINT thread_qa_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
-    CONSTRAINT thread_qa_thread_id_parent_thread_id UNIQUE (thread_id, parent_thread_id)
-);
+-- CREATE TABLE thread_qa (
+--     workspace_id VARCHAR(255) NOT NULL,
+--     customer_id VARCHAR(255) NOT NULL,
+--     thread_id VARCHAR(255) NOT NULL,
+--     parent_thread_id VARCHAR(255) NULL,
+--     query TEXT NOT NULL,
+--     title TEXT NOT NULL,
+--     summary TEXT NOT NULL,
+--     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--
+--     CONSTRAINT thread_qa_thread_id_pkey PRIMARY KEY (thread_id),
+--     CONSTRAINT thread_qa_parent_thread_id_fkey FOREIGN KEY (parent_thread_id) REFERENCES thread_qa (thread_id),
+--     CONSTRAINT thread_qa_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
+--     CONSTRAINT thread_qa_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
+--     CONSTRAINT thread_qa_thread_id_parent_thread_id UNIQUE (thread_id, parent_thread_id)
+-- );
 
 -- @sanchitrk: changed usage?
-CREATE TABLE thread_qa_answer (
-    workspace_id VARCHAR(255) NOT NULL,
-    thread_qa_id VARCHAR(255) NOT NULL,
-    answer_id VARCHAR(255) NOT NULL,
-    answer TEXT NOT NULL,
-    eval INT NULL DEFAULT NULL,
-    sequence BIGINT NOT NULL DEFAULT fn_next_id(),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    CONSTRAINT thread_qa_answer_answer_id_pkey PRIMARY KEY (answer_id),
-    CONSTRAINT thread_qa_answer_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
-    CONSTRAINT thread_qa_answer_thread_qa_id_fkey FOREIGN KEY (thread_qa_id) REFERENCES thread_qa (thread_id)
-);
+-- CREATE TABLE thread_qa_answer (
+--     workspace_id VARCHAR(255) NOT NULL,
+--     thread_qa_id VARCHAR(255) NOT NULL,
+--     answer_id VARCHAR(255) NOT NULL,
+--     answer TEXT NOT NULL,
+--     eval INT NULL DEFAULT NULL,
+--     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--
+--     CONSTRAINT thread_qa_answer_answer_id_pkey PRIMARY KEY (answer_id),
+--     CONSTRAINT thread_qa_answer_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
+--     CONSTRAINT thread_qa_answer_thread_qa_id_fkey FOREIGN KEY (thread_qa_id) REFERENCES thread_qa (thread_id)
+-- );
 
 CREATE TABLE inbound_message (
     message_id VARCHAR(255) NOT NULL,

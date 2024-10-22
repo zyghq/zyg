@@ -100,43 +100,44 @@ func (s *CustomerService) UpdateCustomer(
 	return customer, nil
 }
 
-func (s *CustomerService) AddClaimedEmail(
-	ctx context.Context, claimed models.ClaimedEmailVerification) (models.ClaimedEmailVerification, error) {
-	claim, err := s.repo.InsertClaimedMailVerification(ctx, claimed)
+func (s *CustomerService) AddClaimedMail(
+	ctx context.Context, claimed models.ClaimedMail) (models.ClaimedMail, error) {
+	claim, err := s.repo.InsertClaimedMail(ctx, claimed)
 	if err != nil {
-		return models.ClaimedEmailVerification{}, ErrClaimedEmail
+		return models.ClaimedMail{}, ErrClaimedMail
 	}
 	return claim, nil
 }
 
-func (s *CustomerService) RemoveCustomerClaimedEmail(
+func (s *CustomerService) RemoveCustomerClaimedMail(
 	ctx context.Context, workspaceId string, customerId string, email string) error {
-	err := s.repo.DeleteCustomerClaimedEmail(ctx, workspaceId, customerId, email)
+	err := s.repo.DeleteCustomerClaimedMail(ctx, workspaceId, customerId, email)
 	if err != nil {
-		return ErrClaimedEmail
+		return ErrClaimedMail
 	}
 	return nil
 }
 
-func (s *CustomerService) GetLatestValidClaimedEmail(
+func (s *CustomerService) GetRecentValidClaimedMail(
 	ctx context.Context, workspaceId string, customerId string) (string, error) {
-	claimed, err := s.repo.LookupLatestClaimedEmail(ctx, workspaceId, customerId)
+	claimed, err := s.repo.LookupLatestClaimedMail(ctx, workspaceId, customerId)
 	if errors.Is(err, repository.ErrEmpty) {
-		return "", ErrClaimedEmailNotFound
+		return "", ErrClaimedMailNotFound
 	}
 	if err != nil {
-		return "", ErrClaimedEmail
+		return "", ErrClaimedMail
 	}
 	now := time.Now().UTC()
 	// check if the current time is after the token expiration time.
 	if now.After(claimed.ExpiresAt) {
-		return "", ErrClaimedEmailExpired
+		return "", ErrClaimedMailExpired
 	}
 	return claimed.Email, nil
 }
 
-func (s *CustomerService) GenerateEmailVerificationToken(
-	sk string, workspaceId string, customerId string, email string, expiresAt time.Time, redirectUrl string) (string, error) {
+func (s *CustomerService) GenerateMailVerificationToken(
+	sk string, workspaceId string, customerId string, email string, expiresAt time.Time, redirectUrl string,
+) (string, error) {
 	claims := models.KycMailJWTClaims{
 		WorkspaceId: workspaceId,
 		Email:       email,
@@ -159,7 +160,8 @@ func (s *CustomerService) GenerateEmailVerificationToken(
 	return j, nil
 }
 
-func (s *CustomerService) VerifyEmailVerificationToken(hmacSecret []byte, token string) (models.KycMailJWTClaims, error) {
+func (s *CustomerService) VerifyMailVerificationToken(hmacSecret []byte, token string,
+) (models.KycMailJWTClaims, error) {
 	t, err := jwt.ParseWithClaims(
 		token, &models.KycMailJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -175,44 +177,44 @@ func (s *CustomerService) VerifyEmailVerificationToken(hmacSecret []byte, token 
 	return models.KycMailJWTClaims{}, fmt.Errorf("error parsing jwt token")
 }
 
-func (s *CustomerService) GetValidClaimedEmailByToken(
-	ctx context.Context, token string) (models.ClaimedEmailVerification, error) {
-	claimed, err := s.repo.LookupClaimedEmailByToken(ctx, token)
+func (s *CustomerService) GetValidClaimedMailByToken(
+	ctx context.Context, token string) (models.ClaimedMail, error) {
+	claimed, err := s.repo.LookupClaimedMailByToken(ctx, token)
 
 	if errors.Is(err, repository.ErrEmpty) {
-		return models.ClaimedEmailVerification{}, ErrClaimedEmailInvalid
+		return models.ClaimedMail{}, ErrClaimedMailNotFound
 	}
 	if err != nil {
-		return models.ClaimedEmailVerification{}, ErrClaimedEmail
+		return models.ClaimedMail{}, ErrClaimedMail
 	}
 	now := time.Now().UTC()
 	// check if the current time is after the token expiration time.
 	if now.After(claimed.ExpiresAt) {
-		return models.ClaimedEmailVerification{}, ErrClaimedEmailExpired
+		return models.ClaimedMail{}, ErrClaimedMailExpired
 	}
 	return claimed, err
 }
 
-func (s *CustomerService) ClaimEmailForVerification(
+func (s *CustomerService) ClaimMailForVerification(
 	ctx context.Context, customer models.Customer, sk string,
 	email string, name *string, hasConflict bool, contextMessage string, redirectTo string,
-) (models.ClaimedEmailVerification, error) {
+) (models.ClaimedMail, error) {
 	expiresAt := time.Now().UTC().AddDate(0, 0, 2) // 2 days
-	jt, err := s.GenerateEmailVerificationToken(
+	jt, err := s.GenerateMailVerificationToken(
 		sk, customer.WorkspaceId, customer.CustomerId,
 		email, expiresAt, redirectTo,
 	)
 	if err != nil {
-		return models.ClaimedEmailVerification{}, ErrClaimedEmail
+		return models.ClaimedMail{}, ErrClaimedMail
 	}
 
-	claim := models.ClaimedEmailVerification{}.NewVerification(
+	claim := models.ClaimedMail{}.NewVerification(
 		customer.WorkspaceId, customer.CustomerId,
 		email, hasConflict, expiresAt, jt,
 	)
-	claim, err = s.AddClaimedEmail(ctx, claim)
+	claim, err = s.AddClaimedMail(ctx, claim)
 	if err != nil {
-		return models.ClaimedEmailVerification{}, err
+		return models.ClaimedMail{}, err
 	}
 
 	if customer.IsVisitor() {
@@ -223,7 +225,7 @@ func (s *CustomerService) ClaimEmailForVerification(
 		}
 		dup, err = s.UpdateCustomer(ctx, dup)
 		if err != nil {
-			return models.ClaimedEmailVerification{}, ErrCustomer
+			return models.ClaimedMail{}, ErrCustomer
 		}
 	}
 	verifyLink := zyg.GetXServerUrl() + "/mail/kyc/?t=" + claim.Token

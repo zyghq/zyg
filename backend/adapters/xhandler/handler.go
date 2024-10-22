@@ -232,14 +232,14 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 
 	// Shall use the latest claimed email.
 	if !customer.IsVerified && !skipIdentityCheck {
-		claimedEmail, err := h.cs.GetLatestValidClaimedEmail(ctx, customer.WorkspaceId, customer.CustomerId)
+		claimedEmail, err := h.cs.GetRecentValidClaimedMail(ctx, customer.WorkspaceId, customer.CustomerId)
 		// customer haven't provided claim able identity yet or is cleared.
-		if errors.Is(err, services.ErrClaimedEmailNotFound) {
+		if errors.Is(err, services.ErrClaimedMailNotFound) {
 			customer.Email = models.NullString(nil)
 		}
 		// If there was an error checking claimed email by customer, ask again hence set nil
 		// This might create duplicates, but that is fine.
-		if errors.Is(err, services.ErrClaimedEmail) {
+		if errors.Is(err, services.ErrClaimedMail) {
 			customer.Email = models.NullString(nil)
 		}
 		// If claimed email is not empty string, set it to the customer.
@@ -314,7 +314,7 @@ func (h *CustomerHandler) handleGetCustomer(
 		isEmailVerified = true
 		IsEmailPrimary = true
 	} else {
-		claimed, err := h.cs.GetLatestValidClaimedEmail(ctx, customer.WorkspaceId, customer.CustomerId)
+		claimed, err := h.cs.GetRecentValidClaimedMail(ctx, customer.WorkspaceId, customer.CustomerId)
 		if err != nil {
 			emailOrClaimed = models.NullString(nil)
 		} else {
@@ -381,7 +381,7 @@ func (h *CustomerHandler) handleCreateThreadChat(
 			return
 		}
 
-		_, err = h.cs.ClaimEmailForVerification(
+		_, err = h.cs.ClaimMailForVerification(
 			ctx, *customer, sk.Hmac, *reqp.Email, reqp.Name,
 			hasConflict, reqp.Message, redirectTo,
 		)
@@ -604,8 +604,8 @@ func (h *CustomerHandler) handleMailRedirectKyc(w http.ResponseWriter, r *http.R
 	// Get valid claimed email by token.
 	// Makes sure that the token exists in DB and not expired yet.
 	// This is to have backend control on token handling.
-	claimed, err := h.cs.GetValidClaimedEmailByToken(ctx, t)
-	if errors.Is(err, services.ErrClaimedEmailExpired) {
+	claimed, err := h.cs.GetValidClaimedMailByToken(ctx, t)
+	if errors.Is(err, services.ErrClaimedMailExpired) {
 		slog.Error("claimed email token is expired", slog.Any("err", err))
 		http.Redirect(w, r, redirectTo, http.StatusFound)
 		return
@@ -626,7 +626,7 @@ func (h *CustomerHandler) handleMailRedirectKyc(w http.ResponseWriter, r *http.R
 
 	// Verify the jwt token against the secret key.
 	// NEVER trust the token before verifying it.
-	j, err := h.cs.VerifyEmailVerificationToken([]byte(sk.Hmac), t)
+	j, err := h.cs.VerifyMailVerificationToken([]byte(sk.Hmac), t)
 	if err != nil {
 		slog.Error("failed to verify claimed email token", slog.Any("err", err))
 		return
@@ -667,7 +667,7 @@ func (h *CustomerHandler) handleMailRedirectKyc(w http.ResponseWriter, r *http.R
 			return
 		}
 		// clear the claimed email identity linked with the lead customer.
-		// err = h.cs.RemoveCustomerClaimedEmail(ctx, leadCustomer.WorkspaceId, leadCustomer.CustomerId, claim.Email)
+		// err = h.cs.RemoveCustomerClaimedMail(ctx, leadCustomer.WorkspaceId, leadCustomer.CustomerId, claim.Email)
 		// if err != nil {
 		// 	slog.Error("failed to remove email identity", slog.Any("err", err))
 		// 	return
