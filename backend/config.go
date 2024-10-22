@@ -40,7 +40,7 @@ func GetXServerUrl() string {
 	return value
 }
 
-func ZygUrl() string {
+func LandingPageUrl() string {
 	value, ok := os.LookupEnv("ZYG_URL")
 	if !ok {
 		return "https://zyg.ai"

@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_account/workspaces/$workspaceId")({
     if (error || !data?.session) throw redirect({ to: "/signin" });
     const token = data.session.access_token as string;
     return queryClient.ensureQueryData(
-      bootstrapWorkspaceQueryOptions(token, workspaceId)
+      bootstrapWorkspaceQueryOptions(token, workspaceId),
     );
   },
 });

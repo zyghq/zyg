@@ -361,7 +361,7 @@ func (h *CustomerHandler) handleCreateThreadChat(
 
 	// Add claimed email for verification, only if the customer's email is not verified yet.
 	if !customer.IsVerified && reqp.Email != nil {
-		redirectTo := zyg.ZygUrl() + "/?utm_source=zyg&utm_medium=kyc"
+		redirectTo := zyg.LandingPageUrl() + "/?utm_source=zyg&utm_medium=kyc"
 		if reqp.RedirectHost != nil {
 			redirectTo = *reqp.RedirectHost + "/?utm_source=zyg&utm_medium=kyc"
 		}
@@ -589,11 +589,11 @@ func (h *CustomerHandler) handleGetThreadChatMessages(
 	}
 }
 
-// (XXX) not a API endpoint, will be used for redirecting from mail verification URL.
+// (XXX) not an API endpoint, will be used for redirecting from mail verification URL.
 // In all the cases we redirect to either the default target URL or the URL provided in the JWT token.
 func (h *CustomerHandler) handleMailRedirectKyc(w http.ResponseWriter, r *http.Request) {
 	t := r.URL.Query().Get("t")
-	redirectTo := zyg.ZygUrl() + "/?utm_source=zyg&utm_medium=redirect"
+	redirectTo := zyg.LandingPageUrl() + "/?utm_source=zyg&utm_medium=redirect"
 	if t == "" {
 		http.Redirect(w, r, redirectTo, http.StatusFound)
 		return
@@ -640,7 +640,7 @@ func (h *CustomerHandler) handleMailRedirectKyc(w http.ResponseWriter, r *http.R
 		defer cancel()
 
 		// Fetch the workspace customer linked with the claimed email.
-		// If the customer does not exists or failed, then return do nothing.
+		// If the customer does not exist or failed, then return do nothing.
 		role := models.Customer{}.Lead()
 		claimedCustomer, err := h.ws.GetCustomer(ctx, claim.WorkspaceId, claim.Subject, &role)
 		if err != nil {

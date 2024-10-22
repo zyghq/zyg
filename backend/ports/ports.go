@@ -255,10 +255,13 @@ type CustomerRepositorer interface {
 		ctx context.Context, workspaceId string, email string) (bool, error)
 	InsertClaimedMailVerification(
 		ctx context.Context, claimed models.ClaimedEmailVerification) (models.ClaimedEmailVerification, error)
-	DeleteCustomerClaimedEmail(ctx context.Context, workspaceId string, customerId string, email string) error
+	DeleteCustomerClaimedEmail(
+		ctx context.Context, workspaceId string, customerId string, email string) error
 	LookupClaimedEmailByToken(
 		ctx context.Context, token string) (models.ClaimedEmailVerification, error)
-	LookupLatestClaimedEmail(ctx context.Context, workspaceId string, customerId string) (models.ClaimedEmailVerification, error)
+	LookupLatestClaimedEmail(
+		ctx context.Context, workspaceId string, customerId string,
+	) (models.ClaimedEmailVerification, error)
 }
 
 type ThreadRepositorer interface {

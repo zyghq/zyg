@@ -451,7 +451,7 @@ type ThreadLabelMetric struct {
 	Count   int
 }
 
-// Represents Thread count metrics for specific status and stage.
+// ThreadMetrics represents Thread count metrics for specific status and stage.
 type ThreadMetrics struct {
 	ActiveCount             int // sum of all threads in status Todo.
 	NeedsFirstResponseCount int // sum of threads in status Todo and stage NeedsFirstResponse.
@@ -460,7 +460,7 @@ type ThreadMetrics struct {
 	NeedsNextResponseCount  int // sum of threads in status Todo and stage NeedsNextResponse.
 }
 
-// Represents Thread count metrics for member
+// ThreadAssigneeMetrics represents Thread count metrics for member
 type ThreadAssigneeMetrics struct {
 	MeCount            int
 	UnAssignedCount    int

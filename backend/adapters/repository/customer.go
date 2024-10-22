@@ -550,29 +550,6 @@ func (c *CustomerDB) DeleteCustomerClaimedEmail(
 	return nil
 }
 
-// ClaimedEmailExists checks if the customer has provided an email identity for magic token.
-// func (c *CustomerDB) ClaimedEmailExists(
-// 	ctx context.Context, workspaceId string, customerId string) (bool, error) {
-// 	var exists bool
-// 	stmt := `select exists (
-//         select 1
-//         from claimed_mail_verification
-//         where workspace_id = $1 and customer_id = $2
-//     ) as exists`
-
-// 	err := c.db.QueryRow(ctx, stmt, workspaceId, customerId).Scan(&exists)
-
-// 	if errors.Is(err, pgx.ErrNoRows) {
-// 		slog.Error("no rows returned", slog.Any("error", err))
-// 		return exists, ErrEmpty
-// 	}
-// 	if err != nil {
-// 		slog.Error("failed to query", slog.Any("error", err))
-// 		return exists, ErrQuery
-// 	}
-// 	return exists, nil
-// }
-
 func (c *CustomerDB) LookupLatestClaimedEmail(
 	ctx context.Context, workspaceId string, customerId string) (models.ClaimedEmailVerification, error) {
 	var claimed models.ClaimedEmailVerification

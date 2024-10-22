@@ -366,7 +366,7 @@ func (ws *WorkspaceService) DoesEmailConflict(
 	ctx context.Context, workspaceId string, email string) (bool, error) {
 	exists, err := ws.customerRepo.CheckEmailExists(ctx, workspaceId, email)
 	if err != nil {
-		// any error assume that the email is exists.
+		// any error assume that the email is existing.
 		// be pessimistic.
 		return true, ErrCustomer
 	}

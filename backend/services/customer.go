@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -197,7 +198,7 @@ func (s *CustomerService) ClaimEmailForVerification(
 	email string, name *string, hasConflict bool, contextMessage string, redirectTo string,
 ) (models.ClaimedEmailVerification, error) {
 	expiresAt := time.Now().UTC().AddDate(0, 0, 2) // 2 days
-	jwt, err := s.GenerateEmailVerificationToken(
+	jt, err := s.GenerateEmailVerificationToken(
 		sk, customer.WorkspaceId, customer.CustomerId,
 		email, expiresAt, redirectTo,
 	)
@@ -207,7 +208,7 @@ func (s *CustomerService) ClaimEmailForVerification(
 
 	claim := models.ClaimedEmailVerification{}.NewVerification(
 		customer.WorkspaceId, customer.CustomerId,
-		email, hasConflict, expiresAt, jwt,
+		email, hasConflict, expiresAt, jt,
 	)
 	claim, err = s.AddClaimedEmail(ctx, claim)
 	if err != nil {
@@ -226,6 +227,7 @@ func (s *CustomerService) ClaimEmailForVerification(
 		}
 	}
 	verifyLink := zyg.GetXServerUrl() + "/mail/kyc/?t=" + claim.Token
-	tasks.SendKycMail(claim.Email, contextMessage, verifyLink)
+	err = tasks.SendKycMail(claim.Email, contextMessage, verifyLink)
+	slog.Error("tasks send kyc mail failed", slog.Any("err", err))
 	return claim, nil
 }

@@ -3,7 +3,7 @@ import React from "react";
 import { StoreApi } from "zustand";
 
 const createZustandContext = <TInitial, TStore extends StoreApi<any>>(
-  getStore: (initial: TInitial) => TStore
+  getStore: (initial: TInitial) => TStore,
 ) => {
   const Context = React.createContext(null as any as TStore);
 
@@ -31,7 +31,7 @@ export function useWorkspaceStore() {
   const context = React.useContext(WorkspaceStoreContext);
   if (!context) {
     throw new Error(
-      "useWorkspaceStore must be used within a WorkspaceStoreProvider"
+      "useWorkspaceStore must be used within a WorkspaceStoreProvider",
     );
   }
   return context;
@@ -45,7 +45,7 @@ export function useAccountStore() {
   const context = React.useContext(AccountStoreContext);
   if (!context) {
     throw new Error(
-      "useAccountStore must be used within an AccountStoreProvider"
+      "useAccountStore must be used within an AccountStoreProvider",
     );
   }
   return context;
@@ -80,7 +80,7 @@ export function ThemeProvider({
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = React.useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
+    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme,
   );
 
   React.useEffect(() => {
