@@ -15,6 +15,8 @@ import {
 import {
   accountResponseSchema,
   authMemberResponseSchema,
+  CustomerEventResponse,
+  customerEventSchema,
   customerResponseSchema,
   LabelResponse,
   labelResponseSchema,
@@ -54,11 +56,14 @@ function initialWorkspaceData(): IWorkspaceEntities & IWorkspaceValueObjects {
     metrics: {
       active: 0,
       assignedToMe: 0,
-      done: 0,
+      hold: 0,
       labels: [],
+      needsFirstResponse: 0,
+      needsNextResponse: 0,
       otherAssigned: 0,
       snoozed: 0,
       unassigned: 0,
+      waitingOnCustomer: 0,
     },
     pats: null,
     threadAppliedFilters: null,
@@ -70,7 +75,7 @@ function initialWorkspaceData(): IWorkspaceEntities & IWorkspaceValueObjects {
 
 export async function getWorkspace(
   token: string,
-  workspaceId: string
+  workspaceId: string,
 ): Promise<{ data: null | Workspace; error: Error | null }> {
   try {
     // make a request
@@ -82,7 +87,7 @@ export async function getWorkspace(
           "Content-Type": "application/json",
         },
         method: "GET",
-      }
+      },
     );
 
     if (!response.ok) {
@@ -90,7 +95,7 @@ export async function getWorkspace(
       return {
         data: null,
         error: new Error(
-          `error fetching workspace details: ${status} ${statusText}`
+          `error fetching workspace details: ${status} ${statusText}`,
         ),
       };
     }
@@ -115,7 +120,7 @@ export async function getWorkspace(
     return {
       data: null,
       error: new Error(
-        "error fetching workspace details - something went wrong"
+        "error fetching workspace details - something went wrong",
       ),
     };
   }
@@ -123,7 +128,7 @@ export async function getWorkspace(
 
 export async function getWorkspaceMember(
   token: string,
-  workspaceId: string
+  workspaceId: string,
 ): Promise<{ data: AuthMember | null; error: Error | null }> {
   try {
     // make a request
@@ -134,7 +139,7 @@ export async function getWorkspaceMember(
           Authorization: `Bearer ${token}`,
         },
         method: "GET",
-      }
+      },
     );
 
     if (!response.ok) {
@@ -142,7 +147,7 @@ export async function getWorkspaceMember(
       return {
         data: null,
         error: new Error(
-          `error fetching workspace member details: ${status} ${statusText}`
+          `error fetching workspace member details: ${status} ${statusText}`,
         ),
       };
     }
@@ -167,7 +172,7 @@ export async function getWorkspaceMember(
     return {
       data: null,
       error: new Error(
-        "error fetching workspace member details - something went wrong"
+        "error fetching workspace member details - something went wrong",
       ),
     };
   }
@@ -175,7 +180,7 @@ export async function getWorkspaceMember(
 
 export async function getWorkspaceMetrics(
   token: string,
-  workspaceId: string
+  workspaceId: string,
 ): Promise<{ data: null | WorkspaceMetricsResponse; error: Error | null }> {
   try {
     const response = await fetch(
@@ -186,7 +191,7 @@ export async function getWorkspaceMetrics(
           Authorization: `Bearer ${token}`,
         },
         method: "GET",
-      }
+      },
     );
 
     if (!response.ok) {
@@ -194,7 +199,7 @@ export async function getWorkspaceMetrics(
       return {
         data: null,
         error: new Error(
-          `error fetching workspace metrics: ${status} ${statusText}`
+          `error fetching workspace metrics: ${status} ${statusText}`,
         ),
       };
     }
@@ -216,7 +221,7 @@ export async function getWorkspaceMetrics(
     return {
       data: null,
       error: new Error(
-        "error fetching workspace metrics - something went wrong"
+        "error fetching workspace metrics - something went wrong",
       ),
     };
   }
@@ -224,7 +229,7 @@ export async function getWorkspaceMetrics(
 
 export async function getWorkspaceThreads(
   token: string,
-  workspaceId: string
+  workspaceId: string,
 ): Promise<{ data: null | ThreadResponse[]; error: Error | null }> {
   try {
     const response = await fetch(
@@ -235,7 +240,7 @@ export async function getWorkspaceThreads(
           Authorization: `Bearer ${token}`,
         },
         method: "GET",
-      }
+      },
     );
 
     if (!response.ok) {
@@ -243,7 +248,7 @@ export async function getWorkspaceThreads(
       return {
         data: null,
         error: new Error(
-          `error fetching workspace threads: ${status} ${statusText}`
+          `error fetching workspace threads: ${status} ${statusText}`,
         ),
       };
     }
@@ -270,7 +275,7 @@ export async function getWorkspaceThreads(
     return {
       data: null,
       error: new Error(
-        "error fetching workspace threads - something went wrong"
+        "error fetching workspace threads - something went wrong",
       ),
     };
   }
@@ -278,7 +283,7 @@ export async function getWorkspaceThreads(
 
 export async function getWorkspaceLabels(
   token: string,
-  workspaceId: string
+  workspaceId: string,
 ): Promise<{
   data: LabelResponse[] | null;
   error: Error | null;
@@ -292,7 +297,7 @@ export async function getWorkspaceLabels(
           Authorization: `Bearer ${token}`,
         },
         method: "GET",
-      }
+      },
     );
 
     if (!response.ok) {
@@ -300,7 +305,7 @@ export async function getWorkspaceLabels(
       return {
         data: null,
         error: new Error(
-          `error fetching workspace labels: ${status} ${statusText}`
+          `error fetching workspace labels: ${status} ${statusText}`,
         ),
       };
     }
@@ -327,7 +332,7 @@ export async function getWorkspaceLabels(
     return {
       data: null,
       error: new Error(
-        "error fetching workspace labels - something went wrong"
+        "error fetching workspace labels - something went wrong",
       ),
     };
   }
@@ -340,8 +345,8 @@ export async function getPats(token: string): Promise<{
   try {
     const response = await fetch(`${import.meta.env.VITE_ZYG_URL}/pats/`, {
       headers: {
-        // "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
       method: "GET",
     });
@@ -351,7 +356,7 @@ export async function getPats(token: string): Promise<{
       return {
         data: null,
         error: new Error(
-          `error fetching account pats: ${status} ${statusText}`
+          `error fetching account pats: ${status} ${statusText}`,
         ),
       };
     }
@@ -384,7 +389,7 @@ export async function getPats(token: string): Promise<{
 
 export async function createPat(
   token: string,
-  body: { description: string; name: string }
+  body: { description: string; name: string },
 ): Promise<{
   data: null | Pat;
   error: Error | null;
@@ -401,7 +406,7 @@ export async function createPat(
     if (!response.ok) {
       const { status, statusText } = response;
       const error = new Error(
-        `error creating account pat with status: ${status} and statusText: ${statusText}`
+        `error creating account pat with status: ${status} and statusText: ${statusText}`,
       );
       return { data: null, error };
     }
@@ -481,7 +486,7 @@ function makePatsStoreable(pats: Pat[]): PatMap {
 
 export async function getOrCreateZygAccount(
   token: string,
-  body?: { name: string }
+  body?: { name: string },
 ): Promise<{
   data: Account | null;
   error: Error | null;
@@ -497,12 +502,12 @@ export async function getOrCreateZygAccount(
           Authorization: `Bearer ${token}`,
         },
         method: "POST",
-      }
+      },
     );
     if (!response.ok) {
       const { status, statusText } = response;
       const error = new Error(
-        `error creating Zyg auth account with with status: ${status} and statusText: ${statusText}`
+        `error creating Zyg auth account with with status: ${status} and statusText: ${statusText}`,
       );
       return { data: null, error };
     }
@@ -527,7 +532,7 @@ export async function getOrCreateZygAccount(
     return {
       data: null,
       error: new Error(
-        "error fetching auth account details - something went wrong"
+        "error fetching auth account details - something went wrong",
       ),
     };
   }
@@ -535,7 +540,7 @@ export async function getOrCreateZygAccount(
 
 export async function getWorkspaceCustomers(
   token: string,
-  workspaceId: string
+  workspaceId: string,
 ): Promise<{
   data: Customer[] | null;
   error: Error | null;
@@ -548,7 +553,7 @@ export async function getWorkspaceCustomers(
           Authorization: `Bearer ${token}`,
         },
         method: "GET",
-      }
+      },
     );
 
     if (!response.ok) {
@@ -556,7 +561,7 @@ export async function getWorkspaceCustomers(
       return {
         data: null,
         error: new Error(
-          `error fetching workspace customers: ${status} ${statusText}`
+          `error fetching workspace customers: ${status} ${statusText}`,
         ),
       };
     }
@@ -584,7 +589,7 @@ export async function getWorkspaceCustomers(
     return {
       data: null,
       error: new Error(
-        "error fetching workspace customers - something went wrong"
+        "error fetching workspace customers - something went wrong",
       ),
     };
   }
@@ -592,7 +597,7 @@ export async function getWorkspaceCustomers(
 
 export async function createWorkspace(
   token: string,
-  body: { name: string }
+  body: { name: string },
 ): Promise<{
   data: { workspaceId: string; workspaceName: string } | null;
   error: Error | null;
@@ -607,12 +612,12 @@ export async function createWorkspace(
           "Content-Type": "application/json",
         },
         method: "POST",
-      }
+      },
     );
     if (!response.ok) {
       const { status, statusText } = response;
       const error = new Error(
-        `error creating workspace with status: ${status} and statusText: ${statusText}`
+        `error creating workspace with status: ${status} and statusText: ${statusText}`,
       );
       return { data: null, error };
     }
@@ -636,7 +641,7 @@ export async function createWorkspace(
 export async function updateWorkspace(
   token: string,
   workspaceId: string,
-  body: { name: string }
+  body: { name: string },
 ): Promise<{
   data: { workspaceId: string; workspaceName: string } | null;
   error: Error | null;
@@ -651,12 +656,12 @@ export async function updateWorkspace(
           "Content-Type": "application/json",
         },
         method: "PATCH",
-      }
+      },
     );
     if (!response.ok) {
       const { status, statusText } = response;
       const error = new Error(
-        `error updating workspace with status: ${status} and statusText: ${statusText}`
+        `error updating workspace with status: ${status} and statusText: ${statusText}`,
       );
       return { data: null, error };
     }
@@ -679,7 +684,7 @@ export async function updateWorkspace(
 
 export async function getWorkspaceMembers(
   token: string,
-  workspaceId: string
+  workspaceId: string,
 ): Promise<{
   data: MemberResponse[] | null;
   error: Error | null;
@@ -692,7 +697,7 @@ export async function getWorkspaceMembers(
           Authorization: `Bearer ${token}`,
         },
         method: "GET",
-      }
+      },
     );
 
     if (!response.ok) {
@@ -700,7 +705,7 @@ export async function getWorkspaceMembers(
       return {
         data: null,
         error: new Error(
-          `error fetching workspace members: ${status} ${statusText}`
+          `error fetching workspace members: ${status} ${statusText}`,
         ),
       };
     }
@@ -728,7 +733,7 @@ export async function getWorkspaceMembers(
     return {
       data: null,
       error: new Error(
-        "error fetching workspace members - something went wrong"
+        "error fetching workspace members - something went wrong",
       ),
     };
   }
@@ -736,7 +741,7 @@ export async function getWorkspaceMembers(
 
 export async function deletePat(
   token: string,
-  patId: string
+  patId: string,
 ): Promise<{
   error: Error | null;
 }> {
@@ -748,14 +753,14 @@ export async function deletePat(
           Authorization: `Bearer ${token}`,
         },
         method: "DELETE",
-      }
+      },
     );
 
     if (!response.ok) {
       const { status, statusText } = response;
       return {
         error: new Error(
-          `error deleting pat with status: ${status} and statusText: ${statusText}`
+          `error deleting pat with status: ${status} and statusText: ${statusText}`,
         ),
       };
     }
@@ -773,7 +778,7 @@ export async function deletePat(
 // can we do this better?
 export async function bootstrapWorkspace(
   token: string,
-  workspaceId: string
+  workspaceId: string,
 ): Promise<IWorkspaceEntities & IWorkspaceValueObjects> {
   const data = initialWorkspaceData();
 
@@ -877,7 +882,7 @@ export async function bootstrapWorkspace(
 export async function getWorkspaceThreadChatMessages(
   token: string,
   workspaceId: string,
-  threadId: string
+  threadId: string,
 ): Promise<{
   data: null | ThreadChatResponse[];
   error: Error | null;
@@ -890,7 +895,7 @@ export async function getWorkspaceThreadChatMessages(
           Authorization: `Bearer ${token}`,
         },
         method: "GET",
-      }
+      },
     );
 
     if (!response.ok) {
@@ -898,7 +903,7 @@ export async function getWorkspaceThreadChatMessages(
       return {
         data: null,
         error: new Error(
-          `error fetching workspace thread chat messages: ${status} ${statusText}`
+          `error fetching workspace thread chat messages: ${status} ${statusText}`,
         ),
       };
     }
@@ -924,7 +929,7 @@ export async function getWorkspaceThreadChatMessages(
     return {
       data: null,
       error: new Error(
-        "error fetching workspace thread chat messages - something went wrong"
+        "error fetching workspace thread chat messages - something went wrong",
       ),
     };
   }
@@ -933,7 +938,7 @@ export async function getWorkspaceThreadChatMessages(
 export async function createWorkspaceLabel(
   token: string,
   workspaceId: string,
-  body: { name: string }
+  body: { name: string },
 ): Promise<{ data: LabelResponse | null; error: Error | null }> {
   try {
     const response = await fetch(
@@ -945,12 +950,12 @@ export async function createWorkspaceLabel(
           "Content-Type": "application/json",
         },
         method: "POST",
-      }
+      },
     );
     if (!response.ok) {
       const { status, statusText } = response;
       const error = new Error(
-        `error creating label with status: ${status} and statusText: ${statusText}`
+        `error creating label with status: ${status} and statusText: ${statusText}`,
       );
       return { data: null, error };
     }
@@ -982,7 +987,7 @@ export async function updateWorkspaceLabel(
   token: string,
   workspaceId: string,
   labelId: string,
-  body: { name: string }
+  body: { name: string },
 ): Promise<{ data: LabelResponse | null; error: Error | null }> {
   try {
     const response = await fetch(
@@ -994,12 +999,12 @@ export async function updateWorkspaceLabel(
           "Content-Type": "application/json",
         },
         method: "PATCH",
-      }
+      },
     );
     if (!response.ok) {
       const { status, statusText } = response;
       const error = new Error(
-        `error updating label with status: ${status} and statusText: ${statusText}`
+        `error updating label with status: ${status} and statusText: ${statusText}`,
       );
       return { data: null, error };
     }
@@ -1031,7 +1036,7 @@ export async function updateThread(
   token: string,
   workspaceId: string,
   threadId: string,
-  body: object
+  body: object,
 ): Promise<{ data: null | ThreadResponse; error: Error | null }> {
   try {
     const response = await fetch(
@@ -1043,12 +1048,12 @@ export async function updateThread(
           "Content-Type": "application/json",
         },
         method: "PATCH",
-      }
+      },
     );
     if (!response.ok) {
       const { status, statusText } = response;
       const error = new Error(
-        `error updating thread with status: ${status} and statusText: ${statusText}`
+        `error updating thread with status: ${status} and statusText: ${statusText}`,
       );
       return { data: null, error };
     }
@@ -1079,7 +1084,7 @@ export async function updateThread(
 export async function getThreadLabels(
   token: string,
   workspaceId: string,
-  threadId: string
+  threadId: string,
 ): Promise<{
   data: null | ThreadLabelResponse[];
   error: Error | null;
@@ -1093,21 +1098,20 @@ export async function getThreadLabels(
           "Content-Type": "application/json",
         },
         method: "GET",
-      }
+      },
     );
     if (!response.ok) {
       const { status, statusText } = response;
       return {
         data: null,
         error: new Error(
-          `error fetching workspace thread labels: ${status} ${statusText}`
+          `error fetching workspace thread labels: ${status} ${statusText}`,
         ),
       };
     }
 
     try {
       const data = await response.json();
-      console.log(data);
       const labels = data.map((item: any) => {
         return threadLabelResponseSchema.parse({ ...item });
       });
@@ -1126,7 +1130,7 @@ export async function getThreadLabels(
     return {
       data: null,
       error: new Error(
-        "error fetching workspace thread labels - something went wrong"
+        "error fetching workspace thread labels - something went wrong",
       ),
     };
   }
@@ -1136,7 +1140,7 @@ export async function putThreadLabel(
   token: string,
   workspaceId: string,
   threadId: string,
-  body: { icon: string; name: string }
+  body: { icon: string; name: string },
 ): Promise<{
   data: null | ThreadLabelResponse;
   error: Error | null;
@@ -1151,7 +1155,7 @@ export async function putThreadLabel(
           "Content-Type": "application/json",
         },
         method: "PUT",
-      }
+      },
     );
     if (!response.ok) {
       const { status, statusText } = response;
@@ -1188,7 +1192,7 @@ export async function deleteThreadLabel(
   token: string,
   workspaceId: string,
   threadId: string,
-  labelId: string
+  labelId: string,
 ): Promise<{
   data: boolean | null;
   error: Error | null;
@@ -1202,14 +1206,14 @@ export async function deleteThreadLabel(
           "Content-Type": "application/json",
         },
         method: "DELETE",
-      }
+      },
     );
     if (!response.ok) {
       const { status, statusText } = response;
       return {
         data: null,
         error: new Error(
-          `error deleting thread label: ${status} ${statusText}`
+          `error deleting thread label: ${status} ${statusText}`,
         ),
       };
     }
@@ -1230,7 +1234,7 @@ export async function sendThreadChatMessage(
   token: string,
   workspaceId: string,
   threadId: string,
-  body: { message: string }
+  body: { message: string },
 ): Promise<{
   data: null | ThreadChatResponse;
   error: Error | null;
@@ -1244,7 +1248,7 @@ export async function sendThreadChatMessage(
           Authorization: `Bearer ${token}`,
         },
         method: "POST",
-      }
+      },
     );
 
     if (!response.ok) {
@@ -1252,7 +1256,7 @@ export async function sendThreadChatMessage(
       return {
         data: null,
         error: new Error(
-          `error fetching workspace thread chat messages: ${status} ${statusText}`
+          `error fetching workspace thread chat messages: ${status} ${statusText}`,
         ),
       };
     }
@@ -1277,8 +1281,59 @@ export async function sendThreadChatMessage(
     return {
       data: null,
       error: new Error(
-        "error sending workspace thread chat messages - something went wrong"
+        "error sending workspace thread chat messages - something went wrong",
       ),
+    };
+  }
+}
+
+export async function getCustomerEvents(
+  token: string,
+  workspaceId: string,
+  customerId: string,
+): Promise<{
+  data: CustomerEventResponse[] | null;
+  error: Error | null;
+}> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/customers/events/${customerId}/`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        method: "GET",
+      },
+    );
+    if (!response.ok) {
+      const { status, statusText } = response;
+      return {
+        data: null,
+        error: new Error(
+          `error fetching customer events: ${status} ${statusText}`,
+        ),
+      };
+    }
+
+    try {
+      const data = await response.json();
+      const events = data.map((item: any) => {
+        return customerEventSchema.parse({ ...item });
+      });
+      return { data: events, error: null };
+    } catch (err) {
+      console.error(err);
+      return {
+        data: null,
+        error: new Error("error parsing customer event schema"),
+      };
+    }
+  } catch (err) {
+    console.error(err);
+    return {
+      data: null,
+      error: new Error("something went wrong"),
     };
   }
 }

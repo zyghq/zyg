@@ -1,8 +1,11 @@
 import { cn } from "@/lib/utils";
 import { ChatBubbleIcon } from "@radix-ui/react-icons";
 import {
+  AlertTriangleIcon,
   CheckCircleIcon,
+  CircleAlertIcon,
   ClockIcon,
+  InfoIcon,
   LocateIcon,
   MailIcon,
   PauseIcon,
@@ -322,6 +325,20 @@ export function channelIcon(channel: string, props: IconProps) {
       return <ChatBubbleIcon {...props} />;
     case "email":
       return <MailIcon {...props} />;
+    default:
+      return <></>;
+  }
+}
+
+export function eventSeverityIcon(severity: string, props: IconProps) {
+  switch (severity) {
+    case "critical":
+    case "error":
+      return <CircleAlertIcon {...props} />;
+    case "info":
+      return <InfoIcon {...props} />;
+    case "warning":
+      return <AlertTriangleIcon {...props} />;
     default:
       return <></>;
   }

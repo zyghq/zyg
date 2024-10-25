@@ -181,3 +181,15 @@ export type WorkspaceMetricsResponse = z.infer<
 export type CustomerResponse = z.infer<typeof customerResponseSchema>;
 
 export type PatResponse = z.infer<typeof patResponseSchema>;
+
+export const customerEventSchema = z.object({
+  body: z.string(),
+  createdAt: z.string(),
+  event: z.string(),
+  eventId: z.string(),
+  severity: z.string(),
+  timestamp: z.string(),
+  updatedAt: z.string(),
+});
+
+export type CustomerEventResponse = z.infer<typeof customerEventSchema>;

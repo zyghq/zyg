@@ -1,5 +1,6 @@
 import { Icons } from "@/components/icons";
 import { NotFound } from "@/components/notfound";
+import { CustomerEvents } from "@/components/thread/customer-events";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,11 +63,7 @@ import {
   PlusIcon,
   ResetIcon,
 } from "@radix-ui/react-icons";
-import {
-  BorderDashedIcon,
-  CheckIcon,
-  InfoCircledIcon,
-} from "@radix-ui/react-icons";
+import { BorderDashedIcon, CheckIcon } from "@radix-ui/react-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -227,8 +224,8 @@ function ThreadLabels({
     onError: (error) => {
       console.error(error);
     },
-    onSuccess: () => {
-      refetch();
+    onSuccess: async () => {
+      await refetch();
     },
   });
 
@@ -252,8 +249,8 @@ function ThreadLabels({
     onError: (error) => {
       console.error(error);
     },
-    onSuccess: () => {
-      refetch();
+    onSuccess: async () => {
+      await refetch();
     },
   });
 
@@ -549,198 +546,187 @@ function ThreadDetail() {
     );
   }
 
-  // const navigateToThreads = () => {};
-
   return (
-    <React.Fragment>
-      <div className="flex min-h-screen">
-        <aside
-          className={cn(
-            "sticky overflow-y-auto",
-            currentQueue ? "border-r" : "",
-          )}
-        >
-          <div className="flex">
-            <div className="flex flex-col gap-4 px-2 py-4">
+    <div className="flex min-h-screen">
+      <aside
+        className={cn("sticky overflow-y-auto", currentQueue ? "border-r" : "")}
+      >
+        <div className="flex">
+          <div className="flex flex-col gap-4 px-2 py-4">
+            <Button asChild size="icon" variant="outline">
+              <Link
+                params={{ workspaceId }}
+                search={{ sort }}
+                to={threadsPath as string}
+              >
+                <ArrowLeftIcon className="h-4 w-4" />
+              </Link>
+            </Button>
+            {currentQueue && (
+              <SidePanelThreadList
+                threads={currentQueue}
+                title="Threads"
+                workspaceId={workspaceId}
+              />
+            )}
+            {prevItem ? (
               <Button asChild size="icon" variant="outline">
                 <Link
-                  params={{ workspaceId }}
-                  search={{ sort }}
-                  to={threadsPath as string}
+                  params={{ threadId: prevItem.threadId, workspaceId }}
+                  to="/workspaces/$workspaceId/threads/$threadId"
                 >
-                  <ArrowLeftIcon className="h-4 w-4" />
+                  <ArrowUpIcon className="h-4 w-4" />
                 </Link>
               </Button>
+            ) : null}
+            {nextItem ? (
+              <Button asChild size="icon" variant="outline">
+                <Link
+                  params={{ threadId: nextItem.threadId, workspaceId }}
+                  to="/workspaces/$workspaceId/threads/$threadId"
+                >
+                  <ArrowDownIcon className="h-4 w-4" />
+                </Link>
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </aside>
+      <main className="flex flex-1 flex-col">
+        <ResizablePanelGroup direction="horizontal">
+          <ResizablePanel
+            className={cn("hidden", currentQueue ? "sm:block" : "")}
+            defaultSize={25}
+            maxSize={30}
+            minSize={20}
+          >
+            <div className="flex h-14 flex-col justify-center border-b px-4">
+              <div className="font-semibold">Threads</div>
+            </div>
+            <ScrollArea className="h-[calc(100dvh-4rem)]">
               {currentQueue && (
-                <SidePanelThreadList
+                <ThreadList
                   threads={currentQueue}
-                  title="Threads"
+                  variant="compress"
                   workspaceId={workspaceId}
                 />
               )}
-              {prevItem ? (
-                <Button asChild size="icon" variant="outline">
-                  <Link
-                    params={{ threadId: prevItem.threadId, workspaceId }}
-                    to="/workspaces/$workspaceId/threads/$threadId"
-                  >
-                    <ArrowUpIcon className="h-4 w-4" />
-                  </Link>
-                </Button>
-              ) : null}
-              {nextItem ? (
-                <Button asChild size="icon" variant="outline">
-                  <Link
-                    params={{ threadId: nextItem.threadId, workspaceId }}
-                    to="/workspaces/$workspaceId/threads/$threadId"
-                  >
-                    <ArrowDownIcon className="h-4 w-4" />
-                  </Link>
-                </Button>
-              ) : null}
-            </div>
-          </div>
-        </aside>
-        <main className="flex flex-1 flex-col">
-          <ResizablePanelGroup direction="horizontal">
-            <ResizablePanel
-              className={cn("hidden", currentQueue ? "sm:block" : "")}
-              defaultSize={25}
-              maxSize={30}
-              minSize={20}
-            >
-              <div className="flex h-14 flex-col justify-center border-b px-4">
-                <div className="font-semibold">Threads</div>
-              </div>
-              <ScrollArea className="h-[calc(100dvh-4rem)]">
-                {currentQueue && (
-                  <ThreadList
-                    threads={currentQueue}
-                    variant="compress"
+            </ScrollArea>
+          </ResizablePanel>
+          <ResizableHandle withHandle={true} />
+          <ResizablePanel className="flex flex-col" defaultSize={50}>
+            <ResizablePanelGroup direction="vertical">
+              <ResizablePanel defaultSize={75}>
+                <div className="flex h-full flex-col">
+                  <div className="flex h-14 min-h-14 flex-col justify-center border-b px-4">
+                    <div className="flex">
+                      <div className="text-sm font-semibold">
+                        {customerName}
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                      <CircleIcon className="mr-1 h-3 w-3 text-indigo-500" />
+                      <span className="items-center text-xs capitalize">
+                        {threadStatus}
+                      </span>
+                      <Separator className="mx-2" orientation="vertical" />
+                      <ChatBubbleIcon className="h-3 w-3" />
+                      {isAwaitingReply && (
+                        <React.Fragment>
+                          <Separator className="mx-2" orientation="vertical" />
+                          <Badge
+                            className="bg-indigo-100 font-normal dark:bg-indigo-500"
+                            variant="outline"
+                          >
+                            <div className="flex items-center gap-1">
+                              <ResetIcon className="h-2 w-2" />
+                            </div>
+                          </Badge>
+                          <Separator className="mx-2" orientation="vertical" />
+                          <div className="text-xs">
+                            {formatDistanceToNow(
+                              new Date(activeThread.createdAt),
+                              {
+                                addSuffix: true,
+                              },
+                            )}
+                          </div>
+                        </React.Fragment>
+                      )}
+                    </div>
+                  </div>
+                  <ScrollArea className="flex h-[calc(100dvh-4rem)] flex-col bg-gray-100 p-1 dark:bg-background">
+                    {isPending ? <ChatLoading /> : renderChats(chats)}
+                  </ScrollArea>
+                </div>
+              </ResizablePanel>
+              <ResizableHandle withHandle />
+              <ResizablePanel defaultSize={25} maxSize={50} minSize={20}>
+                <div className="flex h-full flex-col gap-2 overflow-auto p-2">
+                  <MessageForm
+                    customerName={customerName}
+                    refetch={refetch}
+                    threadId={threadId}
+                    token={token}
                     workspaceId={workspaceId}
                   />
-                )}
-              </ScrollArea>
-            </ResizablePanel>
-            <ResizableHandle withHandle={true} />
-            <ResizablePanel className="flex flex-col" defaultSize={50}>
-              <ResizablePanelGroup direction="vertical">
-                <ResizablePanel defaultSize={75}>
-                  <div className="flex h-full flex-col">
-                    <div className="flex h-14 min-h-14 flex-col justify-center border-b px-4">
-                      <div className="flex">
-                        <div className="text-sm font-semibold">
-                          {customerName}
-                        </div>
-                      </div>
-                      <div className="flex items-center">
-                        <CircleIcon className="mr-1 h-3 w-3 text-indigo-500" />
-                        <span className="items-center text-xs capitalize">
-                          {threadStatus}
-                        </span>
-                        <Separator className="mx-2" orientation="vertical" />
-                        <ChatBubbleIcon className="h-3 w-3" />
-                        {isAwaitingReply && (
-                          <React.Fragment>
-                            <Separator
-                              className="mx-2"
-                              orientation="vertical"
-                            />
-                            <Badge
-                              className="bg-indigo-100 font-normal dark:bg-indigo-500"
-                              variant="outline"
-                            >
-                              <div className="flex items-center gap-1">
-                                <ResetIcon className="h-2 w-2" />
-                              </div>
-                            </Badge>
-                            <Separator
-                              className="mx-2"
-                              orientation="vertical"
-                            />
-                            <div className="text-xs">
-                              {formatDistanceToNow(
-                                new Date(activeThread.createdAt),
-                                {
-                                  addSuffix: true,
-                                },
-                              )}
-                            </div>
-                          </React.Fragment>
-                        )}
-                      </div>
-                    </div>
-                    <ScrollArea className="flex h-[calc(100dvh-4rem)] flex-col bg-gray-100 p-1 dark:bg-background">
-                      {isPending ? <ChatLoading /> : renderChats(chats)}
-                    </ScrollArea>
-                  </div>
-                </ResizablePanel>
-                <ResizableHandle withHandle />
-                <ResizablePanel defaultSize={25} maxSize={50} minSize={20}>
-                  <div className="flex h-full flex-col gap-2 overflow-auto p-2">
-                    <MessageForm
-                      customerName={customerName}
-                      refetch={refetch}
-                      threadId={threadId}
-                      token={token}
-                      workspaceId={workspaceId}
-                    />
-                    <div className="mt-auto flex flex-col">
-                      <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline">
-                          <EclipseIcon className="mr-1 h-4 w-4 text-fuchsia-500" />
-                          Snooze
+                  <div className="mt-auto flex flex-col">
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="outline">
+                        <EclipseIcon className="mr-1 h-4 w-4 text-fuchsia-500" />
+                        Snooze
+                      </Button>
+                      {threadStatus === "todo" && (
+                        <Button
+                          disabled={isStatusMutPending}
+                          onClick={() => {
+                            statusMutation.mutate({
+                              status: "done",
+                            });
+                          }}
+                          size="sm"
+                          variant="outline"
+                        >
+                          <CheckCircleIcon className="mr-1 h-4 w-4 text-green-500" />
+                          Mark as Done
                         </Button>
-                        {threadStatus === "todo" && (
-                          <Button
-                            disabled={isStatusMutPending}
-                            onClick={() => {
-                              statusMutation.mutate({
-                                status: "done",
-                              });
-                            }}
-                            size="sm"
-                            variant="outline"
-                          >
-                            <CheckCircleIcon className="mr-1 h-4 w-4 text-green-500" />
-                            Mark as Done
-                          </Button>
-                        )}
-                        {threadStatus === "done" && (
-                          <Button
-                            disabled={isStatusMutPending}
-                            onClick={() => {
-                              statusMutation.mutate({
-                                status: "todo",
-                              });
-                            }}
-                            size="sm"
-                            variant="outline"
-                          >
-                            <CircleIcon className="mr-1 h-4 w-4 text-indigo-500" />
-                            Mark as Todo
-                          </Button>
-                        )}
-                      </div>
-                      <div className="flex justify-end">
-                        {isStatusMutErr && (
-                          <div className="text-xs text-red-500">
-                            Something went wrong.
-                          </div>
-                        )}
-                      </div>
+                      )}
+                      {threadStatus === "done" && (
+                        <Button
+                          disabled={isStatusMutPending}
+                          onClick={() => {
+                            statusMutation.mutate({
+                              status: "todo",
+                            });
+                          }}
+                          size="sm"
+                          variant="outline"
+                        >
+                          <CircleIcon className="mr-1 h-4 w-4 text-indigo-500" />
+                          Mark as Todo
+                        </Button>
+                      )}
+                    </div>
+                    <div className="flex justify-end">
+                      {isStatusMutErr && (
+                        <div className="text-xs text-red-500">
+                          Something went wrong.
+                        </div>
+                      )}
                     </div>
                   </div>
-                </ResizablePanel>
-              </ResizablePanelGroup>
-            </ResizablePanel>
-            <ResizableHandle withHandle={true} />
-            <ResizablePanel
-              className="hidden flex-col gap-2 bg-accent p-2 sm:flex"
-              defaultSize={25}
-              maxSize={30}
-              minSize={20}
-            >
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </ResizablePanel>
+          <ResizableHandle withHandle={true} />
+          <ResizablePanel
+            className="hidden flex-col gap-2 bg-accent p-2 sm:flex"
+            defaultSize={25}
+            maxSize={30}
+            minSize={20}
+          >
+            <ScrollArea className="h-[calc(100dvh-1rem)]">
               <div className="flex flex-col gap-4 rounded-lg bg-white px-4 py-2 dark:bg-background">
                 <div className="flex flex-col">
                   {activeThread.title && (
@@ -775,13 +761,13 @@ function ThreadDetail() {
                     token={token}
                     workspaceId={workspaceId}
                   />
+                  <ThreadLabels
+                    threadId={threadId}
+                    token={token}
+                    workspaceId={workspaceId}
+                    workspaceLabels={workspaceLabels}
+                  />
                 </div>
-                <ThreadLabels
-                  threadId={threadId}
-                  token={token}
-                  workspaceId={workspaceId}
-                  workspaceLabels={workspaceLabels}
-                />
               </div>
               <div className="flex flex-col gap-4 rounded-lg bg-white px-4 py-2 dark:bg-background">
                 <div>
@@ -864,27 +850,17 @@ function ThreadDetail() {
                 </div>
                 <div className="flex flex-col space-y-2">
                   <div className="text-xs font-semibold">Recent Events</div>
-                  <div className="flex items-center gap-2">
-                    <InfoCircledIcon className="h-4 w-4" />
-                    <div className="font-mono text-sm">No events yet.</div>
-                  </div>
-                  <div className="pb-2 text-xs">
-                    Learn{" "}
-                    <a
-                      className="underline"
-                      href="https://zyg.ai/docs/events?utm_source=app&utm_medium=docs&utm_campaign=onboarding"
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
-                      how to send customer events to Zyg.
-                    </a>
-                  </div>
+                  <CustomerEvents
+                    customerId={activeThread?.customerId || ""}
+                    jwt={token}
+                    workspaceId={workspaceId}
+                  />
                 </div>
               </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        </main>
-      </div>
-    </React.Fragment>
+            </ScrollArea>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </main>
+    </div>
   );
 }
