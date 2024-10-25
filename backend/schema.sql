@@ -130,6 +130,27 @@ CREATE TABLE claimed_mail(
     CONSTRAINT claimed_mail_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer
 );
 
+
+CREATE TABLE customer_event(
+    event_id VARCHAR(255) NOT NULL, -- primary key
+    customer_id VARCHAR(255) NOT NULL, -- fk to customer
+    thread_id VARCHAR(255) NULL, -- nullable fk to thread
+    event VARCHAR(511) NOT NULL,
+    event_body TEXT NOT NULL,
+    severity VARCHAR(127) NOT NULL,
+    event_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    notification_status VARCHAR(128) NOT NULL,
+    idempotency_key VARCHAR(255) NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT customer_event_event_id_pkey PRIMARY KEY (event_id),
+    CONSTRAINT customer_event_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer,
+    CONSTRAINT customer_event_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES thread,
+    CONSTRAINT customer_event_idempotency_key_key UNIQUE (idempotency_key)
+);
+
 -- @sanchitrk: changed usage?
 -- Represents the workspace Thread QA table
 -- This table is used to store the QA thread information linked to the workspace.

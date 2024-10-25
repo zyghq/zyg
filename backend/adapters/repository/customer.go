@@ -37,6 +37,14 @@ func claimedMailCols() builq.Columns {
 	}
 }
 
+func customerEventCols() builq.Columns {
+	return builq.Columns{
+		"event_id", "customer_id", "thread_id", "event", "event_body",
+		"severity", "event_timestamp", "notification_status", "idempotency_key",
+		"created_at", "updated_at",
+	}
+}
+
 // LookupWorkspaceCustomerById returns the workspace customer by ID.
 func (c *CustomerDB) LookupWorkspaceCustomerById(
 	ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error) {
@@ -429,7 +437,7 @@ func (c *CustomerDB) CheckEmailExists(
 	return exists, nil
 }
 
-// InsertClaimedMailVerification inserts claimed mail for verification
+// InsertClaimedMail inserts claimed mail for verification
 func (c *CustomerDB) InsertClaimedMail(
 	ctx context.Context, claimed models.ClaimedMail) (models.ClaimedMail, error) {
 	claimId := claimed.GenId()
@@ -482,7 +490,7 @@ func (c *CustomerDB) InsertClaimedMail(
 	return claimed, nil
 }
 
-// LookupClaimedEmailByToken returns the claimed email verification by token.
+// LookupClaimedMailByToken returns the claimed email verification by token.
 // Always make sure the signed token is verified before usage.
 func (c *CustomerDB) LookupClaimedMailByToken(
 	ctx context.Context, token string) (models.ClaimedMail, error) {
@@ -521,7 +529,7 @@ func (c *CustomerDB) LookupClaimedMailByToken(
 	return claimed, nil
 }
 
-// DeleteCustomerClaimedEmail deletes the claimed email token for workspace customer by email.
+// DeleteCustomerClaimedMail deletes the claimed email token for workspace customer by email.
 func (c *CustomerDB) DeleteCustomerClaimedMail(
 	ctx context.Context, workspaceId string, customerId string, email string) error {
 
@@ -582,4 +590,88 @@ func (c *CustomerDB) LookupLatestClaimedMail(
 		return models.ClaimedMail{}, ErrQuery
 	}
 	return claimed, nil
+}
+
+func (c *CustomerDB) InsertEvent(
+	ctx context.Context, event models.CustomerEvent) (models.CustomerEvent, error) {
+	q := builq.New()
+	cols := customerEventCols()
+
+	q("INSERT INTO %s (%s)", "customer_event", cols)
+	q("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$)",
+		event.EventId, event.CustomerId, event.ThreadId, event.Event, event.EventBody,
+		event.Severity, event.EventTimestamp, event.NotificationStatus, event.IdempotencyKey,
+		event.CreatedAt, event.UpdatedAt,
+	)
+	q("RETURNING %s", cols)
+
+	stmt, _, err := q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return models.CustomerEvent{}, ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
+
+	err = c.db.QueryRow(ctx, stmt,
+		event.EventId, event.CustomerId, event.ThreadId, event.Event, event.EventBody,
+		event.Severity, event.EventTimestamp, event.NotificationStatus, event.IdempotencyKey,
+		event.CreatedAt, event.UpdatedAt,
+	).Scan(
+		&event.EventId, &event.CustomerId, &event.ThreadId, &event.Event, &event.EventBody,
+		&event.Severity, &event.EventTimestamp, &event.NotificationStatus, &event.IdempotencyKey,
+		&event.CreatedAt, &event.UpdatedAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("error", err))
+		return models.CustomerEvent{}, ErrEmpty
+	}
+	if err != nil {
+		slog.Error("failed to query", slog.Any("error", err))
+		return models.CustomerEvent{}, ErrQuery
+	}
+	return event, nil
+}
+
+func (c *CustomerDB) FetchEventsByCustomerId(
+	ctx context.Context, customerId string) ([]models.CustomerEvent, error) {
+	var event models.CustomerEvent
+	limit := 11
+	events := make([]models.CustomerEvent, 0, limit)
+
+	q := builq.New()
+	cols := customerEventCols()
+
+	q("SELECT %s FROM %s", cols, "customer_event")
+	q("WHERE customer_id = %$ ORDER BY event_timestamp DESC", customerId)
+	q("LIMIT %d", limit)
+
+	stmt, _, err := q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return []models.CustomerEvent{}, ErrQuery
+	}
+
+	rows, _ := c.db.Query(ctx, stmt, customerId)
+
+	defer rows.Close()
+
+	_, err = pgx.ForEachRow(rows, []any{
+		&event.EventId, &event.CustomerId, &event.ThreadId, &event.Event, &event.EventBody,
+		&event.Severity, &event.EventTimestamp, &event.NotificationStatus, &event.IdempotencyKey,
+		&event.CreatedAt, &event.UpdatedAt,
+	}, func() error {
+		events = append(events, event)
+		return nil
+	})
+
+	if err != nil {
+		slog.Error("failed to query", slog.Any("error", err))
+		return []models.CustomerEvent{}, ErrQuery
+	}
+
+	return events, nil
 }

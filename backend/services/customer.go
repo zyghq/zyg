@@ -53,7 +53,7 @@ func (s *CustomerService) GenerateCustomerJwt(c models.Customer, sk string) (str
 			Issuer:    "auth.zyg.ai",
 			Subject:   c.CustomerId,
 			Audience:  audience,
-			ExpiresAt: jwt.NewNumericDate(time.Now().UTC().AddDate(1, 0, 0)), // Expires 1 year from now
+			ExpiresAt: jwt.NewNumericDate(time.Now().UTC().AddDate(1, 0, 0)), // 1 year from now
 			IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 			NotBefore: jwt.NewNumericDate(time.Now().UTC()),
 			ID:        c.WorkspaceId + ":" + c.CustomerId,
@@ -232,4 +232,21 @@ func (s *CustomerService) ClaimMailForVerification(
 	err = tasks.SendKycMail(claim.Email, contextMessage, verifyLink)
 	slog.Error("tasks send kyc mail failed", slog.Any("err", err))
 	return claim, nil
+}
+
+func (s *CustomerService) AppendEvent(
+	ctx context.Context, event models.CustomerEvent) (models.CustomerEvent, error) {
+	event, err := s.repo.InsertEvent(ctx, event)
+	if err != nil {
+		return models.CustomerEvent{}, ErrCustomerEvent
+	}
+	return event, nil
+}
+
+func (s *CustomerService) ListEvents(ctx context.Context, customerId string) ([]models.CustomerEvent, error) {
+	events, err := s.repo.FetchEventsByCustomerId(ctx, customerId)
+	if err != nil {
+		return []models.CustomerEvent{}, ErrCustomerEvent
+	}
+	return events, nil
 }
