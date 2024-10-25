@@ -33,4 +33,5 @@ const (
 	ErrClaimedMail          = serviceErr("claimed mail error")
 	ErrClaimedMailNotFound  = serviceErr("claimed mail not found")
 	ErrClaimedMailExpired   = serviceErr("claimed mail expired")
+	ErrCustomerEvent        = serviceErr("customer event error")
 )

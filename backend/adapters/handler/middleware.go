@@ -41,7 +41,8 @@ type EnsureAuthAccount struct {
 	authz   ports.AuthServicer
 }
 
-func NewEnsureAuthAccount(handler AuthenticatedAccountHandler, as ports.AuthServicer) *EnsureAuthAccount {
+func NewEnsureAuthAccount(
+	handler AuthenticatedAccountHandler, as ports.AuthServicer) *EnsureAuthAccount {
 	return &EnsureAuthAccount{
 		handler: handler,
 		authz:   as,
@@ -67,7 +68,8 @@ type EnsureMemberAuth struct {
 	authz   ports.AuthServicer
 }
 
-func NewEnsureMemberAuth(handler AuthenticatedMemberHandler, as ports.AuthServicer) *EnsureMemberAuth {
+func NewEnsureMemberAuth(
+	handler AuthenticatedMemberHandler, as ports.AuthServicer) *EnsureMemberAuth {
 	return &EnsureMemberAuth{
 		handler: handler,
 		authz:   as,

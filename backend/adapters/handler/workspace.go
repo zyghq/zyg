@@ -439,7 +439,6 @@ func (h *WorkspaceHandler) handleCreateWorkspaceCustomer(
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
-
 	if err != nil {
 		slog.Error("failed to fetch workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -457,6 +456,7 @@ func (h *WorkspaceHandler) handleCreateWorkspaceCustomer(
 			reqp.Name,
 		)
 		if err != nil {
+			slog.Error("failed to fetch or create customer by externalId", slog.Any("err", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}

@@ -128,6 +128,8 @@ type CustomerServicer interface {
 		ctx context.Context, customer models.Customer, sk string,
 		email string, name *string, hasConflict bool, contextMessage string, redirectTo string,
 	) (models.ClaimedMail, error)
+	AppendEvent(ctx context.Context, event models.CustomerEvent) (models.CustomerEvent, error)
+	ListEvents(ctx context.Context, customerId string) ([]models.CustomerEvent, error)
 }
 
 type ThreadServicer interface {

@@ -31,6 +31,7 @@ func NewServer(
 	ah := NewAccountHandler(accountService, workspaceService)
 	wh := NewWorkspaceHandler(workspaceService, accountService, customerService)
 	th := NewThreadChatHandler(workspaceService, threadChatService)
+	ch := NewCustomerHandler(workspaceService, customerService)
 
 	mux.HandleFunc("GET /{$}", handleGetIndex)
 	mux.HandleFunc("POST /accounts/auth/{$}", ah.handleGetOrCreateAccount)
@@ -64,6 +65,11 @@ func NewServer(
 		NewEnsureMemberAuth(wh.handleCreateWorkspaceCustomer, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/customers/{$}",
 		NewEnsureMemberAuth(wh.handleGetWorkspaceCustomers, authService))
+
+	mux.Handle("POST /workspaces/{workspaceId}/customers/events/{$}",
+		NewEnsureMemberAuth(ch.handleCreateCustomerEvent, authService))
+	mux.Handle("GET /workspaces/{workspaceId}/customers/events/{customerId}/{$}",
+		NewEnsureMemberAuth(ch.handleGetCustomerEvents, authService))
 
 	mux.Handle("POST /workspaces/{workspaceId}/labels/{$}",
 		NewEnsureMemberAuth(wh.handleCreateWorkspaceLabel, authService))

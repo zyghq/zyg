@@ -475,3 +475,67 @@ func (tl ThreadLabelResp) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(aux)
 }
+
+type CustomerEventReq struct {
+	Event    string `json:"event"`
+	Body     string `json:"body"`
+	Customer struct {
+		CustomerId *string `json:"customerId"`
+		ExternalId *string `json:"externalId"`
+		Email      *string `json:"email"`
+		Name       *string `json:"name"`
+	} `json:"customer"`
+	Notify    bool   `json:"notify"`
+	Severity  string `json:"severity"`
+	Timestamp string `json:"timestamp"`
+}
+
+type CustomerEventAddedResp struct {
+	EventId   string    `json:"eventId"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+type CustomerEventResp struct {
+	EventId   string    `json:"eventId"`
+	Event     string    `json:"event"`
+	Body      string    `json:"body"`
+	Severity  string    `json:"severity"`
+	Timestamp time.Time `json:"timestamp"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func (cv CustomerEventResp) MarshalJSON() ([]byte, error) {
+	aux := &struct {
+		EventId   string `json:"eventId"`
+		Event     string `json:"event"`
+		Body      string `json:"body"`
+		Severity  string `json:"severity"`
+		Timestamp string `json:"timestamp"`
+		CreatedAt string `json:"createdAt"`
+		UpdatedAt string `json:"updatedAt"`
+	}{
+		EventId:   cv.EventId,
+		Event:     cv.Event,
+		Body:      cv.Body,
+		Severity:  cv.Severity,
+		Timestamp: cv.Timestamp.Format(time.RFC3339),
+		CreatedAt: cv.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: cv.UpdatedAt.Format(time.RFC3339),
+	}
+
+	return json.Marshal(aux)
+}
+
+func (cv CustomerEventResp) NewResponse(event *models.CustomerEvent) CustomerEventResp {
+	return CustomerEventResp{
+		EventId:   event.EventId,
+		Event:     event.Event,
+		Body:      event.EventBody,
+		Severity:  event.Severity,
+		Timestamp: event.EventTimestamp,
+		CreatedAt: event.CreatedAt,
+		UpdatedAt: event.UpdatedAt,
+	}
+}
