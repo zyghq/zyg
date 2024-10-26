@@ -7,7 +7,7 @@ import * as React from "react";
 import { useStore } from "zustand";
 
 export const Route = createFileRoute(
-  "/_account/workspaces/$workspaceId/_workspace"
+  "/_account/workspaces/$workspaceId/_workspace",
 )({
   component: WorkspaceLayout,
 });
@@ -18,20 +18,20 @@ function WorkspaceLayout() {
 
   const email = useStore(accountStore, (state) => state.getEmail(state));
   const workspaceId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-    state.getWorkspaceId(state)
+    state.getWorkspaceId(state),
   );
   const workspaceName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-    state.getWorkspaceName(state)
+    state.getWorkspaceName(state),
   );
   const memberId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-    state.getMemberId(state)
+    state.getMemberId(state),
   );
   const metrics = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-    state.getMetrics(state)
+    state.getMetrics(state),
   );
 
   const sort = useStore(workspaceStore, (state) =>
-    state.viewThreadSortKey(state)
+    state.viewThreadSortKey(state),
   );
 
   return (
@@ -44,7 +44,7 @@ function WorkspaceLayout() {
         workspaceName={workspaceName}
       />
       <div className="flex min-h-screen">
-        <aside className="hidden sticky top-14 h-[calc(100vh-theme(spacing.14))] overflow-y-auto md:block md:border-r bg-zinc-50 dark:bg-inherit min-w-80">
+        <aside className="sticky top-14 hidden h-[calc(100vh-theme(spacing.14))] min-w-80 overflow-y-auto bg-neutral-50 dark:bg-inherit md:block md:border-r">
           <SideNavLinks
             email={email}
             maxHeight="h-[calc(100dvh-8rem)]"
@@ -55,7 +55,7 @@ function WorkspaceLayout() {
             workspaceName={workspaceName}
           />
         </aside>
-        <main className="flex-1 mt-14 pb-4">
+        <main className="mt-14 flex-1 pb-4">
           <Outlet />
         </main>
       </div>

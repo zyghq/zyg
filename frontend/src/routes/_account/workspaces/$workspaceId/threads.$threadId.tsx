@@ -138,7 +138,7 @@ function Chat({
         </div>
         <div className="text-xs text-muted-foreground"></div>
         <Separator
-          className="mb-3 mt-3 dark:bg-zinc-700"
+          className="mb-3 mt-3 dark:bg-neutral-700"
           orientation="horizontal"
         />
         <div>{chat.body}</div>

@@ -7,7 +7,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CheckIcon } from "lucide-react";
 
 export const Route = createFileRoute(
-  "/_account/workspaces/$workspaceId/settings/preferences"
+  "/_account/workspaces/$workspaceId/settings/preferences",
 )({
   component: Preferences,
 });
@@ -28,15 +28,15 @@ function ThemeSelector() {
           value={theme.value}
         />
         <Label
-          className={`flex flex-col items-center justify-between rounded-md border p-4 flex-grow cursor-pointer ${systemTheme === "dark" ? "dark:bg-zinc-900 bg-primary text-white" : "dark:bg-white dark:text-primary-foreground"}`}
+          className={`flex flex-grow cursor-pointer flex-col items-center justify-between rounded-md border p-4 ${systemTheme === "dark" ? "bg-primary text-white dark:bg-neutral-900" : "dark:bg-white dark:text-primary-foreground"}`}
           htmlFor={theme.value}
         >
           <LaptopIcon className="mb-3 h-5 w-5" />
           <span className="text-lg font-bold">Aa</span>
           <p className="text-sm">{theme.label}</p>
         </Label>
-        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary opacity-0 transition-opacity peer-data-[state=checked]:opacity-100 flex items-center justify-center z-10">
-          <CheckIcon className="w-4 h-4 text-primary-foreground" />
+        <div className="absolute right-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-primary opacity-0 transition-opacity peer-data-[state=checked]:opacity-100">
+          <CheckIcon className="h-4 w-4 text-primary-foreground" />
         </div>
       </>
     );
@@ -52,15 +52,15 @@ function ThemeSelector() {
           value={theme.value}
         />
         <Label
-          className={`flex flex-col items-center justify-between rounded-md border p-4 flex-grow cursor-pointer dark:bg-white dark:text-primary-foreground`}
+          className={`flex flex-grow cursor-pointer flex-col items-center justify-between rounded-md border p-4 dark:bg-white dark:text-primary-foreground`}
           htmlFor={theme.value}
         >
           <SunIcon className="mb-3 h-5 w-5" />
           <span className="text-lg font-bold">Aa</span>
           <p className="text-sm">{theme.label}</p>
         </Label>
-        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary opacity-0 transition-opacity peer-data-[state=checked]:opacity-100 flex items-center justify-center z-10">
-          <CheckIcon className="w-4 h-4 text-primary-foreground" />
+        <div className="absolute right-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-primary opacity-0 transition-opacity peer-data-[state=checked]:opacity-100">
+          <CheckIcon className="h-4 w-4 text-primary-foreground" />
         </div>
       </>
     );
@@ -76,15 +76,15 @@ function ThemeSelector() {
           value={theme.value}
         />
         <Label
-          className={`flex flex-col items-center justify-between rounded-md border p-4 flex-grow cursor-pointer dark:bg-zinc-900 bg-primary text-white`}
+          className={`flex flex-grow cursor-pointer flex-col items-center justify-between rounded-md border bg-primary p-4 text-white dark:bg-neutral-900`}
           htmlFor={theme.value}
         >
           <MoonIcon className="mb-3 h-5 w-5" />
           <span className="text-lg font-bold">Aa</span>
           <p className="text-sm">{theme.label}</p>
         </Label>
-        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary opacity-0 transition-opacity peer-data-[state=checked]:opacity-100 flex items-center justify-center z-10">
-          <CheckIcon className="w-4 h-4 text-primary-foreground" />
+        <div className="absolute right-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-primary opacity-0 transition-opacity peer-data-[state=checked]:opacity-100">
+          <CheckIcon className="h-4 w-4 text-primary-foreground" />
         </div>
       </>
     );
@@ -92,7 +92,7 @@ function ThemeSelector() {
 
   return (
     <RadioGroup
-      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+      className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
       defaultValue={theme}
     >
       {[

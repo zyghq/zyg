@@ -27,6 +27,7 @@ func customerCols() builq.Columns {
 	}
 }
 
+// claimedMailCols returns the required columns for the `claimed_mail` table.
 func claimedMailCols() builq.Columns {
 	return builq.Columns{
 		"claim_id", "workspace_id", "customer_id", "email",
@@ -37,6 +38,7 @@ func claimedMailCols() builq.Columns {
 	}
 }
 
+// customerEventCols returns the required columns for the `customer_event` table.
 func customerEventCols() builq.Columns {
 	return builq.Columns{
 		"event_id", "customer_id", "thread_id", "event", "event_body",
@@ -45,30 +47,37 @@ func customerEventCols() builq.Columns {
 	}
 }
 
-// LookupWorkspaceCustomerById returns the workspace customer by ID.
+// LookupWorkspaceCustomerById returns the workspace customer by ID with optional role.
 func (c *CustomerDB) LookupWorkspaceCustomerById(
 	ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error) {
 	var customer models.Customer
 
+	cols := customerCols()
+	q := builq.New()
 	params := []any{workspaceId, customerId}
-	stmt := `select
-		workspace_id, customer_id, external_id, email, phone,
-		name, is_verified, role,
-		created_at, updated_at
-		from customer
-		where
-		workspace_id = $1 and customer_id = $2`
 
+	q("SELECT %s FROM %s", cols, "customer")
+	q("WHERE workspace_id = %$ AND customer_id = %$", workspaceId, customerId)
 	if role != nil {
-		stmt += " AND role = $3"
+		q("AND role = %$", *role)
 		params = append(params, *role)
 	}
 
-	err := c.db.QueryRow(ctx, stmt, params...).Scan(
-		&customer.WorkspaceId, &customer.CustomerId,
-		&customer.ExternalId, &customer.Email, &customer.Phone,
-		&customer.Name, &customer.IsVerified,
-		&customer.Role, &customer.CreatedAt, &customer.UpdatedAt,
+	stmt, _, err := q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return models.Customer{}, ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
+
+	err = c.db.QueryRow(ctx, stmt, params...).Scan(
+		&customer.CustomerId, &customer.WorkspaceId, &customer.ExternalId,
+		&customer.Email, &customer.Phone, &customer.Name, &customer.IsVerified, &customer.Role,
+		&customer.CreatedAt, &customer.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("error", err))
@@ -127,28 +136,48 @@ func (c *CustomerDB) LookupWorkspaceCustomerByEmail(
 func (c *CustomerDB) UpsertCustomerByExtId(
 	ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
 	cId := customer.GenId()
-	st := `WITH ins AS (
-		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name, is_verified, role)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		ON CONFLICT (workspace_id, external_id) DO NOTHING
-		RETURNING
-		customer_id, workspace_id,
-		external_id, email, phone, name,
-		is_verified, role,
-		created_at, updated_at,
-		TRUE AS is_created
-	)
-	SELECT * FROM ins
-	UNION ALL
-	SELECT customer_id, workspace_id, external_id, email, phone, name,
-	is_verified, role, created_at, updated_at, FALSE AS is_created FROM customer
-	WHERE (workspace_id, external_id) = ($2, $3) AND NOT EXISTS (SELECT 1 FROM ins)`
+	var insertB builq.Builder
+	insertCols := customerCols()
+	insertParams := []any{
+		cId, customer.WorkspaceId, customer.ExternalId, customer.Email, customer.Phone,
+		customer.Name, customer.IsVerified, customer.Role,
+		customer.CreatedAt, customer.UpdatedAt,
+	}
+
+	// Build the insert query.
+	insertB.Addf("INSERT INTO customer (%s)", insertCols)
+	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$, %$)", insertParams...)
+	insertB.Addf("ON CONFLICT (workspace_id, external_id) DO NOTHING")
+	insertB.Addf("RETURNING %s, TRUE AS is_created", insertCols)
+
+	insertQuery, _, err := insertB.Build()
+	if err != nil {
+		slog.Error("failed to build insert query", slog.Any("error", err))
+		return models.Customer{}, false, ErrQuery
+	}
+
+	// Build the select query required after insert
+	q := builq.New()
+	q("WITH ins AS (%s)", insertQuery)
+	q("SELECT * FROM ins")
+	q("UNION ALL")
+	q("SELECT %s, FALSE AS is_created FROM customer", insertCols)
+	q("WHERE (workspace_id, external_id) = ($2, $3)")
+	q("AND NOT EXISTS (SELECT 1 FROM ins)")
+
+	stmt, _, err := q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("error", err))
+		return models.Customer{}, false, ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
 
 	var isCreated bool
-	err := c.db.QueryRow(
-		ctx, st, cId, customer.WorkspaceId, customer.ExternalId, customer.Email, customer.Phone,
-		customer.Name, customer.IsVerified, customer.Role,
-	).Scan(
+	err = c.db.QueryRow(ctx, stmt, insertParams...).Scan(
 		&customer.CustomerId, &customer.WorkspaceId,
 		&customer.ExternalId, &customer.Email,
 		&customer.Phone, &customer.Name,
@@ -171,28 +200,48 @@ func (c *CustomerDB) UpsertCustomerByExtId(
 func (c *CustomerDB) UpsertCustomerByEmail(
 	ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
 	cId := customer.GenId()
-	st := `WITH ins AS (
-		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name, is_verified, role)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		ON CONFLICT (workspace_id, email) DO NOTHING
-		RETURNING
-		customer_id, workspace_id,
-		external_id, email, phone, name,
-		is_verified, role,
-		created_at, updated_at,
-		TRUE AS is_created
-	)
-	SELECT * FROM ins
-	UNION ALL
-	SELECT customer_id, workspace_id, external_id, email, phone, name,
-	is_verified, role, created_at, updated_at, FALSE AS is_created FROM customer
-	WHERE (workspace_id, email) = ($2, $4) AND NOT EXISTS (SELECT 1 FROM ins)`
+	var insertB builq.Builder
+	insertCols := customerCols()
+	insertParams := []any{
+		cId, customer.WorkspaceId, customer.ExternalId, customer.Email, customer.Phone,
+		customer.Name, customer.IsVerified, customer.Role,
+		customer.CreatedAt, customer.UpdatedAt,
+	}
+
+	// Build the insert query.
+	insertB.Addf("INSERT INTO customer (%s)", insertCols)
+	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$, %$)", insertParams...)
+	insertB.Addf("ON CONFLICT (workspace_id, email) DO NOTHING")
+	insertB.Addf("RETURNING %s, TRUE AS is_created", insertCols)
+
+	insertQuery, _, err := insertB.Build()
+	if err != nil {
+		slog.Error("failed to build insert query", slog.Any("error", err))
+		return models.Customer{}, false, ErrQuery
+	}
+
+	// Build the select query required after insert
+	q := builq.New()
+	q("WITH ins AS (%s)", insertQuery)
+	q("SELECT * FROM ins")
+	q("UNION ALL")
+	q("SELECT %s, FALSE AS is_created FROM customer", insertCols)
+	q("WHERE (workspace_id, email) = ($2, $4)")
+	q("AND NOT EXISTS (SELECT 1 FROM ins)")
+
+	stmt, _, err := q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("error", err))
+		return models.Customer{}, false, ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
 
 	var isCreated bool
-	err := c.db.QueryRow(
-		ctx, st, cId, customer.WorkspaceId, customer.ExternalId, customer.Email, customer.Phone,
-		customer.Name, customer.IsVerified, customer.Role,
-	).Scan(
+	err = c.db.QueryRow(ctx, stmt, insertParams...).Scan(
 		&customer.CustomerId, &customer.WorkspaceId,
 		&customer.ExternalId, &customer.Email,
 		&customer.Phone, &customer.Name,
@@ -215,28 +264,48 @@ func (c *CustomerDB) UpsertCustomerByEmail(
 func (c *CustomerDB) UpsertCustomerByPhone(
 	ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
 	cId := customer.GenId()
-	st := `WITH ins AS (
-		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name, is_verified, role)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		ON CONFLICT (workspace_id, phone) DO NOTHING
-		RETURNING
-		customer_id, workspace_id,
-		external_id, email, phone, name,
-		is_verified, role,
-		created_at, updated_at,
-		TRUE AS is_created
-	)
-	SELECT * FROM ins
-	UNION ALL
-	SELECT customer_id, workspace_id, external_id, email, phone, name,
-	is_verified, role, created_at, updated_at, FALSE AS is_created FROM customer
-	WHERE (workspace_id, phone) = ($2, $5) AND NOT EXISTS (SELECT 1 FROM ins)`
+	var insertB builq.Builder
+	insertCols := customerCols()
+	insertParams := []any{
+		cId, customer.WorkspaceId, customer.ExternalId, customer.Email, customer.Phone,
+		customer.Name, customer.IsVerified, customer.Role,
+		customer.CreatedAt, customer.UpdatedAt,
+	}
+
+	// Build the insert query.
+	insertB.Addf("INSERT INTO customer (%s)", insertCols)
+	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$, %$)", insertParams...)
+	insertB.Addf("ON CONFLICT (workspace_id, phone) DO NOTHING")
+	insertB.Addf("RETURNING %s, TRUE AS is_created", insertCols)
+
+	insertQuery, _, err := insertB.Build()
+	if err != nil {
+		slog.Error("failed to build insert query", slog.Any("error", err))
+		return models.Customer{}, false, ErrQuery
+	}
+
+	// Build the select query required after insert
+	q := builq.New()
+	q("WITH ins AS (%s)", insertQuery)
+	q("SELECT * FROM ins")
+	q("UNION ALL")
+	q("SELECT %s, FALSE AS is_created FROM customer", insertCols)
+	q("WHERE (workspace_id, phone) = ($2, $5)")
+	q("AND NOT EXISTS (SELECT 1 FROM ins)")
+
+	stmt, _, err := q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("error", err))
+		return models.Customer{}, false, ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
 
 	var isCreated bool
-	err := c.db.QueryRow(
-		ctx, st, cId, customer.WorkspaceId, customer.ExternalId, customer.Email, customer.Phone,
-		customer.Name, customer.IsVerified, customer.Role,
-	).Scan(
+	err = c.db.QueryRow(ctx, stmt, insertParams...).Scan(
 		&customer.CustomerId, &customer.WorkspaceId,
 		&customer.ExternalId, &customer.Email,
 		&customer.Phone, &customer.Name,
@@ -261,36 +330,44 @@ func (c *CustomerDB) UpsertCustomerByPhone(
 func (c *CustomerDB) FetchCustomersByWorkspaceId(
 	ctx context.Context, workspaceId string, role *string) ([]models.Customer, error) {
 	var customer models.Customer
-	customers := make([]models.Customer, 0, 100)
+	limit := 100
+	customers := make([]models.Customer, 0, limit)
 
+	cols := customerCols()
+	q := builq.New()
 	params := []any{workspaceId}
 
-	stmt := `SELECT workspace_id, customer_id, external_id, email, phone,
-		name, is_verified, role,
-		created_at, updated_at
-		FROM customer
-		WHERE
-		workspace_id = $1`
+	q("SELECT %s FROM customer", cols)
+	q("WHERE workspace_id = %$", workspaceId)
+	q("AND role <> 'visitor'")
 
 	if role != nil {
-		stmt += " AND role = $2"
+		q("AND role = %$", *role)
 		params = append(params, *role)
 	}
 
-	// exclude visitors
-	stmt += " AND role <> 'visitor'"
+	q("ORDER BY created_at DESC")
+	q("LIMIT %d", limit)
 
-	stmt += " ORDER BY created_at DESC LIMIT 100"
+	stmt, _, err := q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("error", err))
+		return []models.Customer{}, ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
 
 	rows, _ := c.db.Query(ctx, stmt, params...)
 
 	defer rows.Close()
 
-	_, err := pgx.ForEachRow(rows, []any{
-		&customer.WorkspaceId, &customer.CustomerId,
+	_, err = pgx.ForEachRow(rows, []any{
+		&customer.CustomerId, &customer.WorkspaceId,
 		&customer.ExternalId, &customer.Email, &customer.Phone,
-		&customer.Name,
-		&customer.IsVerified, &customer.Role,
+		&customer.Name, &customer.IsVerified, &customer.Role,
 		&customer.CreatedAt, &customer.UpdatedAt,
 	}, func() error {
 		customers = append(customers, customer)
@@ -380,23 +457,41 @@ func (c *CustomerDB) UpsertCustomerById(
 // ModifyCustomerById updates the customer by ID.
 func (c *CustomerDB) ModifyCustomerById(
 	ctx context.Context, customer models.Customer) (models.Customer, error) {
-	stmt := `update customer set
-		external_id = $2,
-		email = $3,
-		phone = $4,
-		name = $5,
-		is_verified = $6,
-		role = $7,
-		updated_at = now()
-		where
-		customer_id = $1
-		returning customer_id, workspace_id,
-		external_id, email, phone,
-		name, is_verified, role,
-		created_at, updated_at`
-	err := c.db.QueryRow(ctx, stmt, customer.CustomerId,
-		customer.ExternalId, customer.Email, customer.Phone,
-		customer.Name, customer.IsVerified, customer.Role).Scan(
+	q := builq.New()
+	cols := customerCols()
+	updateParams := []any{
+		customer.ExternalId,
+		customer.Email,
+		customer.Phone,
+		customer.Name,
+		customer.IsVerified,
+		customer.Role,
+		customer.CustomerId,
+	}
+
+	q("UPDATE customer SET")
+	q("external_id = %$,", customer.ExternalId)
+	q("email = %$,", customer.Email)
+	q("phone = %$,", customer.Phone)
+	q("name = %$,", customer.Name)
+	q("is_verified = %$,", customer.IsVerified)
+	q("role = %$,", customer.Role)
+	q("updated_at = now()")
+	q("WHERE customer_id = %$,", customer.CustomerId)
+	q("RETURNING %s", cols)
+
+	stmt, _, err := q.Build()
+	if err != nil {
+		slog.Error("failed to build update query", slog.Any("error", err))
+		return models.Customer{}, ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
+
+	err = c.db.QueryRow(ctx, stmt, updateParams...).Scan(
 		&customer.CustomerId, &customer.WorkspaceId,
 		&customer.ExternalId, &customer.Email,
 		&customer.Phone, &customer.Name,
@@ -418,14 +513,12 @@ func (c *CustomerDB) ModifyCustomerById(
 func (c *CustomerDB) CheckEmailExists(
 	ctx context.Context, workspaceId string, email string) (bool, error) {
 	var exists bool
-	stmt := `select exists (
-        select 1
-        from customer
-        where workspace_id = $1 and email = $2
+	stmt := `SELECT exists (
+		SELECT 1
+        	FROM customer
+        WHERE workspace_id = $1 AND email = $2
     ) as exists`
-
 	err := c.db.QueryRow(ctx, stmt, workspaceId, email).Scan(&exists)
-
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("error", err))
 		return exists, ErrEmpty

@@ -183,12 +183,15 @@ func (ws *WorkspaceService) CreateCustomerWithExternalId(
 	if name == "" {
 		name = models.Customer{}.AnonName()
 	}
+	now := time.Now()
 	customer := models.Customer{
 		WorkspaceId: workspaceId,
 		ExternalId:  models.NullString(&externalId),
 		IsVerified:  isVerified,
 		Name:        name,
 		Role:        models.Customer{}.Engaged(),
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 	customer, created, err := ws.customerRepo.UpsertCustomerByExtId(ctx, customer)
 	if err != nil {
@@ -203,12 +206,15 @@ func (ws *WorkspaceService) CreateCustomerWithEmail(
 	if name == "" {
 		name = models.Customer{}.AnonName()
 	}
+	now := time.Now()
 	customer := models.Customer{
 		WorkspaceId: workspaceId,
 		Email:       models.NullString(&email),
 		IsVerified:  isVerified,
 		Name:        name,
 		Role:        models.Customer{}.Engaged(),
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 	customer, created, err := ws.customerRepo.UpsertCustomerByEmail(ctx, customer)
 	if err != nil {
@@ -223,12 +229,15 @@ func (ws *WorkspaceService) CreateCustomerWithPhone(
 	if name == "" {
 		name = models.Customer{}.AnonName()
 	}
+	now := time.Now()
 	customer := models.Customer{
 		WorkspaceId: workspaceId,
 		Phone:       models.NullString(&phone),
 		IsVerified:  isVerified,
 		Name:        name,
 		Role:        models.Customer{}.Engaged(),
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 	customer, created, err := ws.customerRepo.UpsertCustomerByPhone(ctx, customer)
 	if err != nil {

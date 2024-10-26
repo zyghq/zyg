@@ -67,7 +67,7 @@ export function CustomerEvents({
       return data;
     },
     queryKey: ["customerEvents", workspaceId, customerId, jwt],
-    staleTime: 1000 * 60,
+    refetchOnMount: "always",
   });
 
   if (error) {
