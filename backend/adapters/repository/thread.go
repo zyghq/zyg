@@ -471,10 +471,9 @@ func (tc *ThreadChatDB) ModifyThreadById(
 	ctx context.Context, thread models.Thread, fields []string) (models.Thread, error) {
 	upsertQ := builq.New()
 	upsertParams := make([]any, 0, len(fields)+1) // updates + thread ID
-
 	threadCols := threadCols()
-	upsertQ("UPDATE thread SET")
 
+	upsertQ("UPDATE thread SET")
 	var assignedMemberId sql.NullString
 	for _, field := range fields {
 		switch field {
@@ -498,13 +497,10 @@ func (tc *ThreadChatDB) ModifyThreadById(
 			upsertParams = append(upsertParams, thread.ThreadStatus.Status)
 			upsertParams = append(upsertParams, thread.ThreadStatus.StatusChangedAt)
 			upsertParams = append(upsertParams, thread.ThreadStatus.StatusChangedBy.MemberId)
-		case "replied":
-			upsertQ("replied = %$,", field)
-			upsertParams = append(upsertParams, thread.Replied)
 		}
 	}
-	upsertQ("updated_at = NOW()")
 
+	upsertQ("updated_at = NOW()")
 	upsertQ("WHERE thread_id = %$", thread.ThreadId)
 	upsertParams = append(upsertParams, thread.ThreadId)
 

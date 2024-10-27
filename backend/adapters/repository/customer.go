@@ -476,7 +476,7 @@ func (c *CustomerDB) ModifyCustomerById(
 	q("name = %$,", customer.Name)
 	q("is_verified = %$,", customer.IsVerified)
 	q("role = %$,", customer.Role)
-	q("updated_at = now()")
+	q("updated_at = NOW()")
 	q("WHERE customer_id = %$", customer.CustomerId)
 	q("RETURNING %s", cols)
 

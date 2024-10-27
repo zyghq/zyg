@@ -139,20 +139,6 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(
 		}
 	}
 
-	// Modify the replied state if present, otherwise set default replied state
-	// TODO: #61 @sanchitrk shouldn't allow replied state of the thread to be modified by external APIs, instead should be part of thread status/stage overflow.
-	if replied, found := reqp["replied"]; found {
-		if replied == nil {
-			// set default replied
-			thread.Replied = false
-			fields = append(fields, "replied")
-		} else {
-			replied := replied.(bool)
-			thread.Replied = replied
-			fields = append(fields, "replied")
-		}
-	}
-
 	thread, err = h.ths.UpdateThread(ctx, thread, fields)
 	if err != nil {
 		slog.Error("failed to update thread", slog.Any("err", err))
