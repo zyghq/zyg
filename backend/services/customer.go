@@ -44,11 +44,11 @@ func (s *CustomerService) GenerateCustomerJwt(c models.Customer, sk string) (str
 	}
 
 	claims := models.CustomerJWTClaims{
-		WorkspaceId: c.WorkspaceId,
-		ExternalId:  externalId,
-		Email:       email,
-		Phone:       phone,
-		IsVerified:  c.IsVerified,
+		WorkspaceId:     c.WorkspaceId,
+		ExternalId:      externalId,
+		Email:           email,
+		Phone:           phone,
+		IsEmailVerified: c.IsEmailVerified,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "auth.zyg.ai",
 			Subject:   c.CustomerId,

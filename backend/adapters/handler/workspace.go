@@ -452,7 +452,6 @@ func (h *WorkspaceHandler) handleCreateWorkspaceCustomer(
 		customer, isCreated, err = h.ws.CreateCustomerWithExternalId(
 			ctx, workspace.WorkspaceId,
 			externalId.String,
-			reqp.IsVerified,
 			reqp.Name,
 		)
 		if err != nil {
@@ -464,7 +463,7 @@ func (h *WorkspaceHandler) handleCreateWorkspaceCustomer(
 		customer, isCreated, err = h.ws.CreateCustomerWithEmail(
 			ctx, workspace.WorkspaceId,
 			email.String,
-			reqp.IsVerified,
+			reqp.IsEmailVerified,
 			reqp.Name,
 		)
 		if err != nil {
@@ -475,7 +474,6 @@ func (h *WorkspaceHandler) handleCreateWorkspaceCustomer(
 		customer, isCreated, err = h.ws.CreateCustomerWithPhone(
 			ctx, workspace.WorkspaceId,
 			phone.String,
-			reqp.IsVerified,
 			reqp.Name,
 		)
 		if err != nil {
@@ -490,16 +488,16 @@ func (h *WorkspaceHandler) handleCreateWorkspaceCustomer(
 	}
 
 	resp := CustomerResp{
-		CustomerId: customer.CustomerId,
-		Name:       customer.Name,
-		AvatarUrl:  customer.AvatarUrl(),
-		IsVerified: customer.IsVerified,
-		Role:       customer.Role,
-		ExternalId: customer.ExternalId,
-		Email:      customer.Email,
-		Phone:      customer.Phone,
-		CreatedAt:  customer.CreatedAt,
-		UpdatedAt:  customer.UpdatedAt,
+		CustomerId:      customer.CustomerId,
+		Name:            customer.Name,
+		AvatarUrl:       customer.AvatarUrl(),
+		IsEmailVerified: customer.IsEmailVerified,
+		Role:            customer.Role,
+		ExternalId:      customer.ExternalId,
+		Email:           customer.Email,
+		Phone:           customer.Phone,
+		CreatedAt:       customer.CreatedAt,
+		UpdatedAt:       customer.UpdatedAt,
 	}
 	if isCreated {
 		w.Header().Set("Content-Type", "application/json")
@@ -584,15 +582,15 @@ func (h *WorkspaceHandler) handleGetWorkspaceCustomers(
 	items := make([]CustomerResp, 0, len(customers))
 	for _, c := range customers {
 		items = append(items, CustomerResp{
-			CustomerId: c.CustomerId,
-			ExternalId: c.ExternalId,
-			Email:      c.Email,
-			Phone:      c.Phone,
-			Name:       c.Name,
-			IsVerified: c.IsVerified,
-			Role:       c.Role,
-			CreatedAt:  c.CreatedAt,
-			UpdatedAt:  c.UpdatedAt,
+			CustomerId:      c.CustomerId,
+			ExternalId:      c.ExternalId,
+			Email:           c.Email,
+			Phone:           c.Phone,
+			Name:            c.Name,
+			IsEmailVerified: c.IsEmailVerified,
+			Role:            c.Role,
+			CreatedAt:       c.CreatedAt,
+			UpdatedAt:       c.UpdatedAt,
 		})
 	}
 	w.Header().Set("Content-Type", "application/json")

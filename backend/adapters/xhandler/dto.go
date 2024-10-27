@@ -43,7 +43,6 @@ func (c CustomerResp) MarshalJSON() ([]byte, error) {
 		Phone           *string `json:"phone"`
 		Name            string  `json:"name"`
 		AvatarUrl       string  `json:"avatarUrl"`
-		IsVerified      bool    `json:"isVerified"`
 		Role            string  `json:"role"`
 		CreatedAt       string  `json:"createdAt"`
 		UpdatedAt       string  `json:"updatedAt"`
@@ -80,7 +79,7 @@ type WidgetConfig struct {
 
 type WidgetInitReq struct {
 	SessionId          *string         `json:"sessionId"`
-	IsVerified         *bool           `json:"isVerified"`
+	IsEmailVerified    *bool           `json:"IsEmailVerified"`
 	CustomerHash       *string         `json:"customerHash"`
 	CustomerExternalId *string         `json:"customerExternalId"`
 	CustomerEmail      *string         `json:"customerEmail"`

@@ -98,7 +98,7 @@ CREATE TABLE customer (
     phone VARCHAR(255) NULL, -- phone of the customer
     name VARCHAR(255)  NOT NULL, -- name of the customer
     role VARCHAR(255) NOT NULL, -- role of the customer
-    is_verified BOOLEAN NOT NULL DEFAULT FALSE, -- verification status of the customer
+    is_email_verified BOOLEAN NOT NULL DEFAULT FALSE, -- email verification status
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 

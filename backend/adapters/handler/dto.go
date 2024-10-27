@@ -40,16 +40,16 @@ func (w WorkspaceResp) MarshalJSON() ([]byte, error) {
 }
 
 type CustomerResp struct {
-	CustomerId string
-	ExternalId sql.NullString
-	Email      sql.NullString
-	Phone      sql.NullString
-	Name       string
-	AvatarUrl  string
-	IsVerified bool
-	Role       string
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	CustomerId      string
+	ExternalId      sql.NullString
+	Email           sql.NullString
+	Phone           sql.NullString
+	Name            string
+	AvatarUrl       string
+	IsEmailVerified bool
+	Role            string
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 func (c CustomerResp) MarshalJSON() ([]byte, error) {
@@ -65,25 +65,25 @@ func (c CustomerResp) MarshalJSON() ([]byte, error) {
 	}
 
 	aux := &struct {
-		CustomerId string  `json:"customerId"`
-		ExternalId *string `json:"externalId"`
-		Email      *string `json:"email"`
-		Phone      *string `json:"phone"`
-		Name       string  `json:"name"`
-		IsVerified bool    `json:"isVerified"`
-		Role       string  `json:"role"`
-		CreatedAt  string  `json:"createdAt"`
-		UpdatedAt  string  `json:"updatedAt"`
+		CustomerId      string  `json:"customerId"`
+		ExternalId      *string `json:"externalId"`
+		Email           *string `json:"email"`
+		Phone           *string `json:"phone"`
+		Name            string  `json:"name"`
+		IsEmailVerified bool    `json:"isEmailVerified"`
+		Role            string  `json:"role"`
+		CreatedAt       string  `json:"createdAt"`
+		UpdatedAt       string  `json:"updatedAt"`
 	}{
-		CustomerId: c.CustomerId,
-		ExternalId: externalId,
-		Email:      email,
-		Phone:      phone,
-		Name:       c.Name,
-		IsVerified: c.IsVerified,
-		Role:       c.Role,
-		CreatedAt:  c.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:  c.UpdatedAt.Format(time.RFC3339),
+		CustomerId:      c.CustomerId,
+		ExternalId:      externalId,
+		Email:           email,
+		Phone:           phone,
+		Name:            c.Name,
+		IsEmailVerified: c.IsEmailVerified,
+		Role:            c.Role,
+		CreatedAt:       c.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:       c.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
 }
@@ -128,11 +128,11 @@ type ThChatLabelReq struct {
 }
 
 type CreateCustomerReq struct {
-	Name       string  `json:"name"`
-	IsVerified bool    `json:"isVerified"` // defaults to false
-	ExternalId *string `json:"externalId"` // optional
-	Email      *string `json:"email"`      // optional
-	Phone      *string `json:"phone"`      // optional
+	Name            string  `json:"name"`
+	IsEmailVerified bool    `json:"isEmailVerified"` // defaults to false
+	ExternalId      *string `json:"externalId"`      // optional
+	Email           *string `json:"email"`           // optional
+	Phone           *string `json:"phone"`           // optional
 }
 
 type ThreadLabelCountResp struct {
@@ -480,10 +480,11 @@ type CustomerEventReq struct {
 	Event    string `json:"event"`
 	Body     string `json:"body"`
 	Customer struct {
-		CustomerId *string `json:"customerId"`
-		ExternalId *string `json:"externalId"`
-		Email      *string `json:"email"`
-		Name       *string `json:"name"`
+		CustomerId      *string `json:"customerId"`
+		ExternalId      *string `json:"externalId"`
+		Email           *string `json:"email"`
+		Name            *string `json:"name"`
+		IsEmailVerified *bool   `json:"isEmailVerified"`
 	} `json:"customer"`
 	Notify    bool   `json:"notify"`
 	Severity  string `json:"severity"`

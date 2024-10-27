@@ -127,8 +127,7 @@ func (h *CustomerHandler) handleCreateCustomerEvent(
 			return
 		}
 	} else if ci.ExternalId != nil {
-		customer, _, err := h.ws.CreateCustomerWithExternalId(
-			ctx, workspace.WorkspaceId, *ci.ExternalId, true, *ci.Name)
+		customer, _, err := h.ws.CreateCustomerWithExternalId(ctx, workspace.WorkspaceId, *ci.ExternalId, *ci.Name)
 		if err != nil {
 			slog.Error("failed to fetch or create customer by externalId", slog.Any("err", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -170,8 +169,13 @@ func (h *CustomerHandler) handleCreateCustomerEvent(
 			return
 		}
 	} else if ci.Email != nil {
+		// check email verification flag
+		var isEmailVerified bool
+		if ci.IsEmailVerified != nil {
+			isEmailVerified = *ci.IsEmailVerified
+		}
 		customer, _, err := h.ws.CreateCustomerWithEmail(
-			ctx, workspace.WorkspaceId, *ci.Email, true, *ci.Name)
+			ctx, workspace.WorkspaceId, *ci.Email, isEmailVerified, *ci.Name)
 		if err != nil {
 			slog.Error("failed to fetch or create customer by email", slog.Any("err", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

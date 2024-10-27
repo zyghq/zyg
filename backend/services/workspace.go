@@ -178,20 +178,20 @@ func (ws *WorkspaceService) ListLabels(
 }
 
 func (ws *WorkspaceService) CreateCustomerWithExternalId(
-	ctx context.Context, workspaceId string, externalId string, isVerified bool, name string,
+	ctx context.Context, workspaceId string, externalId string, name string,
 ) (models.Customer, bool, error) {
 	if name == "" {
 		name = models.Customer{}.AnonName()
 	}
 	now := time.Now()
 	customer := models.Customer{
-		WorkspaceId: workspaceId,
-		ExternalId:  models.NullString(&externalId),
-		IsVerified:  isVerified,
-		Name:        name,
-		Role:        models.Customer{}.Engaged(),
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		WorkspaceId:     workspaceId,
+		ExternalId:      models.NullString(&externalId),
+		IsEmailVerified: false, // mark email as unverified.
+		Name:            name,
+		Role:            models.Customer{}.Engaged(),
+		CreatedAt:       now,
+		UpdatedAt:       now,
 	}
 	customer, created, err := ws.customerRepo.UpsertCustomerByExtId(ctx, customer)
 	if err != nil {
@@ -201,20 +201,20 @@ func (ws *WorkspaceService) CreateCustomerWithExternalId(
 }
 
 func (ws *WorkspaceService) CreateCustomerWithEmail(
-	ctx context.Context, workspaceId string, email string, isVerified bool, name string,
+	ctx context.Context, workspaceId string, email string, isEmailVerified bool, name string,
 ) (models.Customer, bool, error) {
 	if name == "" {
 		name = models.Customer{}.AnonName()
 	}
 	now := time.Now()
 	customer := models.Customer{
-		WorkspaceId: workspaceId,
-		Email:       models.NullString(&email),
-		IsVerified:  isVerified,
-		Name:        name,
-		Role:        models.Customer{}.Engaged(),
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		WorkspaceId:     workspaceId,
+		Email:           models.NullString(&email),
+		IsEmailVerified: isEmailVerified,
+		Name:            name,
+		Role:            models.Customer{}.Engaged(),
+		CreatedAt:       now,
+		UpdatedAt:       now,
 	}
 	customer, created, err := ws.customerRepo.UpsertCustomerByEmail(ctx, customer)
 	if err != nil {
@@ -224,20 +224,20 @@ func (ws *WorkspaceService) CreateCustomerWithEmail(
 }
 
 func (ws *WorkspaceService) CreateCustomerWithPhone(
-	ctx context.Context, workspaceId string, phone string, isVerified bool, name string,
+	ctx context.Context, workspaceId string, phone string, name string,
 ) (models.Customer, bool, error) {
 	if name == "" {
 		name = models.Customer{}.AnonName()
 	}
 	now := time.Now()
 	customer := models.Customer{
-		WorkspaceId: workspaceId,
-		Phone:       models.NullString(&phone),
-		IsVerified:  isVerified,
-		Name:        name,
-		Role:        models.Customer{}.Engaged(),
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		WorkspaceId:     workspaceId,
+		Phone:           models.NullString(&phone),
+		IsEmailVerified: false, // mark email as unverified
+		Name:            name,
+		Role:            models.Customer{}.Engaged(),
+		CreatedAt:       now,
+		UpdatedAt:       now,
 	}
 	customer, created, err := ws.customerRepo.UpsertCustomerByPhone(ctx, customer)
 	if err != nil {
@@ -253,11 +253,11 @@ func (ws *WorkspaceService) CreateUnverifiedCustomer(
 	}
 	customerId := models.Customer{}.GenId()
 	customer := models.Customer{
-		CustomerId:  customerId,
-		WorkspaceId: workspaceId,
-		IsVerified:  false,
-		Name:        name,
-		Role:        models.Customer{}.Visitor(),
+		CustomerId:      customerId,
+		WorkspaceId:     workspaceId,
+		IsEmailVerified: false,
+		Name:            name,
+		Role:            models.Customer{}.Visitor(),
 	}
 	customer, _, err := ws.customerRepo.UpsertCustomerById(ctx, customer)
 	if err != nil {

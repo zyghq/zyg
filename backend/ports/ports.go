@@ -69,13 +69,12 @@ type WorkspaceServicer interface {
 	ListCustomers(
 		ctx context.Context, workspaceId string) ([]models.Customer, error)
 	CreateCustomerWithExternalId(
-		ctx context.Context, workspaceId string, externalId string, isVerified bool, name string,
-	) (models.Customer, bool, error)
+		ctx context.Context, workspaceId string, externalId string, name string) (models.Customer, bool, error)
 	CreateCustomerWithEmail(
-		ctx context.Context, workspaceId string, email string, isVerified bool, name string,
+		ctx context.Context, workspaceId string, email string, isEmailVerified bool, name string,
 	) (models.Customer, bool, error)
 	CreateCustomerWithPhone(
-		ctx context.Context, workspaceId string, phone string, isVerified bool, name string,
+		ctx context.Context, workspaceId string, phone string, name string,
 	) (models.Customer, bool, error)
 	CreateUnverifiedCustomer(
 		ctx context.Context, workspaceId string, name string) (models.Customer, error)

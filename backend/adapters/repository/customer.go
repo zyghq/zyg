@@ -20,7 +20,7 @@ func customerCols() builq.Columns {
 		"email",
 		"phone",
 		"name",
-		"is_verified",
+		"is_email_verified",
 		"role",
 		"created_at",
 		"updated_at",
@@ -76,7 +76,7 @@ func (c *CustomerDB) LookupWorkspaceCustomerById(
 
 	err = c.db.QueryRow(ctx, stmt, params...).Scan(
 		&customer.CustomerId, &customer.WorkspaceId, &customer.ExternalId,
-		&customer.Email, &customer.Phone, &customer.Name, &customer.IsVerified, &customer.Role,
+		&customer.Email, &customer.Phone, &customer.Name, &customer.IsEmailVerified, &customer.Role,
 		&customer.CreatedAt, &customer.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -119,7 +119,7 @@ func (c *CustomerDB) LookupWorkspaceCustomerByEmail(
 
 	err = c.db.QueryRow(ctx, stmt, params...).Scan(
 		&customer.CustomerId, &customer.WorkspaceId, &customer.ExternalId,
-		&customer.Email, &customer.Phone, &customer.Name, &customer.IsVerified, &customer.Role,
+		&customer.Email, &customer.Phone, &customer.Name, &customer.IsEmailVerified, &customer.Role,
 		&customer.CreatedAt, &customer.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -140,7 +140,7 @@ func (c *CustomerDB) UpsertCustomerByExtId(
 	insertCols := customerCols()
 	insertParams := []any{
 		cId, customer.WorkspaceId, customer.ExternalId, customer.Email, customer.Phone,
-		customer.Name, customer.IsVerified, customer.Role,
+		customer.Name, customer.IsEmailVerified, customer.Role,
 		customer.CreatedAt, customer.UpdatedAt,
 	}
 
@@ -181,7 +181,7 @@ func (c *CustomerDB) UpsertCustomerByExtId(
 		&customer.CustomerId, &customer.WorkspaceId,
 		&customer.ExternalId, &customer.Email,
 		&customer.Phone, &customer.Name,
-		&customer.IsVerified, &customer.Role,
+		&customer.IsEmailVerified, &customer.Role,
 		&customer.CreatedAt, &customer.UpdatedAt, &isCreated,
 	)
 
@@ -204,7 +204,7 @@ func (c *CustomerDB) UpsertCustomerByEmail(
 	insertCols := customerCols()
 	insertParams := []any{
 		cId, customer.WorkspaceId, customer.ExternalId, customer.Email, customer.Phone,
-		customer.Name, customer.IsVerified, customer.Role,
+		customer.Name, customer.IsEmailVerified, customer.Role,
 		customer.CreatedAt, customer.UpdatedAt,
 	}
 
@@ -245,7 +245,7 @@ func (c *CustomerDB) UpsertCustomerByEmail(
 		&customer.CustomerId, &customer.WorkspaceId,
 		&customer.ExternalId, &customer.Email,
 		&customer.Phone, &customer.Name,
-		&customer.IsVerified, &customer.Role,
+		&customer.IsEmailVerified, &customer.Role,
 		&customer.CreatedAt, &customer.UpdatedAt, &isCreated,
 	)
 
@@ -268,7 +268,7 @@ func (c *CustomerDB) UpsertCustomerByPhone(
 	insertCols := customerCols()
 	insertParams := []any{
 		cId, customer.WorkspaceId, customer.ExternalId, customer.Email, customer.Phone,
-		customer.Name, customer.IsVerified, customer.Role,
+		customer.Name, customer.IsEmailVerified, customer.Role,
 		customer.CreatedAt, customer.UpdatedAt,
 	}
 
@@ -309,7 +309,7 @@ func (c *CustomerDB) UpsertCustomerByPhone(
 		&customer.CustomerId, &customer.WorkspaceId,
 		&customer.ExternalId, &customer.Email,
 		&customer.Phone, &customer.Name,
-		&customer.IsVerified, &customer.Role,
+		&customer.IsEmailVerified, &customer.Role,
 		&customer.CreatedAt, &customer.UpdatedAt, &isCreated,
 	)
 
@@ -367,7 +367,7 @@ func (c *CustomerDB) FetchCustomersByWorkspaceId(
 	_, err = pgx.ForEachRow(rows, []any{
 		&customer.CustomerId, &customer.WorkspaceId,
 		&customer.ExternalId, &customer.Email, &customer.Phone,
-		&customer.Name, &customer.IsVerified, &customer.Role,
+		&customer.Name, &customer.IsEmailVerified, &customer.Role,
 		&customer.CreatedAt, &customer.UpdatedAt,
 	}, func() error {
 		customers = append(customers, customer)
@@ -410,7 +410,7 @@ func (c *CustomerDB) LookupSecretKeyByWidgetId(
 func (c *CustomerDB) UpsertCustomerById(
 	ctx context.Context, customer models.Customer) (models.Customer, bool, error) {
 	stmt := `WITH ins AS (
-		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name, role, is_verified)
+		INSERT INTO customer (customer_id, workspace_id, external_id, email, phone, name, role, is_email_verified)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT (customer_id) DO UPDATE SET
 			external_id = $3,
@@ -418,29 +418,29 @@ func (c *CustomerDB) UpsertCustomerById(
 			phone = $5,
 			name = $6,
 			role = $7,
-			is_verified = $8,
+			is_email_verified = $8,
 			updated_at = now()
 		RETURNING customer_id, workspace_id,
 		external_id, email, phone, name, role,
-		is_verified,
+		is_email_verified,
 		created_at, updated_at,
 		TRUE AS is_created
 	)
 	SELECT * FROM ins
 	UNION ALL
 	SELECT customer_id, workspace_id, external_id, email, phone, name, role,
-	is_verified, created_at, updated_at, FALSE AS is_created FROM customer
+	is_email_verified, created_at, updated_at, FALSE AS is_created FROM customer
 	WHERE customer_id = $1 AND NOT EXISTS (SELECT 1 FROM ins)`
 
 	var isCreated bool
 	err := c.db.QueryRow(
 		ctx, stmt, customer.CustomerId, customer.WorkspaceId, customer.ExternalId, customer.Email, customer.Phone,
-		customer.Name, customer.Role, customer.IsVerified,
+		customer.Name, customer.Role, customer.IsEmailVerified,
 	).Scan(
 		&customer.CustomerId, &customer.WorkspaceId,
 		&customer.ExternalId, &customer.Email,
 		&customer.Phone, &customer.Name,
-		&customer.Role, &customer.IsVerified,
+		&customer.Role, &customer.IsEmailVerified,
 		&customer.CreatedAt, &customer.UpdatedAt, &isCreated,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -464,7 +464,7 @@ func (c *CustomerDB) ModifyCustomerById(
 		customer.Email,
 		customer.Phone,
 		customer.Name,
-		customer.IsVerified,
+		customer.IsEmailVerified,
 		customer.Role,
 		customer.CustomerId,
 	}
@@ -474,7 +474,7 @@ func (c *CustomerDB) ModifyCustomerById(
 	q("email = %$,", customer.Email)
 	q("phone = %$,", customer.Phone)
 	q("name = %$,", customer.Name)
-	q("is_verified = %$,", customer.IsVerified)
+	q("is_email_verified = %$,", customer.IsEmailVerified)
 	q("role = %$,", customer.Role)
 	q("updated_at = NOW()")
 	q("WHERE customer_id = %$", customer.CustomerId)
@@ -495,7 +495,7 @@ func (c *CustomerDB) ModifyCustomerById(
 		&customer.CustomerId, &customer.WorkspaceId,
 		&customer.ExternalId, &customer.Email,
 		&customer.Phone, &customer.Name,
-		&customer.IsVerified, &customer.Role,
+		&customer.IsEmailVerified, &customer.Role,
 		&customer.CreatedAt, &customer.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {

@@ -112,9 +112,9 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 	customerEmail := models.NullString(reqp.CustomerEmail)
 	customerPhone := models.NullString(reqp.CustomerPhone)
 
-	var isVerified bool
-	if reqp.IsVerified != nil {
-		isVerified = *reqp.IsVerified
+	var isEmailVerified bool
+	if reqp.IsEmailVerified != nil {
+		isEmailVerified = *reqp.IsEmailVerified
 	}
 
 	sessionId := models.NullString(reqp.SessionId)
@@ -153,7 +153,6 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 				customer, isCreated, err = h.ws.CreateCustomerWithExternalId(
 					ctx, widget.WorkspaceId,
 					customerExternalId.String,
-					isVerified,
 					customerName,
 				)
 				if err != nil {
@@ -170,7 +169,7 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 				customer, isCreated, err = h.ws.CreateCustomerWithEmail(
 					ctx, widget.WorkspaceId,
 					customerEmail.String,
-					isVerified,
+					isEmailVerified,
 					customerName,
 				)
 				if err != nil {
@@ -187,7 +186,6 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 				customer, isCreated, err = h.ws.CreateCustomerWithPhone(
 					ctx, widget.WorkspaceId,
 					customerPhone.String,
-					isVerified,
 					customerName,
 				)
 				if err != nil {
@@ -231,7 +229,7 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Shall use the latest claimed email.
-	if !customer.IsVerified && !skipIdentityCheck {
+	if !customer.IsEmailVerified && !skipIdentityCheck {
 		claimedEmail, err := h.cs.GetRecentValidClaimedMail(ctx, customer.WorkspaceId, customer.CustomerId)
 		// customer haven't provided claim able identity yet or is cleared.
 		if errors.Is(err, services.ErrClaimedMailNotFound) {
@@ -287,7 +285,7 @@ func (h *CustomerHandler) handleInitWidget(w http.ResponseWriter, r *http.Reques
 func (h *CustomerHandler) handleGetCustomer(
 	w http.ResponseWriter, r *http.Request, customer *models.Customer) {
 	var emailOrClaimed sql.NullString
-	var isEmailVerified, IsEmailPrimary bool
+	var IsEmailPrimary bool
 
 	ctx := r.Context()
 
@@ -309,9 +307,8 @@ func (h *CustomerHandler) handleGetCustomer(
 		return
 	}
 
-	if customer.IsVerified {
+	if customer.IsEmailVerified {
 		emailOrClaimed = customer.Email
-		isEmailVerified = true
 		IsEmailPrimary = true
 	} else {
 		claimed, err := h.cs.GetRecentValidClaimedMail(ctx, customer.WorkspaceId, customer.CustomerId)
@@ -326,7 +323,7 @@ func (h *CustomerHandler) handleGetCustomer(
 		Name:            customer.Name,
 		AvatarUrl:       customer.AvatarUrl(),
 		Email:           emailOrClaimed,
-		IsEmailVerified: isEmailVerified,
+		IsEmailVerified: customer.IsEmailVerified,
 		IsEmailPrimary:  IsEmailPrimary,
 		Phone:           customer.Phone,
 		ExternalId:      customer.ExternalId,
@@ -360,7 +357,7 @@ func (h *CustomerHandler) handleCreateThreadChat(
 	ctx := r.Context()
 
 	// Add claimed email for verification, only if the customer's email is not verified yet.
-	if !customer.IsVerified && reqp.Email != nil {
+	if !customer.IsEmailVerified && reqp.Email != nil {
 		redirectTo := zyg.LandingPageUrl() + "/?utm_source=zyg&utm_medium=kyc"
 		if reqp.RedirectHost != nil {
 			redirectTo = *reqp.RedirectHost + "/?utm_source=zyg&utm_medium=kyc"
@@ -654,7 +651,7 @@ func (h *CustomerHandler) handleMailRedirectKyc(w http.ResponseWriter, r *http.R
 		// linking them together.
 		if errors.Is(err, services.ErrCustomerNotFound) {
 			claimedCustomer.Email = models.NullString(&claim.Email)
-			claimedCustomer.IsVerified = true
+			claimedCustomer.IsEmailVerified = true
 			claimedCustomer.Role = models.Customer{}.Engaged()
 			claimedCustomer, err = h.cs.UpdateCustomer(ctx, claimedCustomer)
 			if err != nil {
