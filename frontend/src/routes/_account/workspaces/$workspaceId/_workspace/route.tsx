@@ -40,6 +40,7 @@ function WorkspaceLayout() {
         email={email}
         memberId={memberId}
         metrics={metrics}
+        sort={sort}
         workspaceId={workspaceId}
         workspaceName={workspaceName}
       />

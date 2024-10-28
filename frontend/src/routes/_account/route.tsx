@@ -65,7 +65,7 @@ function AuthLayout() {
             }
           : null,
         error: data ? null : new Error("failed to fetch account details"),
-        hasData: data ? true : false,
+        hasData: !!data,
       }}
     >
       <Outlet />

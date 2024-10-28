@@ -6,6 +6,7 @@ import { ThreadChatResponse } from "@/db/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { SendHorizonalIcon } from "lucide-react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -94,7 +95,7 @@ export function MessageForm({
 
   async function onSubmit(values: { message: string }) {
     const { message } = values;
-    mutation.mutateAsync({ message });
+    await mutation.mutateAsync({ message });
   }
 
   return (

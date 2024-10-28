@@ -86,12 +86,11 @@ func NewServer(
 	mux.Handle("PATCH /workspaces/{workspaceId}/threads/chat/{threadId}/{$}",
 		NewEnsureMemberAuth(th.handleUpdateThreadChat, authService))
 
-	// TODO: #67 rename route to **/chat/parts/** instead of **/with/**
-	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/me/{$}",
+	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/parts/me/{$}",
 		NewEnsureMemberAuth(th.handleGetMyThreadChats, authService))
-	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/unassigned/{$}",
+	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/parts/unassigned/{$}",
 		NewEnsureMemberAuth(th.handleGetUnassignedThChats, authService))
-	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/with/labels/{labelId}/{$}",
+	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/parts/labels/{labelId}/{$}",
 		NewEnsureMemberAuth(th.handleGetLabelledThreadChats, authService))
 
 	mux.Handle("POST /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",

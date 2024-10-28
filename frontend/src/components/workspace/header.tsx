@@ -3,6 +3,7 @@ import { ThemeToggler } from "@/components/theme-toggler";
 import { buttonVariants } from "@/components/ui/button";
 import SideNavMobileLinks from "@/components/workspace/sidenav-mobile-links";
 import { WorkspaceMetrics } from "@/db/models";
+import { SortBy } from "@/db/store";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeftRightIcon } from "lucide-react";
@@ -11,12 +12,14 @@ export function Header({
   email,
   memberId,
   metrics,
+  sort,
   workspaceId,
   workspaceName,
 }: {
   email: string;
   memberId: string;
   metrics: WorkspaceMetrics;
+  sort: SortBy,
   workspaceId: string;
   workspaceName: string;
 }) {
@@ -33,6 +36,7 @@ export function Header({
           email={email}
           memberId={memberId}
           metrics={metrics}
+          sort={sort}
           workspaceId={workspaceId}
           workspaceName={workspaceName}
         />

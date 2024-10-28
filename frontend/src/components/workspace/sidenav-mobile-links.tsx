@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/sheet";
 import SideNavLinks from "@/components/workspace/sidenav-links";
 import { WorkspaceMetrics } from "@/db/models";
+import { SortBy } from "@/db/store.ts";
 import { HamburgerMenuIcon } from "@radix-ui/react-icons";
 import React from "react";
 
@@ -16,12 +17,14 @@ export default function SideNavMobileLinks({
   email,
   memberId,
   metrics,
+  sort,
   workspaceId,
   workspaceName,
 }: {
   email: string;
   memberId: string;
   metrics: WorkspaceMetrics;
+  sort: SortBy
   workspaceId: string;
   workspaceName: string;
 }) {
@@ -52,6 +55,7 @@ export default function SideNavMobileLinks({
           memberId={memberId}
           metrics={metrics}
           openClose={setOpen}
+          sort={sort}
           workspaceId={workspaceId}
           workspaceName={workspaceName}
         />
