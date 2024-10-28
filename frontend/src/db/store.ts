@@ -204,7 +204,7 @@ function filterByStages(threads: Thread[], stages: StagesFiltersType) {
         uniqueStages.some((stage) => t.stage === stageMap[stage]),
       );
     }
-    if (typeof stages === "string" && stageMap[stages]) {
+    if (stageMap[stages]) {
       return threads.filter((t) => t.stage === stageMap[stages]);
     }
   }
@@ -226,7 +226,7 @@ function filterByPriorities(
     return filtered;
   }
 
-  if (priorities && typeof priorities === "string") {
+  if (priorities) {
     return threads.filter((t) => t.priority === priorities);
   }
   // no change
@@ -242,7 +242,7 @@ function filterByAssignees(threads: Thread[], assignees: AssigneesFiltersType) {
     }
     return filtered;
   }
-  if (assignees && typeof assignees === "string") {
+  if (assignees) {
     return threads.filter((t) => t.assigneeId === assignees);
   }
   // no change
@@ -424,7 +424,7 @@ export const buildStore = (
         );
 
         // Map assignee IDs to members
-        const assignees = assigneeIds
+        return assigneeIds
           .map((a) => {
             const member = state.members?.[a];
             if (member) {
@@ -435,8 +435,6 @@ export const buildStore = (
             }
           })
           .filter((m): m is Assignee => m !== undefined);
-
-        return assignees;
       },
       viewCurrentThreadQueue: (state: WorkspaceStoreState): null | Thread[] => {
         if (state.threadAppliedFilters) {
@@ -505,8 +503,7 @@ export const buildStore = (
         return member ? member.name || "" : "";
       },
       viewMembers: (state: WorkspaceStoreState) => {
-        const members = state.members ? Object.values(state.members) : [];
-        return members;
+        return state.members ? Object.values(state.members) : [];
       },
       viewMyThreads: (
         state: WorkspaceStoreState,
@@ -527,8 +524,7 @@ export const buildStore = (
           stagesFiltered,
           priorities,
         );
-        const sortedThreads = sortThreads(prioritiesFiltered, sortBy);
-        return sortedThreads;
+        return sortThreads(prioritiesFiltered, sortBy);
       },
       viewPats: (state: WorkspaceStoreState) => {
         const pats = state.pats ? Object.values(state.pats) : [];
@@ -552,8 +548,7 @@ export const buildStore = (
           stagesFiltered,
           priorities,
         );
-        const sortedThreads = sortThreads(prioritiesFiltered, sortBy);
-        return sortedThreads;
+        return sortThreads(prioritiesFiltered, sortBy);
       },
       viewThreadSortKey: (state: WorkspaceStoreState) => {
         if (state.threadSortKey) {
@@ -589,8 +584,7 @@ export const buildStore = (
           stagesFiltered,
           priorities,
         );
-        const sortedThreads = sortThreads(prioritiesFiltered, sortBy);
-        return sortedThreads;
+        return sortThreads(prioritiesFiltered, sortBy);
       },
     })),
   );

@@ -302,7 +302,7 @@ export const PriorityIcons = {
 };
 
 // TODO: add other icons for `spam` or `ignored`
-export function stageIcon(stage: string, props: IconProps): JSX.Element {
+export function stageIcon(stage: string, props: IconProps) {
   switch (stage) {
     case "hold":
       return <PauseIcon {...props} />;

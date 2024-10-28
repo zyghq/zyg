@@ -24,8 +24,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { threadStatusVerboseName, todoThreadStages } from "@/db/helpers";
-import { Assignee } from "@/db/store";
 import {
+  Assignee,
   AssigneesFiltersType,
   PrioritiesFiltersType,
   StagesFiltersType,
@@ -48,11 +48,12 @@ function StagesSubMenu({
   >("");
 
   React.useEffect(() => {
+    if (!stages) return;
     // check if multiple stages are selected
-    if (stages && Array.isArray(stages)) {
+    if (Array.isArray(stages)) {
       setSelectedStages([...stages]);
       // check if only 1 stage(s) is selected
-    } else if (stages && typeof stages === "string") {
+    } else if (stages) {
       setSelectedStages([stages]);
       // if no stages are selected
     } else {
@@ -67,7 +68,7 @@ function StagesSubMenu({
         {selectedStages && selectedStages.length > 0 && (
           <React.Fragment>
             <Separator className="mx-1 h-3" orientation="vertical" />
-            <Badge className="px-1 text-xs font-normal p-0" variant="secondary">
+            <Badge className="p-0 px-1 text-xs font-normal" variant="secondary">
               {selectedStages.length} selected
             </Badge>
           </React.Fragment>
@@ -112,11 +113,12 @@ function PrioritiesSubMenu({
   >("");
 
   React.useEffect(() => {
+    if (!priorities) return;
     // check if multiple priorities are selected
-    if (priorities && Array.isArray(priorities)) {
+    if (Array.isArray(priorities)) {
       setSelectedPriorities([...priorities]);
       // check if only 1 priority(s) is selected
-    } else if (priorities && typeof priorities === "string") {
+    } else if (priorities) {
       setSelectedPriorities([priorities]);
       // if no priorities are selected
     } else {
@@ -131,7 +133,7 @@ function PrioritiesSubMenu({
         {selectedPriorities && selectedPriorities.length > 0 && (
           <React.Fragment>
             <Separator className="mx-1 h-3" orientation="vertical" />
-            <Badge className="px-1 text-xs font-normal p-0" variant="secondary">
+            <Badge className="p-0 px-1 text-xs font-normal" variant="secondary">
               {selectedPriorities.length} selected
             </Badge>
           </React.Fragment>
@@ -217,11 +219,12 @@ function AssigneeSubMenu({
   >("");
 
   React.useEffect(() => {
+    if (!assignees) return;
     // check if multiple members are selected
-    if (assignees && Array.isArray(assignees)) {
+    if (Array.isArray(assignees)) {
       setSelectedMembers([...assignees]);
       // check if only 1 member(s) is selected
-    } else if (assignees && typeof assignees === "string") {
+    } else if (assignees) {
       setSelectedMembers([assignees]);
       // if no members are selected
     } else {
@@ -242,10 +245,10 @@ function AssigneeSubMenu({
   }
 
   const isChecked = (member: string) => {
-    const t =
+    return (
       member === selectedMembers ||
-      (Array.isArray(selectedMembers) && selectedMembers.includes(member));
-    return t;
+      (Array.isArray(selectedMembers) && selectedMembers.includes(member))
+    );
   };
 
   return (
@@ -255,7 +258,7 @@ function AssigneeSubMenu({
         {selectedMembers && selectedMembers.length > 0 && (
           <React.Fragment>
             <Separator className="mx-1 h-3" orientation="vertical" />
-            <Badge className="px-1 text-xs font-normal p-0" variant="secondary">
+            <Badge className="p-0 px-1 text-xs font-normal" variant="secondary">
               {selectedMembers.length} selected
             </Badge>
           </React.Fragment>
@@ -286,7 +289,7 @@ function AssigneeSubMenu({
                     <CheckIcon
                       className={cn(
                         "ml-auto h-4 w-4",
-                        isChecked(m.assigneeId) ? "opacity-100" : "opacity-0"
+                        isChecked(m.assigneeId) ? "opacity-100" : "opacity-0",
                       )}
                     />
                   </CommandItem>
@@ -335,7 +338,7 @@ export function Filters({
           Filters
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48 mx-1">
+      <DropdownMenuContent align="end" className="mx-1 w-48">
         <DropdownMenuGroup>
           {!disableStagesFilter && (
             <StagesSubMenu

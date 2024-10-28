@@ -46,7 +46,7 @@ function AuthLayout() {
       return data;
     },
     queryKey: ["account", token],
-    staleTime: 1000 * 60 * 1,
+    staleTime: 1000 * 60,
   });
 
   const { data } = response;

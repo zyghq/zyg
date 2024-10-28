@@ -86,7 +86,7 @@ export function MessageForm({
   const { isSubmitting } = formState;
 
   const onEnterPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && e.shiftKey === false) {
+    if (e.key === "Enter" && !e.shiftKey) {
       // Capitalize "Enter" correctly
       e.preventDefault();
       (e.target as HTMLTextAreaElement).form?.requestSubmit(); // Cast e.target to HTMLTextAreaElement

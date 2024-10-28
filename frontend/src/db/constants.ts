@@ -1,6 +1,6 @@
 // Top level thread status.
 export const STATUS_TODO = "todo";
-export const STATUS_DONE = "done";
+// export const STATUS_DONE = "done";
 
 // in TODO workflow stages.
 export const NEEDS_NEXT_RESPONSE = "needs_next_response";

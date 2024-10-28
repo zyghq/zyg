@@ -19,7 +19,7 @@ export function threadStatusVerboseName(key: string): string {
   }
 }
 
-export function ThreadSortKeyHumanized(key: string): string {
+export function ThreadSortKeyHumanized(key: SortBy): string {
   switch (key) {
     case "created-asc": // when the thread is created
       return "Created, oldest first";
@@ -107,9 +107,7 @@ export function setInLocalStorage(key: string, value: any) {
   }
 }
 
-export function isSortKeyValid(sortKey: SortBy | string) {
-  return sortKeys.includes(sortKey as SortBy);
-}
+
 
 export function getInitials(name: string): string {
   // Split the name by spaces
