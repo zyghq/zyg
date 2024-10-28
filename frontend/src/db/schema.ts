@@ -71,7 +71,7 @@ export const customerResponseSchema = z.object({
   customerId: z.string(),
   email: z.string().nullable().default(null),
   externalId: z.string().nullable().default(null),
-  isVerified: z.boolean(),
+  isEmailVerified: z.boolean(),
   name: z.string(),
   phone: z.string().nullable().default(null),
   role: z.string(),
