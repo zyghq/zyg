@@ -2,9 +2,16 @@ package models
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/rs/xid"
+)
+
+// Represents Thread status.
+const (
+	todo = "todo"
+	done = "done"
 )
 
 // Represents Thread stages.
@@ -17,6 +24,12 @@ const (
 	resolved           = "resolved"
 )
 
+// Represents Thread communication sources.
+const (
+	inAppChat = "in_app_chat"
+	email     = "email"
+)
+
 // ThreadStatus represents the high level status of the Thread.
 type ThreadStatus struct {
 	Status          string
@@ -25,11 +38,9 @@ type ThreadStatus struct {
 	Stage           string
 }
 
-// NewStatus creates the new ThreadStatus with initial defaults.
-func (ts *ThreadStatus) NewStatus(member MemberActor) ThreadStatus {
-	t := ThreadStatus{}
-	t.NeedsFirstResponse(member)
-	return t
+// InitialStatus creates the new ThreadStatus with initial defaults.
+func (ts *ThreadStatus) InitialStatus(member MemberActor) {
+	ts.NeedsFirstResponse(member)
 }
 
 // Spam when the conversations seem like spam or suspicious.
@@ -50,7 +61,7 @@ func (ts *ThreadStatus) NeedsFirstResponse(member MemberActor) {
 	ts.StatusChangedBy = member
 }
 
-// WaitingOnCustomer when Member has responded and is waiting for a
+// WaitingOnCustomer is when Member has responded and is waiting for a
 // response from the Customer.
 func (ts *ThreadStatus) WaitingOnCustomer(member MemberActor) {
 	ts.Stage = waitingOnCustomer // update the stage
@@ -59,7 +70,7 @@ func (ts *ThreadStatus) WaitingOnCustomer(member MemberActor) {
 	ts.StatusChangedBy = member
 }
 
-// Hold when resolution is waiting on some dependency.
+// Hold is when resolution is waiting on some dependency.
 // Dependencies may include review, external dependencies, or finding the cause.
 func (ts *ThreadStatus) Hold(member MemberActor) {
 	ts.Stage = hold       // update the stage
@@ -68,7 +79,7 @@ func (ts *ThreadStatus) Hold(member MemberActor) {
 	ts.StatusChangedBy = member
 }
 
-// NeedsNextResponse when the Customer has responded, a Member is yet to respond
+// NeedsNextResponse is when the Customer has responded and a Member is yet to respond
 // or take next steps.
 // There might be some back-and-forth with Customer before moving to next steps.
 func (ts *ThreadStatus) NeedsNextResponse(member MemberActor) {
@@ -89,16 +100,11 @@ func (ts *ThreadStatus) Resolved(member MemberActor) {
 }
 
 func (ts *ThreadStatus) Todo() string {
-	return "todo"
+	return todo
 }
 
 func (ts *ThreadStatus) Done() string {
-	return "done"
-}
-
-// Deprecated: DefaultStatus returns default status that can be set to the Thread.
-func (ts *ThreadStatus) DefaultStatus() string {
-	return ts.Todo()
+	return done
 }
 
 func (ts *ThreadStatus) MarkDone(member MemberActor) {
@@ -155,21 +161,23 @@ func (p ThreadPriority) IsValid(s string) bool {
 }
 
 // ThreadChannel represents the source channel of the Thread.
-// This also represents the communication channel for the Customer.
 type ThreadChannel struct{}
 
-func (c ThreadChannel) Chat() string {
-	return "chat"
+func (c ThreadChannel) InAppChat() string {
+	return inAppChat
+}
+
+func (c ThreadChannel) Email() string {
+	return email
 }
 
 // InboundMessage tracks the inbound message received from the Customer.
-// Holds required attributes to track the inbound message.
 // Common across channels.
 type InboundMessage struct {
 	MessageId    string
-	CustomerId   string
-	CustomerName string
-	PreviewText  string
+	CustomerId   string // Deprecated
+	CustomerName string // Deprecated
+	PreviewText  string // Deprecated
 	FirstSeqId   string
 	LastSeqId    string
 	CreatedAt    time.Time
@@ -181,13 +189,12 @@ func (im InboundMessage) GenId() string {
 }
 
 // OutboundMessage tracks the outbound message sent by the Member.
-// Holds required attributes to track an outbound message.
 // Common across channels.
 type OutboundMessage struct {
 	MessageId   string
-	MemberId    string
-	MemberName  string
-	PreviewText string
+	MemberId    string // Deprecated
+	MemberName  string // Deprecated
+	PreviewText string // Deprecated
 	FirstSeqId  string
 	LastSeqId   string
 	CreatedAt   time.Time
@@ -200,8 +207,8 @@ func (em OutboundMessage) GenId() string {
 
 // A Thread represents conversation with a Customer on a specific issue or topic.
 type Thread struct {
-	WorkspaceId     string           // WorkspaceId is the ID of the Workspace this Thread belongs to.
 	ThreadId        string           // ThreadId represents the unique ID of the Thread.
+	WorkspaceId     string           // WorkspaceId is the ID of the Workspace this Thread belongs to.
 	Customer        CustomerActor    // The attached Customer.
 	AssignedMember  *AssignedMember  // The Member assigned to the Thread.
 	Title           string           // The Title of the Thread, which allows to quickly identify what it is about.
@@ -209,7 +216,7 @@ type Thread struct {
 	ThreadStatus    ThreadStatus     // The status of the Thread.
 	Replied         bool             // If the Member has anytime replied to the Thread.
 	Priority        string           // The Priority of the Thread as per ThreadPriority.
-	Channel         string           // The channel this Thread belongs to as per ThreadChannel.
+	Channel         string           // The source channel this Thread belongs to as per ThreadChannel.
 	InboundMessage  *InboundMessage  // InboundMessage tracks the inbound message from Customer
 	OutboundMessage *OutboundMessage // OutboundMessage tracks the outbound message from Member
 	CreatedBy       MemberActor      // The Member who created this Thread.
@@ -218,25 +225,87 @@ type Thread struct {
 	UpdatedAt       time.Time        // When the Thread was last updated.
 }
 
+type ThreadOption func(*Thread)
+
 func (th *Thread) GenId() string {
 	return "th" + xid.New().String()
 }
 
+func NewThread(
+	workspaceId string, customer CustomerActor, createdBy MemberActor, channel string,
+	opts ...ThreadOption,
+) *Thread {
+	threadId := (&Thread{}).GenId()
+	now := time.Now().UTC()
+
+	status := ThreadStatus{}
+	status.InitialStatus(createdBy)
+
+	thread := &Thread{
+		ThreadId:     threadId,
+		WorkspaceId:  workspaceId,
+		Customer:     customer,
+		Channel:      channel,
+		ThreadStatus: status,
+		Replied:      false,
+		Priority:     ThreadPriority{}.DefaultPriority(),
+		CreatedAt:    now,
+		UpdatedAt:    now,
+		CreatedBy:    createdBy,
+		UpdatedBy:    createdBy,
+	}
+	thread.SetDefaultTitle()
+
+	for _, opt := range opts {
+		opt(thread)
+	}
+	return thread
+}
+
+func SetThreadTitle(title string) ThreadOption {
+	maxLength := 255
+	if len(title) > maxLength {
+		title = title[:maxLength]
+	}
+	return func(thread *Thread) {
+		thread.Title = title
+	}
+}
+
+func SetThreadDescription(description string) ThreadOption {
+	maxLength := 512
+	if len(description) > maxLength {
+		description = description[:maxLength]
+	}
+	return func(thread *Thread) {
+		thread.Description = description
+	}
+}
+
 // CreateNewThread creates a new thread with the provided attributes and defaults.
+// Deprecated: use functional ops?
 func (th *Thread) CreateNewThread(
 	workspaceId string, customer CustomerActor,
-	createdBy MemberActor, updatedBy MemberActor, channel string) Thread {
+	createdBy MemberActor, updatedBy MemberActor, channel string,
+	createdAt time.Time, updatedAt time.Time,
+) Thread {
 	thread := Thread{}
 	status := ThreadStatus{}
+	status.InitialStatus(createdBy)
+
 	thread.WorkspaceId = workspaceId
 	thread.Customer = customer
 	thread.CreatedBy = createdBy
 	thread.UpdatedBy = updatedBy
 	thread.Channel = channel
+
+	thread.CreatedAt = createdAt
+	thread.UpdatedAt = updatedAt
+
 	// Defaults
 	thread.ThreadId = thread.GenId()
 	thread.SetDefaultTitle()
-	thread.ThreadStatus = status.NewStatus(createdBy)
+	thread.ThreadStatus = status
 	thread.Replied = false
 	thread.Priority = ThreadPriority{}.DefaultPriority()
 	return thread
@@ -257,6 +326,7 @@ func (th *Thread) ClearAssignedMember() {
 
 // AddInboundMessage adds the inbound message info to the Thread.
 // Inbound messages are messages from the Customer.
+// Deprecated: update and remove redundant fields and references.
 func (th *Thread) AddInboundMessage(messageId string, customer CustomerActor,
 	previewText string,
 	firstSeqId string, lastSeqId string,
@@ -356,10 +426,8 @@ func (th *Thread) SetStatusStage(stage string, member MemberActor) {
 	}
 }
 
-// Chat
-// TODO:
-//   - use CustomerActor instead of passing customerId and customerName.
-//   - use MemberActor instead of passing memberId and memberName.
+// Chat represents a chat message in a thread.
+// Deprecated: This struct is deprecated migrate to Message instead.
 type Chat struct {
 	ThreadId     string
 	ChatId       string
@@ -379,12 +447,15 @@ func (c Chat) GenId() string {
 }
 
 func (c Chat) CreateNewCustomerChat(
-	threadId string, customerId string, isHead bool, message string) Chat {
+	threadId string, customerId string, isHead bool, message string,
+	createdAt time.Time, updatedAt time.Time) Chat {
 	chat := Chat{
 		ThreadId:   threadId,
 		CustomerId: NullString(&customerId),
 		IsHead:     isHead,
 		Body:       message,
+		CreatedAt:  createdAt,
+		UpdatedAt:  updatedAt,
 	}
 	// Defaults
 	chat.ChatId = chat.GenId()
@@ -396,4 +467,196 @@ func (c Chat) PreviewText() string {
 		return c.Body[:255]
 	}
 	return c.Body
+}
+
+// Message represents multi-channel Thread message
+type Message struct {
+	MessageId string
+	ThreadId  string
+	TextBody  string
+	Body      string
+	Customer  *CustomerActor
+	Member    *MemberActor
+	Channel   string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+type MessageOption func(message *Message)
+
+func (m *Message) GenId() string {
+	return "msg" + xid.New().String()
+}
+
+func NewMessage(threadId string, channel string, opts ...MessageOption) *Message {
+	messageId := (&Message{}).GenId()
+	now := time.Now().UTC()
+	message := &Message{
+		MessageId: messageId,
+		ThreadId:  threadId,
+		Channel:   channel,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	for _, opt := range opts {
+		opt(message)
+	}
+	return message
+}
+
+func SetMessageCustomer(customer CustomerActor) MessageOption {
+	return func(message *Message) {
+		message.Customer = &customer
+		message.Member = nil // it's either the Customer or the Member
+	}
+}
+
+func SetMessageMember(member MemberActor) MessageOption {
+	return func(message *Message) {
+		message.Member = &member
+		message.Customer = nil // it's either the Member or the Customer
+	}
+}
+
+func SetMessageTextBody(textBody string) MessageOption {
+	return func(message *Message) {
+		message.TextBody = textBody
+	}
+}
+
+func SetMessageBody(body string) MessageOption {
+	return func(message *Message) {
+		message.Body = body
+	}
+}
+
+// PostmarkInboundMessage represents 1:1 mapping with Message
+// Attributes are specific to Postmark.
+type PostmarkInboundMessage struct {
+	// raw http request payload.
+	Payload map[string]interface{}
+	// MessageID generated by Postmark
+	PMMessageId string
+	// from mail protocol mail message-ID from headers
+	MailMessageId string
+	// from mail protocol In Reply To mail message-ID
+	ReplyMailMessageId *string
+	// Datetime from Postmark/Email `Date` or system.
+	CreatedAt time.Time
+	UpdatedAt time.Time
+
+	subject  string
+	textBody string
+	htmlBody string
+
+	fromEmail string
+	fromName  string
+}
+
+func (p *PostmarkInboundMessage) GenId() string {
+	return "msg" + xid.New().String()
+}
+
+// FromPayload initializes a PostmarkInboundMessage instance from the given payload map.
+func (p *PostmarkInboundMessage) FromPayload(
+	payload map[string]interface{}) (*PostmarkInboundMessage, error) {
+	if payload == nil {
+		return nil, fmt.Errorf("payload cannot be nil")
+	}
+
+	// current time space
+	now := time.Now().UTC()
+
+	// store the raw payload as is.
+	p.Payload = payload
+	p.CreatedAt = now
+	p.UpdatedAt = now // initially
+
+	// Message ID from Postmark, not to be confused with Message-ID in Headers
+	// yet could be mixed or formatted version of the same but treat it as different.
+	if msgID, ok := payload["MessageID"].(string); ok {
+		p.PMMessageId = msgID
+	} else {
+		return nil, fmt.Errorf("postmark MessageID not found in payload refer postmark docs")
+	}
+
+	// Extract mail message IDs from headers array
+	if headers, ok := payload["Headers"].([]interface{}); ok {
+		for _, header := range headers {
+			if headerMap, ok := header.(map[string]interface{}); ok {
+				name, hasName := headerMap["Name"].(string)
+				value, hasValue := headerMap["Value"].(string)
+
+				if !hasName || !hasValue {
+					continue
+				}
+
+				switch name {
+				case "Message-ID":
+					p.MailMessageId = value
+				case "In-Reply-To":
+					p.ReplyMailMessageId = &value
+				}
+			}
+		}
+	}
+
+	// If mail Message ID is empty use the system message ID as mail message ID prefixed by `zyg:`
+	if p.MailMessageId == "" {
+		p.MailMessageId = fmt.Sprintf("zyg:%s", p.PMMessageId)
+	}
+
+	if subject, ok := payload["Subject"].(string); ok {
+		p.subject = subject
+	}
+
+	if textBody, ok := payload["TextBody"].(string); ok {
+		p.textBody = textBody
+	}
+
+	if htmlBody, ok := payload["HtmlBody"].(string); ok {
+		p.htmlBody = htmlBody
+	}
+
+	// get From details.
+	if fromFull, ok := payload["FromFull"].(map[string]interface{}); ok {
+		fromEmail, hasEmail := fromFull["Email"].(string)
+		if hasEmail {
+			p.fromEmail = fromEmail
+		}
+
+		fromName, hasName := fromFull["Name"].(string)
+		if hasName {
+			p.fromName = fromName
+		}
+	}
+	return p, nil
+}
+
+func (p *PostmarkInboundMessage) Subject() string {
+	return p.subject
+}
+
+func (p *PostmarkInboundMessage) PlainText() string {
+	return p.textBody
+}
+
+func (p *PostmarkInboundMessage) Html() string {
+	return p.htmlBody
+}
+
+func (p *PostmarkInboundMessage) FromEmail() string {
+	return p.fromEmail
+}
+
+func (p *PostmarkInboundMessage) FromName() string {
+	return p.fromName
+}
+
+// ThreadMessageWithPostmarkInbound represents a combination of a Thread, a Message, and a PostmarkInboundMessage.
+type ThreadMessageWithPostmarkInbound struct {
+	Thread                 *Thread
+	Message                *Message
+	PostmarkInboundMessage *PostmarkInboundMessage
 }

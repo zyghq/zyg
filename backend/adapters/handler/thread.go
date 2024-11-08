@@ -66,7 +66,7 @@ func (h *ThreadChatHandler) handleUpdateThreadChat(
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
-	channel := models.ThreadChannel{}.Chat()
+	channel := models.ThreadChannel{}.InAppChat()
 	thread, err := h.ths.GetWorkspaceThread(ctx, member.WorkspaceId, threadId, &channel)
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
@@ -262,7 +262,7 @@ func (h *ThreadChatHandler) handleCreateThreadChatMessage(
 
 	ctx := r.Context()
 
-	channel := models.ThreadChannel{}.Chat()
+	channel := models.ThreadChannel{}.InAppChat()
 	thread, err := h.ths.GetWorkspaceThread(ctx, member.WorkspaceId, threadId, &channel)
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
@@ -307,7 +307,7 @@ func (h *ThreadChatHandler) handleCreateThreadChatMessage(
 	// 	thread, err = h.ths.AssignMember(ctx, thread.ThreadId, member.MemberId)
 	// 	// if error when assigning - revert back
 	// 	if err != nil {
-	// 		slog.Error("(silent) failed to assign member to Thread Chat", slog.Any("error", err))
+	// 		slog.Error("(silent) failed to assign member to Thread InAppChat", slog.Any("error", err))
 	// 		thread = t
 	// 	}
 	// }
@@ -347,7 +347,7 @@ func (h *ThreadChatHandler) handleGetThreadChatMessages(
 	ctx := r.Context()
 
 	threadId := r.PathValue("threadId")
-	channel := models.ThreadChannel{}.Chat()
+	channel := models.ThreadChannel{}.InAppChat()
 	thread, err := h.ths.GetWorkspaceThread(ctx, member.WorkspaceId, threadId, &channel)
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)

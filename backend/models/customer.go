@@ -154,7 +154,7 @@ func (cv *CustomerEvent) GenID() string {
 // NewEvent creates and returns a new CustomerEvent instance with specified details and default timestamps.
 func (cv *CustomerEvent) NewEvent(
 	customerId string, event string, body string, severity string) CustomerEvent {
-	now := time.Now()
+	now := time.Now().UTC()
 	c := CustomerEvent{
 		EventId:        cv.GenID(),
 		CustomerId:     customerId,

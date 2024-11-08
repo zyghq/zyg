@@ -223,15 +223,12 @@ CREATE TABLE thread (
     assigned_at TIMESTAMP NULL,
     title TEXT NOT NULL,
     description TEXT NOT NULL,
-    sequence BIGINT NOT NULL DEFAULT fn_next_id(), -- deprecated
     status VARCHAR(127) NOT NULL, -- status of the thread
     status_changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status_changed_by_id VARCHAR(255) NOT NULL,
     stage VARCHAR(127) NOT NULL, -- stage of the thread
-    read BOOLEAN NOT NULL DEFAULT FALSE,  -- deprecated
     replied BOOLEAN NOT NULL DEFAULT FALSE,  -- is replied by the member
     priority VARCHAR(255) NOT NULL, -- priority of the thread
-    spam BOOLEAN NOT NULL DEFAULT FALSE, -- deprecated
     channel VARCHAR(127) NOT NULL, -- channel of the thread
     inbound_message_id VARCHAR(255) NULL, -- fk to inbound_message
     outbound_message_id VARCHAR(255) NULL, -- fk to outbound_message
@@ -253,6 +250,7 @@ CREATE TABLE thread (
     CONSTRAINT thread_updated_by_id_fkey FOREIGN KEY (updated_by_id) REFERENCES member (member_id)
 );
 
+-- Deprecated.
 CREATE TABLE chat (
     chat_id VARCHAR(255) NOT NULL,
     thread_id VARCHAR(255) NOT NULL,
@@ -269,6 +267,44 @@ CREATE TABLE chat (
     CONSTRAINT chat_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
     CONSTRAINT chat_member_id_fkey FOREIGN KEY (member_id) REFERENCES member (member_id)
 );
+
+-- Represents the multichannel thread message.
+create table message (
+    message_id varchar(255) not null,
+    thread_id varchar(255) not null,
+    text_body text not null,
+    body text not null,
+    customer_id varchar(255) null,
+    member_id varchar(255) null,
+    is_head boolean not null default false,
+    channel varchar(255) not null,
+    created_at timestamp default current_timestamp,
+    updated_at timestamp default current_timestamp,
+
+    constraint message_message_id_pkey primary key (message_id),
+    constraint message_thread_id_fkey foreign key (thread_id) references thread(thread_id),
+    constraint message_customer_id_fkey foreign key (customer_id) references customer(customer_id),
+    constraint message_member_id_fkey foreign key (member_id) references member(member_id)
+);
+
+-- Represents postmark inbound message stream payload linked to message.
+create table postmark_inbound_message (
+    message_id varchar(255) not null,
+    payload jsonb not null,
+    pm_message_id varchar(255) not null,
+    mail_message_id varchar(255) not null,
+    reply_mail_message_id varchar(255) null,
+    created_at timestamp default current_timestamp,
+    updated_at timestamp default current_timestamp,
+
+    constraint postmark_inb_message_id_pkey primary key (message_id),
+    constraint postmark_inb_message_id_fkey foreign key (message_id) references message(message_id),
+
+    constraint pm_inb_msg_pm_message_id_key unique (pm_message_id),
+    constraint pm_inb_msg_mail_message_id_key unique (mail_message_id)
+);
+create index pm_inb_msg_reply_mail_message_idx on postmark_inbound_message(reply_mail_message_id);
+
 
 -- Represents the label table
 -- This table is used to store the labels linked to the workspace.

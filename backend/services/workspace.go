@@ -183,7 +183,7 @@ func (ws *WorkspaceService) CreateCustomerWithExternalId(
 	if name == "" {
 		name = models.Customer{}.AnonName()
 	}
-	now := time.Now()
+	now := time.Now().UTC()
 	customer := models.Customer{
 		WorkspaceId:     workspaceId,
 		ExternalId:      models.NullString(&externalId),
@@ -206,7 +206,7 @@ func (ws *WorkspaceService) CreateCustomerWithEmail(
 	if name == "" {
 		name = models.Customer{}.AnonName()
 	}
-	now := time.Now()
+	now := time.Now().UTC()
 	customer := models.Customer{
 		WorkspaceId:     workspaceId,
 		Email:           models.NullString(&email),
@@ -229,7 +229,7 @@ func (ws *WorkspaceService) CreateCustomerWithPhone(
 	if name == "" {
 		name = models.Customer{}.AnonName()
 	}
-	now := time.Now()
+	now := time.Now().UTC()
 	customer := models.Customer{
 		WorkspaceId:     workspaceId,
 		Phone:           models.NullString(&phone),

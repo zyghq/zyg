@@ -136,6 +136,15 @@ type ThreadServicer interface {
 		ctx context.Context, workspaceId string,
 		customer models.Customer, createdBy models.MemberActor, message string,
 	) (models.Thread, models.Chat, error)
+
+	// ProcessPostmarkInbound processes an inbound email message received from Postmark.
+	// It creates a new thread or updates an existing one, attaching the inbound message to the thread as necessary.
+	// Returns the thread and message models along with any error encountered.
+	ProcessPostmarkInbound(
+		ctx context.Context, workspaceId string,
+		customer models.CustomerActor, createdBy models.MemberActor,
+		inboundMessage *models.PostmarkInboundMessage,
+	) (models.Thread, models.Message, error)
 	GetWorkspaceThread(
 		ctx context.Context, workspaceId string, threadId string, channel *string) (models.Thread, error)
 	UpdateThread(

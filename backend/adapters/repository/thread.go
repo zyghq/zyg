@@ -144,6 +144,48 @@ func threadChatJoinedCols() builq.Columns {
 	}
 }
 
+func threadMessageCols() builq.Columns {
+	return builq.Columns{
+		"message_id", // PK
+		"thread_id",  // FK to thread
+		"text_body",
+		"body",
+		"customer_id", // FK Nullable to customer
+		"member_id",   // FK Nullable to member
+		"channel",
+		"created_at",
+		"updated_at",
+	}
+}
+
+func threadMessageJoinedCols() builq.Columns {
+	return builq.Columns{
+		"msg.message_id",
+		"msg.thread_id",
+		"msg.text_body",
+		"msg.body",
+		"c.customer_id",
+		"c.name",
+		"m.member_id",
+		"m.name",
+		"msg.channel",
+		"msg.created_at",
+		"msg.updated_at",
+	}
+}
+
+func postmarkInboundMessageCols() builq.Columns {
+	return builq.Columns{
+		"message_id", // PK
+		"payload",
+		"pm_message_id",
+		"mail_message_id",
+		"reply_mail_message_id",
+		"created_at",
+		"updated_at",
+	}
+}
+
 // InsertInboundThreadChat inserts a new inbound thread chat for the customer in a transaction.
 // First, insert the inbound message.
 // Then, insert the Thread with in persisted inbound message ID.
@@ -156,7 +198,7 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 	// If fails then stop the execution and return the error.
 	tx, err := tc.db.Begin(ctx)
 	if err != nil {
-		slog.Error("failed to start db tx", slog.Any("error", err))
+		slog.Error("failed to start db tx", slog.Any("err", err))
 		return models.Thread{}, chat, ErrQuery
 	}
 
@@ -175,7 +217,7 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 	}
 
 	// Referenced thread inbound message.
-	var inboundMessage = thread.InboundMessage
+	inboundMessage := thread.InboundMessage
 
 	// Persist the inbound message.
 	// Do insert an inbound message first before inserting thread.
@@ -465,6 +507,382 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 		return models.Thread{}, models.Chat{}, ErrTxQuery
 	}
 	return thread, chat, nil
+}
+
+func (tc *ThreadChatDB) InsertPostmarkInboundThreadMessage(
+	ctx context.Context, inbound models.ThreadMessageWithPostmarkInbound) (models.Thread, models.Message, error) {
+	tx, err := tc.db.Begin(ctx)
+	if err != nil {
+		slog.Error("failed to begin transaction", slog.Any("err", err))
+		return models.Thread{}, models.Message{}, ErrTxQuery
+	}
+
+	defer func(tx pgx.Tx, ctx context.Context) {
+		err := tx.Rollback(ctx)
+		if err != nil {
+			return
+		}
+	}(tx, ctx)
+
+	thread := inbound.Thread
+	message := inbound.Message
+	pmInboundMessage := inbound.PostmarkInboundMessage
+
+	if thread.InboundMessage == nil {
+		slog.Error("thread inbound message is nil", slog.Any("thread", thread))
+		return models.Thread{}, models.Message{}, ErrQuery
+	}
+
+	inboundMessage := thread.InboundMessage
+	// Persist the inbound message.
+	// Do insert an inbound message first before inserting thread.
+	// Thread will reference the inbound message ID.
+	var insertB builq.Builder
+	insertCols := inboundMessageCols()
+	insertParams := []any{
+		inboundMessage.MessageId, inboundMessage.CustomerId,
+		inboundMessage.PreviewText,
+		inboundMessage.FirstSeqId, inboundMessage.LastSeqId,
+		inboundMessage.CreatedAt, inboundMessage.UpdatedAt,
+	}
+
+	// Build the insert query.
+	insertB.Addf("INSERT INTO inbound_message (%s)", insertCols)
+	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$)", insertParams...)
+	insertB.Addf("RETURNING %s", insertCols)
+
+	insertQuery, _, err := insertB.Build()
+	if err != nil {
+		slog.Error("failed to build insert query", slog.Any("err", err))
+		return models.Thread{}, models.Message{}, ErrQuery
+	}
+
+	// Build the select query required after insert.
+	q := builq.New()
+	joinedCols := inboundMessageJoinedCols()
+
+	q("WITH ins AS (%s)", insertQuery)
+	q("SELECT %s FROM %s", joinedCols, "ins im") // inserted table, with alias im
+	q("INNER JOIN customer c ON im.customer_id = c.customer_id")
+
+	stmt, _, err := q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return models.Thread{}, models.Message{}, ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
+
+	// Make the insert query.
+	err = tx.QueryRow(ctx, stmt, inboundMessage.MessageId, inboundMessage.CustomerId,
+		inboundMessage.PreviewText,
+		inboundMessage.FirstSeqId, inboundMessage.LastSeqId,
+		inboundMessage.CreatedAt, inboundMessage.UpdatedAt).Scan(
+		&inboundMessage.MessageId, &inboundMessage.CustomerId, &inboundMessage.CustomerName,
+		&inboundMessage.PreviewText, &inboundMessage.FirstSeqId, &inboundMessage.LastSeqId,
+		&inboundMessage.CreatedAt, &inboundMessage.UpdatedAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
+		return models.Thread{}, models.Message{}, ErrEmpty
+	}
+	if err != nil {
+		slog.Error("failed to insert query", slog.Any("err", err))
+		return models.Thread{}, models.Message{}, ErrQuery
+	}
+
+	// hold db values for nullables.
+	var (
+		assignedMemberId    sql.NullString
+		assignedMemberName  sql.NullString
+		assignedAt          sql.NullTime
+		inboundMessageId    sql.NullString
+		inboundCustomerId   sql.NullString
+		inboundCustomerName sql.NullString
+		inboundPreviewText  sql.NullString
+		inboundFirstSeqId   sql.NullString
+		inboundLastSeqId    sql.NullString
+		inboundCreatedAt    sql.NullTime
+		inboundUpdatedAt    sql.NullTime
+		outboundMessageId   sql.NullString
+		outboundMemberId    sql.NullString
+		outboundMemberName  sql.NullString
+		outboundPreviewText sql.NullString
+		outboundFirstSeqId  sql.NullString
+		outboundLastSeqId   sql.NullString
+		outboundCreatedAt   sql.NullTime
+		outboundUpdatedAt   sql.NullTime
+	)
+
+	// Persisted inbound message ID.
+	inboundMessageId = sql.NullString{String: inboundMessage.MessageId, Valid: true}
+
+	// Check if the thread is assigned to a member.
+	// If assigned, then set the assigned member ID and assigned at for db insert values.
+	// Otherwise, by default assigned member ID and assigned at will be NULL.
+	if thread.AssignedMember != nil {
+		assignedMemberId = sql.NullString{String: thread.AssignedMember.MemberId, Valid: true}
+		assignedAt = sql.NullTime{Time: thread.AssignedMember.AssignedAt, Valid: true}
+	}
+
+	// Persist the thread with referenced inbound message ID.
+	insertB = builq.Builder{}
+	insertCols = threadCols()
+	insertParams = []any{
+		thread.ThreadId, thread.WorkspaceId, thread.Customer.CustomerId,
+		assignedMemberId, assignedAt,
+		thread.Title, thread.Description,
+		thread.ThreadStatus.Status, thread.ThreadStatus.StatusChangedAt,
+		thread.ThreadStatus.StatusChangedBy.MemberId,
+		thread.ThreadStatus.Stage,
+		thread.Replied, thread.Priority, thread.Channel,
+		inboundMessageId,
+		outboundMessageId,
+		thread.CreatedBy.MemberId,
+		thread.UpdatedBy.MemberId,
+		thread.CreatedAt,
+		thread.UpdatedAt,
+	}
+
+	insertB.Addf("INSERT INTO thread (%s)", insertCols)
+	insertB.Addf(
+		"VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$)",
+		insertParams...,
+	)
+	insertB.Addf("RETURNING %s", insertCols)
+
+	insertQuery, _, err = insertB.Build()
+	if err != nil {
+		slog.Error("failed to build insert query", slog.Any("err", err))
+		return models.Thread{}, models.Message{}, ErrEmpty
+	}
+
+	// Build the select query required after insert.
+	q = builq.New()
+	joinedCols = threadJoinedCols()
+
+	q("WITH ins AS (%s)", insertQuery)
+	q("SELECT %s FROM %s", joinedCols, "ins th")
+	q("INNER JOIN customer c ON th.customer_id = c.customer_id")
+	q("LEFT OUTER JOIN member am ON th.assignee_id = am.member_id")
+	q("INNER JOIN member scm ON th.status_changed_by_id = scm.member_id")
+	q("LEFT OUTER JOIN inbound_message inb ON th.inbound_message_id = inb.message_id")
+	q("LEFT OUTER JOIN outbound_message oub ON th.outbound_message_id = oub.message_id")
+	q("LEFT OUTER JOIN customer inbc ON inb.customer_id = inbc.customer_id")
+	q("LEFT OUTER JOIN member oubm ON oub.member_id = oubm.member_id")
+	q("INNER JOIN member mc ON th.created_by_id = mc.member_id")
+	q("INNER JOIN member mu ON th.updated_by_id = mu.member_id")
+
+	stmt, _, err = q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return models.Thread{}, models.Message{}, ErrEmpty
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
+
+	err = tx.QueryRow(ctx, stmt, insertParams...).Scan(
+		&thread.ThreadId, &thread.WorkspaceId, &thread.Customer.CustomerId, &thread.Customer.Name,
+		&assignedMemberId, &assignedMemberName, &assignedAt,
+		&thread.Title, &thread.Description,
+		&thread.ThreadStatus.Status,
+		&thread.ThreadStatus.StatusChangedAt,
+		&thread.ThreadStatus.StatusChangedBy.MemberId, &thread.ThreadStatus.StatusChangedBy.Name,
+		&thread.ThreadStatus.Stage,
+		&thread.Replied, &thread.Priority, &thread.Channel,
+		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
+		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
+		&inboundCreatedAt, &inboundUpdatedAt,
+		&outboundMessageId, &outboundMemberId, &outboundMemberName,
+		&outboundPreviewText, &outboundFirstSeqId, &outboundLastSeqId,
+		&outboundCreatedAt, &outboundUpdatedAt,
+		&thread.CreatedBy.MemberId, &thread.CreatedBy.Name,
+		&thread.UpdatedBy.MemberId, &thread.UpdatedBy.Name,
+		&thread.CreatedAt, &thread.UpdatedAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
+		return models.Thread{}, models.Message{}, ErrEmpty
+	}
+	if err != nil {
+		slog.Error("failed to insert query", slog.Any("err", err))
+		return models.Thread{}, models.Message{}, ErrEmpty
+	}
+
+	// Sets the assigned member if a valid assigned member exists,
+	// otherwise clears the assigned member.
+	if assignedMemberId.Valid {
+		memberActor := models.MemberActor{
+			MemberId: assignedMemberId.String,
+			Name:     assignedMemberName.String,
+		}
+		thread.AssignMember(memberActor, assignedAt.Time)
+	} else {
+		thread.ClearAssignedMember()
+	}
+
+	// Sets the inbound message if a valid inbound message exists,
+	// otherwise clears the inbound message.
+	if inboundMessageId.Valid {
+		customer := models.CustomerActor{
+			CustomerId: inboundCustomerId.String,
+			Name:       inboundCustomerName.String,
+		}
+		thread.AddInboundMessage(inboundMessageId.String, customer,
+			inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
+			inboundCreatedAt.Time,
+			inboundUpdatedAt.Time,
+		)
+	} else {
+		thread.ClearInboundMessage()
+	}
+
+	// Sets the outbound message if a valid outbound message exists,
+	// otherwise clears the outbound message.
+	if outboundMessageId.Valid {
+		member := models.MemberActor{
+			MemberId: outboundMemberId.String,
+			Name:     outboundMemberName.String,
+		}
+		thread.AddOutboundMessage(outboundMessageId.String, member,
+			outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
+			outboundCreatedAt.Time,
+			outboundUpdatedAt.Time,
+		)
+	} else {
+		thread.ClearOutboundMessage()
+	}
+
+	// TODO: Require changes in Issue#76
+	var customerId, customerName sql.NullString
+	var memberId, memberName sql.NullString
+	if message.Customer != nil {
+		customerId = sql.NullString{String: message.Customer.CustomerId, Valid: true}
+	}
+	if message.Member != nil {
+		memberId = sql.NullString{String: message.Member.MemberId, Valid: true}
+	}
+
+	// Persist the message with referenced thread ID
+	insertB = builq.Builder{}
+	insertCols = threadMessageCols()
+	insertParams = []any{
+		message.MessageId, message.ThreadId, message.TextBody, message.Body,
+		customerId, memberId, message.Channel, message.CreatedAt, message.UpdatedAt,
+	}
+
+	insertB.Addf("INSERT INTO message (%s)", insertCols)
+	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$)", insertParams...)
+	insertB.Addf("RETURNING %s", insertCols)
+
+	insertQuery, _, err = insertB.Build()
+	if err != nil {
+		slog.Error("failed to build insert query", slog.Any("err", err))
+		return models.Thread{}, models.Message{}, ErrQuery
+	}
+
+	// Build the select query required after insert
+	q = builq.New()
+	joinedCols = threadMessageJoinedCols()
+
+	q("WITH ins AS (%s)", insertQuery)
+	q("SELECT %s FROM %s", joinedCols, "ins msg")
+	q("LEFT OUTER JOIN customer c ON msg.customer_id = c.customer_id")
+	q("LEFT OUTER JOIN member m ON msg.member_id = m.member_id")
+
+	stmt, _, err = q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return models.Thread{}, models.Message{}, ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
+
+	err = tx.QueryRow(ctx, stmt, insertParams...).Scan(
+		&message.MessageId, &message.ThreadId, &message.TextBody, &message.Body,
+		&customerId, &customerName,
+		&memberId, &memberName,
+		&message.Channel, &message.CreatedAt, &message.UpdatedAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
+		return models.Thread{}, models.Message{}, ErrEmpty
+	}
+	if err != nil {
+		slog.Error("failed to insert query", slog.Any("err", err))
+		return models.Thread{}, models.Message{}, ErrQuery
+	}
+
+	if customerId.Valid {
+		message.Customer = &models.CustomerActor{
+			CustomerId: customerId.String,
+			Name:       customerName.String,
+		}
+	}
+	if memberId.Valid {
+		message.Member = &models.MemberActor{
+			MemberId: memberId.String,
+			Name:     memberName.String,
+		}
+	}
+
+	// Insert the Postmark inbound message
+	q = builq.New()
+	pmInboundCols := postmarkInboundMessageCols()
+
+	insertParams = []any{
+		message.MessageId, pmInboundMessage.Payload, pmInboundMessage.PMMessageId,
+		pmInboundMessage.MailMessageId, pmInboundMessage.ReplyMailMessageId,
+		// consider the time space of the message rather than the postmark message.
+		message.CreatedAt, message.UpdatedAt,
+	}
+
+	q("INSERT INTO postmark_inbound_message (%s)", pmInboundCols)
+	q("VALUES (%$, %$, %$, %$, %$, %$, %$)", insertParams...)
+	q("RETURNING %s", pmInboundCols)
+
+	stmt, _, err = q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return models.Thread{}, models.Message{}, ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
+	var throwablePk string
+	err = tx.QueryRow(ctx, stmt, insertParams...).Scan(
+		&throwablePk, &pmInboundMessage.Payload, &pmInboundMessage.PMMessageId,
+		&pmInboundMessage.MailMessageId, &pmInboundMessage.ReplyMailMessageId,
+		&pmInboundMessage.CreatedAt, &pmInboundMessage.UpdatedAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
+		return models.Thread{}, models.Message{}, ErrEmpty
+	}
+	if err != nil {
+		slog.Error("failed to insert query", slog.Any("err", err))
+		return models.Thread{}, models.Message{}, ErrQuery
+	}
+
+	// commit transaction
+	err = tx.Commit(ctx)
+	if err != nil {
+		slog.Error("failed to commit query", slog.Any("err", err))
+		return models.Thread{}, models.Message{}, ErrTxQuery
+	}
+	return *thread, *message, nil
 }
 
 func (tc *ThreadChatDB) ModifyThreadById(
@@ -2009,4 +2427,152 @@ func (tc *ThreadChatDB) ComputeLabelMetricsByWorkspaceId(
 	}
 
 	return metrics, nil
+}
+
+func (tc *ThreadChatDB) FetchThreadByPostmarkInboundInReplyMessageId(
+	ctx context.Context, workspaceId string, inReplyMessageId string) (models.Thread, error) {
+	var thread models.Thread
+
+	var selectB builq.Builder
+	selectB.Addf("SELECT m.thread_id AS thread_id")
+	selectB.Addf("FROM postmark_inbound_message p")
+	selectB.Addf("INNER JOIN message m ON p.message_id = m.message_id")
+	selectB.Addf("WHERE p.mail_message_id = $2")
+
+	selectQuery, _, err := selectB.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return models.Thread{}, ErrQuery
+	}
+
+	q := builq.New()
+	cols := threadJoinedCols()
+	q("WITH cte AS (%s)", selectQuery)
+	q("SELECT %s FROM %s", cols, "thread th")
+
+	q("INNER JOIN cte cte ON cte.thread_id = th.thread_id")
+
+	q("INNER JOIN customer c ON th.customer_id = c.customer_id")
+	q("LEFT OUTER JOIN member am ON th.assignee_id = am.member_id")
+	q("INNER JOIN member scm ON th.status_changed_by_id = scm.member_id")
+	q("LEFT OUTER JOIN inbound_message inb ON th.inbound_message_id = inb.message_id")
+	q("LEFT OUTER JOIN outbound_message oub ON th.outbound_message_id = oub.message_id")
+	q("LEFT OUTER JOIN customer inbc ON inb.customer_id = inbc.customer_id")
+	q("LEFT OUTER JOIN member oubm ON oub.member_id = oubm.member_id")
+	q("INNER JOIN member mc ON th.created_by_id = mc.member_id")
+	q("INNER JOIN member mu ON th.updated_by_id = mu.member_id")
+
+	q("WHERE th.workspace_id = $1")
+
+	stmt, _, err := q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return models.Thread{}, ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
+
+	var (
+		assignedMemberId    sql.NullString
+		assignedMemberName  sql.NullString
+		assignedAt          sql.NullTime
+		inboundMessageId    sql.NullString
+		inboundCustomerId   sql.NullString
+		inboundCustomerName sql.NullString
+		inboundPreviewText  sql.NullString
+		inboundFirstSeqId   sql.NullString
+		inboundLastSeqId    sql.NullString
+		inboundCreatedAt    sql.NullTime
+		inboundUpdatedAt    sql.NullTime
+		outboundMessageId   sql.NullString
+		outboundMemberId    sql.NullString
+		outboundMemberName  sql.NullString
+		outboundPreviewText sql.NullString
+		outboundFirstSeqId  sql.NullString
+		outboundLastSeqId   sql.NullString
+		outboundCreatedAt   sql.NullTime
+		outboundUpdatedAt   sql.NullTime
+	)
+
+	err = tc.db.QueryRow(ctx, stmt, workspaceId, inReplyMessageId).Scan(
+		&thread.ThreadId, &thread.WorkspaceId, &thread.Customer.CustomerId, &thread.Customer.Name,
+		&assignedMemberId, &assignedMemberName, &assignedAt,
+		&thread.Title, &thread.Description,
+		&thread.ThreadStatus.Status,
+		&thread.ThreadStatus.StatusChangedAt,
+		&thread.ThreadStatus.StatusChangedBy.MemberId, &thread.ThreadStatus.StatusChangedBy.Name,
+		&thread.ThreadStatus.Stage,
+		&thread.Replied, &thread.Priority, &thread.Channel,
+		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
+		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
+		&inboundCreatedAt, &inboundUpdatedAt,
+		&outboundMessageId, &outboundMemberId, &outboundMemberName,
+		&outboundPreviewText, &outboundFirstSeqId, &outboundLastSeqId,
+		&outboundCreatedAt, &outboundUpdatedAt,
+		&thread.CreatedBy.MemberId, &thread.CreatedBy.Name,
+		&thread.UpdatedBy.MemberId, &thread.UpdatedBy.Name,
+		&thread.CreatedAt, &thread.UpdatedAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
+		return models.Thread{}, ErrEmpty
+	}
+	if err != nil {
+		slog.Error("failed to query", slog.Any("err", err))
+		return models.Thread{}, ErrQuery
+	}
+
+	// Sets the assigned member if a valid assigned member exists,
+	// otherwise clears the assigned member.
+	if assignedMemberId.Valid {
+		memberActor := models.MemberActor{
+			MemberId: assignedMemberId.String,
+			Name:     assignedMemberName.String,
+		}
+		thread.AssignMember(memberActor, assignedAt.Time)
+	} else {
+		thread.ClearAssignedMember()
+	}
+
+	// Sets the inbound message if a valid inbound message exists,
+	// otherwise clears the inbound message.
+	if inboundMessageId.Valid {
+		customer := models.CustomerActor{
+			CustomerId: inboundCustomerId.String,
+			Name:       inboundCustomerName.String,
+		}
+		thread.AddInboundMessage(inboundMessageId.String, customer,
+			inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
+			inboundCreatedAt.Time,
+			inboundUpdatedAt.Time,
+		)
+	} else {
+		thread.ClearInboundMessage()
+	}
+
+	// Sets the outbound message if a valid outbound message exists,
+	// otherwise clears the outbound message.
+	if outboundMessageId.Valid {
+		member := models.MemberActor{
+			MemberId: outboundMemberId.String,
+			Name:     outboundMemberName.String,
+		}
+		thread.AddOutboundMessage(outboundMessageId.String, member,
+			outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
+			outboundCreatedAt.Time,
+			outboundUpdatedAt.Time,
+		)
+	} else {
+		thread.ClearOutboundMessage()
+	}
+	return thread, nil
+}
+
+// TODO: implement
+func (tc *ThreadChatDB) AppendPostmarkInboundThreadMessage(
+	ctx context.Context, inbound models.ThreadMessageWithPostmarkInbound) (models.Message, error) {
+	return models.Message{}, nil
 }

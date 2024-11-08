@@ -97,24 +97,6 @@ func (w Workspace) NewWorkspace(accountId string, name string) Workspace {
 	}
 }
 
-// MarshalJSON Deprecated: will be removed in the next release.
-func (w Workspace) MarshalJSON() ([]byte, error) {
-	aux := &struct {
-		WorkspaceId string `json:"workspaceId"`
-		AccountId   string `json:"accountId"`
-		Name        string `json:"name"`
-		CreatedAt   string `json:"createdAt"`
-		UpdatedAt   string `json:"updatedAt"`
-	}{
-		WorkspaceId: w.WorkspaceId,
-		AccountId:   w.AccountId,
-		Name:        w.Name,
-		CreatedAt:   w.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:   w.UpdatedAt.Format(time.RFC3339),
-	}
-	return json.Marshal(aux)
-}
-
 type LabelAddedBy struct{}
 
 func (a LabelAddedBy) User() string {
@@ -228,26 +210,6 @@ func (m Member) GenId() string {
 
 func (m Member) IsMemberSystem() bool {
 	return m.Role == MemberRole{}.System()
-}
-
-// MarshalJSON Deprecated: will be removed in the next release.
-func (m Member) MarshalJSON() ([]byte, error) {
-	aux := &struct {
-		WorkspaceId string `json:"workspaceId"`
-		MemberId    string `json:"memberId"`
-		Name        string `json:"name"`
-		Role        string `json:"role"`
-		CreatedAt   string `json:"createdAt"`
-		UpdatedAt   string `json:"updatedAt"`
-	}{
-		WorkspaceId: m.WorkspaceId,
-		MemberId:    m.MemberId,
-		Name:        m.Name,
-		Role:        m.Role,
-		CreatedAt:   m.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:   m.UpdatedAt.Format(time.RFC3339),
-	}
-	return json.Marshal(aux)
 }
 
 func (m Member) AsMemberActor() MemberActor {

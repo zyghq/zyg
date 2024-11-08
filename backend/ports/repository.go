@@ -107,6 +107,12 @@ type CustomerRepositorer interface {
 type ThreadRepositorer interface {
 	InsertInboundThreadChat(
 		ctx context.Context, thread models.Thread, chat models.Chat) (models.Thread, models.Chat, error)
+	InsertPostmarkInboundThreadMessage(
+		ctx context.Context, inbound models.ThreadMessageWithPostmarkInbound) (models.Thread, models.Message, error)
+	FetchThreadByPostmarkInboundInReplyMessageId(
+		ctx context.Context, workspaceId string, inReplyMessageId string) (models.Thread, error)
+	AppendPostmarkInboundThreadMessage(
+		ctx context.Context, inbound models.ThreadMessageWithPostmarkInbound) (models.Message, error)
 	LookupByWorkspaceThreadId(
 		ctx context.Context, workspaceId string, threadId string, channel *string) (models.Thread, error)
 	ModifyThreadById(
