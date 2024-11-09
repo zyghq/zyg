@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"errors"
-	"github.com/rs/xid"
 	"log/slog"
 	"time"
 
@@ -38,28 +37,20 @@ func (s *ThreadService) CreateNewInboundThreadChat(
 	channel := models.ThreadChannel{}.InAppChat() // source channel the thread belongs to
 	customerActor := customer.AsCustomerActor()
 
-	thread := (&models.Thread{}).CreateNewThread(
-		workspaceId, customerActor, createdBy, createdBy, channel,
-		now, now,
+	newThread := models.NewThread(
+		workspaceId, customer.AsCustomerActor(), createdBy, channel,
 	)
 
 	// Create chat for the thread in the same time space.
 	// Mark the chat as head.
 	chat := (&models.Chat{}).CreateNewCustomerChat(
-		thread.ThreadId, customerActor.CustomerId, true, message,
+		newThread.ThreadId, customerActor.CustomerId, true, message,
 		now, now,
 	)
 
-	messageId := models.InboundMessage{}.GenId()
-	seqId := xid.New().String()
+	newThread.SetNewInboundMessage(customerActor, chat.PreviewText())
 
-	thread.AddInboundMessage(
-		messageId, customerActor,
-		chat.PreviewText(), seqId, seqId,
-		now, now,
-	)
-
-	thread, chat, err := s.repo.InsertInboundThreadChat(ctx, thread, chat)
+	thread, chat, err := s.repo.InsertInboundThreadChat(ctx, *newThread, chat)
 	if err != nil {
 		return models.Thread{}, models.Chat{}, ErrThreadChat
 	}
@@ -132,12 +123,14 @@ func (s *ThreadService) ProcessPostmarkInbound(
 		models.SetMessageCustomer(customer),
 	)
 
-	messageId := models.InboundMessage{}.GenId()
-	// TODO: fix in Issue#77
-	thread.AddInboundMessage(
-		messageId, customer, message.TextBody, message.MessageId, message.MessageId,
-		thread.CreatedAt, thread.UpdatedAt,
-	)
+	// Check if the thread has inbound message sequence.
+	// Set next new inbound sequence else create new inbound sequence.
+	if thread.InboundMessage != nil {
+		thread.SetNextInboundSeq(message.TextBody)
+	} else {
+		thread.SetNewInboundMessage(customer, message.TextBody)
+	}
+
 	inbound := models.ThreadMessageWithPostmarkInbound{
 		Thread:                 thread,
 		Message:                message,
@@ -273,34 +266,21 @@ func (s *ThreadService) ListThreadLabels(
 // Checks if the thread already has an inbound message reference otherwise creates a new one.
 func (s *ThreadService) CreateInboundChatMessage(
 	ctx context.Context, thread models.Thread, message string) (models.Chat, error) {
-	var inboundMessage models.InboundMessage
 	chat := models.Chat{
 		ThreadId:   thread.ThreadId,
 		Body:       message,
 		CustomerId: models.NullString(&thread.Customer.CustomerId),
 		IsHead:     false,
 	}
-	// If an existing inbound message already exists, then update
-	// the existing inbound message with the latest value of last sequence ID.
-	// Else create a new inbound message for the thread.
+
 	if thread.InboundMessage != nil {
-		inboundMessage = *thread.InboundMessage
-		// Deprecate usage use xid.
-		lastSeqId := ksuid.New().String()
-		inboundMessage.LastSeqId = lastSeqId
-		inboundMessage.PreviewText = chat.PreviewText()
+		// Set next thread inbound message sequence.
+		thread.SetNextInboundSeq(chat.PreviewText())
 	} else {
-		// Deprecate usage use xid.
-		seqId := ksuid.New().String()
-		inboundMessage = models.InboundMessage{
-			MessageId:   inboundMessage.GenId(),
-			CustomerId:  thread.Customer.CustomerId,
-			FirstSeqId:  seqId,
-			LastSeqId:   seqId,
-			PreviewText: chat.PreviewText(),
-		}
+		thread.SetNewInboundMessage(thread.Customer, chat.PreviewText())
 	}
-	chat, err := s.repo.InsertCustomerChat(ctx, thread, inboundMessage, chat)
+
+	chat, err := s.repo.InsertCustomerChat(ctx, thread, chat)
 	if err != nil {
 		return models.Chat{}, ErrThChatMessage
 	}
@@ -310,12 +290,12 @@ func (s *ThreadService) CreateInboundChatMessage(
 // CreateOutboundChatMessage creates an outbound message to the existing thread chat.
 // Checks if the thread already has an outbound message reference otherwise creates a new one.
 func (s *ThreadService) CreateOutboundChatMessage(
-	ctx context.Context, thread models.Thread, memberId string, message string) (models.Chat, error) {
+	ctx context.Context, thread models.Thread, member models.Member, message string) (models.Chat, error) {
 	var outboundMessage models.OutboundMessage
 	chat := models.Chat{
 		ThreadId: thread.ThreadId,
 		Body:     message,
-		MemberId: models.NullString(&memberId),
+		MemberId: models.NullString(&member.MemberId),
 		IsHead:   false,
 	}
 	// If an existing outbound message already exists, then update
@@ -332,7 +312,7 @@ func (s *ThreadService) CreateOutboundChatMessage(
 		seqId := ksuid.New().String()
 		outboundMessage = models.OutboundMessage{
 			MessageId:   outboundMessage.GenId(),
-			MemberId:    memberId,
+			Member:      member.AsMemberActor(),
 			FirstSeqId:  seqId,
 			LastSeqId:   seqId,
 			PreviewText: chat.PreviewText(),

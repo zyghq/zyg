@@ -274,7 +274,7 @@ func (h *ThreadChatHandler) handleCreateThreadChatMessage(
 		return
 	}
 
-	chat, err := h.ths.CreateOutboundChatMessage(ctx, thread, member.MemberId, reqp.Message)
+	chat, err := h.ths.CreateOutboundChatMessage(ctx, thread, *member, reqp.Message)
 	if err != nil {
 		slog.Error("failed to add thread chat message", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

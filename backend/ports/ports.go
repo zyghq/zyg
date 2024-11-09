@@ -168,7 +168,7 @@ type ThreadServicer interface {
 	CreateInboundChatMessage(
 		ctx context.Context, thread models.Thread, message string) (models.Chat, error)
 	CreateOutboundChatMessage(
-		ctx context.Context, thread models.Thread, memberId string, message string) (models.Chat, error)
+		ctx context.Context, thread models.Thread, member models.Member, message string) (models.Chat, error)
 	ListThreadChatMessages(
 		ctx context.Context, threadId string) ([]models.Chat, error)
 	GenerateMemberThreadMetrics(
