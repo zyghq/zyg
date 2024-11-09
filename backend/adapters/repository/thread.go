@@ -210,7 +210,7 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 	}(tx, ctx)
 
 	// Checks if the thread has an inbound message.
-	// If not, then adding an inbound message to the thread is not allowed.
+	// If not, adding inbound thread is not allowed.
 	if thread.InboundMessage == nil {
 		slog.Error("thread inbound message cannot be empty", slog.Any("thread", thread))
 		return models.Thread{}, chat, ErrQuery
@@ -225,7 +225,7 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 	var insertB builq.Builder
 	insertCols := inboundMessageCols()
 	insertParams := []any{
-		inboundMessage.MessageId, inboundMessage.CustomerId,
+		inboundMessage.MessageId, inboundMessage.Customer.CustomerId,
 		inboundMessage.PreviewText,
 		inboundMessage.FirstSeqId, inboundMessage.LastSeqId,
 		inboundMessage.CreatedAt, inboundMessage.UpdatedAt,
@@ -262,15 +262,14 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 	}
 
 	// Make the insert query.
-	err = tx.QueryRow(ctx, stmt, inboundMessage.MessageId, inboundMessage.CustomerId,
+	err = tx.QueryRow(ctx, stmt, inboundMessage.MessageId, inboundMessage.Customer.CustomerId,
 		inboundMessage.PreviewText,
 		inboundMessage.FirstSeqId, inboundMessage.LastSeqId,
 		inboundMessage.CreatedAt, inboundMessage.UpdatedAt).Scan(
-		&inboundMessage.MessageId, &inboundMessage.CustomerId, &inboundMessage.CustomerName,
+		&inboundMessage.MessageId, &inboundMessage.Customer.CustomerId, &inboundMessage.Customer.Name,
 		&inboundMessage.PreviewText, &inboundMessage.FirstSeqId, &inboundMessage.LastSeqId,
 		&inboundMessage.CreatedAt, &inboundMessage.UpdatedAt,
 	)
-
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("err", err))
 		return models.Thread{}, models.Chat{}, ErrEmpty
@@ -392,7 +391,6 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 		&thread.UpdatedBy.MemberId, &thread.UpdatedBy.Name,
 		&thread.CreatedAt, &thread.UpdatedAt,
 	)
-
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("err", err))
 		return models.Thread{}, chat, ErrEmpty
@@ -421,11 +419,15 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 			CustomerId: inboundCustomerId.String,
 			Name:       inboundCustomerName.String,
 		}
-		thread.AddInboundMessage(inboundMessageId.String, customer,
-			inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
-			inboundCreatedAt.Time,
-			inboundUpdatedAt.Time,
-		)
+		thread.InboundMessage = &models.InboundMessage{
+			MessageId:   inboundMessageId.String,
+			Customer:    customer,
+			PreviewText: inboundPreviewText.String,
+			FirstSeqId:  inboundFirstSeqId.String,
+			LastSeqId:   inboundLastSeqId.String,
+			CreatedAt:   inboundCreatedAt.Time,
+			UpdatedAt:   inboundUpdatedAt.Time,
+		}
 	} else {
 		thread.ClearInboundMessage()
 	}
@@ -437,11 +439,15 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 			MemberId: outboundMemberId.String,
 			Name:     outboundMemberName.String,
 		}
-		thread.AddOutboundMessage(outboundMessageId.String, member,
-			outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
-			outboundCreatedAt.Time,
-			outboundUpdatedAt.Time,
-		)
+		thread.OutboundMessage = &models.OutboundMessage{
+			MessageId:   outboundMessageId.String,
+			Member:      member,
+			PreviewText: outboundPreviewText.String,
+			FirstSeqId:  outboundFirstSeqId.String,
+			LastSeqId:   outboundLastSeqId.String,
+			CreatedAt:   outboundCreatedAt.Time,
+			UpdatedAt:   outboundUpdatedAt.Time,
+		}
 	} else {
 		thread.ClearOutboundMessage()
 	}
@@ -490,7 +496,6 @@ func (tc *ThreadChatDB) InsertInboundThreadChat(
 		&chat.MemberId, &chat.MemberName,
 		&chat.IsHead, &chat.CreatedAt, &chat.UpdatedAt,
 	)
-
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("err", err))
 		return models.Thread{}, models.Chat{}, ErrEmpty
@@ -540,7 +545,7 @@ func (tc *ThreadChatDB) InsertPostmarkInboundThreadMessage(
 	var insertB builq.Builder
 	insertCols := inboundMessageCols()
 	insertParams := []any{
-		inboundMessage.MessageId, inboundMessage.CustomerId,
+		inboundMessage.MessageId, inboundMessage.Customer.CustomerId,
 		inboundMessage.PreviewText,
 		inboundMessage.FirstSeqId, inboundMessage.LastSeqId,
 		inboundMessage.CreatedAt, inboundMessage.UpdatedAt,
@@ -577,11 +582,11 @@ func (tc *ThreadChatDB) InsertPostmarkInboundThreadMessage(
 	}
 
 	// Make the insert query.
-	err = tx.QueryRow(ctx, stmt, inboundMessage.MessageId, inboundMessage.CustomerId,
+	err = tx.QueryRow(ctx, stmt, inboundMessage.MessageId, inboundMessage.Customer.CustomerId,
 		inboundMessage.PreviewText,
 		inboundMessage.FirstSeqId, inboundMessage.LastSeqId,
 		inboundMessage.CreatedAt, inboundMessage.UpdatedAt).Scan(
-		&inboundMessage.MessageId, &inboundMessage.CustomerId, &inboundMessage.CustomerName,
+		&inboundMessage.MessageId, &inboundMessage.Customer.CustomerId, &inboundMessage.Customer.Name,
 		&inboundMessage.PreviewText, &inboundMessage.FirstSeqId, &inboundMessage.LastSeqId,
 		&inboundMessage.CreatedAt, &inboundMessage.UpdatedAt,
 	)
@@ -735,11 +740,15 @@ func (tc *ThreadChatDB) InsertPostmarkInboundThreadMessage(
 			CustomerId: inboundCustomerId.String,
 			Name:       inboundCustomerName.String,
 		}
-		thread.AddInboundMessage(inboundMessageId.String, customer,
-			inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
-			inboundCreatedAt.Time,
-			inboundUpdatedAt.Time,
-		)
+		thread.InboundMessage = &models.InboundMessage{
+			MessageId:   inboundMessageId.String,
+			Customer:    customer,
+			PreviewText: inboundPreviewText.String,
+			FirstSeqId:  inboundFirstSeqId.String,
+			LastSeqId:   inboundLastSeqId.String,
+			CreatedAt:   inboundCreatedAt.Time,
+			UpdatedAt:   inboundUpdatedAt.Time,
+		}
 	} else {
 		thread.ClearInboundMessage()
 	}
@@ -751,16 +760,20 @@ func (tc *ThreadChatDB) InsertPostmarkInboundThreadMessage(
 			MemberId: outboundMemberId.String,
 			Name:     outboundMemberName.String,
 		}
-		thread.AddOutboundMessage(outboundMessageId.String, member,
-			outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
-			outboundCreatedAt.Time,
-			outboundUpdatedAt.Time,
-		)
+		thread.OutboundMessage = &models.OutboundMessage{
+			MessageId:   outboundMessageId.String,
+			Member:      member,
+			PreviewText: outboundPreviewText.String,
+			FirstSeqId:  outboundFirstSeqId.String,
+			LastSeqId:   outboundLastSeqId.String,
+			CreatedAt:   outboundCreatedAt.Time,
+			UpdatedAt:   outboundUpdatedAt.Time,
+		}
 	} else {
 		thread.ClearOutboundMessage()
 	}
 
-	// TODO: Require changes in Issue#76
+	// hold db nullables.
 	var customerId, customerName sql.NullString
 	var memberId, memberName sql.NullString
 	if message.Customer != nil {
@@ -1025,11 +1038,15 @@ func (tc *ThreadChatDB) ModifyThreadById(
 			CustomerId: inboundCustomerId.String,
 			Name:       inboundCustomerName.String,
 		}
-		thread.AddInboundMessage(inboundMessageId.String, customer,
-			inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
-			inboundCreatedAt.Time,
-			inboundUpdatedAt.Time,
-		)
+		thread.InboundMessage = &models.InboundMessage{
+			MessageId:   inboundMessageId.String,
+			Customer:    customer,
+			PreviewText: inboundPreviewText.String,
+			FirstSeqId:  inboundFirstSeqId.String,
+			LastSeqId:   inboundLastSeqId.String,
+			CreatedAt:   inboundCreatedAt.Time,
+			UpdatedAt:   inboundUpdatedAt.Time,
+		}
 	} else {
 		thread.ClearInboundMessage()
 	}
@@ -1041,11 +1058,15 @@ func (tc *ThreadChatDB) ModifyThreadById(
 			MemberId: outboundMemberId.String,
 			Name:     outboundMemberName.String,
 		}
-		thread.AddOutboundMessage(outboundMessageId.String, member,
-			outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
-			outboundCreatedAt.Time,
-			outboundUpdatedAt.Time,
-		)
+		thread.OutboundMessage = &models.OutboundMessage{
+			MessageId:   outboundMessageId.String,
+			Member:      member,
+			PreviewText: outboundPreviewText.String,
+			FirstSeqId:  outboundFirstSeqId.String,
+			LastSeqId:   outboundLastSeqId.String,
+			CreatedAt:   outboundCreatedAt.Time,
+			UpdatedAt:   outboundUpdatedAt.Time,
+		}
 	} else {
 		thread.ClearOutboundMessage()
 	}
@@ -1157,11 +1178,15 @@ func (tc *ThreadChatDB) LookupByWorkspaceThreadId(
 			CustomerId: inboundCustomerId.String,
 			Name:       inboundCustomerName.String,
 		}
-		thread.AddInboundMessage(inboundMessageId.String, customer,
-			inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
-			inboundCreatedAt.Time,
-			inboundUpdatedAt.Time,
-		)
+		thread.InboundMessage = &models.InboundMessage{
+			MessageId:   inboundMessageId.String,
+			Customer:    customer,
+			PreviewText: inboundPreviewText.String,
+			FirstSeqId:  inboundFirstSeqId.String,
+			LastSeqId:   inboundLastSeqId.String,
+			CreatedAt:   inboundCreatedAt.Time,
+			UpdatedAt:   inboundUpdatedAt.Time,
+		}
 	} else {
 		thread.ClearInboundMessage()
 	}
@@ -1173,11 +1198,15 @@ func (tc *ThreadChatDB) LookupByWorkspaceThreadId(
 			MemberId: outboundMemberId.String,
 			Name:     outboundMemberName.String,
 		}
-		thread.AddOutboundMessage(outboundMessageId.String, member,
-			outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
-			outboundCreatedAt.Time,
-			outboundUpdatedAt.Time,
-		)
+		thread.OutboundMessage = &models.OutboundMessage{
+			MessageId:   outboundMessageId.String,
+			Member:      member,
+			PreviewText: outboundPreviewText.String,
+			FirstSeqId:  outboundFirstSeqId.String,
+			LastSeqId:   outboundLastSeqId.String,
+			CreatedAt:   outboundCreatedAt.Time,
+			UpdatedAt:   outboundUpdatedAt.Time,
+		}
 	} else {
 		thread.ClearOutboundMessage()
 	}
@@ -1288,11 +1317,15 @@ func (tc *ThreadChatDB) FetchThreadsByCustomerId(
 				CustomerId: inboundCustomerId.String,
 				Name:       inboundCustomerName.String,
 			}
-			thread.AddInboundMessage(inboundMessageId.String, customer,
-				inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
-				inboundCreatedAt.Time,
-				inboundUpdatedAt.Time,
-			)
+			thread.InboundMessage = &models.InboundMessage{
+				MessageId:   inboundMessageId.String,
+				Customer:    customer,
+				PreviewText: inboundPreviewText.String,
+				FirstSeqId:  inboundFirstSeqId.String,
+				LastSeqId:   inboundLastSeqId.String,
+				CreatedAt:   inboundCreatedAt.Time,
+				UpdatedAt:   inboundUpdatedAt.Time,
+			}
 		} else {
 			thread.ClearInboundMessage()
 		}
@@ -1303,11 +1336,15 @@ func (tc *ThreadChatDB) FetchThreadsByCustomerId(
 				MemberId: outboundMemberId.String,
 				Name:     outboundMemberName.String,
 			}
-			thread.AddOutboundMessage(outboundMessageId.String, member,
-				outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
-				outboundCreatedAt.Time,
-				outboundUpdatedAt.Time,
-			)
+			thread.OutboundMessage = &models.OutboundMessage{
+				MessageId:   outboundMessageId.String,
+				Member:      member,
+				PreviewText: outboundPreviewText.String,
+				FirstSeqId:  outboundFirstSeqId.String,
+				LastSeqId:   outboundLastSeqId.String,
+				CreatedAt:   outboundCreatedAt.Time,
+				UpdatedAt:   outboundUpdatedAt.Time,
+			}
 		} else {
 			thread.ClearOutboundMessage()
 		}
@@ -1432,11 +1469,15 @@ func (tc *ThreadChatDB) FetchThreadsByWorkspaceId(
 				CustomerId: inboundCustomerId.String,
 				Name:       inboundCustomerName.String,
 			}
-			thread.AddInboundMessage(inboundMessageId.String, customer,
-				inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
-				inboundCreatedAt.Time,
-				inboundUpdatedAt.Time,
-			)
+			thread.InboundMessage = &models.InboundMessage{
+				MessageId:   inboundMessageId.String,
+				Customer:    customer,
+				PreviewText: inboundPreviewText.String,
+				FirstSeqId:  inboundFirstSeqId.String,
+				LastSeqId:   inboundLastSeqId.String,
+				CreatedAt:   inboundCreatedAt.Time,
+				UpdatedAt:   inboundUpdatedAt.Time,
+			}
 		} else {
 			thread.ClearInboundMessage()
 		}
@@ -1447,11 +1488,15 @@ func (tc *ThreadChatDB) FetchThreadsByWorkspaceId(
 				MemberId: outboundMemberId.String,
 				Name:     outboundMemberName.String,
 			}
-			thread.AddOutboundMessage(outboundMessageId.String, member,
-				outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
-				outboundCreatedAt.Time,
-				outboundUpdatedAt.Time,
-			)
+			thread.OutboundMessage = &models.OutboundMessage{
+				MessageId:   outboundMessageId.String,
+				Member:      member,
+				PreviewText: outboundPreviewText.String,
+				FirstSeqId:  outboundFirstSeqId.String,
+				LastSeqId:   outboundLastSeqId.String,
+				CreatedAt:   outboundCreatedAt.Time,
+				UpdatedAt:   outboundUpdatedAt.Time,
+			}
 		} else {
 			thread.ClearOutboundMessage()
 		}
@@ -1576,11 +1621,15 @@ func (tc *ThreadChatDB) FetchThreadsByAssignedMemberId(
 				CustomerId: inboundCustomerId.String,
 				Name:       inboundCustomerName.String,
 			}
-			thread.AddInboundMessage(inboundMessageId.String, customer,
-				inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
-				inboundCreatedAt.Time,
-				inboundUpdatedAt.Time,
-			)
+			thread.InboundMessage = &models.InboundMessage{
+				MessageId:   inboundMessageId.String,
+				Customer:    customer,
+				PreviewText: inboundPreviewText.String,
+				FirstSeqId:  inboundFirstSeqId.String,
+				LastSeqId:   inboundLastSeqId.String,
+				CreatedAt:   inboundCreatedAt.Time,
+				UpdatedAt:   inboundUpdatedAt.Time,
+			}
 		} else {
 			thread.ClearInboundMessage()
 		}
@@ -1591,11 +1640,16 @@ func (tc *ThreadChatDB) FetchThreadsByAssignedMemberId(
 				MemberId: outboundMemberId.String,
 				Name:     outboundMemberName.String,
 			}
-			thread.AddOutboundMessage(outboundMessageId.String, member,
-				outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
-				outboundCreatedAt.Time,
-				outboundUpdatedAt.Time,
-			)
+
+			thread.OutboundMessage = &models.OutboundMessage{
+				MessageId:   outboundMessageId.String,
+				Member:      member,
+				PreviewText: outboundPreviewText.String,
+				FirstSeqId:  outboundFirstSeqId.String,
+				LastSeqId:   outboundLastSeqId.String,
+				CreatedAt:   outboundCreatedAt.Time,
+				UpdatedAt:   outboundUpdatedAt.Time,
+			}
 		} else {
 			thread.ClearOutboundMessage()
 		}
@@ -1721,11 +1775,15 @@ func (tc *ThreadChatDB) FetchThreadsByMemberUnassigned(
 				CustomerId: inboundCustomerId.String,
 				Name:       inboundCustomerName.String,
 			}
-			thread.AddInboundMessage(inboundMessageId.String, customer,
-				inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
-				inboundCreatedAt.Time,
-				inboundUpdatedAt.Time,
-			)
+			thread.InboundMessage = &models.InboundMessage{
+				MessageId:   inboundMessageId.String,
+				Customer:    customer,
+				PreviewText: inboundPreviewText.String,
+				FirstSeqId:  inboundFirstSeqId.String,
+				LastSeqId:   inboundLastSeqId.String,
+				CreatedAt:   inboundCreatedAt.Time,
+				UpdatedAt:   inboundUpdatedAt.Time,
+			}
 		} else {
 			thread.ClearInboundMessage()
 		}
@@ -1736,11 +1794,15 @@ func (tc *ThreadChatDB) FetchThreadsByMemberUnassigned(
 				MemberId: outboundMemberId.String,
 				Name:     outboundMemberName.String,
 			}
-			thread.AddOutboundMessage(outboundMessageId.String, member,
-				outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
-				outboundCreatedAt.Time,
-				outboundUpdatedAt.Time,
-			)
+			thread.OutboundMessage = &models.OutboundMessage{
+				MessageId:   outboundMessageId.String,
+				Member:      member,
+				PreviewText: outboundPreviewText.String,
+				FirstSeqId:  outboundFirstSeqId.String,
+				LastSeqId:   outboundLastSeqId.String,
+				CreatedAt:   outboundCreatedAt.Time,
+				UpdatedAt:   outboundUpdatedAt.Time,
+			}
 		} else {
 			thread.ClearOutboundMessage()
 		}
@@ -1866,11 +1928,15 @@ func (tc *ThreadChatDB) FetchThreadsByLabelId(
 				CustomerId: inboundCustomerId.String,
 				Name:       inboundCustomerName.String,
 			}
-			thread.AddInboundMessage(inboundMessageId.String, customer,
-				inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
-				inboundCreatedAt.Time,
-				inboundUpdatedAt.Time,
-			)
+			thread.InboundMessage = &models.InboundMessage{
+				MessageId:   inboundMessageId.String,
+				Customer:    customer,
+				PreviewText: inboundPreviewText.String,
+				FirstSeqId:  inboundFirstSeqId.String,
+				LastSeqId:   inboundLastSeqId.String,
+				CreatedAt:   inboundCreatedAt.Time,
+				UpdatedAt:   inboundUpdatedAt.Time,
+			}
 		} else {
 			thread.ClearInboundMessage()
 		}
@@ -1881,11 +1947,15 @@ func (tc *ThreadChatDB) FetchThreadsByLabelId(
 				MemberId: outboundMemberId.String,
 				Name:     outboundMemberName.String,
 			}
-			thread.AddOutboundMessage(outboundMessageId.String, member,
-				outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
-				outboundCreatedAt.Time,
-				outboundUpdatedAt.Time,
-			)
+			thread.OutboundMessage = &models.OutboundMessage{
+				MessageId:   outboundMessageId.String,
+				Member:      member,
+				PreviewText: outboundPreviewText.String,
+				FirstSeqId:  outboundFirstSeqId.String,
+				LastSeqId:   outboundLastSeqId.String,
+				CreatedAt:   outboundCreatedAt.Time,
+				UpdatedAt:   outboundUpdatedAt.Time,
+			}
 		} else {
 			thread.ClearOutboundMessage()
 		}
@@ -2025,11 +2095,9 @@ func (tc *ThreadChatDB) FetchAttachedLabelsByThreadId(
 	return labels, nil
 }
 
-// InsertCustomerChat inserts a customer chat into the database.
-// TODO: pass thread with InboundMessage, and use that
-// instead of passing Thread and InboundMessage separately.
+// TODO: fix this.
 func (tc *ThreadChatDB) InsertCustomerChat(
-	ctx context.Context, thread models.Thread, inboundMessage models.InboundMessage, chat models.Chat,
+	ctx context.Context, thread models.Thread, chat models.Chat,
 ) (models.Chat, error) {
 	// start transaction
 	tx, err := tc.db.Begin(ctx)
@@ -2110,10 +2178,13 @@ func (tc *ThreadChatDB) InsertCustomerChat(
 		from ups u
 		inner join customer c on u.customer_id = c.customer_id
 	`
-	err = tx.QueryRow(ctx, stmt, inboundMessage.MessageId, inboundMessage.CustomerId,
+
+	// From thread.
+	inboundMessage := thread.InboundMessage
+	err = tx.QueryRow(ctx, stmt, inboundMessage.MessageId, inboundMessage.Customer.CustomerId,
 		inboundMessage.FirstSeqId, inboundMessage.LastSeqId, inboundMessage.PreviewText).Scan(
 		&inboundMessage.MessageId,
-		&inboundMessage.CustomerId, &inboundMessage.CustomerName,
+		&inboundMessage.Customer.CustomerId, &inboundMessage.Customer.Name,
 		&inboundMessage.FirstSeqId, &inboundMessage.LastSeqId,
 		&inboundMessage.PreviewText,
 		&inboundMessage.CreatedAt, &inboundMessage.UpdatedAt,
@@ -2127,18 +2198,14 @@ func (tc *ThreadChatDB) InsertCustomerChat(
 		return models.Chat{}, ErrQuery
 	}
 
-	// check if the thread has the reference to inbound message,
-	// if not then update thread with the latest inbound message ID.
-	if thread.InboundMessage == nil {
-		stmt = `update thread set
+	// TODO: fix this, only update add reference if the inbound_message was created.
+	stmt = `update thread set
 			inbound_message_id = $2, updated_at = now()
 			where thread_id = $1`
-
-		_, err = tx.Exec(ctx, stmt, chat.ThreadId, inboundMessage.MessageId)
-		if err != nil {
-			slog.Error("failed to update thread", slog.Any("err", err))
-			return models.Chat{}, ErrQuery
-		}
+	_, err = tx.Exec(ctx, stmt, chat.ThreadId, inboundMessage.MessageId)
+	if err != nil {
+		slog.Error("failed to update thread", slog.Any("err", err))
+		return models.Chat{}, ErrQuery
 	}
 
 	// commit transaction
@@ -2234,10 +2301,10 @@ func (tc *ThreadChatDB) InsertMemberChat(
 		inner join member m on u.member_id = m.member_id
 	`
 
-	err = tx.QueryRow(ctx, stmt, outboundMessage.MessageId, outboundMessage.MemberId,
+	err = tx.QueryRow(ctx, stmt, outboundMessage.MessageId, outboundMessage.Member.MemberId,
 		outboundMessage.FirstSeqId, outboundMessage.LastSeqId, outboundMessage.PreviewText).Scan(
 		&outboundMessage.MessageId,
-		&outboundMessage.MemberId, &outboundMessage.MemberName,
+		&outboundMessage.Member.MemberId, &outboundMessage.Member.Name,
 		&outboundMessage.FirstSeqId, &outboundMessage.LastSeqId,
 		&outboundMessage.PreviewText,
 		&outboundMessage.CreatedAt, &outboundMessage.UpdatedAt,
@@ -2544,11 +2611,15 @@ func (tc *ThreadChatDB) FetchThreadByPostmarkInboundInReplyMessageId(
 			CustomerId: inboundCustomerId.String,
 			Name:       inboundCustomerName.String,
 		}
-		thread.AddInboundMessage(inboundMessageId.String, customer,
-			inboundPreviewText.String, inboundFirstSeqId.String, inboundLastSeqId.String,
-			inboundCreatedAt.Time,
-			inboundUpdatedAt.Time,
-		)
+		thread.InboundMessage = &models.InboundMessage{
+			MessageId:   inboundMessageId.String,
+			Customer:    customer,
+			PreviewText: inboundPreviewText.String,
+			FirstSeqId:  inboundFirstSeqId.String,
+			LastSeqId:   inboundLastSeqId.String,
+			CreatedAt:   inboundCreatedAt.Time,
+			UpdatedAt:   inboundUpdatedAt.Time,
+		}
 	} else {
 		thread.ClearInboundMessage()
 	}
@@ -2560,11 +2631,15 @@ func (tc *ThreadChatDB) FetchThreadByPostmarkInboundInReplyMessageId(
 			MemberId: outboundMemberId.String,
 			Name:     outboundMemberName.String,
 		}
-		thread.AddOutboundMessage(outboundMessageId.String, member,
-			outboundPreviewText.String, outboundFirstSeqId.String, outboundLastSeqId.String,
-			outboundCreatedAt.Time,
-			outboundUpdatedAt.Time,
-		)
+		thread.OutboundMessage = &models.OutboundMessage{
+			MessageId:   outboundMessageId.String,
+			Member:      member,
+			PreviewText: outboundPreviewText.String,
+			FirstSeqId:  outboundFirstSeqId.String,
+			LastSeqId:   outboundLastSeqId.String,
+			CreatedAt:   outboundCreatedAt.Time,
+			UpdatedAt:   outboundUpdatedAt.Time,
+		}
 	} else {
 		thread.ClearOutboundMessage()
 	}

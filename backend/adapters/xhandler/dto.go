@@ -213,18 +213,20 @@ func (th ThreadResp) NewResponse(thread *models.Thread) ThreadResp {
 	}
 
 	if thread.InboundMessage != nil {
+		customer := thread.Customer
 		inboundCustomer = &CustomerActorResp{
-			CustomerId: thread.InboundMessage.CustomerId,
-			Name:       thread.InboundMessage.CustomerName,
+			CustomerId: customer.CustomerId,
+			Name:       customer.Name,
 		}
 		inboundFirstSeqId = &thread.InboundMessage.FirstSeqId
 		inboundLastSeqId = &thread.InboundMessage.LastSeqId
 	}
 
 	if thread.OutboundMessage != nil {
+		member := thread.OutboundMessage.Member
 		outboundMember = &MemberActorResp{
-			MemberId: thread.OutboundMessage.MemberId,
-			Name:     thread.OutboundMessage.MemberName,
+			MemberId: member.MemberId,
+			Name:     member.Name,
 		}
 		outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
 		outboundLastSeqId = &thread.OutboundMessage.LastSeqId
@@ -411,18 +413,20 @@ func (t ThreadChatResp) NewResponse(thread *models.Thread, chat *models.Chat) Th
 	}
 
 	if thread.InboundMessage != nil {
+		customer := thread.InboundMessage.Customer
 		inboundCustomer = &CustomerActorResp{
-			CustomerId: thread.InboundMessage.CustomerId,
-			Name:       thread.InboundMessage.CustomerName,
+			CustomerId: customer.CustomerId,
+			Name:       customer.Name,
 		}
 		inboundFirstSeqId = &thread.InboundMessage.FirstSeqId
 		inboundLastSeqId = &thread.InboundMessage.LastSeqId
 	}
 
 	if thread.OutboundMessage != nil {
+		member := thread.OutboundMessage.Member
 		outboundMember = &MemberActorResp{
-			MemberId: thread.OutboundMessage.MemberId,
-			Name:     thread.OutboundMessage.MemberName,
+			MemberId: member.MemberId,
+			Name:     member.Name,
 		}
 		outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
 		outboundLastSeqId = &thread.OutboundMessage.LastSeqId

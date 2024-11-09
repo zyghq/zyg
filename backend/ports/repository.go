@@ -134,7 +134,7 @@ type ThreadRepositorer interface {
 	FetchAttachedLabelsByThreadId(
 		ctx context.Context, threadId string) ([]models.ThreadLabel, error)
 	InsertCustomerChat(
-		ctx context.Context, thread models.Thread, inboundMessage models.InboundMessage, chat models.Chat,
+		ctx context.Context, thread models.Thread, chat models.Chat,
 	) (models.Chat, error)
 	InsertMemberChat(
 		ctx context.Context, thread models.Thread, outboundMessage models.OutboundMessage, chat models.Chat,

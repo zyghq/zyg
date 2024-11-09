@@ -174,14 +174,13 @@ func (c ThreadChannel) Email() string {
 // InboundMessage tracks the inbound message received from the Customer.
 // Common across channels.
 type InboundMessage struct {
-	MessageId    string
-	CustomerId   string // Deprecated
-	CustomerName string // Deprecated
-	PreviewText  string // Deprecated
-	FirstSeqId   string
-	LastSeqId    string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	MessageId   string
+	Customer    CustomerActor
+	PreviewText string
+	FirstSeqId  string
+	LastSeqId   string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 func (im InboundMessage) GenId() string {
@@ -192,17 +191,16 @@ func (im InboundMessage) GenId() string {
 // Common across channels.
 type OutboundMessage struct {
 	MessageId   string
-	MemberId    string // Deprecated
-	MemberName  string // Deprecated
-	PreviewText string // Deprecated
+	Member      MemberActor
+	PreviewText string
 	FirstSeqId  string
 	LastSeqId   string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
 
-func (em OutboundMessage) GenId() string {
-	return "em" + xid.New().String()
+func (om OutboundMessage) GenId() string {
+	return "om" + xid.New().String()
 }
 
 // A Thread represents conversation with a Customer on a specific issue or topic.
@@ -282,35 +280,6 @@ func SetThreadDescription(description string) ThreadOption {
 	}
 }
 
-// CreateNewThread creates a new thread with the provided attributes and defaults.
-// Deprecated: use functional ops?
-func (th *Thread) CreateNewThread(
-	workspaceId string, customer CustomerActor,
-	createdBy MemberActor, updatedBy MemberActor, channel string,
-	createdAt time.Time, updatedAt time.Time,
-) Thread {
-	thread := Thread{}
-	status := ThreadStatus{}
-	status.InitialStatus(createdBy)
-
-	thread.WorkspaceId = workspaceId
-	thread.Customer = customer
-	thread.CreatedBy = createdBy
-	thread.UpdatedBy = updatedBy
-	thread.Channel = channel
-
-	thread.CreatedAt = createdAt
-	thread.UpdatedAt = updatedAt
-
-	// Defaults
-	thread.ThreadId = thread.GenId()
-	thread.SetDefaultTitle()
-	thread.ThreadStatus = status
-	thread.Replied = false
-	thread.Priority = ThreadPriority{}.DefaultPriority()
-	return thread
-}
-
 // AssignMember assigns the member to the thread and when the assignment was made.
 func (th *Thread) AssignMember(member MemberActor, assignedAt time.Time) {
 	th.AssignedMember = &AssignedMember{
@@ -324,20 +293,32 @@ func (th *Thread) ClearAssignedMember() {
 	th.AssignedMember = nil
 }
 
-// AddInboundMessage adds the inbound message info to the Thread.
+// SetNewInboundMessage adds the inbound message info to the Thread.
 // Inbound messages are messages from the Customer.
-// Deprecated: update and remove redundant fields and references.
-func (th *Thread) AddInboundMessage(messageId string, customer CustomerActor,
-	previewText string,
-	firstSeqId string, lastSeqId string,
-	createdAt time.Time, updatedAt time.Time,
-) {
+func (th *Thread) SetNewInboundMessage(customer CustomerActor, previewText string) {
+	messageId := InboundMessage{}.GenId()
+	seqId := xid.New().String()
+	now := time.Now().UTC()
 	th.InboundMessage = &InboundMessage{
-		MessageId: messageId, CustomerId: customer.CustomerId, CustomerName: customer.Name,
+		MessageId:   messageId,
+		Customer:    customer,
 		PreviewText: previewText,
-		FirstSeqId:  firstSeqId, LastSeqId: lastSeqId,
-		CreatedAt: createdAt,
-		UpdatedAt: updatedAt,
+		FirstSeqId:  seqId,
+		LastSeqId:   seqId, // starts with first seq.
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+}
+
+func (th *Thread) SetNextInboundSeq(previewText string) {
+	seqId := xid.New().String()
+	now := time.Now().UTC()
+	if th.InboundMessage != nil {
+		th.InboundMessage.PreviewText = previewText
+		th.InboundMessage.LastSeqId = seqId
+		th.InboundMessage.UpdatedAt = now
+	} else {
+		th.SetNewInboundMessage(th.Customer, previewText)
 	}
 }
 
@@ -345,19 +326,34 @@ func (th *Thread) ClearInboundMessage() {
 	th.InboundMessage = nil
 }
 
-// AddOutboundMessage adds the outbound message info to the Thread.
+// SetNewOutboundMessage adds the outbound message info to the Thread.
 // Outbound messages are messages from the Member.
-func (th *Thread) AddOutboundMessage(messageId string, member MemberActor,
-	previewText string,
-	firstSeqId string, lastSeqId string,
-	createdAt time.Time, updatedAt time.Time,
+func (th *Thread) SetNewOutboundMessage(
+	messageId string, member MemberActor, previewText string,
 ) {
+	seqId := xid.New().String()
+	now := time.Now().UTC()
 	th.OutboundMessage = &OutboundMessage{
-		MessageId: messageId, MemberId: member.MemberId, MemberName: member.Name,
+		MessageId:   messageId,
+		Member:      member,
 		PreviewText: previewText,
-		FirstSeqId:  firstSeqId, LastSeqId: lastSeqId,
-		CreatedAt: createdAt,
-		UpdatedAt: updatedAt,
+		FirstSeqId:  seqId,
+		LastSeqId:   seqId, // starts with first seq.
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+}
+
+func (th *Thread) SetNextOutboundSeq(member MemberActor, previewText string) {
+	seqId := xid.New().String()
+	now := time.Now().UTC()
+	if th.OutboundMessage != nil {
+		th.OutboundMessage.PreviewText = previewText
+		th.OutboundMessage.LastSeqId = seqId
+		th.OutboundMessage.UpdatedAt = now
+	} else {
+		messageId := OutboundMessage{}.GenId()
+		th.SetNewOutboundMessage(messageId, member, previewText)
 	}
 }
 
@@ -512,12 +508,12 @@ func SetMessageCustomer(customer CustomerActor) MessageOption {
 	}
 }
 
-func SetMessageMember(member MemberActor) MessageOption {
-	return func(message *Message) {
-		message.Member = &member
-		message.Customer = nil // it's either the Member or the Customer
-	}
-}
+//func SetMessageMember(member MemberActor) MessageOption {
+//	return func(message *Message) {
+//		message.Member = &member
+//		message.Customer = nil // it's either the Member or the Customer
+//	}
+//}
 
 func SetMessageTextBody(textBody string) MessageOption {
 	return func(message *Message) {
