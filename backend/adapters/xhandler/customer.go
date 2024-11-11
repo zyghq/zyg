@@ -374,17 +374,17 @@ func (h *CustomerHandler) handleCreateThreadChat(
 		return
 	}
 
-	thread, chat, err := h.ths.CreateNewInboundThreadChat(
+	thread, message, err := h.ths.CreateInboundThreadChat(
 		ctx, customer.WorkspaceId, *customer, member.AsMemberActor(),
 		reqp.Message,
 	)
 	if err != nil {
-		slog.Error("failed to create thread chat", slog.Any("err", err))
+		slog.Error("failed to create thread message", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	resp := ThreadChatResp{}.NewResponse(&thread, &chat)
+	resp := ThreadChatResp{}.NewResponse(&thread, &message)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
@@ -428,8 +428,8 @@ func (h *CustomerHandler) handleCreateThreadChatMessage(
 
 	threadId := r.PathValue("threadId")
 
-	var message MessageThreadReq
-	err := json.NewDecoder(r.Body).Decode(&message)
+	var reqp MessageThreadReq
+	err := json.NewDecoder(r.Body).Decode(&reqp)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
@@ -449,39 +449,37 @@ func (h *CustomerHandler) handleCreateThreadChatMessage(
 		return
 	}
 
-	chat, err := h.ths.CreateInboundChatMessage(ctx, thread, message.Message)
+	message, err := h.ths.AppendInboundThreadChat(ctx, thread, reqp.Message)
 	if err != nil {
 		slog.Error("failed to create thread chat message", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	var chatCustomer *CustomerActorResp
-	var chatMember *MemberActorResp
-
-	// for chat - either of them
-	if chat.CustomerId.Valid {
-		chatCustomer = &CustomerActorResp{
-			CustomerId: chat.CustomerId.String,
-			Name:       chat.CustomerName.String,
+	var messageCustomer *CustomerActorResp
+	var messageMember *MemberActorResp
+	if message.Customer != nil {
+		messageCustomer = &CustomerActorResp{
+			CustomerId: message.Customer.CustomerId,
+			Name:       message.Customer.Name,
 		}
-	} else if chat.MemberId.Valid {
-		chatMember = &MemberActorResp{
-			MemberId: chat.MemberId.String,
-			Name:     chat.MemberName.String,
+	} else if message.Member != nil {
+		messageMember = &MemberActorResp{
+			MemberId: message.Member.MemberId,
+			Name:     message.Member.Name,
 		}
 	}
 
-	resp := ChatResp{
-		ThreadId:  thread.ThreadId,
-		ChatId:    chat.ChatId,
-		Body:      chat.Body,
-		Sequence:  chat.Sequence,
-		IsHead:    chat.IsHead,
-		Customer:  chatCustomer,
-		Member:    chatMember,
-		CreatedAt: chat.CreatedAt,
-		UpdatedAt: chat.UpdatedAt,
+	resp := MessageResp{
+		ThreadId:  message.ThreadId,
+		MessageId: message.MessageId,
+		TextBody:  message.TextBody,
+		Body:      message.Body,
+		Customer:  messageCustomer,
+		Member:    messageMember,
+		Channel:   message.Channel,
+		CreatedAt: message.CreatedAt,
+		UpdatedAt: message.UpdatedAt,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -494,60 +492,59 @@ func (h *CustomerHandler) handleCreateThreadChatMessage(
 
 func (h *CustomerHandler) handleGetThreadChatMessages(
 	w http.ResponseWriter, r *http.Request, customer *models.Customer) {
-	threadId := r.PathValue("threadId")
 	ctx := r.Context()
 
+	threadId := r.PathValue("threadId")
 	channel := models.ThreadChannel{}.InAppChat()
 	thread, err := h.ths.GetWorkspaceThread(ctx, customer.WorkspaceId, threadId, &channel)
 	if errors.Is(err, services.ErrThreadChatNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
-
 	if err != nil {
-		slog.Error("failed to fetch thread chat", slog.Any("err", err))
+		slog.Error("failed to fetch thread", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	chats, err := h.ths.ListThreadChatMessages(ctx, thread.ThreadId)
+	messages, err := h.ths.ListThreadChatMessages(ctx, thread.ThreadId)
 	if err != nil {
-		slog.Error("failed to fetch thread chat messages", slog.Any("err", err))
+		slog.Error("failed to fetch thread messages", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	messages := make([]ChatResp, 0, 100)
-	for _, chat := range chats {
-		var chatCustomer *CustomerActorResp
-		var chatMember *MemberActorResp
-		if chat.CustomerId.Valid {
-			chatCustomer = &CustomerActorResp{
-				CustomerId: chat.CustomerId.String,
-				Name:       chat.CustomerName.String,
+	items := make([]MessageResp, 0, 100)
+	for _, message := range messages {
+		var messageCustomer *CustomerActorResp
+		var messageMember *MemberActorResp
+		if message.Customer != nil {
+			messageCustomer = &CustomerActorResp{
+				CustomerId: message.Customer.CustomerId,
+				Name:       message.Customer.Name,
 			}
-		} else if chat.MemberId.Valid {
-			chatMember = &MemberActorResp{
-				MemberId: chat.MemberId.String,
-				Name:     chat.MemberName.String,
+		} else if message.Member != nil {
+			messageMember = &MemberActorResp{
+				MemberId: message.Member.MemberId,
+				Name:     message.Member.Name,
 			}
 		}
-		chatResp := ChatResp{
-			ThreadId:  thread.ThreadId,
-			ChatId:    chat.ChatId,
-			Body:      chat.Body,
-			Sequence:  chat.Sequence,
-			IsHead:    chat.IsHead,
-			Customer:  chatCustomer,
-			Member:    chatMember,
-			CreatedAt: chat.CreatedAt,
-			UpdatedAt: chat.UpdatedAt,
+		resp := MessageResp{
+			ThreadId:  message.ThreadId,
+			MessageId: message.MessageId,
+			TextBody:  message.TextBody,
+			Body:      message.Body,
+			Customer:  messageCustomer,
+			Member:    messageMember,
+			Channel:   message.Channel,
+			CreatedAt: message.CreatedAt,
+			UpdatedAt: message.UpdatedAt,
 		}
-		messages = append(messages, chatResp)
+		items = append(items, resp)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(messages); err != nil {
+	if err := json.NewEncoder(w).Encode(items); err != nil {
 		slog.Error("failed to encode json", slog.Any("error", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return

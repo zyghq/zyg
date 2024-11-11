@@ -105,14 +105,31 @@ type CustomerRepositorer interface {
 }
 
 type ThreadRepositorer interface {
-	InsertInboundThreadChat(
-		ctx context.Context, thread models.Thread, chat models.Chat) (models.Thread, models.Chat, error)
+	// InsertInboundThreadMessage inserts a new inbound thread message into the thread.
+	// Returns the updated Thread, the newly created Message, and an error if one occurred.
+	InsertInboundThreadMessage(
+		ctx context.Context, message models.ThreadMessage) (models.Thread, models.Message, error)
+	// InsertPostmarkInboundThreadMessage inserts a new thread message with Postmark inbound data and returns
+	// the updated thread, message, and an error if any occurs.
 	InsertPostmarkInboundThreadMessage(
 		ctx context.Context, inbound models.ThreadMessageWithPostmarkInbound) (models.Thread, models.Message, error)
-	FetchThreadByPostmarkInboundInReplyMessageId(
-		ctx context.Context, workspaceId string, inReplyMessageId string) (models.Thread, error)
+
+	// AppendInboundThreadMessage appends an inbound message to the thread.
+	AppendInboundThreadMessage(
+		ctx context.Context, inbound models.ThreadMessage,
+	) (models.Message, error)
+
+	// AppendPostmarkInboundThreadMessage appends a new postmark inbound message to an existing thread.
 	AppendPostmarkInboundThreadMessage(
 		ctx context.Context, inbound models.ThreadMessageWithPostmarkInbound) (models.Message, error)
+
+	// AppendOutboundThreadMessage appends an outbound message to the thread.
+	AppendOutboundThreadMessage(
+		ctx context.Context, outbound models.ThreadMessage,
+	) (models.Message, error)
+
+	FetchThreadByPostmarkInboundInReplyMessageId(
+		ctx context.Context, workspaceId string, inReplyMessageId string) (models.Thread, error)
 	LookupByWorkspaceThreadId(
 		ctx context.Context, workspaceId string, threadId string, channel *string) (models.Thread, error)
 	ModifyThreadById(
@@ -133,14 +150,9 @@ type ThreadRepositorer interface {
 		ctx context.Context, thl models.ThreadLabel) (models.ThreadLabel, bool, error)
 	FetchAttachedLabelsByThreadId(
 		ctx context.Context, threadId string) ([]models.ThreadLabel, error)
-	InsertCustomerChat(
-		ctx context.Context, thread models.Thread, chat models.Chat,
-	) (models.Chat, error)
-	InsertMemberChat(
-		ctx context.Context, thread models.Thread, outboundMessage models.OutboundMessage, chat models.Chat,
-	) (models.Chat, error)
-	FetchThChatMessagesByThreadId(
-		ctx context.Context, threadId string) ([]models.Chat, error)
+
+	FetchThreadMessagesByThreadId(
+		ctx context.Context, threadId string) ([]models.Message, error)
 	ComputeStatusMetricsByWorkspaceId(
 		ctx context.Context, workspaceId string) (models.ThreadMetrics, error)
 	ComputeAssigneeMetricsByMember(

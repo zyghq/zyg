@@ -22,7 +22,7 @@ import { z } from "zod";
 import { useStore } from "zustand";
 
 export const Route = createFileRoute(
-  "/_account/workspaces/$workspaceId/settings/labels"
+  "/_account/workspaces/$workspaceId/settings/labels",
 )({
   component: LabelSettings,
 });
@@ -40,7 +40,7 @@ function LabelSettings() {
   const { token } = Route.useRouteContext();
   const workspaceStore = useWorkspaceStore();
   const labels = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-    state.viewLabels(state)
+    state.viewLabels(state),
   ) as Label[];
 
   const form = useForm({
@@ -85,8 +85,6 @@ function LabelSettings() {
   const { isSubmitting } = formState;
 
   const isCreating = isSubmitting || mutation.isPending;
-
-  console.log(labels);
 
   return (
     <div className="container">

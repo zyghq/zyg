@@ -23,10 +23,10 @@ import {
   MemberResponse,
   memberResponseSchema,
   patResponseSchema,
-  ThreadChatResponse,
-  threadChatResponseSchema,
   ThreadLabelResponse,
   threadLabelResponseSchema,
+  ThreadMessageResponse,
+  threadMessageResponseSchema,
   ThreadResponse,
   threadResponseSchema,
   WorkspaceMetricsResponse,
@@ -100,10 +100,9 @@ export async function getWorkspace(
       };
     }
 
-    const data = await response.json();
-    console.log(data);
-    // parse into schema
     try {
+      const data = await response.json();
+      console.log(data);
       const workspace = workspaceResponseSchema.parse({ ...data });
       return { data: workspace, error: null };
     } catch (err) {
@@ -152,10 +151,9 @@ export async function getWorkspaceMember(
       };
     }
 
-    const data = await response.json();
-    console.log(data);
-    // parse into schema
     try {
+      const data = await response.json();
+      console.log(data);
       const member = authMemberResponseSchema.parse({ ...data });
       return { data: member, error: null };
     } catch (err) {
@@ -256,7 +254,6 @@ export async function getWorkspaceThreads(
     try {
       const data = await response.json();
       console.log(data);
-      // schema validate for each item
       const threads = data.map((item: any) => {
         return threadResponseSchema.parse({ ...item });
       });
@@ -364,7 +361,6 @@ export async function getPats(token: string): Promise<{
     try {
       const data = await response.json();
       console.log(data);
-      // schema validate for each item
       const pats = data.map((item: any) => {
         return patResponseSchema.parse({ ...item });
       });
@@ -410,9 +406,9 @@ export async function createPat(
       );
       return { data: null, error };
     }
+
     try {
       const data = await response.json();
-
       console.log(data);
       const pat = patResponseSchema.parse({ ...data });
       return { data: pat, error: null };
@@ -514,7 +510,6 @@ export async function getOrCreateZygAccount(
 
     try {
       const data = await response.json();
-
       console.log(data);
       const account = accountResponseSchema.parse({ ...data });
       return { data: account, error: null };
@@ -568,9 +563,7 @@ export async function getWorkspaceCustomers(
 
     try {
       const data = await response.json();
-
       console.log(data);
-      // schema validate for each item
       const customers = data.map((item: any) => {
         return customerResponseSchema.parse({ ...item });
       });
@@ -622,7 +615,6 @@ export async function createWorkspace(
       return { data: null, error };
     }
     const data = await response.json();
-
     console.log(data);
     const { name, workspaceId } = data;
     return {
@@ -665,8 +657,8 @@ export async function updateWorkspace(
       );
       return { data: null, error };
     }
-    const data = await response.json();
 
+    const data = await response.json();
     console.log(data);
     const { name, workspaceId: id } = data;
     return {
@@ -712,9 +704,7 @@ export async function getWorkspaceMembers(
 
     try {
       const data = await response.json();
-
       console.log(data);
-      // schema validate for each item
       const members = data.map((item: any) => {
         return memberResponseSchema.parse({ ...item });
       });
@@ -884,7 +874,7 @@ export async function getWorkspaceThreadChatMessages(
   workspaceId: string,
   threadId: string,
 ): Promise<{
-  data: null | ThreadChatResponse[];
+  data: null | ThreadMessageResponse[];
   error: Error | null;
 }> {
   try {
@@ -912,8 +902,9 @@ export async function getWorkspaceThreadChatMessages(
       const data = await response.json();
       console.log(data);
       const messages = data.map((item: any) => {
-        return threadChatResponseSchema.parse({ ...item });
+        return threadMessageResponseSchema.parse({ ...item });
       });
+
       return { data: messages, error: null };
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -959,9 +950,9 @@ export async function createWorkspaceLabel(
       );
       return { data: null, error };
     }
+
     try {
       const data = await response.json();
-
       console.log(data);
       const parsed = labelResponseSchema.parse({ ...data });
       return { data: parsed, error: null };
@@ -1008,9 +999,9 @@ export async function updateWorkspaceLabel(
       );
       return { data: null, error };
     }
+
     try {
       const data = await response.json();
-
       console.log(data);
       const parsed = labelResponseSchema.parse({ ...data });
       return { data: parsed, error: null };
@@ -1057,10 +1048,10 @@ export async function updateThread(
       );
       return { data: null, error };
     }
+
     try {
       const data = await response.json();
-
-      console.log("updateThread data", data);
+      console.log(data);
       const parsed = threadResponseSchema.parse({ ...data });
       return { data: parsed, error: null };
     } catch (err) {
@@ -1236,7 +1227,7 @@ export async function sendThreadChatMessage(
   threadId: string,
   body: { message: string },
 ): Promise<{
-  data: null | ThreadChatResponse;
+  data: null | ThreadMessageResponse;
   error: Error | null;
 }> {
   try {
@@ -1265,7 +1256,7 @@ export async function sendThreadChatMessage(
       const data = await response.json();
 
       console.log(data);
-      const parsed = threadChatResponseSchema.parse({ ...data });
+      const parsed = threadMessageResponseSchema.parse({ ...data });
       return { data: parsed, error: null };
     } catch (err) {
       if (err instanceof z.ZodError) {

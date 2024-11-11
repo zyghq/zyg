@@ -255,50 +255,49 @@ func (th ThreadResp) NewResponse(thread *models.Thread) ThreadResp {
 	}
 }
 
-type ChatResp struct {
+type MessageResp struct {
 	ThreadId  string
-	ChatId    string
+	MessageId string
+	TextBody  string
 	Body      string
-	Sequence  int
 	Customer  *CustomerActorResp
 	Member    *MemberActorResp
-	IsHead    bool
+	Channel   string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
 
-func (ch ChatResp) MarshalJSON() ([]byte, error) {
+func (m MessageResp) MarshalJSON() ([]byte, error) {
 	var customer *CustomerActorResp
 	var member *MemberActorResp
 
-	if ch.Customer != nil {
-		customer = ch.Customer
+	if m.Customer != nil {
+		customer = m.Customer
 	}
-
-	if ch.Member != nil {
-		member = ch.Member
+	if m.Member != nil {
+		member = m.Member
 	}
 
 	aux := &struct {
 		ThreadId  string             `json:"threadId"`
-		ChatId    string             `json:"chatId"`
+		MessageId string             `json:"messageId"`
+		TextBody  string             `json:"textBody"`
 		Body      string             `json:"body"`
-		Sequence  int                `json:"sequence"`
-		IsHead    bool               `json:"isHead"`
 		Customer  *CustomerActorResp `json:"customer,omitempty"`
 		Member    *MemberActorResp   `json:"member,omitempty"`
+		Channel   string             `json:"channel"`
 		CreatedAt string             `json:"createdAt"`
 		UpdatedAt string             `json:"updatedAt"`
 	}{
-		ThreadId:  ch.ThreadId,
-		ChatId:    ch.ChatId,
-		Body:      ch.Body,
-		Sequence:  ch.Sequence,
-		IsHead:    ch.IsHead,
+		ThreadId:  m.ThreadId,
+		MessageId: m.MessageId,
+		TextBody:  m.TextBody,
+		Body:      m.Body,
 		Customer:  customer,
 		Member:    member,
-		CreatedAt: ch.CreatedAt.Format(time.RFC3339),
-		UpdatedAt: ch.UpdatedAt.Format(time.RFC3339),
+		Channel:   m.Channel,
+		CreatedAt: m.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: m.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
 }
@@ -322,7 +321,7 @@ type ThreadChatResp struct {
 	OutboundMember     *MemberActorResp
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
-	Chat               ChatResp `json:"chat"`
+	Message            MessageResp `json:"message"`
 }
 
 func (t ThreadChatResp) MarshalJSON() ([]byte, error) {
@@ -345,7 +344,7 @@ func (t ThreadChatResp) MarshalJSON() ([]byte, error) {
 		OutboundMember     *MemberActorResp   `json:"outboundMember,omitempty"`
 		CreatedAt          string             `json:"createdAt"`
 		UpdatedAt          string             `json:"updatedAt"`
-		Chat               ChatResp           `json:"chat"`
+		Message            MessageResp        `json:"message"`
 	}{
 		ThreadId:           t.ThreadId,
 		Customer:           t.Customer,
@@ -365,42 +364,41 @@ func (t ThreadChatResp) MarshalJSON() ([]byte, error) {
 		OutboundMember:     t.OutboundMember,
 		CreatedAt:          t.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:          t.UpdatedAt.Format(time.RFC3339),
-		Chat:               t.Chat,
+		Message:            t.Message,
 	}
 	return json.Marshal(aux)
 }
 
-func (t ThreadChatResp) NewResponse(thread *models.Thread, chat *models.Chat) ThreadChatResp {
-	var threadAssignee, outboundMember, chatMember *MemberActorResp
-	var inboundCustomer, chatCustomer *CustomerActorResp
+func (t ThreadChatResp) NewResponse(thread *models.Thread, message *models.Message) ThreadChatResp {
+	var threadAssignee, outboundMember, messageMember *MemberActorResp
+	var inboundCustomer, messageCustomer *CustomerActorResp
 	var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string
 
-	// for chat - either of them
-	if chat.CustomerId.Valid {
-		chatCustomer = &CustomerActorResp{
-			CustomerId: chat.CustomerId.String,
-			Name:       chat.CustomerName.String,
+	if message.Customer != nil {
+		messageCustomer = &CustomerActorResp{
+			CustomerId: message.Customer.CustomerId,
+			Name:       message.Customer.Name,
 		}
-	} else if chat.MemberId.Valid {
-		chatMember = &MemberActorResp{
-			MemberId: chat.MemberId.String,
-			Name:     chat.MemberName.String,
+	} else if message.Member != nil {
+		messageMember = &MemberActorResp{
+			MemberId: message.Member.MemberId,
+			Name:     message.Member.Name,
 		}
 	}
 
-	chatResp := ChatResp{
+	messageResp := MessageResp{
 		ThreadId:  thread.ThreadId,
-		ChatId:    chat.ChatId,
-		Body:      chat.Body,
-		Sequence:  chat.Sequence,
-		IsHead:    chat.IsHead,
-		Customer:  chatCustomer,
-		Member:    chatMember,
-		CreatedAt: chat.CreatedAt,
-		UpdatedAt: chat.UpdatedAt,
+		MessageId: message.MessageId,
+		TextBody:  message.TextBody,
+		Body:      message.Body,
+		Customer:  messageCustomer,
+		Member:    messageMember,
+		Channel:   message.Channel,
+		CreatedAt: message.CreatedAt,
+		UpdatedAt: message.UpdatedAt,
 	}
 
-	customer := CustomerActorResp{
+	threadCustomer := CustomerActorResp{
 		CustomerId: thread.Customer.CustomerId,
 		Name:       thread.Customer.Name,
 	}
@@ -421,7 +419,6 @@ func (t ThreadChatResp) NewResponse(thread *models.Thread, chat *models.Chat) Th
 		inboundFirstSeqId = &thread.InboundMessage.FirstSeqId
 		inboundLastSeqId = &thread.InboundMessage.LastSeqId
 	}
-
 	if thread.OutboundMessage != nil {
 		member := thread.OutboundMessage.Member
 		outboundMember = &MemberActorResp{
@@ -435,7 +432,7 @@ func (t ThreadChatResp) NewResponse(thread *models.Thread, chat *models.Chat) Th
 
 	return ThreadChatResp{
 		ThreadId:           thread.ThreadId,
-		Customer:           customer,
+		Customer:           threadCustomer,
 		Title:              thread.Title,
 		Description:        thread.Description,
 		Status:             thread.ThreadStatus.Status,
@@ -452,7 +449,7 @@ func (t ThreadChatResp) NewResponse(thread *models.Thread, chat *models.Chat) Th
 		OutboundMember:     outboundMember,
 		CreatedAt:          thread.CreatedAt,
 		UpdatedAt:          thread.UpdatedAt,
-		Chat:               chatResp,
+		Message:            messageResp,
 	}
 }
 

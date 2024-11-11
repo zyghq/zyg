@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -274,64 +275,37 @@ func (h *ThreadChatHandler) handleCreateThreadChatMessage(
 		return
 	}
 
-	chat, err := h.ths.CreateOutboundChatMessage(ctx, thread, *member, reqp.Message)
+	message, err := h.ths.AppendOutboundThreadChat(ctx, thread, *member, reqp.Message)
 	if err != nil {
 		slog.Error("failed to add thread chat message", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	var chatCustomer *CustomerActorResp
-	var chatMember *MemberActorResp
-
-	// for chat - either of them
-	if chat.CustomerId.Valid {
-		chatCustomer = &CustomerActorResp{
-			CustomerId: chat.CustomerId.String,
-			Name:       chat.CustomerName.String,
+	var messageCustomer *CustomerActorResp
+	var messageMember *MemberActorResp
+	if message.Customer != nil {
+		messageCustomer = &CustomerActorResp{
+			CustomerId: message.Customer.CustomerId,
+			Name:       message.Customer.Name,
 		}
-	} else if chat.MemberId.Valid {
-		chatMember = &MemberActorResp{
-			MemberId: chat.MemberId.String,
-			Name:     chat.MemberName.String,
+	} else if message.Member != nil {
+		messageMember = &MemberActorResp{
+			MemberId: message.Member.MemberId,
+			Name:     message.Member.Name,
 		}
 	}
 
-	// improvements:
-	// shall we use go routines for async assignment and replied marking?
-	// also, let's check for workspace settings for auto assignment and replied marking
-	// for now keep it as it is.
-	// if !thread.AssigneeId.Valid {
-	// 	slog.Info("thread chat not yet assigned", "threadId", thread.ThreadId, "memberId", member.MemberId)
-	// 	t := thread // make a temp copy before assigning
-	// 	thread, err = h.ths.AssignMember(ctx, thread.ThreadId, member.MemberId)
-	// 	// if error when assigning - revert back
-	// 	if err != nil {
-	// 		slog.Error("(silent) failed to assign member to Thread InAppChat", slog.Any("error", err))
-	// 		thread = t
-	// 	}
-	// }
-
-	// if !thread.Replied {
-	// 	slog.Info("thread chat not yet replied", "threadId", thread.ThreadId, "memberId", member.MemberId)
-	// 	t := thread // make a temp copy before marking replied
-	// 	thread, err = h.ths.SetReplyStatus(ctx, thread.ThreadId, true)
-	// 	if err != nil {
-	// 		slog.Error("(silent) failed to mark thread chat as replied", slog.Any("error", err))
-	// 		thread = t
-	// 	}
-	// }
-
-	resp := ChatResp{
-		ThreadId:  thread.ThreadId,
-		ChatId:    chat.ChatId,
-		Body:      chat.Body,
-		Sequence:  chat.Sequence,
-		IsHead:    chat.IsHead,
-		Customer:  chatCustomer,
-		Member:    chatMember,
-		CreatedAt: chat.CreatedAt,
-		UpdatedAt: chat.UpdatedAt,
+	resp := MessageResp{
+		ThreadId:  message.ThreadId,
+		MessageId: message.MessageId,
+		TextBody:  message.TextBody,
+		Body:      message.Body,
+		Customer:  messageCustomer,
+		Member:    messageMember,
+		Channel:   message.Channel,
+		CreatedAt: message.CreatedAt,
+		UpdatedAt: message.UpdatedAt,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -359,44 +333,47 @@ func (h *ThreadChatHandler) handleGetThreadChatMessages(
 		return
 	}
 
-	chats, err := h.ths.ListThreadChatMessages(ctx, thread.ThreadId)
+	messages, err := h.ths.ListThreadChatMessages(ctx, thread.ThreadId)
 	if err != nil {
-		slog.Error("failed to fetch thread chat messages", slog.Any("err", err))
+		slog.Error("failed to fetch thread messages", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	messages := make([]ChatResp, 0, 100)
-	for _, chat := range chats {
-		var chatCustomer *CustomerActorResp
-		var chatMember *MemberActorResp
-		if chat.CustomerId.Valid {
-			chatCustomer = &CustomerActorResp{
-				CustomerId: chat.CustomerId.String,
-				Name:       chat.CustomerName.String,
+	fmt.Println("********************************")
+	fmt.Println(messages)
+
+	items := make([]MessageResp, 0, 100)
+	for _, message := range messages {
+		var messageCustomer *CustomerActorResp
+		var messageMember *MemberActorResp
+		if message.Customer != nil {
+			messageCustomer = &CustomerActorResp{
+				CustomerId: message.Customer.CustomerId,
+				Name:       message.Customer.Name,
 			}
-		} else if chat.MemberId.Valid {
-			chatMember = &MemberActorResp{
-				MemberId: chat.MemberId.String,
-				Name:     chat.MemberName.String,
+		} else if message.Member != nil {
+			messageMember = &MemberActorResp{
+				MemberId: message.Member.MemberId,
+				Name:     message.Member.Name,
 			}
 		}
-		chatResp := ChatResp{
-			ThreadId:  thread.ThreadId,
-			ChatId:    chat.ChatId,
-			Body:      chat.Body,
-			Sequence:  chat.Sequence,
-			IsHead:    chat.IsHead,
-			Customer:  chatCustomer,
-			Member:    chatMember,
-			CreatedAt: chat.CreatedAt,
-			UpdatedAt: chat.UpdatedAt,
+		resp := MessageResp{
+			ThreadId:  message.ThreadId,
+			MessageId: message.MessageId,
+			TextBody:  message.TextBody,
+			Body:      message.Body,
+			Customer:  messageCustomer,
+			Member:    messageMember,
+			Channel:   message.Channel,
+			CreatedAt: message.CreatedAt,
+			UpdatedAt: message.UpdatedAt,
 		}
-		messages = append(messages, chatResp)
+		items = append(items, resp)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(messages); err != nil {
+	if err := json.NewEncoder(w).Encode(items); err != nil {
 		slog.Error("failed to encode thread chat messages to json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return

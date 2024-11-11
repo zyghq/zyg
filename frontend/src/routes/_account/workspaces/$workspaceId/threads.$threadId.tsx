@@ -46,8 +46,8 @@ import {
 } from "@/db/helpers";
 import { Label, Thread, threadTransformer } from "@/db/models";
 import {
-  ThreadChatResponse,
   ThreadLabelResponse,
+  ThreadMessageResponse,
   ThreadResponse,
 } from "@/db/schema";
 import { WorkspaceStoreState } from "@/db/store";
@@ -92,22 +92,23 @@ function getPrevNextFromCurrent(threads: null | Thread[], threadId: string) {
   return { nextItem, prevItem };
 }
 
-function Chat({
-  chat,
+function Message({
   memberId,
+  message,
 }: {
-  chat: ThreadChatResponse;
   memberId: string;
+  message: ThreadMessageResponse;
 }) {
-  const { createdAt } = chat;
+  const { createdAt } = message;
   const when = formatDistanceToNow(new Date(createdAt), {
     addSuffix: true,
   });
 
-  const customerOrMemberId = chat.customer?.customerId || chat.member?.memberId;
-  const customerOrMemberName = chat.customer?.name || chat.member?.name;
+  const customerOrMemberId =
+    message.customer?.customerId || message.member?.memberId;
+  const customerOrMemberName = message.customer?.name || message.member?.name;
 
-  const isMe = chat.member?.memberId === memberId;
+  const isMe = message.member?.memberId === memberId;
 
   return (
     <div className="flex space-x-2 rounded-lg bg-white px-3 py-4 dark:bg-accent">
@@ -141,7 +142,7 @@ function Chat({
           className="mb-3 mt-3 dark:bg-neutral-700"
           orientation="horizontal"
         />
-        <div>{chat.body}</div>
+        <div>{message.body}</div>
       </div>
     </div>
   );
@@ -457,7 +458,7 @@ function ThreadDetail() {
   const { nextItem, prevItem } = getPrevNextFromCurrent(currentQueue, threadId);
 
   const {
-    data: chats,
+    data: messages,
     error,
     isPending,
     refetch,
@@ -470,9 +471,9 @@ function ThreadDetail() {
         threadId,
       );
       if (error) throw new Error("failed to fetch thread messages");
-      return data as ThreadChatResponse[];
+      return data as ThreadMessageResponse[];
     },
-    queryKey: ["chats", threadId, workspaceId, token],
+    queryKey: ["messages", threadId, workspaceId, token],
   });
 
   const assigneeId = activeThread?.assigneeId || "unassigned";
@@ -482,7 +483,7 @@ function ThreadDetail() {
     if (bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [chats]);
+  }, [messages]);
 
   const statusMutation = useMutation({
     mutationFn: async (values: { status: string }) => {
@@ -510,13 +511,17 @@ function ThreadDetail() {
   const { isError: isStatusMutErr, isPending: isStatusMutPending } =
     statusMutation;
 
-  function renderChats(chats?: ThreadChatResponse[]) {
-    if (chats && chats.length > 0) {
-      const chatsReversed = Array.from(chats).reverse();
+  function renderMessages(messages?: ThreadMessageResponse[]) {
+    if (messages && messages.length > 0) {
+      // const messagesReversed = Array.from(messages).reverse();
       return (
         <div className="space-y-4 p-4">
-          {chatsReversed.map((chat) => (
-            <Chat chat={chat} key={chat.chatId} memberId={memberId} />
+          {messages.map((message) => (
+            <Message
+              key={message.messageId}
+              memberId={memberId}
+              message={message}
+            />
           ))}
           <div ref={bottomRef}></div>
         </div>
@@ -656,7 +661,7 @@ function ThreadDetail() {
                     </div>
                   </div>
                   <ScrollArea className="flex h-[calc(100dvh-4rem)] flex-col bg-gray-100 p-1 dark:bg-background">
-                    {isPending ? <ChatLoading /> : renderChats(chats)}
+                    {isPending ? <ChatLoading /> : renderMessages(messages)}
                   </ScrollArea>
                 </div>
               </ResizablePanel>

@@ -30,7 +30,7 @@ async function fetchWorkspaces(token: string) {
           Authorization: `Bearer ${token}`,
         },
         method: "GET",
-      }
+      },
     );
     // handle 4xx-5xx errors
     if (!response.ok) {
@@ -41,7 +41,6 @@ async function fetchWorkspaces(token: string) {
     // Ok
     return await response.json();
   } catch (err) {
-    console.log("*** error fetching workspaces in fetch API call ***", err);
     console.error(err);
     throw new Error("error fetching workspaces");
   }

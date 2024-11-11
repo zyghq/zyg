@@ -141,9 +141,9 @@ export const threadLabelResponseSchema = z.object({
   updatedAt: z.string(),
 });
 
-export const threadChatResponseSchema = z.object({
+export const threadMessageResponseSchema = z.object({
   body: z.string(),
-  chatId: z.string(),
+  channel: z.string(),
   createdAt: z.string(),
   customer: z
     .object({
@@ -152,7 +152,6 @@ export const threadChatResponseSchema = z.object({
     })
     .nullable()
     .default(null),
-  isHead: z.boolean(),
   member: z
     .object({
       memberId: z.string(),
@@ -160,14 +159,15 @@ export const threadChatResponseSchema = z.object({
     })
     .nullable()
     .default(null),
-  sequence: z.number(),
+  messageId: z.string(),
+  textBody: z.string(),
   threadId: z.string(),
   updatedAt: z.string(),
 });
 
 export type ThreadResponse = z.infer<typeof threadResponseSchema>;
 
-export type ThreadChatResponse = z.infer<typeof threadChatResponseSchema>;
+export type ThreadMessageResponse = z.infer<typeof threadMessageResponseSchema>;
 
 export type LabelResponse = z.infer<typeof labelResponseSchema>;
 export type ThreadLabelResponse = z.infer<typeof threadLabelResponseSchema>;

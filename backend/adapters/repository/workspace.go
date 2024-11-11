@@ -34,9 +34,8 @@ func (wrk *WorkspaceDB) InsertWorkspaceWithMembers(
 	}
 
 	defer func(tx pgx.Tx, ctx context.Context) {
-		err := tx.Rollback(ctx)
-		if err != nil {
-			return
+		if err := tx.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
+			slog.Error("failed to rollback transaction", slog.Any("err", err))
 		}
 	}(tx, ctx)
 

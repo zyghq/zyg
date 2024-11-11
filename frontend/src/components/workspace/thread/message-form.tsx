@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { sendThreadChatMessage } from "@/db/api";
-import { ThreadChatResponse } from "@/db/schema";
+import { ThreadMessageResponse } from "@/db/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { SendHorizonalIcon } from "lucide-react";
@@ -66,7 +66,7 @@ export function MessageForm({
       if (!data) {
         throw new Error("no data returned");
       }
-      return data as ThreadChatResponse;
+      return data as ThreadMessageResponse;
     },
     onError: (error) => {
       console.error(error);

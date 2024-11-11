@@ -484,6 +484,13 @@ func (m *Message) GenId() string {
 	return "msg" + xid.New().String()
 }
 
+func (m *Message) PreviewText() string {
+	if len(m.TextBody) > 255 {
+		return m.TextBody[:255]
+	}
+	return m.TextBody
+}
+
 func NewMessage(threadId string, channel string, opts ...MessageOption) *Message {
 	messageId := (&Message{}).GenId()
 	now := time.Now().UTC()
@@ -508,12 +515,12 @@ func SetMessageCustomer(customer CustomerActor) MessageOption {
 	}
 }
 
-//func SetMessageMember(member MemberActor) MessageOption {
-//	return func(message *Message) {
-//		message.Member = &member
-//		message.Customer = nil // it's either the Member or the Customer
-//	}
-//}
+func SetMessageMember(member MemberActor) MessageOption {
+	return func(message *Message) {
+		message.Member = &member
+		message.Customer = nil // it's either the Member or the Customer
+	}
+}
 
 func SetMessageTextBody(textBody string) MessageOption {
 	return func(message *Message) {
@@ -650,9 +657,14 @@ func (p *PostmarkInboundMessage) FromName() string {
 	return p.fromName
 }
 
-// ThreadMessageWithPostmarkInbound represents a combination of a Thread, a Message, and a PostmarkInboundMessage.
+// ThreadMessage combines a Thread and its associated Message.
+type ThreadMessage struct {
+	Thread  *Thread
+	Message *Message
+}
+
+// ThreadMessageWithPostmarkInbound combines a ThreadMessage and a PostmarkInboundMessage.
 type ThreadMessageWithPostmarkInbound struct {
-	Thread                 *Thread
-	Message                *Message
+	ThreadMessage
 	PostmarkInboundMessage *PostmarkInboundMessage
 }

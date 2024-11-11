@@ -371,50 +371,49 @@ func (th ThreadResp) NewResponse(thread *models.Thread) ThreadResp {
 	}
 }
 
-type ChatResp struct {
+type MessageResp struct {
 	ThreadId  string
-	ChatId    string
+	MessageId string
+	TextBody  string
 	Body      string
-	Sequence  int
 	Customer  *CustomerActorResp
 	Member    *MemberActorResp
-	IsHead    bool
+	Channel   string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
 
-func (ch ChatResp) MarshalJSON() ([]byte, error) {
+func (m MessageResp) MarshalJSON() ([]byte, error) {
 	var customer *CustomerActorResp
 	var member *MemberActorResp
 
-	if ch.Customer != nil {
-		customer = ch.Customer
+	if m.Customer != nil {
+		customer = m.Customer
 	}
-
-	if ch.Member != nil {
-		member = ch.Member
+	if m.Member != nil {
+		member = m.Member
 	}
 
 	aux := &struct {
 		ThreadId  string             `json:"threadId"`
-		ChatId    string             `json:"chatId"`
+		MessageId string             `json:"messageId"`
+		TextBody  string             `json:"textBody"`
 		Body      string             `json:"body"`
-		Sequence  int                `json:"sequence"`
-		IsHead    bool               `json:"isHead"`
 		Customer  *CustomerActorResp `json:"customer,omitempty"`
 		Member    *MemberActorResp   `json:"member,omitempty"`
+		Channel   string             `json:"channel"`
 		CreatedAt string             `json:"createdAt"`
 		UpdatedAt string             `json:"updatedAt"`
 	}{
-		ThreadId:  ch.ThreadId,
-		ChatId:    ch.ChatId,
-		Body:      ch.Body,
-		Sequence:  ch.Sequence,
-		IsHead:    ch.IsHead,
+		ThreadId:  m.ThreadId,
+		MessageId: m.MessageId,
+		TextBody:  m.TextBody,
+		Body:      m.Body,
 		Customer:  customer,
 		Member:    member,
-		CreatedAt: ch.CreatedAt.Format(time.RFC3339),
-		UpdatedAt: ch.UpdatedAt.Format(time.RFC3339),
+		Channel:   m.Channel,
+		CreatedAt: m.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: m.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
 }
