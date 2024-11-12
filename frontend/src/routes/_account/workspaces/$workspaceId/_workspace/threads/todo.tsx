@@ -1,6 +1,6 @@
 import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
-import { ThreadListV3 } from "@/components/workspace/thread-list";
+import { ThreadList } from "@/components/workspace/thread-list";
 import { STATUS_TODO } from "@/db/constants";
 import { setInLocalStorage } from "@/db/helpers";
 import { WorkspaceStoreState } from "@/db/store";
@@ -17,7 +17,7 @@ import * as React from "react";
 import { useStore } from "zustand";
 
 export const Route = createFileRoute(
-  "/_account/workspaces/$workspaceId/_workspace/threads/todo"
+  "/_account/workspaces/$workspaceId/_workspace/threads/todo",
 )({
   component: Threads,
 });
@@ -28,7 +28,7 @@ function Threads() {
   const navigate = Route.useNavigate();
 
   const workspaceId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-    state.getWorkspaceId(state)
+    state.getWorkspaceId(state),
   );
   const todoThreads = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.viewThreads(
@@ -37,13 +37,13 @@ function Threads() {
       assignees as AssigneesFiltersType,
       stages as StagesFiltersType,
       priorities as PrioritiesFiltersType,
-      sort
-    )
+      sort,
+    ),
   );
 
   const assignedMembers = useStore(
     workspaceStore,
-    (state: WorkspaceStoreState) => state.viewAssignees(state)
+    (state: WorkspaceStoreState) => state.viewAssignees(state),
   );
 
   React.useEffect(() => {
@@ -56,7 +56,7 @@ function Threads() {
         priorities as PrioritiesFiltersType,
         sort,
         null,
-        null
+        null,
       );
   }, [workspaceStore, assignees, stages, priorities, sort]);
 
@@ -243,14 +243,14 @@ function Threads() {
 
   return (
     <React.Fragment>
-      <div className="px-4 sm:px-8 flex justify-between my-4">
-        <div className="text-lg sm:text-xl font-medium items-center">
+      <div className="my-4 flex justify-between px-4 sm:px-8">
+        <div className="items-center text-lg font-medium sm:text-xl">
           <div className="flex items-center gap-x-2">
             <CircleIcon className="h-5 w-5 text-indigo-500" />
-            <span>Todo</span>
+            <div>Todo</div>
           </div>
         </div>
-        <div className="flex gap-1 my-auto">
+        <div className="my-auto flex gap-1">
           <Filters
             assignedMembers={assignedMembers}
             assigneeOnChecked={onAssigneeChecked}
@@ -266,7 +266,7 @@ function Threads() {
           <Sorts onChecked={onSortChecked} sort={sort as SortBy} />
         </div>
       </div>
-      <ThreadListV3 threads={todoThreads} workspaceId={workspaceId} />
+      <ThreadList threads={todoThreads} workspaceId={workspaceId} />
     </React.Fragment>
   );
 }

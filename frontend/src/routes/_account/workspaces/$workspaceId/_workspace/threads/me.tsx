@@ -1,6 +1,6 @@
 import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
-import { ThreadListV3 } from "@/components/workspace/thread-list";
+import { ThreadList } from "@/components/workspace/thread-list";
 import { STATUS_TODO } from "@/db/constants";
 import { setInLocalStorage } from "@/db/helpers";
 import { WorkspaceStoreState } from "@/db/store";
@@ -11,7 +11,7 @@ import * as React from "react";
 import { useStore } from "zustand";
 
 export const Route = createFileRoute(
-  "/_account/workspaces/$workspaceId/_workspace/threads/me"
+  "/_account/workspaces/$workspaceId/_workspace/threads/me",
 )({
   component: MyThreads,
 });
@@ -22,11 +22,11 @@ function MyThreads() {
   const navigate = Route.useNavigate();
 
   const workspaceId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-    state.getWorkspaceId(state)
+    state.getWorkspaceId(state),
   );
 
   const memberId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-    state.getMemberId(state)
+    state.getMemberId(state),
   );
   const todoThreads = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.viewMyThreads(
@@ -36,8 +36,8 @@ function MyThreads() {
       undefined,
       stages as StagesFiltersType,
       priorities as PrioritiesFiltersType,
-      sort
-    )
+      sort,
+    ),
   );
 
   React.useEffect(() => {
@@ -50,7 +50,7 @@ function MyThreads() {
         priorities as PrioritiesFiltersType,
         sort,
         memberId,
-        null
+        null,
       );
   }, [workspaceStore, stages, priorities, sort, memberId]);
 
@@ -181,11 +181,11 @@ function MyThreads() {
 
   return (
     <React.Fragment>
-      <div className="px-4 sm:px-8 flex justify-between my-4">
-        <div className="text-lg sm:text-xl font-medium my-auto">
+      <div className="my-4 flex justify-between px-4 sm:px-8">
+        <div className="my-auto text-lg font-medium sm:text-xl">
           Your Threads
         </div>
-        <div className="flex gap-1 my-auto">
+        <div className="my-auto flex gap-1">
           <Filters
             assignedMembers={[]}
             assignees={undefined}
@@ -201,7 +201,7 @@ function MyThreads() {
           <Sorts onChecked={onSortChecked} sort={sort as SortBy} />
         </div>
       </div>
-      <ThreadListV3 threads={todoThreads} workspaceId={workspaceId} />
+      <ThreadList threads={todoThreads} workspaceId={workspaceId} />
     </React.Fragment>
   );
 }

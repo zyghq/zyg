@@ -2,7 +2,7 @@ import { ThreadLinkItem } from "@/components/workspace/thread-list-item";
 import { Thread } from "@/db/models";
 import { Virtuoso } from "react-virtuoso";
 
-export function ThreadListV3({
+export function ThreadList({
   threads,
   workspaceId,
 }: {

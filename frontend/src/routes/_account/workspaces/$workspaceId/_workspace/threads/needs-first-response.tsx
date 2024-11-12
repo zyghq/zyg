@@ -1,6 +1,6 @@
 import { Filters } from "@/components/workspace/filters";
 import { Sorts } from "@/components/workspace/sorts";
-import { ThreadListV3 } from "@/components/workspace/thread-list";
+import { ThreadList } from "@/components/workspace/thread-list";
 import { NEEDS_FIRST_RESPONSE, STATUS_TODO } from "@/db/constants";
 import { setInLocalStorage } from "@/db/helpers";
 import { WorkspaceStoreState } from "@/db/store";
@@ -16,7 +16,7 @@ import * as React from "react";
 import { useStore } from "zustand";
 
 export const Route = createFileRoute(
-  "/_account/workspaces/$workspaceId/_workspace/threads/needs-first-response"
+  "/_account/workspaces/$workspaceId/_workspace/threads/needs-first-response",
 )({
   component: Threads,
 });
@@ -27,7 +27,7 @@ function Threads() {
   const navigate = Route.useNavigate();
 
   const workspaceId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-    state.getWorkspaceId(state)
+    state.getWorkspaceId(state),
   );
   const threads = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.viewThreads(
@@ -36,13 +36,13 @@ function Threads() {
       assignees as AssigneesFiltersType,
       NEEDS_FIRST_RESPONSE,
       priorities as PrioritiesFiltersType,
-      sort
-    )
+      sort,
+    ),
   );
 
   const assignedMembers = useStore(
     workspaceStore,
-    (state: WorkspaceStoreState) => state.viewAssignees(state)
+    (state: WorkspaceStoreState) => state.viewAssignees(state),
   );
 
   React.useEffect(() => {
@@ -55,7 +55,7 @@ function Threads() {
         priorities as PrioritiesFiltersType,
         sort,
         null,
-        null
+        null,
       );
   }, [workspaceStore, assignees, priorities, sort]);
 
@@ -242,14 +242,14 @@ function Threads() {
 
   return (
     <React.Fragment>
-      <div className="px-4 sm:px-8 flex justify-between my-4">
-        <div className="text-lg sm:text-xl font-medium items-center">
+      <div className="my-4 flex justify-between px-4 sm:px-8">
+        <div className="items-center text-lg font-medium sm:text-xl">
           <div className="flex items-center gap-x-2">
-            <LocateIcon className="my-auto w-5 h-5 text-indigo-500" />
+            <LocateIcon className="my-auto h-5 w-5 text-indigo-500" />
             <span>Needs First Response</span>
           </div>
         </div>
-        <div className="flex gap-1 my-auto">
+        <div className="my-auto flex gap-1">
           <Filters
             assignedMembers={assignedMembers}
             assigneeOnChecked={onAssigneeChecked}
@@ -267,15 +267,15 @@ function Threads() {
         </div>
       </div>
       {threads && threads.length > 0 ? (
-        <ThreadListV3 threads={threads} workspaceId={workspaceId} />
+        <ThreadList threads={threads} workspaceId={workspaceId} />
       ) : (
         <div>
-          <div className="container mt-4 sm:mt-24 max-w-md">
-            <div className="border p-4 rounded-xl">
-              <div className="font-medium text-sm">
+          <div className="container mt-4 max-w-md sm:mt-24">
+            <div className="rounded-xl border p-4">
+              <div className="text-sm font-medium">
                 No threads need a first response.
               </div>
-              <div className="text-muted-foreground text-sm">
+              <div className="text-sm text-muted-foreground">
                 New customer threads will appear here, ready for your team's
                 first response.
               </div>
