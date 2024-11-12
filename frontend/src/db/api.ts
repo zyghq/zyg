@@ -234,8 +234,8 @@ export async function getWorkspaceThreads(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/`,
       {
         headers: {
-          // "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         method: "GET",
       },

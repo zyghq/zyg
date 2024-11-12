@@ -491,7 +491,7 @@ func (h *ThreadHandler) handleGetThreadLabels(
 	}
 }
 
-func (h *ThreadHandler) handleDeleteThreadChatLabel(
+func (h *ThreadHandler) handleDeleteThreadLabel(
 	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	ctx := r.Context()
 

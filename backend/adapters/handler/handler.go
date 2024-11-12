@@ -107,8 +107,8 @@ func NewServer(
 		NewEnsureMemberAuth(th.handleSetThreadLabel, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/{threadId}/labels/{$}",
 		NewEnsureMemberAuth(th.handleGetThreadLabels, authService))
-	mux.Handle("DELETE /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{labelId}/{$}",
-		NewEnsureMemberAuth(th.handleDeleteThreadChatLabel, authService))
+	mux.Handle("DELETE /workspaces/{workspaceId}/threads/{threadId}/labels/{labelId}/{$}",
+		NewEnsureMemberAuth(th.handleDeleteThreadLabel, authService))
 
 	mux.Handle("GET /workspaces/{workspaceId}/threads/metrics/{$}",
 		NewEnsureMemberAuth(th.handleGetThreadMetrics, authService))

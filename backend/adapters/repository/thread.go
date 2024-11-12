@@ -2068,10 +2068,23 @@ func (tc *ThreadDB) SetThreadLabel(
 
 func (tc *ThreadDB) DeleteThreadLabelById(
 	ctx context.Context, threadId string, labelId string) error {
-	stmt := `
-		delete from thread_label
-		where thread_id = $1 and label_id = $2`
-	_, err := tc.db.Exec(ctx, stmt, threadId, labelId)
+
+	q := builq.New()
+	q("DELETE FROM thread_label")
+	q("WHERE thread_id = %$ AND label_id = %$", threadId, labelId)
+
+	stmt, _, err := q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
+
+	_, err = tc.db.Exec(ctx, stmt, threadId, labelId)
 	if err != nil {
 		slog.Error("failed to delete query", slog.Any("err", err))
 		return ErrQuery

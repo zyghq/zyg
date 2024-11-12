@@ -74,18 +74,6 @@ export type Thread = {
   updatedAt: string;
 };
 
-export type ThreadChat = {
-  body: string;
-  chatId: string;
-  createdAt: string;
-  customerId: null | string;
-  isHead: boolean;
-  memberId: null | string;
-  sequence: number;
-  threadId: string;
-  updatedAt: string;
-};
-
 export type Pk = string;
 
 export function threadTransformer() {

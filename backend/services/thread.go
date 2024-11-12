@@ -188,10 +188,10 @@ func (s *ThreadService) ListCustomerThreadChats(
 
 func (s *ThreadService) ListWorkspaceThreads(
 	ctx context.Context, workspaceId string) ([]models.Thread, error) {
-	channel := models.ThreadChannel{}.InAppChat()
-	threads, err := s.repo.FetchThreadsByWorkspaceId(ctx, workspaceId, &channel, nil)
+	role := models.Customer{}.Engaged()
+	threads, err := s.repo.FetchThreadsByWorkspaceId(ctx, workspaceId, nil, &role)
 	if err != nil {
-		return []models.Thread{}, ErrThreadChat
+		return []models.Thread{}, ErrThread
 	}
 	return threads, nil
 }
