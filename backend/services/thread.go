@@ -93,11 +93,10 @@ func (s *ThreadService) ProcessPostmarkInbound(
 				)
 				return thread, false, nil
 			}
-			// Something went wrong
 			if err != nil {
 				return nil, false, ErrThread
 			}
-			// Return existing thread, exists flag and error.
+			// Returns existing thread.
 			return thread, true, nil
 		}
 		// Create new thread
@@ -106,6 +105,7 @@ func (s *ThreadService) ProcessPostmarkInbound(
 			models.SetThreadTitle(message.Subject()),
 			models.SetThreadDescription(message.PlainText()),
 		)
+		// Returns new thread.
 		return thread, false, nil
 	}(channel)
 	if err != nil {
@@ -138,7 +138,6 @@ func (s *ThreadService) ProcessPostmarkInbound(
 
 	// If thread exists, append postmark inbound message to existing thread.
 	if exists {
-		// TODO: make it return the updated Thread with inbound message.
 		insMessage, err := s.repo.AppendPostmarkInboundThreadMessage(ctx, inbound)
 		if err != nil {
 			return models.Thread{}, models.Message{}, ErrPostmarkInbound
@@ -188,10 +187,10 @@ func (s *ThreadService) ListCustomerThreadChats(
 
 func (s *ThreadService) ListWorkspaceThreads(
 	ctx context.Context, workspaceId string) ([]models.Thread, error) {
-	channel := models.ThreadChannel{}.InAppChat()
-	threads, err := s.repo.FetchThreadsByWorkspaceId(ctx, workspaceId, &channel, nil)
+	role := models.Customer{}.Engaged()
+	threads, err := s.repo.FetchThreadsByWorkspaceId(ctx, workspaceId, nil, &role)
 	if err != nil {
-		return []models.Thread{}, ErrThreadChat
+		return []models.Thread{}, ErrThread
 	}
 	return threads, nil
 }
