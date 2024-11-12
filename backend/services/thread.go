@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 
 	"github.com/zyghq/zyg/adapters/repository"
@@ -139,7 +138,6 @@ func (s *ThreadService) ProcessPostmarkInbound(
 
 	// If thread exists, append postmark inbound message to existing thread.
 	if exists {
-		fmt.Println("************************* thread exists ***********************************")
 		insMessage, err := s.repo.AppendPostmarkInboundThreadMessage(ctx, inbound)
 		if err != nil {
 			return models.Thread{}, models.Message{}, ErrPostmarkInbound
