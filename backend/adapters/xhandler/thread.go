@@ -26,6 +26,7 @@ func (h *ThreadHandler) handlePostmarkInboundMessage(w http.ResponseWriter, r *h
 	}
 
 	ctx := r.Context()
+
 	workspaceId := r.PathValue("workspaceId")
 	workspace, err := h.ws.GetWorkspace(ctx, workspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {

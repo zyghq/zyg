@@ -14,7 +14,7 @@ type ThreadService struct {
 	repo ports.ThreadRepositorer
 }
 
-func NewThreadChatService(
+func NewThreadService(
 	repo ports.ThreadRepositorer) *ThreadService {
 	return &ThreadService{
 		repo: repo,
@@ -158,7 +158,7 @@ func (s *ThreadService) UpdateThread(
 	thread, err := s.repo.ModifyThreadById(ctx, thread, fields)
 
 	if err != nil {
-		return models.Thread{}, ErrThreadChat
+		return models.Thread{}, ErrThread
 	}
 
 	return thread, nil
@@ -168,10 +168,10 @@ func (s *ThreadService) GetWorkspaceThread(
 	ctx context.Context, workspaceId string, threadId string, channel *string) (models.Thread, error) {
 	thread, err := s.repo.LookupByWorkspaceThreadId(ctx, workspaceId, threadId, channel)
 	if errors.Is(err, repository.ErrEmpty) {
-		return models.Thread{}, ErrThreadChatNotFound
+		return models.Thread{}, ErrThreadNotFound
 	}
 	if err != nil {
-		return models.Thread{}, ErrThreadChat
+		return models.Thread{}, ErrThread
 	}
 	return thread, nil
 }
@@ -186,7 +186,7 @@ func (s *ThreadService) ListCustomerThreadChats(
 	return threads, nil
 }
 
-func (s *ThreadService) ListWorkspaceThreadChats(
+func (s *ThreadService) ListWorkspaceThreads(
 	ctx context.Context, workspaceId string) ([]models.Thread, error) {
 	channel := models.ThreadChannel{}.InAppChat()
 	threads, err := s.repo.FetchThreadsByWorkspaceId(ctx, workspaceId, &channel, nil)
@@ -196,35 +196,32 @@ func (s *ThreadService) ListWorkspaceThreadChats(
 	return threads, nil
 }
 
-func (s *ThreadService) ListMemberThreadChats(
+func (s *ThreadService) ListMemberThreads(
 	ctx context.Context, memberId string) ([]models.Thread, error) {
-	channel := models.ThreadChannel{}.InAppChat()
 	role := models.Customer{}.Engaged()
-	threads, err := s.repo.FetchThreadsByAssignedMemberId(ctx, memberId, &channel, &role)
+	threads, err := s.repo.FetchThreadsByAssignedMemberId(ctx, memberId, nil, &role)
 	if err != nil {
-		return []models.Thread{}, ErrThreadChat
+		return []models.Thread{}, ErrThread
 	}
 	return threads, nil
 }
 
-func (s *ThreadService) ListUnassignedThreadChats(
+func (s *ThreadService) ListUnassignedThreads(
 	ctx context.Context, workspaceId string) ([]models.Thread, error) {
-	channel := models.ThreadChannel{}.InAppChat()
 	role := models.Customer{}.Engaged()
-	threads, err := s.repo.FetchThreadsByMemberUnassigned(ctx, workspaceId, &channel, &role)
+	threads, err := s.repo.FetchThreadsByMemberUnassigned(ctx, workspaceId, nil, &role)
 	if err != nil {
-		return []models.Thread{}, ErrThreadChat
+		return []models.Thread{}, ErrThread
 	}
 	return threads, nil
 }
 
-func (s *ThreadService) ListLabelledThreadChats(
+func (s *ThreadService) ListLabelledThreads(
 	ctx context.Context, labelId string) ([]models.Thread, error) {
-	channel := models.ThreadChannel{}.InAppChat()
 	role := models.Customer{}.Engaged()
-	threads, err := s.repo.FetchThreadsByLabelId(ctx, labelId, &channel, &role)
+	threads, err := s.repo.FetchThreadsByLabelId(ctx, labelId, nil, &role)
 	if err != nil {
-		return []models.Thread{}, ErrThreadChat
+		return []models.Thread{}, ErrThread
 	}
 	return threads, nil
 }
@@ -233,7 +230,7 @@ func (s *ThreadService) ThreadExistsInWorkspace(
 	ctx context.Context, workspaceId string, threadId string) (bool, error) {
 	exist, err := s.repo.CheckThreadInWorkspaceExists(ctx, workspaceId, threadId)
 	if err != nil {
-		return false, ErrThreadChat
+		return false, ErrThread
 	}
 	return exist, nil
 }
@@ -247,7 +244,7 @@ func (s *ThreadService) SetLabel(
 	}
 	label, created, err := s.repo.SetThreadLabel(ctx, label)
 	if err != nil {
-		return models.ThreadLabel{}, created, ErrThChatLabel
+		return models.ThreadLabel{}, created, ErrThreadLabel
 	}
 
 	return label, created, nil
@@ -257,7 +254,7 @@ func (s *ThreadService) ListThreadLabels(
 	ctx context.Context, threadId string) ([]models.ThreadLabel, error) {
 	labels, err := s.repo.FetchAttachedLabelsByThreadId(ctx, threadId)
 	if err != nil {
-		return labels, ErrThChatLabel
+		return labels, ErrThreadLabel
 	}
 	return labels, nil
 }
@@ -281,12 +278,12 @@ func (s *ThreadService) AppendInboundThreadChat(
 	}
 	message, err := s.repo.AppendInboundThreadMessage(ctx, threadMessage)
 	if err != nil {
-		return models.Message{}, ErrThChatMessage
+		return models.Message{}, ErrThreadMessage
 	}
 	return message, nil
 }
 
-// AppendOutboundThreadChat creates an outbound message to the existing thread chat.
+// AppendOutboundThreadChat appends a new chat message to an existing thread.
 func (s *ThreadService) AppendOutboundThreadChat(
 	ctx context.Context, thread models.Thread, member models.Member, messageText string) (models.Message, error) {
 
@@ -305,7 +302,7 @@ func (s *ThreadService) AppendOutboundThreadChat(
 	}
 	message, err := s.repo.AppendOutboundThreadMessage(ctx, threadMessage)
 	if err != nil {
-		return models.Message{}, ErrThChatMessage
+		return models.Message{}, ErrThreadMessage
 	}
 	return message, nil
 }
@@ -314,7 +311,7 @@ func (s *ThreadService) ListThreadChatMessages(
 	ctx context.Context, threadId string) ([]models.Message, error) {
 	messages, err := s.repo.FetchThreadMessagesByThreadId(ctx, threadId)
 	if err != nil {
-		return []models.Message{}, ErrThChatMessage
+		return []models.Message{}, ErrThreadMessage
 	}
 	return messages, nil
 }
@@ -323,17 +320,17 @@ func (s *ThreadService) GenerateMemberThreadMetrics(
 	ctx context.Context, workspaceId string, memberId string) (models.ThreadMemberMetrics, error) {
 	statusMetrics, err := s.repo.ComputeStatusMetricsByWorkspaceId(ctx, workspaceId)
 	if err != nil {
-		return models.ThreadMemberMetrics{}, ErrThreadChatMetrics
+		return models.ThreadMemberMetrics{}, ErrThreadMetrics
 	}
 
 	assignmentMetrics, err := s.repo.ComputeAssigneeMetricsByMember(ctx, workspaceId, memberId)
 	if err != nil {
-		return models.ThreadMemberMetrics{}, ErrThreadChatMetrics
+		return models.ThreadMemberMetrics{}, ErrThreadMetrics
 	}
 
 	labelMetrics, err := s.repo.ComputeLabelMetricsByWorkspaceId(ctx, workspaceId)
 	if err != nil {
-		return models.ThreadMemberMetrics{}, ErrThreadChatMetrics
+		return models.ThreadMemberMetrics{}, ErrThreadMetrics
 	}
 
 	metrics := models.ThreadMemberMetrics{
@@ -349,7 +346,7 @@ func (s *ThreadService) RemoveThreadLabel(
 	ctx context.Context, threadId string, labelId string) error {
 	err := s.repo.DeleteThreadLabelById(ctx, threadId, labelId)
 	if err != nil {
-		return ErrThChatLabel
+		return ErrThreadLabel
 	}
 	return nil
 }

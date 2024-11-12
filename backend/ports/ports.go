@@ -138,12 +138,10 @@ type ThreadServicer interface {
 	) (models.Thread, models.Message, error)
 	AppendInboundThreadChat(
 		ctx context.Context, thread models.Thread, messageText string) (models.Message, error)
+
 	AppendOutboundThreadChat(
 		ctx context.Context, thread models.Thread, member models.Member, message string) (models.Message, error)
 
-	// ProcessPostmarkInbound processes an inbound email message received from Postmark.
-	// It creates a new thread or updates an existing one, attaching the inbound message to the thread as necessary.
-	// Returns the thread and message models along with any error encountered.
 	ProcessPostmarkInbound(
 		ctx context.Context, workspaceId string,
 		customer models.CustomerActor, createdBy models.MemberActor, inboundMessage *models.PostmarkInboundMessage,
@@ -153,27 +151,31 @@ type ThreadServicer interface {
 		ctx context.Context, workspaceId string, threadId string, channel *string) (models.Thread, error)
 	UpdateThread(
 		ctx context.Context, thread models.Thread, fields []string) (models.Thread, error)
+
 	ListCustomerThreadChats(
 		ctx context.Context, customerId string) ([]models.Thread, error)
-	ListWorkspaceThreadChats(
+	ListWorkspaceThreads(
 		ctx context.Context, workspaceId string) ([]models.Thread, error)
-	ListMemberThreadChats(
+	ListMemberThreads(
 		ctx context.Context, memberId string) ([]models.Thread, error)
-	ListUnassignedThreadChats(
+	ListUnassignedThreads(
 		ctx context.Context, workspaceId string) ([]models.Thread, error)
-	ListLabelledThreadChats(
+	ListLabelledThreads(
 		ctx context.Context, labelId string) ([]models.Thread, error)
+
 	ThreadExistsInWorkspace(
 		ctx context.Context, workspaceId string, threadId string) (bool, error)
+
 	SetLabel(
 		ctx context.Context, threadId string, labelId string, addedBy string) (models.ThreadLabel, bool, error)
 	ListThreadLabels(
 		ctx context.Context, threadChatId string) ([]models.ThreadLabel, error)
+	RemoveThreadLabel(
+		ctx context.Context, threadId string, labelId string) error
 
 	ListThreadChatMessages(
 		ctx context.Context, threadId string) ([]models.Message, error)
+
 	GenerateMemberThreadMetrics(
 		ctx context.Context, workspaceId string, memberId string) (models.ThreadMemberMetrics, error)
-	RemoveThreadLabel(
-		ctx context.Context, threadId string, labelId string) error
 }

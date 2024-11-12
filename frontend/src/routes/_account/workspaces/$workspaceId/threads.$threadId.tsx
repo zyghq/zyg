@@ -35,7 +35,7 @@ import { ThreadList } from "@/components/workspace/thread/threads";
 import {
   deleteThreadLabel,
   getThreadLabels,
-  getWorkspaceThreadChatMessages,
+  getWorkspaceThreadMessages,
   putThreadLabel,
 } from "@/db/api";
 import { updateThread } from "@/db/api";
@@ -465,7 +465,7 @@ function ThreadDetail() {
   } = useQuery({
     enabled: !!activeThread,
     queryFn: async () => {
-      const { data, error } = await getWorkspaceThreadChatMessages(
+      const { data, error } = await getWorkspaceThreadMessages(
         token,
         workspaceId,
         threadId,

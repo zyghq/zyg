@@ -51,20 +51,20 @@ func run(ctx context.Context) error {
 	workspaceStore := repository.NewWorkspaceDB(db)
 	memberStore := repository.NewMemberDB(db)
 	customerStore := repository.NewCustomerDB(db)
-	threadChatStore := repository.NewThreadChatDB(db)
+	threadStore := repository.NewThreadDB(db)
 
 	// init respective services
 	authService := services.NewCustomerAuthService(customerStore)
 	workspaceService := services.NewWorkspaceService(workspaceStore, memberStore, customerStore)
 	customerService := services.NewCustomerService(customerStore)
-	threadChatService := services.NewThreadChatService(threadChatStore)
+	threadService := services.NewThreadService(threadStore)
 
 	// init server
 	srv := xhandler.NewServer(
 		authService,
 		workspaceService,
 		customerService,
-		threadChatService,
+		threadService,
 	)
 
 	httpServer := &http.Server{

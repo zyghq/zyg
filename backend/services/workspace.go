@@ -150,7 +150,6 @@ func (ws *WorkspaceService) CreateLabel(
 	if err != nil {
 		return models.Label{}, false, ErrLabel
 	}
-
 	return label, created, err
 }
 

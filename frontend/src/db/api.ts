@@ -182,11 +182,11 @@ export async function getWorkspaceMetrics(
 ): Promise<{ data: null | WorkspaceMetricsResponse; error: Error | null }> {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/metrics/`,
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/metrics/`,
       {
         headers: {
-          // "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         method: "GET",
       },
@@ -231,7 +231,7 @@ export async function getWorkspaceThreads(
 ): Promise<{ data: null | ThreadResponse[]; error: Error | null }> {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/`,
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/`,
       {
         headers: {
           // "Content-Type": "application/json",
@@ -869,7 +869,7 @@ export async function bootstrapWorkspace(
   return data;
 }
 
-export async function getWorkspaceThreadChatMessages(
+export async function getWorkspaceThreadMessages(
   token: string,
   workspaceId: string,
   threadId: string,
@@ -879,7 +879,7 @@ export async function getWorkspaceThreadChatMessages(
 }> {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadId}/messages/`,
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/${threadId}/messages/`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -1031,7 +1031,7 @@ export async function updateThread(
 ): Promise<{ data: null | ThreadResponse; error: Error | null }> {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadId}/`,
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/${threadId}/`,
       {
         body: JSON.stringify({ ...body }),
         headers: {
@@ -1082,7 +1082,7 @@ export async function getThreadLabels(
 }> {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadId}/labels/`,
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/${threadId}/labels/`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -1138,7 +1138,7 @@ export async function putThreadLabel(
 }> {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadId}/labels/`,
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/${threadId}/labels/`,
       {
         body: JSON.stringify({ ...body }),
         headers: {
@@ -1190,7 +1190,7 @@ export async function deleteThreadLabel(
 }> {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadId}/labels/${labelId}/`,
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/${threadId}/labels/${labelId}/`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

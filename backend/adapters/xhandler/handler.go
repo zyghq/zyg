@@ -71,13 +71,16 @@ func NewServer(
 	mux.Handle("GET /widgets/{widgetId}/me/{$}",
 		NewEnsureAuth(ch.handleGetCustomer, authService))
 
+	// Creates a new chat thread.
 	mux.Handle("POST /widgets/{widgetId}/threads/chat/{$}",
 		NewEnsureAuth(ch.handleCreateThreadChat, authService))
+	// Returns a list of chat threads.
 	mux.Handle("GET /widgets/{widgetId}/threads/chat/{$}",
 		NewEnsureAuth(ch.handleGetCustomerThreadChats, authService))
-
+	// Creates a new thread chat message.
 	mux.Handle("POST /widgets/{widgetId}/threads/chat/{threadId}/messages/{$}",
 		NewEnsureAuth(ch.handleCreateThreadChatMessage, authService))
+	// Returns a list of thread chat messages.
 	mux.Handle("GET /widgets/{widgetId}/threads/chat/{threadId}/messages/{$}",
 		NewEnsureAuth(ch.handleGetThreadChatMessages, authService))
 

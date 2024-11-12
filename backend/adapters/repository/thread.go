@@ -187,7 +187,7 @@ func postmarkInboundMessageCols() builq.Columns {
 // Finally, insert the chat with in persisted thread ID.
 //
 // The IDs are already generated within the time space.
-func (tc *ThreadChatDB) InsertInboundThreadMessage(
+func (tc *ThreadDB) InsertInboundThreadMessage(
 	ctx context.Context, inbound models.ThreadMessage) (models.Thread, models.Message, error) {
 	// start transaction
 	// If fails then stop the execution and return the error.
@@ -534,7 +534,7 @@ func (tc *ThreadChatDB) InsertInboundThreadMessage(
 	return *thread, *message, nil
 }
 
-func (tc *ThreadChatDB) InsertPostmarkInboundThreadMessage(
+func (tc *ThreadDB) InsertPostmarkInboundThreadMessage(
 	ctx context.Context, inbound models.ThreadMessageWithPostmarkInbound) (models.Thread, models.Message, error) {
 	tx, err := tc.db.Begin(ctx)
 	if err != nil {
@@ -919,7 +919,7 @@ func (tc *ThreadChatDB) InsertPostmarkInboundThreadMessage(
 	return *thread, *message, nil
 }
 
-func (tc *ThreadChatDB) ModifyThreadById(
+func (tc *ThreadDB) ModifyThreadById(
 	ctx context.Context, thread models.Thread, fields []string) (models.Thread, error) {
 	upsertQ := builq.New()
 	upsertParams := make([]any, 0, len(fields)+1) // updates + thread ID
@@ -1094,7 +1094,7 @@ func (tc *ThreadChatDB) ModifyThreadById(
 	return thread, nil
 }
 
-func (tc *ThreadChatDB) LookupByWorkspaceThreadId(
+func (tc *ThreadDB) LookupByWorkspaceThreadId(
 	ctx context.Context, workspaceId string, threadId string, channel *string) (models.Thread, error) {
 	var thread models.Thread
 
@@ -1234,7 +1234,7 @@ func (tc *ThreadChatDB) LookupByWorkspaceThreadId(
 	return thread, nil
 }
 
-func (tc *ThreadChatDB) FetchThreadsByCustomerId(
+func (tc *ThreadDB) FetchThreadsByCustomerId(
 	ctx context.Context, customerId string, channel *string) ([]models.Thread, error) {
 	var thread models.Thread
 	limit := 100
@@ -1380,7 +1380,7 @@ func (tc *ThreadChatDB) FetchThreadsByCustomerId(
 	return threads, nil
 }
 
-func (tc *ThreadChatDB) FetchThreadsByWorkspaceId(
+func (tc *ThreadDB) FetchThreadsByWorkspaceId(
 	ctx context.Context, workspaceId string, channel *string, role *string) ([]models.Thread, error) {
 	var thread models.Thread
 	limit := 100
@@ -1532,7 +1532,7 @@ func (tc *ThreadChatDB) FetchThreadsByWorkspaceId(
 	return threads, nil
 }
 
-func (tc *ThreadChatDB) FetchThreadsByAssignedMemberId(
+func (tc *ThreadDB) FetchThreadsByAssignedMemberId(
 	ctx context.Context, memberId string, channel *string, role *string) ([]models.Thread, error) {
 	var thread models.Thread
 	limit := 100
@@ -1685,7 +1685,7 @@ func (tc *ThreadChatDB) FetchThreadsByAssignedMemberId(
 	return threads, nil
 }
 
-func (tc *ThreadChatDB) FetchThreadsByMemberUnassigned(
+func (tc *ThreadDB) FetchThreadsByMemberUnassigned(
 	ctx context.Context, workspaceId string, channel *string, role *string) ([]models.Thread, error) {
 	var thread models.Thread
 	limit := 100
@@ -1838,7 +1838,7 @@ func (tc *ThreadChatDB) FetchThreadsByMemberUnassigned(
 	return threads, nil
 }
 
-func (tc *ThreadChatDB) FetchThreadsByLabelId(
+func (tc *ThreadDB) FetchThreadsByLabelId(
 	ctx context.Context, labelId string, channel *string, role *string) ([]models.Thread, error) {
 	var thread models.Thread
 	limit := 100
@@ -1991,7 +1991,7 @@ func (tc *ThreadChatDB) FetchThreadsByLabelId(
 	return threads, nil
 }
 
-func (tc *ThreadChatDB) CheckThreadInWorkspaceExists(
+func (tc *ThreadDB) CheckThreadInWorkspaceExists(
 	ctx context.Context, workspaceId string, threadId string) (bool, error) {
 	var isExist bool
 	stmt := `SELECT EXISTS(
@@ -2008,7 +2008,7 @@ func (tc *ThreadChatDB) CheckThreadInWorkspaceExists(
 	return isExist, nil
 }
 
-func (tc *ThreadChatDB) SetThreadLabel(
+func (tc *ThreadDB) SetThreadLabel(
 	ctx context.Context, threadLabel models.ThreadLabel) (models.ThreadLabel, bool, error) {
 	var IsCreated bool
 	thLabelId := threadLabel.GenId()
@@ -2066,7 +2066,7 @@ func (tc *ThreadChatDB) SetThreadLabel(
 	return threadLabel, IsCreated, nil
 }
 
-func (tc *ThreadChatDB) DeleteThreadLabelById(
+func (tc *ThreadDB) DeleteThreadLabelById(
 	ctx context.Context, threadId string, labelId string) error {
 	stmt := `
 		delete from thread_label
@@ -2079,7 +2079,7 @@ func (tc *ThreadChatDB) DeleteThreadLabelById(
 	return nil
 }
 
-func (tc *ThreadChatDB) FetchAttachedLabelsByThreadId(
+func (tc *ThreadDB) FetchAttachedLabelsByThreadId(
 	ctx context.Context, threadId string) ([]models.ThreadLabel, error) {
 	var label models.ThreadLabel
 	labels := make([]models.ThreadLabel, 0, 100)
@@ -2116,7 +2116,7 @@ func (tc *ThreadChatDB) FetchAttachedLabelsByThreadId(
 	return labels, nil
 }
 
-func (tc *ThreadChatDB) AppendInboundThreadMessage(
+func (tc *ThreadDB) AppendInboundThreadMessage(
 	ctx context.Context, inbound models.ThreadMessage,
 ) (models.Message, error) {
 	tx, err := tc.db.Begin(ctx)
@@ -2312,7 +2312,7 @@ func (tc *ThreadChatDB) AppendInboundThreadMessage(
 }
 
 // AppendOutboundThreadMessage inserts a member chat into the database.
-func (tc *ThreadChatDB) AppendOutboundThreadMessage(
+func (tc *ThreadDB) AppendOutboundThreadMessage(
 	ctx context.Context, outbound models.ThreadMessage,
 ) (models.Message, error) {
 	tx, err := tc.db.Begin(ctx)
@@ -2507,7 +2507,7 @@ func (tc *ThreadChatDB) AppendOutboundThreadMessage(
 	return *message, nil
 }
 
-func (tc *ThreadChatDB) FetchThreadMessagesByThreadId(
+func (tc *ThreadDB) FetchThreadMessagesByThreadId(
 	ctx context.Context, threadId string) ([]models.Message, error) {
 	var message models.Message
 	messages := make([]models.Message, 0, 100)
@@ -2573,7 +2573,7 @@ func (tc *ThreadChatDB) FetchThreadMessagesByThreadId(
 // Returns the count of active threads, needs first response threads, waiting on customer threads,
 // hold threads, and needs next response threads.
 // Ignores visitor customer threads.
-func (tc *ThreadChatDB) ComputeStatusMetricsByWorkspaceId(
+func (tc *ThreadDB) ComputeStatusMetricsByWorkspaceId(
 	ctx context.Context, workspaceId string) (models.ThreadMetrics, error) {
 	var metrics models.ThreadMetrics
 	stmt := `SELECT
@@ -2608,7 +2608,7 @@ func (tc *ThreadChatDB) ComputeStatusMetricsByWorkspaceId(
 // ComputeAssigneeMetricsByMember computes the thread count metrics for the member.
 // Returns the count of member assigned threads, unassigned threads, and other assigned threads.
 // Ignores visitor customer threads.
-func (tc *ThreadChatDB) ComputeAssigneeMetricsByMember(
+func (tc *ThreadDB) ComputeAssigneeMetricsByMember(
 	ctx context.Context, workspaceId string, memberId string) (models.ThreadAssigneeMetrics, error) {
 	var metrics models.ThreadAssigneeMetrics
 	stmt := `SELECT
@@ -2640,7 +2640,7 @@ func (tc *ThreadChatDB) ComputeAssigneeMetricsByMember(
 	return metrics, nil
 }
 
-func (tc *ThreadChatDB) ComputeLabelMetricsByWorkspaceId(
+func (tc *ThreadDB) ComputeLabelMetricsByWorkspaceId(
 	ctx context.Context, workspaceId string) ([]models.ThreadLabelMetric, error) {
 	var metric models.ThreadLabelMetric
 	metrics := make([]models.ThreadLabelMetric, 0, 100)
@@ -2679,7 +2679,7 @@ func (tc *ThreadChatDB) ComputeLabelMetricsByWorkspaceId(
 	return metrics, nil
 }
 
-func (tc *ThreadChatDB) FetchThreadByPostmarkInboundInReplyMessageId(
+func (tc *ThreadDB) FetchThreadByPostmarkInboundInReplyMessageId(
 	ctx context.Context, workspaceId string, inReplyMessageId string) (models.Thread, error) {
 	var thread models.Thread
 
@@ -2830,7 +2830,7 @@ func (tc *ThreadChatDB) FetchThreadByPostmarkInboundInReplyMessageId(
 }
 
 // TODO: implement
-func (tc *ThreadChatDB) AppendPostmarkInboundThreadMessage(
+func (tc *ThreadDB) AppendPostmarkInboundThreadMessage(
 	ctx context.Context, inbound models.ThreadMessageWithPostmarkInbound) (models.Message, error) {
 	return models.Message{}, nil
 }

@@ -21,7 +21,7 @@ type CustomerDB struct {
 	db *pgxpool.Pool
 }
 
-type ThreadChatDB struct {
+type ThreadDB struct {
 	db *pgxpool.Pool
 }
 
@@ -49,8 +49,8 @@ func NewCustomerDB(db *pgxpool.Pool) *CustomerDB {
 	}
 }
 
-func NewThreadChatDB(db *pgxpool.Pool) *ThreadChatDB {
-	return &ThreadChatDB{
+func NewThreadDB(db *pgxpool.Pool) *ThreadDB {
+	return &ThreadDB{
 		db: db,
 	}
 }

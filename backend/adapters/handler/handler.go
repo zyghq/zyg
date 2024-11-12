@@ -18,19 +18,21 @@ func handleGetIndex(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
+// NewServer initializes and returns an http.Handler with all route handlers set up.
+// It takes multiple service interfaces as parameters for dependency injection.
 func NewServer(
 	authService ports.AuthServicer,
 	accountService ports.AccountServicer,
 	workspaceService ports.WorkspaceServicer,
 	customerService ports.CustomerServicer,
-	threadChatService ports.ThreadServicer,
+	threadService ports.ThreadServicer,
 ) http.Handler {
 	mux := http.NewServeMux()
 
 	// initialize service handlers
 	ah := NewAccountHandler(accountService, workspaceService)
 	wh := NewWorkspaceHandler(workspaceService, accountService, customerService)
-	th := NewThreadChatHandler(workspaceService, threadChatService)
+	th := NewThreadHandler(workspaceService, threadService)
 	ch := NewCustomerHandler(workspaceService, customerService)
 
 	mux.HandleFunc("GET /{$}", handleGetIndex)
@@ -81,32 +83,35 @@ func NewServer(
 	mux.Handle("GET /workspaces/{workspaceId}/labels/{labelId}/{$}",
 		NewEnsureMemberAuth(wh.handleGetWorkspaceLabel, authService))
 
-	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{$}",
-		NewEnsureMemberAuth(th.handleGetThreadChats, authService))
-	mux.Handle("PATCH /workspaces/{workspaceId}/threads/chat/{threadId}/{$}",
-		NewEnsureMemberAuth(th.handleUpdateThreadChat, authService))
+	mux.Handle("GET /workspaces/{workspaceId}/threads/{$}",
+		NewEnsureMemberAuth(th.handleGetThreads, authService))
+	mux.Handle("PATCH /workspaces/{workspaceId}/threads/{threadId}/{$}",
+		NewEnsureMemberAuth(th.handleUpdateThread, authService))
 
-	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/parts/me/{$}",
-		NewEnsureMemberAuth(th.handleGetMyThreadChats, authService))
-	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/parts/unassigned/{$}",
-		NewEnsureMemberAuth(th.handleGetUnassignedThChats, authService))
-	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/parts/labels/{labelId}/{$}",
-		NewEnsureMemberAuth(th.handleGetLabelledThreadChats, authService))
+	mux.Handle("GET /workspaces/{workspaceId}/threads/parts/me/{$}",
+		NewEnsureMemberAuth(th.handleGetMyThreads, authService))
+	mux.Handle("GET /workspaces/{workspaceId}/threads/parts/unassigned/{$}",
+		NewEnsureMemberAuth(th.handleGetUnassignedThreads, authService))
+	mux.Handle("GET /workspaces/{workspaceId}/threads/parts/labels/{labelId}/{$}",
+		NewEnsureMemberAuth(th.handleGetLabelledThreads, authService))
 
+	// Creates a thread message for the chat channel.
 	mux.Handle("POST /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
 		NewEnsureMemberAuth(th.handleCreateThreadChatMessage, authService))
-	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
-		NewEnsureMemberAuth(th.handleGetThreadChatMessages, authService))
 
-	mux.Handle("PUT /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
-		NewEnsureMemberAuth(th.handleSetThreadChatLabel, authService))
-	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{$}",
-		NewEnsureMemberAuth(th.handleGetThreadChatLabels, authService))
+	// Returns a list of thread messages from all channels.
+	mux.Handle("GET /workspaces/{workspaceId}/threads/{threadId}/messages/{$}",
+		NewEnsureMemberAuth(th.handleGetThreadMessages, authService))
+
+	mux.Handle("PUT /workspaces/{workspaceId}/threads/{threadId}/labels/{$}",
+		NewEnsureMemberAuth(th.handleSetThreadLabel, authService))
+	mux.Handle("GET /workspaces/{workspaceId}/threads/{threadId}/labels/{$}",
+		NewEnsureMemberAuth(th.handleGetThreadLabels, authService))
 	mux.Handle("DELETE /workspaces/{workspaceId}/threads/chat/{threadId}/labels/{labelId}/{$}",
 		NewEnsureMemberAuth(th.handleDeleteThreadChatLabel, authService))
 
-	mux.Handle("GET /workspaces/{workspaceId}/threads/chat/metrics/{$}",
-		NewEnsureMemberAuth(th.handleGetThreadChatMetrics, authService))
+	mux.Handle("GET /workspaces/{workspaceId}/threads/metrics/{$}",
+		NewEnsureMemberAuth(th.handleGetThreadMetrics, authService))
 
 	mux.Handle("POST /workspaces/{workspaceId}/widgets/{$}",
 		NewEnsureMemberAuth(wh.handleCreateWidget, authService))

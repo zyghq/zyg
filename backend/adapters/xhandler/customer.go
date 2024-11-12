@@ -357,7 +357,7 @@ func (h *CustomerHandler) handleCreateThreadChat(
 		}
 	}
 
-	// return the system member for the workspace
+	// Return the system member for the workspace
 	member, err := h.ws.GetSystemMember(ctx, customer.WorkspaceId)
 	if errors.Is(err, services.ErrMemberNotFound) {
 		// system member isn't found, create a new one.
@@ -379,7 +379,7 @@ func (h *CustomerHandler) handleCreateThreadChat(
 		reqp.Message,
 	)
 	if err != nil {
-		slog.Error("failed to create thread message", slog.Any("err", err))
+		slog.Error("failed to create thread chat message", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -400,7 +400,7 @@ func (h *CustomerHandler) handleGetCustomerThreadChats(
 
 	threads, err := h.ths.ListCustomerThreadChats(ctx, customer.CustomerId)
 	if err != nil {
-		slog.Error("failed to fetch thread chats", slog.Any("err", err))
+		slog.Error("failed to fetch customer thread chats", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -439,7 +439,7 @@ func (h *CustomerHandler) handleCreateThreadChatMessage(
 
 	channel := models.ThreadChannel{}.InAppChat()
 	thread, err := h.ths.GetWorkspaceThread(ctx, customer.WorkspaceId, threadId, &channel)
-	if errors.Is(err, services.ErrThreadChatNotFound) {
+	if errors.Is(err, services.ErrThreadNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
@@ -497,7 +497,7 @@ func (h *CustomerHandler) handleGetThreadChatMessages(
 	threadId := r.PathValue("threadId")
 	channel := models.ThreadChannel{}.InAppChat()
 	thread, err := h.ths.GetWorkspaceThread(ctx, customer.WorkspaceId, threadId, &channel)
-	if errors.Is(err, services.ErrThreadChatNotFound) {
+	if errors.Is(err, services.ErrThreadNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
