@@ -1,4 +1,5 @@
 import { Icons } from "@/components/icons";
+import { channelIcon } from "@/components/icons";
 import { NotFound } from "@/components/notfound";
 import { CustomerEvents } from "@/components/thread/customer-events";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -57,11 +58,9 @@ import {
   ArrowDownIcon,
   ArrowLeftIcon,
   ArrowUpIcon,
-  ChatBubbleIcon,
   CopyIcon,
   DotsHorizontalIcon,
   PlusIcon,
-  ResetIcon,
 } from "@radix-ui/react-icons";
 import { BorderDashedIcon, CheckIcon } from "@radix-ui/react-icons";
 import { useQuery } from "@tanstack/react-query";
@@ -69,7 +68,12 @@ import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCopyToClipboard } from "@uidotdev/usehooks";
 import { formatDistanceToNow } from "date-fns";
-import { CheckCircleIcon, CircleIcon, EclipseIcon } from "lucide-react";
+import {
+  CheckCircleIcon,
+  CircleIcon,
+  EclipseIcon,
+  PanelRightIcon,
+} from "lucide-react";
 import React from "react";
 import { useStore } from "zustand";
 
@@ -452,7 +456,6 @@ function ThreadDetail() {
     "/workspaces/$workspaceId/threads/todo";
 
   const threadStatus = activeThread?.status || "";
-  const isAwaitingReply = activeThread?.replied === false;
   const threadStage = activeThread?.stage || "";
 
   const { nextItem, prevItem } = getPrevNextFromCurrent(currentQueue, threadId);
@@ -624,40 +627,22 @@ function ThreadDetail() {
               <ResizablePanel defaultSize={75}>
                 <div className="flex h-full flex-col">
                   <div className="flex h-14 min-h-14 flex-col justify-center border-b px-4">
-                    <div className="flex">
-                      <div className="text-sm font-semibold">
-                        {customerName}
+                    <div className="flex items-center justify-between space-x-2">
+                      <div className="flex items-center gap-2">
+                        {channelIcon(activeThread.channel, {
+                          className: "h-4 w-4 text-muted-foreground",
+                        })}
+                        <div className="overflow-hidden text-ellipsis text-sm font-medium">
+                          {activeThread.title}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center">
-                      <CircleIcon className="mr-1 h-3 w-3 text-indigo-500" />
-                      <span className="items-center text-xs capitalize">
-                        {threadStatus}
-                      </span>
-                      <Separator className="mx-2" orientation="vertical" />
-                      <ChatBubbleIcon className="h-3 w-3" />
-                      {isAwaitingReply && (
-                        <React.Fragment>
-                          <Separator className="mx-2" orientation="vertical" />
-                          <Badge
-                            className="bg-indigo-100 font-normal dark:bg-indigo-500"
-                            variant="outline"
-                          >
-                            <div className="flex items-center gap-1">
-                              <ResetIcon className="h-2 w-2" />
-                            </div>
-                          </Badge>
-                          <Separator className="mx-2" orientation="vertical" />
-                          <div className="text-xs">
-                            {formatDistanceToNow(
-                              new Date(activeThread.createdAt),
-                              {
-                                addSuffix: true,
-                              },
-                            )}
-                          </div>
-                        </React.Fragment>
-                      )}
+                      <Button
+                        onClick={() => console.log("implement this !!")}
+                        size="icon"
+                        variant="outline"
+                      >
+                        <PanelRightIcon className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                   <ScrollArea className="flex h-[calc(100dvh-4rem)] flex-col bg-gray-100 p-1 dark:bg-background">

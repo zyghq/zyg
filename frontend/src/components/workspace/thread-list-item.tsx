@@ -59,7 +59,7 @@ export function ThreadLinkItem({
               <AvatarFallback>M</AvatarFallback>
             </Avatar>
           ) : (
-            <PersonIcon className="h-4 w-4 text-muted-foreground" />
+            <PersonIcon className="h-5 w-5 text-muted-foreground" />
           )}
         </div>
       </div>
