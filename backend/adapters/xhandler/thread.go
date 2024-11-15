@@ -53,7 +53,7 @@ func (h *ThreadHandler) handlePostmarkInboundMessage(w http.ResponseWriter, r *h
 	fmt.Println("*********** Postmark Inbound Message ***********")
 	fmt.Println(inboundMessage.Subject())
 	fmt.Println(inboundMessage.PlainText())
-	fmt.Println(inboundMessage.Html())
+	fmt.Println(inboundMessage.HTML())
 	fmt.Println("*********************************************")
 
 	// Pull Customer mail and name from the inbound mail and get or create the Customer.

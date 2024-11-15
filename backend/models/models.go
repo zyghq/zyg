@@ -195,75 +195,17 @@ func (ap AccountPAT) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
-type Member struct {
+type Label struct {
 	WorkspaceId string
-	MemberId    string
+	LabelId     string
 	Name        string
-	Role        string
+	Icon        string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
 
-func (m Member) GenId() string {
-	return "mm" + xid.New().String()
-}
-
-func (m Member) IsMemberSystem() bool {
-	return m.Role == MemberRole{}.System()
-}
-
-func (m Member) AsMemberActor() MemberActor {
-	return MemberActor{
-		MemberId: m.MemberId,
-		Name:     m.Name,
-	}
-}
-
-func (m Member) CreateNewSystemMember(workspaceId string) Member {
-	now := time.Now().UTC().UTC()
-	return Member{
-		MemberId:    m.GenId(), // generates a new ID
-		WorkspaceId: workspaceId,
-		Name:        "System",
-		Role:        MemberRole{}.System(),
-		CreatedAt:   now, // in same time space
-		UpdatedAt:   now, // in same time space
-	}
-}
-
-type MemberRole struct{}
-
-func (mr MemberRole) Owner() string {
-	return "owner"
-}
-
-func (mr MemberRole) System() string {
-	return "system"
-}
-
-func (mr MemberRole) Admin() string {
-	return "admin"
-}
-
-func (mr MemberRole) Support() string {
-	return "support"
-}
-
-func (mr MemberRole) Viewer() string {
-	return "viewer"
-}
-
-func (mr MemberRole) DefaultRole() string {
-	return mr.Support()
-}
-
-func (mr MemberRole) IsValid(s string) bool {
-	switch s {
-	case mr.Owner(), mr.System(), mr.Admin(), mr.Support(), mr.Viewer():
-		return true
-	default:
-		return false
-	}
+func (l Label) GenId() string {
+	return "lb" + xid.New().String()
 }
 
 func (l Label) MarshalJSON() ([]byte, error) {
@@ -283,19 +225,6 @@ func (l Label) MarshalJSON() ([]byte, error) {
 		UpdatedAt:   l.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
-}
-
-type Label struct {
-	WorkspaceId string
-	LabelId     string
-	Name        string
-	Icon        string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
-func (l Label) GenId() string {
-	return "lb" + xid.New().String()
 }
 
 type ThreadLabel struct {

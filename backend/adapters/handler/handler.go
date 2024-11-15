@@ -18,7 +18,7 @@ func handleGetIndex(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
-// NewServer initializes and returns an http.Handler with all route handlers set up.
+// NewServer initializes and returns a http.Handler with all route handlers set up.
 // It takes multiple service interfaces as parameters for dependency injection.
 func NewServer(
 	authService ports.AuthServicer,
