@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"github.com/zyghq/zyg/utils"
 	"log/slog"
 
 	"github.com/zyghq/zyg/adapters/repository"
@@ -70,6 +71,24 @@ func (s *ThreadService) GetPostmarkInboundInReplyThread(
 	return &thread, nil
 }
 
+// hTMLToMarkdown converts an HTML string to a Markdown string.
+// Parameters:
+// - html: A string containing the HTML content to convert.
+// Returns:
+// - A string containing the converted Markdown content.
+// - An error if the conversion fails.
+func hTMLToMarkdown(html string) (string, error) {
+	cleaned, err := utils.CleanHTML(html, utils.DefaultHTMLMatchers())
+	if err != nil {
+		return "", err
+	}
+	m, err := utils.HTMLToMarkdown(cleaned)
+	if err != nil {
+		return "", err
+	}
+	return m, nil
+}
+
 func (s *ThreadService) ProcessPostmarkInbound(
 	ctx context.Context, workspaceId string,
 	customer models.CustomerActor, createdBy models.MemberActor, message *models.PostmarkInboundMessage,
@@ -113,11 +132,19 @@ func (s *ThreadService) ProcessPostmarkInbound(
 		return models.Thread{}, models.Message{}, ErrThread
 	}
 
+	body := message.HTML()
+	markdown, err := hTMLToMarkdown(message.HTML())
+	if err != nil {
+		slog.Error("failed to convert html to markdown", slog.Any("err", err))
+	} else {
+		body = markdown
+	}
+
 	newMessage := models.NewMessage(
 		thread.ThreadId, channel,
 		models.SetMessageCustomer(customer),
 		models.SetMessageTextBody(message.PlainText()),
-		models.SetMessageBody(message.Html()),
+		models.SetMessageBody(body),
 	)
 
 	// Check if the thread has inbound message sequence.

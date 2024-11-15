@@ -1,4 +1,5 @@
 import { Icons } from "@/components/icons";
+import { channelIcon } from "@/components/icons";
 import { NotFound } from "@/components/notfound";
 import { CustomerEvents } from "@/components/thread/customer-events";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -57,11 +58,9 @@ import {
   ArrowDownIcon,
   ArrowLeftIcon,
   ArrowUpIcon,
-  ChatBubbleIcon,
   CopyIcon,
   DotsHorizontalIcon,
   PlusIcon,
-  ResetIcon,
 } from "@radix-ui/react-icons";
 import { BorderDashedIcon, CheckIcon } from "@radix-ui/react-icons";
 import { useQuery } from "@tanstack/react-query";
@@ -69,8 +68,14 @@ import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCopyToClipboard } from "@uidotdev/usehooks";
 import { formatDistanceToNow } from "date-fns";
-import { CheckCircleIcon, CircleIcon, EclipseIcon } from "lucide-react";
+import {
+  CheckCircleIcon,
+  CircleIcon,
+  EclipseIcon,
+  PanelRightIcon,
+} from "lucide-react";
 import React from "react";
+import ReactMarkdown from "react-markdown";
 import { useStore } from "zustand";
 
 export const Route = createFileRoute(
@@ -142,38 +147,40 @@ function Message({
           className="mb-3 mt-3 dark:bg-neutral-700"
           orientation="horizontal"
         />
-        <div>{message.body}</div>
+        <div>
+          <ReactMarkdown>{message.body}</ReactMarkdown>
+        </div>
       </div>
     </div>
   );
 }
 
-function SettingThreadLabel() {
-  return (
-    <div className="mr-1 flex">
-      <svg
-        className="h-3 w-3 animate-spin text-indigo-500"
-        fill="none"
-        viewBox="0 0 24 24"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <circle
-          className="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          strokeWidth="4"
-        ></circle>
-        <path
-          className="opacity-75"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-          fill="currentColor"
-        ></path>
-      </svg>
-    </div>
-  );
-}
+// function SettingThreadLabel() {
+//   return (
+//     <div className="mr-1 flex">
+//       <svg
+//         className="h-3 w-3 animate-spin text-indigo-500"
+//         fill="none"
+//         viewBox="0 0 24 24"
+//         xmlns="http://www.w3.org/2000/svg"
+//       >
+//         <circle
+//           className="opacity-25"
+//           cx="12"
+//           cy="12"
+//           r="10"
+//           stroke="currentColor"
+//           strokeWidth="4"
+//         ></circle>
+//         <path
+//           className="opacity-75"
+//           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+//           fill="currentColor"
+//         ></path>
+//       </svg>
+//     </div>
+//   );
+// }
 
 function ThreadLabels({
   threadId,
@@ -316,11 +323,7 @@ function ThreadLabels({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button className="h-7 border-dashed" size="sm" variant="outline">
-              {threadLabelMutation.isPending ? (
-                <SettingThreadLabel />
-              ) : (
-                <PlusIcon className="mr-1 h-3 w-3" />
-              )}
+              <PlusIcon className="mr-1 h-3 w-3" />
               Add
             </Button>
           </DropdownMenuTrigger>
@@ -452,7 +455,6 @@ function ThreadDetail() {
     "/workspaces/$workspaceId/threads/todo";
 
   const threadStatus = activeThread?.status || "";
-  const isAwaitingReply = activeThread?.replied === false;
   const threadStage = activeThread?.stage || "";
 
   const { nextItem, prevItem } = getPrevNextFromCurrent(currentQueue, threadId);
@@ -624,40 +626,22 @@ function ThreadDetail() {
               <ResizablePanel defaultSize={75}>
                 <div className="flex h-full flex-col">
                   <div className="flex h-14 min-h-14 flex-col justify-center border-b px-4">
-                    <div className="flex">
-                      <div className="text-sm font-semibold">
-                        {customerName}
+                    <div className="flex items-center justify-between space-x-2">
+                      <div className="flex items-center gap-2">
+                        {channelIcon(activeThread.channel, {
+                          className: "h-4 w-4 text-muted-foreground",
+                        })}
+                        <div className="overflow-hidden text-ellipsis text-sm font-medium">
+                          {activeThread.title}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center">
-                      <CircleIcon className="mr-1 h-3 w-3 text-indigo-500" />
-                      <span className="items-center text-xs capitalize">
-                        {threadStatus}
-                      </span>
-                      <Separator className="mx-2" orientation="vertical" />
-                      <ChatBubbleIcon className="h-3 w-3" />
-                      {isAwaitingReply && (
-                        <React.Fragment>
-                          <Separator className="mx-2" orientation="vertical" />
-                          <Badge
-                            className="bg-indigo-100 font-normal dark:bg-indigo-500"
-                            variant="outline"
-                          >
-                            <div className="flex items-center gap-1">
-                              <ResetIcon className="h-2 w-2" />
-                            </div>
-                          </Badge>
-                          <Separator className="mx-2" orientation="vertical" />
-                          <div className="text-xs">
-                            {formatDistanceToNow(
-                              new Date(activeThread.createdAt),
-                              {
-                                addSuffix: true,
-                              },
-                            )}
-                          </div>
-                        </React.Fragment>
-                      )}
+                      <Button
+                        onClick={() => console.log("implement this !!")}
+                        size="icon"
+                        variant="outline"
+                      >
+                        <PanelRightIcon className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                   <ScrollArea className="flex h-[calc(100dvh-4rem)] flex-col bg-gray-100 p-1 dark:bg-background">

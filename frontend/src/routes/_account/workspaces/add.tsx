@@ -94,7 +94,7 @@ function CreateWorkspaceComponent() {
   };
 
   return (
-    <div className="flex flex-col justify-center p-4 min-h-screen">
+    <div className="flex min-h-screen flex-col justify-center p-4">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <Card className="mx-auto w-full max-w-sm">

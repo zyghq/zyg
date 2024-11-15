@@ -1,7 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute(
-  "/_account/workspaces/$workspaceId/_workspace/"
+  "/_account/workspaces/$workspaceId/_workspace/",
 )({
-  component: () => <div>Hello /_auth/workspaces/$workspaceId/_workspace/!</div>,
+  component: () => null,
+  loader: ({ params }) => {
+    throw redirect({
+      params,
+      to: "/workspaces/$workspaceId/threads/todo",
+    });
+  },
 });
