@@ -108,3 +108,37 @@ export function CustomerEvents({
     </>
   );
 }
+
+// export function EventCard2() {
+//   const formatDate = (dateString: string) => {
+//     const date = new Date(dateString);
+//     return date.toLocaleString("en-US", {
+//       day: "numeric",
+//       hour: "2-digit",
+//       hour12: true,
+//       minute: "2-digit",
+//       month: "short",
+//     });
+//   };
+//   return (
+//     <Card className="shadow-xs">
+//       <CardHeader className="border-b p-3">
+//         <div className="flex items-center">
+//           {eventSeverityIcon(eventItem.severity, {
+//             className: "h-5 w-5",
+//           })}
+//           <div className="flex w-full gap-2">
+//             <span className="text-sm font-medium">{eventItem.event}</span>
+//             <span className="flex items-center gap-1 text-xs text-muted-foreground">
+//               <ClockIcon className="h-4 w-4" />
+//               {formatDate(eventItem.timestamp)}
+//             </span>
+//           </div>
+//         </div>
+//       </CardHeader>
+//       <CardContent className="p-3">
+//         {RenderComponents({ components: eventItem.components })}
+//       </CardContent>
+//     </Card>
+//   );
+// }

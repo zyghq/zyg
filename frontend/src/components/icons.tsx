@@ -1,11 +1,8 @@
 import { cn } from "@/lib/utils";
-import { ChatBubbleIcon } from "@radix-ui/react-icons";
+import { ChatBubbleIcon, DotFilledIcon } from "@radix-ui/react-icons";
 import {
-  AlertTriangleIcon,
   CheckCircleIcon,
-  CircleAlertIcon,
   ClockIcon,
-  InfoIcon,
   LocateIcon,
   MailIcon,
   PauseIcon,
@@ -333,13 +330,57 @@ export function channelIcon(channel: string, props: IconProps) {
 export function eventSeverityIcon(severity: string, props: IconProps) {
   switch (severity) {
     case "critical":
+      return (
+        <DotFilledIcon
+          {...props}
+          className={cn(
+            props.className,
+            "animate-pulse text-red-600 dark:text-red-400",
+          )}
+        />
+      );
     case "error":
-      return <CircleAlertIcon {...props} />;
+      return (
+        <DotFilledIcon
+          {...props}
+          className={cn(
+            props.className,
+            "animate-pulse text-rose-600 dark:text-rose-400",
+          )}
+        />
+      );
     case "info":
-      return <InfoIcon {...props} />;
+      return (
+        <DotFilledIcon
+          {...props}
+          className={cn(props.className, "text-blue-600 dark:text-blue-400")}
+        />
+      );
+    case "muted":
+      return (
+        <DotFilledIcon
+          {...props}
+          className={cn(props.className, "text-gray-500 dark:text-gray-400")}
+        />
+      );
+    case "success":
+      return (
+        <DotFilledIcon
+          {...props}
+          className={cn(props.className, "text-green-600 dark:text-green-400")}
+        />
+      );
     case "warning":
-      return <AlertTriangleIcon {...props} />;
+      return (
+        <DotFilledIcon
+          {...props}
+          className={cn(
+            props.className,
+            "text-yellow-600 dark:text-yellow-400",
+          )}
+        />
+      );
     default:
-      return <></>;
+      return <DotFilledIcon {...props} />;
   }
 }

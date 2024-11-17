@@ -144,7 +144,7 @@ function Message({
         </div>
         <div className="text-xs text-muted-foreground"></div>
         <Separator
-          className="mb-3 mt-3 dark:bg-neutral-700"
+          className="mb-3 mt-3 dark:bg-background"
           orientation="horizontal"
         />
         <div>
@@ -517,7 +517,7 @@ function ThreadDetail() {
     if (messages && messages.length > 0) {
       // const messagesReversed = Array.from(messages).reverse();
       return (
-        <div className="space-y-4 p-4">
+        <div className="space-y-2 px-2 pt-2">
           {messages.map((message) => (
             <Message
               key={message.messageId}
@@ -620,7 +620,7 @@ function ThreadDetail() {
               )}
             </ScrollArea>
           </ResizablePanel>
-          <ResizableHandle withHandle={true} />
+          <ResizableHandle withHandle={false} />
           <ResizablePanel className="flex flex-col" defaultSize={50}>
             <ResizablePanelGroup direction="vertical">
               <ResizablePanel defaultSize={75}>
@@ -644,12 +644,12 @@ function ThreadDetail() {
                       </Button>
                     </div>
                   </div>
-                  <ScrollArea className="flex h-[calc(100dvh-4rem)] flex-col bg-gray-100 p-1 dark:bg-background">
+                  <ScrollArea className="flex h-[calc(100dvh-4rem)] flex-col bg-accent dark:bg-background">
                     {isPending ? <ChatLoading /> : renderMessages(messages)}
                   </ScrollArea>
                 </div>
               </ResizablePanel>
-              <ResizableHandle withHandle />
+              <ResizableHandle withHandle={false} />
               <ResizablePanel defaultSize={25} maxSize={50} minSize={20}>
                 <div className="flex h-full flex-col gap-2 overflow-auto p-2">
                   <MessageForm
@@ -708,58 +708,56 @@ function ThreadDetail() {
               </ResizablePanel>
             </ResizablePanelGroup>
           </ResizablePanel>
-          <ResizableHandle withHandle={true} />
+          <ResizableHandle withHandle={false} />
           <ResizablePanel
-            className="hidden flex-col gap-2 bg-accent p-2 sm:flex"
+            className="hidden bg-accent p-2 sm:block"
             defaultSize={25}
             maxSize={30}
             minSize={20}
           >
             <ScrollArea className="h-[calc(100dvh-1rem)]">
-              <div className="flex flex-col gap-4 rounded-lg bg-white px-4 py-2 dark:bg-background">
-                <div className="flex flex-col">
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 rounded-lg bg-white px-4 py-2 dark:bg-background">
                   {activeThread.title && (
                     <div className="text-md font-medium">
                       {activeThread.title}
                     </div>
                   )}
-                  {activeThread.previewText && (
-                    <div className="text-sm text-muted-foreground">
-                      {activeThread.previewText}
+                  {activeThread.description && (
+                    <div className="line-clamp-5 text-sm">
+                      {activeThread.description}
                     </div>
                   )}
-                </div>
-                <div className="flex flex-col gap-2">
-                  <div className="flex gap-2">
-                    <SetThreadPriorityForm
-                      priority={priority}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <SetThreadPriorityForm
+                        priority={priority}
+                        threadId={threadId}
+                        token={token}
+                        workspaceId={workspaceId}
+                      />
+                      <SetThreadAssigneeForm
+                        assigneeId={assigneeId}
+                        threadId={threadId}
+                        token={token}
+                        workspaceId={workspaceId}
+                      />
+                    </div>
+                    <SetThreadStatusForm
+                      stage={threadStage}
                       threadId={threadId}
                       token={token}
                       workspaceId={workspaceId}
                     />
-                    <SetThreadAssigneeForm
-                      assigneeId={assigneeId}
+                    <ThreadLabels
                       threadId={threadId}
                       token={token}
                       workspaceId={workspaceId}
+                      workspaceLabels={workspaceLabels}
                     />
                   </div>
-                  <SetThreadStatusForm
-                    stage={threadStage}
-                    threadId={threadId}
-                    token={token}
-                    workspaceId={workspaceId}
-                  />
-                  <ThreadLabels
-                    threadId={threadId}
-                    token={token}
-                    workspaceId={workspaceId}
-                    workspaceLabels={workspaceLabels}
-                  />
                 </div>
-              </div>
-              <div className="flex flex-col gap-4 rounded-lg bg-white px-4 py-2 dark:bg-background">
-                <div>
+                <div className="flex flex-col rounded-lg bg-white px-4 py-2 dark:bg-background">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <Avatar className="h-7 w-7">
@@ -796,7 +794,7 @@ function ThreadDetail() {
                         type="button"
                         variant="ghost"
                       >
-                        <CopyIcon className="h-4 w-4" />
+                        <CopyIcon className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
@@ -817,7 +815,7 @@ function ThreadDetail() {
                         type="button"
                         variant="ghost"
                       >
-                        <CopyIcon className="h-4 w-4" />
+                        <CopyIcon className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
@@ -832,18 +830,19 @@ function ThreadDetail() {
                         type="button"
                         variant="ghost"
                       >
-                        <CopyIcon className="h-4 w-4" />
+                        <CopyIcon className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col space-y-2">
-                  <div className="text-xs font-semibold">Recent Events</div>
-                  <CustomerEvents
-                    customerId={activeThread?.customerId || ""}
-                    jwt={token}
-                    workspaceId={workspaceId}
-                  />
+                <div className="flex flex-col rounded-lg bg-white px-2 py-2 dark:bg-background">
+                  <div className="flex flex-col space-y-2">
+                    <CustomerEvents
+                      customerId={activeThread?.customerId || ""}
+                      jwt={token}
+                      workspaceId={workspaceId}
+                    />
+                  </div>
                 </div>
               </div>
             </ScrollArea>
