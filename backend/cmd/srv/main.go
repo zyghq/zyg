@@ -17,17 +17,20 @@ import (
 	"github.com/zyghq/zyg/services"
 )
 
-var addr = flag.String("addr", "0.0.0.0:8080", "listen address")
+var host = flag.String("host", "0.0.0.0", "host")
+var port = flag.String("port", "8080", "port")
+
+var addr string
 
 func run(ctx context.Context) error {
 	var err error
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// get POSTGRES_URI from env
-	pgConnStr, err := zyg.GetEnv("POSTGRES_URI")
+	// get postgres connection string from env
+	pgConnStr, err := zyg.GetEnv("DATABASE_URL")
 	if err != nil {
-		return fmt.Errorf("failed to get POSTGRES_URI env got error: %v", err)
+		return fmt.Errorf("failed to get DATABASE_URL env got error: %v", err)
 	}
 
 	// create pg connection pool
@@ -70,8 +73,9 @@ func run(ctx context.Context) error {
 		threadService,
 	)
 
+	addr = fmt.Sprintf("%s:%s", *host, *port)
 	httpServer := &http.Server{
-		Addr:              *addr,
+		Addr:              addr,
 		Handler:           srv,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      90 * time.Second,
@@ -79,7 +83,7 @@ func run(ctx context.Context) error {
 		ReadHeaderTimeout: time.Minute,
 	}
 
-	slog.Info("server up and running", slog.String("addr", *addr))
+	slog.Info("server up and running", slog.String("addr", addr))
 
 	err = httpServer.ListenAndServe()
 	return err

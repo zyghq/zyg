@@ -1,25 +1,60 @@
+volumes:
+  database-data:
+
+networks:
+  stack:
+    name: stack
+    external: false
+
 services:
-  
-  postgres:
-    image: postgres:15
-    container_name: postgres 
-    environment:
-      POSTGRES_DB: zygdevdb
-      POSTGRES_USER: zygdev
-      POSTGRES_PASSWORD: VeryS3cure
+  database:
+    container_name: database
+    image: postgres
+    restart: always
     volumes:
-      - pqdb:/var/lib/postgresql/data
+      - database-data:/var/lib/postgresql/data/
+    env_file: .env
+    networks:
+      - stack
     ports:
       - "5432:5432"
 
-  redis:
-    image: redis:7
-    container_name: redis
+  srv:
+    container_name: srv
+    build:
+      context: ./backend
+      dockerfile: srv.DockerFile
+      args:
+        - ZYG_SRV_PORT=${ZYG_SRV_PORT}
+        - DATABASE_URL=${DATABASE_URL}
+        - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
+        - RESEND_API_KEY=${RESEND_API_KEY}
+        - ZYG_DB_QUERY_DEBUG=${ZYG_DB_QUERY_DEBUG}
+    restart: always
+    depends_on:
+      - database
+    env_file: .env
+    networks:
+      - stack
     ports:
-      - "6379:6379"
-    volumes:
-      - redisdb:/data
+      - "${ZYG_SRV_PORT}:${ZYG_SRV_PORT}"
 
-volumes:
-  pqdb:
-  redisdb:
+  xsrv:
+    container_name: xsrv
+    build:
+      context: ./backend
+      dockerfile: xsrv.DockerFile
+      args:
+        - ZYG_XSRV_PORT=${ZYG_XSRV_PORT}
+        - DATABASE_URL=${DATABASE_URL}
+        - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
+        - RESEND_API_KEY=${RESEND_API_KEY}
+        - ZYG_DB_QUERY_DEBUG=${ZYG_DB_QUERY_DEBUG}
+    restart: always
+    depends_on:
+      - database
+    env_file: .env
+    networks:
+      - stack
+    ports:
+      - "${ZYG_XSRV_PORT}:${ZYG_XSRV_PORT}"
