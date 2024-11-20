@@ -1,0 +1,441 @@
+package models
+
+import (
+	"encoding/json"
+	"fmt"
+)
+
+// Represents the event severity
+type EventSeverity string
+
+// Pre-defined event severity.
+const (
+	SeverityInfo     EventSeverity = "info"
+	SeverityCritical EventSeverity = "critical"
+	SeverityError    EventSeverity = "error"
+	SeverityMuted    EventSeverity = "muted"
+	SeveritySuccess  EventSeverity = "success"
+	SeverityWarning  EventSeverity = "warning"
+)
+
+// IsValid checks if the Severity value is one of the predefined constants:
+// SeverityInfo, SeverityCritical, SeverityError, SeverityMuted, SeveritySuccess, or SeverityWarning.
+// Returns true if the value is valid, false otherwise.
+func (sv EventSeverity) IsValid() bool {
+	switch sv {
+	case SeverityInfo, SeverityCritical, SeverityError, SeverityMuted, SeveritySuccess, SeverityWarning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Represents text size for the text component.
+type TextSize string
+
+const (
+	TextSizeL  TextSize = "L"
+	TextSizeM  TextSize = "M"
+	TextSizeS  TextSize = "S"
+	TextSizeXS TextSize = "XS"
+)
+
+// IsValid checks if the TextSize value is one of the predefined constants:
+// TextSizeL ("L"), TextSizeM ("M"), TextSizeS ("S"), or TextSizeXS ("XS").
+// Returns true if the value is valid, false otherwise.
+func (ts TextSize) IsValid() bool {
+	switch ts {
+	case TextSizeL, TextSizeM, TextSizeS, TextSizeXS:
+		return true
+	default:
+		return false
+	}
+}
+
+type SpacerSize string
+
+const (
+	SpacerSizeL  SpacerSize = "L"
+	SpacerSizeM  SpacerSize = "M"
+	SpacerSizeS  SpacerSize = "S"
+	SpacerSizeXS SpacerSize = "XS"
+)
+
+// IsValid checks if the SpacerSize value is one of the predefined constants:
+// SpacerSizeL ("L"), SpacerSizeM ("M"), SpacerSizeS ("S"), or SpacerSizeXS ("XS").
+// Returns true if the value is valid, false otherwise.
+func (ss SpacerSize) IsValid() bool {
+	switch ss {
+	case SpacerSizeL, SpacerSizeM, SpacerSizeS, SpacerSizeXS:
+		return true
+	default:
+		return false
+	}
+}
+
+type DividerSize string
+
+const (
+	DividerSizeL  DividerSize = "L"
+	DividerSizeM  DividerSize = "M"
+	DividerSizeS  DividerSize = "S"
+	DividerSizeXS DividerSize = "XS"
+)
+
+// IsValid checks if the DividerSize value is one of the predefined constants:
+// DividerSizeL ("L"), DividerSizeM ("M"), DividerSizeS ("S"), or DividerSizeXS ("XS").
+// Returns true if the value is valid, false otherwise.
+func (ds DividerSize) IsValid() bool {
+	switch ds {
+	case DividerSizeL, DividerSizeM, DividerSizeS, DividerSizeXS:
+		return true
+	default:
+		return false
+	}
+}
+
+type BadgeColor string
+
+const (
+	BadgeColorRed    BadgeColor = "RED"
+	BadgeColorGreen  BadgeColor = "GREEN"
+	BadgeColorBlue   BadgeColor = "BLUE"
+	BadgeColorGray   BadgeColor = "GRAY"
+	BadgeColorYellow BadgeColor = "YELLOW"
+)
+
+// IsValid checks if the BadgeColor value is one of the predefined constants:
+// BadgeColorRed ("RED"), BadgeColorGreen ("GREEN"), BadgeColorBlue ("BLUE"),
+// BadgeColorGray ("GRAY"), or BadgeColorYellow ("YELLOW").
+// Returns true if the value is valid, false otherwise.
+func (bc BadgeColor) IsValid() bool {
+	switch bc {
+	case BadgeColorRed, BadgeColorGreen, BadgeColorBlue, BadgeColorGray, BadgeColorYellow:
+		return true
+	default:
+		return false
+	}
+}
+
+// ComponentText represents the component text in event components.
+type ComponentText struct {
+	Text     string   `json:"text"`
+	TextSize TextSize `json:"textSize"`
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface for ComponentText.
+// It unmarshals the JSON data and validates the textSize field.
+// If textSize is empty, it defaults to 'S'. Otherwise checks if the value
+// is one of the valid predefined sizes (L, M, S, XS).
+// Returns an error if JSON unmarshal fails or if textSize is invalid.
+func (ct *ComponentText) UnmarshalJSON(data []byte) error {
+	type Aux struct {
+		Text     string `json:"text"`
+		TextSize string `json:"textSize"`
+	}
+
+	var aux Aux
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	ct.Text = aux.Text
+	// Set default value to 'S' if textSize is empty
+	if aux.TextSize == "" {
+		ct.TextSize = TextSizeS
+	} else {
+		ts := TextSize(aux.TextSize)
+		if !ts.IsValid() {
+			return fmt.Errorf("invalid textSize value: %s", aux.TextSize)
+		}
+		ct.TextSize = ts
+	}
+	return nil
+}
+
+// ComponentSpacer represents the component spacer in event components.
+type ComponentSpacer struct {
+	SpacerSize SpacerSize `json:"spacerSize"`
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface for ComponentSpacer.
+// It unmarshals the JSON data and validates the spacerSize field.
+// If spacerSize is empty, it defaults to 'S'. Otherwise checks if the value
+// is one of the valid predefined sizes (L, M, S, XS).
+// Returns an error if JSON unmarshal fails or if spacerSize is invalid.
+func (cs *ComponentSpacer) UnmarshalJSON(data []byte) error {
+	type Aux struct {
+		SpacerSize string `json:"spacerSize"`
+	}
+
+	var aux Aux
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// Set default value to 'S' if spacerSize is empty
+	if aux.SpacerSize == "" {
+		cs.SpacerSize = SpacerSizeS
+	} else {
+		ss := SpacerSize(aux.SpacerSize)
+		if !ss.IsValid() {
+			return fmt.Errorf("invalid spacerSize value: %s", aux.SpacerSize)
+		}
+		cs.SpacerSize = ss
+	}
+	return nil
+}
+
+// ComponentLinkButton represents the component link button in event components.
+type ComponentLinkButton struct {
+	LinkButtonLabel string `json:"linkButtonLabel"`
+	LinkButtonUrl   string `json:"linkButtonUrl"`
+}
+
+// ComponentDivider represents the coponent divider in event components.
+type ComponentDivider struct {
+	DividerSize DividerSize `json:"dividerSize"`
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface for ComponentDivider.
+// It unmarshals the JSON data and validates the dividerSize field.
+// If dividerSize is empty, it defaults to 'S'. Otherwise checks if the value
+// is one of the valid predefined sizes (L, M, S, XS).
+// Returns an error if JSON unmarshal fails or if dividerSize is invalid.
+func (cd *ComponentDivider) UnmarshalJSON(data []byte) error {
+	type Aux struct {
+		DividerSize string `json:"dividerSize"`
+	}
+
+	var aux Aux
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// Set default value to 'S' if dividerSize is empty
+	if aux.DividerSize == "" {
+		cd.DividerSize = DividerSizeS
+	} else {
+		ds := DividerSize(aux.DividerSize)
+		if !ds.IsValid() {
+			return fmt.Errorf("invalid dividerSize value: %s", aux.DividerSize)
+		}
+		cd.DividerSize = ds
+	}
+	return nil
+}
+
+// ComponentCopyButton respresents the copy button components in event components.
+type ComponentCopyButton struct {
+	CopyButtonToolTipLabel string `json:"copyButtonToolTipLabel"`
+	CopyButtonValue        string `json:"copyButtonValue"`
+}
+
+type ComponentBadge struct {
+	BadgeColor BadgeColor `json:"badgeColor"`
+	BadgeLabel string     `json:"badgeLabel"`
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface for ComponentBadge.
+// It unmarshals the JSON data and validates the badgeColor field.
+// If badgeColor is empty, it defaults to 'GRAY'. Otherwise checks if the value
+// is one of the valid predefined colors (RED, GREEN, BLUE, GRAY, YELLOW).
+// Returns an error if JSON unmarshal fails or if badgeColor is invalid.
+func (cb *ComponentBadge) UnmarshalJSON(data []byte) error {
+	type Aux struct {
+		BadgeColor string `json:"badgeColor"`
+		BadgeLabel string `json:"badgeLabel"`
+	}
+
+	var aux Aux
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	cb.BadgeLabel = aux.BadgeLabel
+	if aux.BadgeColor == "" {
+		cb.BadgeColor = BadgeColorGray
+	} else {
+		bc := BadgeColor(aux.BadgeColor)
+		if !bc.IsValid() {
+			return fmt.Errorf("invalid badgeColor value: %s", aux.BadgeColor)
+		}
+		cb.BadgeColor = bc
+	}
+	return nil
+}
+
+// ValidateComponentText checks if the ComponentText has valid text and textSize fields.
+// It takes a ComponentText struct and its index in a component array as parameters.
+// Returns an error if the text field is empty or if the textSize is not one of the
+// predefined values (L, M, S, XS). The index is used in error messages to identify
+// which component failed validation.
+func ValidateComponentText(ct *ComponentText, index int) error {
+	if ct == nil {
+		return nil
+	}
+	if ct.Text == "" {
+		return fmt.Errorf("component %d: text field cannot be empty", index)
+	}
+	if !ct.TextSize.IsValid() {
+		return fmt.Errorf(
+			"component %d: invalid textSize value %s (expected one of L, M, S, XS)",
+			index, ct.TextSize,
+		)
+	}
+	return nil
+}
+
+// ValidateComponentSpacer checks if the ComponentSpacer has a valid spacerSize field.
+// It takes a ComponentSpacer struct and its index in a component array as parameters.
+// Returns an error if the spacerSize is not one of the predefined values (L, M, S, XS).
+// The index is used in error messages to identify which component failed validation.
+func ValidateComponentSpacer(cs *ComponentSpacer, index int) error {
+	if cs == nil {
+		return nil
+	}
+	if !cs.SpacerSize.IsValid() {
+		return fmt.Errorf(
+			"component %d: invalid spacerSize value %s (expected one of L, M, S, XS)",
+			index, cs.SpacerSize,
+		)
+	}
+	return nil
+}
+
+// ValidateComponentLinkButton checks if the ComponentLinkButton has valid label and URL fields.
+// It takes a ComponentLinkButton struct and its index in a component array as parameters.
+// Returns an error if either linkButtonLabel or linkButtonUrl fields are empty.
+// The index is used in error messages to identify which component failed validation.
+// Returns nil if the input pointer is nil or if validation passes.
+func ValidateComponentLinkButton(lb *ComponentLinkButton, index int) error {
+	if lb == nil {
+		return nil
+	}
+	if lb.LinkButtonLabel == "" {
+		return fmt.Errorf("component %d: linkButtonLabel cannot be empty", index)
+	}
+	if lb.LinkButtonUrl == "" {
+		return fmt.Errorf("component %d: linkButtonUrl cannot be empty", index)
+	}
+	return nil
+}
+
+// ValidateComponentDivider checks if the ComponentDivider has a valid dividerSize field.
+// It takes a ComponentDivider struct and its index in a component array as parameters.
+// Returns an error if the dividerSize is not one of the predefined values (L, M, S, XS).
+// The index is used in error messages to identify which component failed validation.
+func ValidateComponentDivider(cd *ComponentDivider, index int) error {
+	if cd == nil {
+		return nil
+	}
+	if !cd.DividerSize.IsValid() {
+		return fmt.Errorf(
+			"component %d: invalid dividerSize value %s (expected one of L, M, S, XS)",
+			index, cd.DividerSize,
+		)
+	}
+	return nil
+}
+
+// ValidateComponentCopyButton checks if the ComponentCopyButton has valid tooltip label and value fields.
+// It takes a ComponentCopyButton struct and its index in a component array as parameters.
+// Returns an error if copyButtonValue field is empty. If the copyButtonToolTipLabel is empty,
+// it defaults to "copy". The index is used in error messages to identify which component failed validation.
+// Returns nil if the input pointer is nil or if validation passes.
+func ValidateComponentCopyButton(cp *ComponentCopyButton, index int) error {
+	if cp == nil {
+		return nil
+	}
+	if cp.CopyButtonToolTipLabel == "" {
+		cp.CopyButtonToolTipLabel = "copy"
+	}
+	if cp.CopyButtonValue == "" {
+		return fmt.Errorf("component %d: copyButtonValue cannot be empty", index)
+	}
+	return nil
+}
+
+// ValidateComponentBadge checks if the ComponentBadge has valid badgeColor and badgeLabel fields.
+// It takes a ComponentBadge struct and its index in a component array as parameters.
+// Returns an error if the badgeColor is not one of the predefined colors
+// (RED, GREEN, BLUE, GRAY, YELLOW) or if the badgeLabel is empty.
+// The index is used in error messages to identify which component failed validation.
+// Returns nil if the input pointer is nil or if validation passes.
+func ValidateComponentBadge(cb *ComponentBadge, index int) error {
+	if cb == nil {
+		return nil
+	}
+	if !cb.BadgeColor.IsValid() {
+		return fmt.Errorf(
+			"component %d: invalid badgeColor value %s (expected one of RED, GREEN, BLUE, GRAY, YELLOW)",
+			index, cb.BadgeColor,
+		)
+	}
+	if cb.BadgeLabel == "" {
+		return fmt.Errorf("component %d: badgeLabel cannot be empty", index)
+	}
+	return nil
+}
+
+// Represents the collection of components in the event.
+type Component struct {
+	ComponentText       *ComponentText       `json:"componentText"`
+	ComponentSpacer     *ComponentSpacer     `json:"componentSpacer"`
+	ComponentLinkButton *ComponentLinkButton `json:"componentLinkButton"`
+	ComponentDivider    *ComponentDivider    `json:"componentDivider"`
+	ComponentCopyButton *ComponentCopyButton `json:"componentCopyButton"`
+	ComponentBadge      *ComponentBadge      `json:"componentBadge"`
+}
+
+// Represents the customer or thread event.
+type Event struct {
+	Event      string        `json:"event"`
+	Severity   EventSeverity `json:"severity"`
+	Components []Component   `json:"components"`
+}
+
+// ValidateComponent performs validation on a Component struct and its constituent components.
+// It takes a Component pointer and an index indicating its position in a component array.
+// The function validates each sub-component (Text, Spacer, LinkButton, Divider,
+// CopyButton, Badge) if they are present by calling their respective validation functions.
+// Returns nil if the component is valid or nil, otherwise returns the first validation
+// error encountered.
+// If comp is nil, returns an error indicating an invalid nil component.
+func ValidateComponent(comp *Component, index int) error {
+	if comp == nil {
+		return fmt.Errorf("component %d: invalid nil component", index)
+	}
+
+	if comp.ComponentText != nil {
+		if err := ValidateComponentText(comp.ComponentText, index); err != nil {
+			return err
+		}
+	}
+	if comp.ComponentSpacer != nil {
+		if err := ValidateComponentSpacer(comp.ComponentSpacer, index); err != nil {
+			return err
+		}
+	}
+	if comp.ComponentLinkButton != nil {
+		if err := ValidateComponentLinkButton(comp.ComponentLinkButton, index); err != nil {
+			return err
+		}
+	}
+	if comp.ComponentDivider != nil {
+		if err := ValidateComponentDivider(comp.ComponentDivider, index); err != nil {
+			return err
+		}
+	}
+	if comp.ComponentCopyButton != nil {
+		if err := ValidateComponentCopyButton(comp.ComponentCopyButton, index); err != nil {
+			return err
+		}
+	}
+	if comp.ComponentBadge != nil {
+		if err := ValidateComponentBadge(comp.ComponentBadge, index); err != nil {
+			return err
+		}
+	}
+	return nil
+}
