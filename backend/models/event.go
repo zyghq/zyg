@@ -3,12 +3,15 @@ package models
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/rs/xid"
+	"github.com/zyghq/zyg/utils"
+	"time"
 )
 
-// Represents the event severity
+// EventSeverity Represents the event severity
 type EventSeverity string
 
-// Pre-defined event severity.
+// Predefined event severity.
 const (
 	SeverityInfo     EventSeverity = "info"
 	SeverityCritical EventSeverity = "critical"
@@ -21,8 +24,8 @@ const (
 // IsValid checks if the Severity value is one of the predefined constants:
 // SeverityInfo, SeverityCritical, SeverityError, SeverityMuted, SeveritySuccess, or SeverityWarning.
 // Returns true if the value is valid, false otherwise.
-func (sv EventSeverity) IsValid() bool {
-	switch sv {
+func (ev EventSeverity) IsValid() bool {
+	switch ev {
 	case SeverityInfo, SeverityCritical, SeverityError, SeverityMuted, SeveritySuccess, SeverityWarning:
 		return true
 	default:
@@ -30,7 +33,7 @@ func (sv EventSeverity) IsValid() bool {
 	}
 }
 
-// Represents text size for the text component.
+// TextSize Represents text size for the text component.
 type TextSize string
 
 const (
@@ -125,7 +128,7 @@ type ComponentText struct {
 
 // UnmarshalJSON implements the json.Unmarshaler interface for ComponentText.
 // It unmarshals the JSON data and validates the textSize field.
-// If textSize is empty, it defaults to 'S'. Otherwise checks if the value
+// If textSize is empty, it defaults to 'S'. Otherwise, checks if the value
 // is one of the valid predefined sizes (L, M, S, XS).
 // Returns an error if JSON unmarshal fails or if textSize is invalid.
 func (ct *ComponentText) UnmarshalJSON(data []byte) error {
@@ -160,7 +163,7 @@ type ComponentSpacer struct {
 
 // UnmarshalJSON implements the json.Unmarshaler interface for ComponentSpacer.
 // It unmarshals the JSON data and validates the spacerSize field.
-// If spacerSize is empty, it defaults to 'S'. Otherwise checks if the value
+// If spacerSize is empty, it defaults to 'S'. Otherwise, checks if the value
 // is one of the valid predefined sizes (L, M, S, XS).
 // Returns an error if JSON unmarshal fails or if spacerSize is invalid.
 func (cs *ComponentSpacer) UnmarshalJSON(data []byte) error {
@@ -192,14 +195,14 @@ type ComponentLinkButton struct {
 	LinkButtonUrl   string `json:"linkButtonUrl"`
 }
 
-// ComponentDivider represents the coponent divider in event components.
+// ComponentDivider represents the component divider in event components.
 type ComponentDivider struct {
 	DividerSize DividerSize `json:"dividerSize"`
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for ComponentDivider.
 // It unmarshals the JSON data and validates the dividerSize field.
-// If dividerSize is empty, it defaults to 'S'. Otherwise checks if the value
+// If dividerSize is empty, it defaults to 'S'. Otherwise, checks if the value
 // is one of the valid predefined sizes (L, M, S, XS).
 // Returns an error if JSON unmarshal fails or if dividerSize is invalid.
 func (cd *ComponentDivider) UnmarshalJSON(data []byte) error {
@@ -225,7 +228,7 @@ func (cd *ComponentDivider) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// ComponentCopyButton respresents the copy button components in event components.
+// ComponentCopyButton represents the copy button components in event components.
 type ComponentCopyButton struct {
 	CopyButtonToolTipLabel string `json:"copyButtonToolTipLabel"`
 	CopyButtonValue        string `json:"copyButtonValue"`
@@ -238,7 +241,7 @@ type ComponentBadge struct {
 
 // UnmarshalJSON implements the json.Unmarshaler interface for ComponentBadge.
 // It unmarshals the JSON data and validates the badgeColor field.
-// If badgeColor is empty, it defaults to 'GRAY'. Otherwise checks if the value
+// If badgeColor is empty, it defaults to 'GRAY'. Otherwise, checks if the value
 // is one of the valid predefined colors (RED, GREEN, BLUE, GRAY, YELLOW).
 // Returns an error if JSON unmarshal fails or if badgeColor is invalid.
 func (cb *ComponentBadge) UnmarshalJSON(data []byte) error {
@@ -378,8 +381,8 @@ func ValidateComponentBadge(cb *ComponentBadge, index int) error {
 	return nil
 }
 
-// Represents the collection of components in the event.
-type Component struct {
+// EventComponent Represents the collection of components in the event.
+type EventComponent struct {
 	ComponentText       *ComponentText       `json:"componentText"`
 	ComponentSpacer     *ComponentSpacer     `json:"componentSpacer"`
 	ComponentLinkButton *ComponentLinkButton `json:"componentLinkButton"`
@@ -388,21 +391,14 @@ type Component struct {
 	ComponentBadge      *ComponentBadge      `json:"componentBadge"`
 }
 
-// Represents the customer or thread event.
-type Event struct {
-	Event      string        `json:"event"`
-	Severity   EventSeverity `json:"severity"`
-	Components []Component   `json:"components"`
-}
-
-// ValidateComponent performs validation on a Component struct and its constituent components.
-// It takes a Component pointer and an index indicating its position in a component array.
-// The function validates each sub-component (Text, Spacer, LinkButton, Divider,
+// ValidateComponent performs validation on a EventComponent struct and its constituent components.
+// It takes a EventComponent pointer and an index indicating its position in a component array.
+// The function validates each subcomponent (Text, Spacer, LinkButton, Divider,
 // CopyButton, Badge) if they are present by calling their respective validation functions.
 // Returns nil if the component is valid or nil, otherwise returns the first validation
 // error encountered.
 // If comp is nil, returns an error indicating an invalid nil component.
-func ValidateComponent(comp *Component, index int) error {
+func ValidateComponent(comp *EventComponent, index int) error {
 	if comp == nil {
 		return fmt.Errorf("component %d: invalid nil component", index)
 	}
@@ -437,5 +433,97 @@ func ValidateComponent(comp *Component, index int) error {
 			return err
 		}
 	}
+	return nil
+}
+
+// Event Represents the customer or thread event.
+type Event struct {
+	EventID    string
+	Title      string
+	Severity   EventSeverity
+	Timestamp  time.Time
+	Components []EventComponent
+	Customer   CustomerActor
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+}
+
+type EventOptions func(e *Event)
+
+func (e *Event) GenId() string {
+	return "ev" + xid.New().String()
+}
+
+func NewEvent(title string, opts ...EventOptions) (*Event, error) {
+	var err error
+	eventId := (&Event{}).GenId()
+	now := time.Now().UTC()
+	event := &Event{
+		EventID:   eventId,
+		Title:     title,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	for _, opt := range opts {
+		opt(event)
+	}
+	err = ValidateEvent(event)
+	if err != nil {
+		return &Event{}, err
+	}
+	return event, err
+}
+
+func SetEventCustomer(customer CustomerActor) EventOptions {
+	return func(e *Event) {
+		e.Customer = customer
+	}
+}
+
+func SetEventSeverity(severity string) EventOptions {
+	return func(e *Event) {
+		e.Severity = EventSeverity(severity)
+	}
+}
+
+func SetEventTimestampFromStr(timestamp string) EventOptions {
+	return func(e *Event) {
+		e.Timestamp = utils.FromRFC3339OrNow(timestamp)
+	}
+}
+
+func WithEventComponents(components []EventComponent) EventOptions {
+	return func(e *Event) {
+		e.Components = components
+	}
+}
+
+func ValidateEvent(event *Event) error {
+	if event == nil {
+		return fmt.Errorf("event cannot be nil")
+	}
+
+	if event.Title == "" {
+		event.Title = "Untitled"
+	}
+
+	if event.Severity == "" {
+		event.Severity = SeverityMuted
+	} else {
+		if !event.Severity.IsValid() {
+			return fmt.Errorf("invalid severity value %s", event.Severity)
+		}
+	}
+
+	validComponents := make([]EventComponent, 0, len(event.Components))
+	for i, comp := range event.Components {
+		if err := ValidateComponent(&comp, i); err != nil {
+			return err
+		}
+		validComponents = append(validComponents, comp)
+	}
+	event.Components = validComponents
+
 	return nil
 }

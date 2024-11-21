@@ -3,13 +3,13 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"io"
-	"log/slog"
-	"net/http"
-
+	"fmt"
 	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
 	"github.com/zyghq/zyg/services"
+	"io"
+	"log/slog"
+	"net/http"
 )
 
 type CustomerHandler struct {
@@ -94,31 +94,29 @@ func (h *CustomerHandler) handleCreateCustomerEvent(
 			return
 		}
 
-		cv := (&models.CustomerEvent{}).NewEvent(
-			customer.CustomerId,
-			reqp.Event,
-			reqp.Body,
-			reqp.Severity,
+		fmt.Println("event request payload", reqp)
+		fmt.Println("reqp Event Title", reqp.Title)
+		fmt.Println("reqp Event Severity", reqp.Severity)
+		fmt.Println("reqp Event Components", reqp.Components)
+
+		event, err := models.NewEvent(
+			reqp.Title,
+			models.SetEventCustomer(customer.AsCustomerActor()),
+			models.SetEventSeverity(reqp.Severity),
+			models.SetEventTimestampFromStr(reqp.Timestamp),
+			models.WithEventComponents(reqp.Components),
 		)
-		err = cv.SetTimestampFromStr(reqp.Timestamp)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if reqp.Notify {
-			cv.NotificationSending()
-		}
-		cv, err = h.cs.AppendEvent(ctx, cv)
-		if err != nil {
-			slog.Error("failed to append customer event", slog.Any("err", err))
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
+
+		fmt.Println("validEvent", event)
 
 		resp := CustomerEventAddedResp{
-			EventId:   cv.EventId,
-			CreatedAt: cv.CreatedAt,
-			UpdatedAt: cv.UpdatedAt,
+			EventId:   event.EventID,
+			CreatedAt: event.CreatedAt,
+			UpdatedAt: event.UpdatedAt,
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -135,32 +133,31 @@ func (h *CustomerHandler) handleCreateCustomerEvent(
 			return
 		}
 
-		cv := (&models.CustomerEvent{}).NewEvent(
-			customer.CustomerId,
-			reqp.Event,
-			reqp.Body,
-			reqp.Severity,
-		)
+		fmt.Println("customer", customer)
 
-		err = cv.SetTimestampFromStr(reqp.Timestamp)
+		fmt.Println("event request payload", reqp)
+		fmt.Println("Event", reqp.Title)
+		fmt.Println("Severity", reqp.Severity)
+		fmt.Println("Components", reqp.Components)
+
+		event, err := models.NewEvent(
+			reqp.Title,
+			models.SetEventCustomer(customer.AsCustomerActor()),
+			models.SetEventSeverity(reqp.Severity),
+			models.SetEventTimestampFromStr(reqp.Timestamp),
+			models.WithEventComponents(reqp.Components),
+		)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if reqp.Notify {
-			cv.NotificationSending()
-		}
-		cv, err = h.cs.AppendEvent(ctx, cv)
-		if err != nil {
-			slog.Error("failed to append customer event", slog.Any("err", err))
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
+
+		fmt.Println("validEvent", event)
 
 		resp := CustomerEventAddedResp{
-			EventId:   cv.EventId,
-			CreatedAt: cv.CreatedAt,
-			UpdatedAt: cv.UpdatedAt,
+			EventId:   event.EventID,
+			CreatedAt: event.CreatedAt,
+			UpdatedAt: event.UpdatedAt,
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -183,32 +180,31 @@ func (h *CustomerHandler) handleCreateCustomerEvent(
 			return
 		}
 
-		cv := (&models.CustomerEvent{}).NewEvent(
-			customer.CustomerId,
-			reqp.Event,
-			reqp.Body,
-			reqp.Severity,
-		)
+		fmt.Println("customer", customer)
 
-		err = cv.SetTimestampFromStr(reqp.Timestamp)
+		fmt.Println("event request payload", reqp)
+		fmt.Println("Event", reqp.Title)
+		fmt.Println("Severity", reqp.Severity)
+		fmt.Println("Components", reqp.Components)
+
+		event, err := models.NewEvent(
+			reqp.Title,
+			models.SetEventCustomer(customer.AsCustomerActor()),
+			models.SetEventSeverity(reqp.Severity),
+			models.SetEventTimestampFromStr(reqp.Timestamp),
+			models.WithEventComponents(reqp.Components),
+		)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if reqp.Notify {
-			cv.NotificationSending()
-		}
-		cv, err = h.cs.AppendEvent(ctx, cv)
-		if err != nil {
-			slog.Error("failed to append customer event", slog.Any("err", err))
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
+
+		fmt.Println("validEvent", event)
 
 		resp := CustomerEventAddedResp{
-			EventId:   cv.EventId,
-			CreatedAt: cv.CreatedAt,
-			UpdatedAt: cv.UpdatedAt,
+			EventId:   event.EventID,
+			CreatedAt: event.CreatedAt,
+			UpdatedAt: event.UpdatedAt,
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -217,6 +213,7 @@ func (h *CustomerHandler) handleCreateCustomerEvent(
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
+
 	} else {
 		slog.Error("at least one of `customerId`, `externalId` or `email` is required")
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)

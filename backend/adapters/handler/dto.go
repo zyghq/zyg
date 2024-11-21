@@ -477,9 +477,22 @@ func (tl ThreadLabelResp) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
+//type CustomerEventReq struct {
+//	Event    string `json:"event"`
+//	Body     string `json:"body"`
+//	Customer struct {
+//		CustomerId      *string `json:"customerId"`
+//		ExternalId      *string `json:"externalId"`
+//		Email           *string `json:"email"`
+//		Name            *string `json:"name"`
+//		IsEmailVerified *bool   `json:"isEmailVerified"`
+//	} `json:"customer"`
+//	Notify    bool   `json:"notify"`
+//	Severity  string `json:"severity"`
+//	Timestamp string `json:"timestamp"`
+//}
+
 type CustomerEventReq struct {
-	Event    string `json:"event"`
-	Body     string `json:"body"`
 	Customer struct {
 		CustomerId      *string `json:"customerId"`
 		ExternalId      *string `json:"externalId"`
@@ -487,9 +500,10 @@ type CustomerEventReq struct {
 		Name            *string `json:"name"`
 		IsEmailVerified *bool   `json:"isEmailVerified"`
 	} `json:"customer"`
-	Notify    bool   `json:"notify"`
-	Severity  string `json:"severity"`
-	Timestamp string `json:"timestamp"`
+	Title      string                  `json:"title"`
+	Severity   string                  `json:"severity"`
+	Timestamp  string                  `json:"timestamp"`
+	Components []models.EventComponent `json:"components"`
 }
 
 type CustomerEventAddedResp struct {
