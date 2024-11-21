@@ -272,6 +272,11 @@ func (cb *ComponentBadge) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type ComponentRow struct {
+	RowMainContent  []EventComponent `json:"rowMainContent"`
+	RowAsideContent []EventComponent `json:"rowAsideContent"`
+}
+
 // ValidateComponentText checks if the ComponentText has valid text and textSize fields.
 // It takes a ComponentText struct and its index in a component array as parameters.
 // Returns an error if the text field is empty or if the textSize is not one of the
@@ -385,6 +390,31 @@ func ValidateComponentBadge(cb *ComponentBadge, index int) error {
 	return nil
 }
 
+func ValidateComponentRow(cr *ComponentRow, index int) error {
+	if cr == nil {
+		return nil
+	}
+	if len(cr.RowMainContent) == 0 {
+		return nil
+	}
+	if len(cr.RowAsideContent) == 0 {
+		return nil
+	}
+	for i, c := range cr.RowMainContent {
+		err := ValidateComponent(&c, i)
+		if err != nil {
+			return fmt.Errorf("%d:%d: %w", index, i, err)
+		}
+	}
+	for i, c := range cr.RowAsideContent {
+		err := ValidateComponent(&c, i)
+		if err != nil {
+			return fmt.Errorf("%d:%d: %w", index, i, err)
+		}
+	}
+	return nil
+}
+
 // EventComponent Represents the collection of components in the event.
 type EventComponent struct {
 	ComponentText       *ComponentText       `json:"componentText,omitempty"`
@@ -393,6 +423,7 @@ type EventComponent struct {
 	ComponentDivider    *ComponentDivider    `json:"componentDivider,omitempty"`
 	ComponentCopyButton *ComponentCopyButton `json:"componentCopyButton,omitempty"`
 	ComponentBadge      *ComponentBadge      `json:"componentBadge,omitempty"`
+	ComponentRow        *ComponentRow        `json:"componentRow,omitempty"`
 }
 
 // ValidateComponent performs validation on a EventComponent struct and its constituent components.
@@ -434,6 +465,11 @@ func ValidateComponent(comp *EventComponent, index int) error {
 	}
 	if comp.ComponentBadge != nil {
 		if err := ValidateComponentBadge(comp.ComponentBadge, index); err != nil {
+			return err
+		}
+	}
+	if comp.ComponentRow != nil {
+		if err := ValidateComponentRow(comp.ComponentRow, index); err != nil {
 			return err
 		}
 	}
