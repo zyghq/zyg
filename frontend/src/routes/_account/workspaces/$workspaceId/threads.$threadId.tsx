@@ -1,6 +1,7 @@
 import { Icons } from "@/components/icons";
 import { channelIcon } from "@/components/icons";
 import { NotFound } from "@/components/notfound";
+import { Spinner } from "@/components/spinner";
 import { CustomerEvents } from "@/components/thread/customer-events";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +40,7 @@ import {
   getWorkspaceThreadMessages,
   putThreadLabel,
 } from "@/db/api";
-import { updateThread } from "@/db/api";
+import { getCustomerEvents, updateThread } from "@/db/api";
 import {
   customerRoleVerboseName,
   getFromLocalStorage,
@@ -154,33 +155,6 @@ function Message({
     </div>
   );
 }
-
-// function SettingThreadLabel() {
-//   return (
-//     <div className="mr-1 flex">
-//       <svg
-//         className="h-3 w-3 animate-spin text-indigo-500"
-//         fill="none"
-//         viewBox="0 0 24 24"
-//         xmlns="http://www.w3.org/2000/svg"
-//       >
-//         <circle
-//           className="opacity-25"
-//           cx="12"
-//           cy="12"
-//           r="10"
-//           stroke="currentColor"
-//           strokeWidth="4"
-//         ></circle>
-//         <path
-//           className="opacity-75"
-//           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-//           fill="currentColor"
-//         ></path>
-//       </svg>
-//     </div>
-//   );
-// }
 
 function ThreadLabels({
   threadId,
@@ -369,33 +343,6 @@ function ThreadLabels({
   );
 }
 
-function ChatLoading() {
-  return (
-    <div className="mt-12 flex justify-center">
-      <svg
-        className="h-5 w-5 animate-spin text-indigo-500"
-        fill="none"
-        viewBox="0 0 24 24"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <circle
-          className="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          strokeWidth="4"
-        ></circle>
-        <path
-          className="opacity-75"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-          fill="currentColor"
-        ></path>
-      </svg>
-    </div>
-  );
-}
-
 function ThreadDetail() {
   const { token } = Route.useRouteContext();
   const { threadId, workspaceId } = Route.useParams();
@@ -476,6 +423,27 @@ function ThreadDetail() {
       return data as ThreadMessageResponse[];
     },
     queryKey: ["messages", threadId, workspaceId, token],
+  });
+
+  const {
+    data: events,
+    error: eventsError,
+    isPending: eventsIsPending,
+  } = useQuery({
+    enabled: !!activeThread?.customerId,
+    initialData: [],
+    queryFn: async () => {
+      const { data, error } = await getCustomerEvents(
+        token,
+        workspaceId,
+        activeThread?.customerId || "",
+      );
+      if (error) throw new Error("failed to fetch customer events");
+      return data;
+    },
+    queryKey: ["events", workspaceId, activeThread?.customerId, token],
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 
   const assigneeId = activeThread?.assigneeId || "unassigned";
@@ -645,7 +613,16 @@ function ThreadDetail() {
                     </div>
                   </div>
                   <ScrollArea className="flex h-[calc(100dvh-4rem)] flex-col bg-accent dark:bg-background">
-                    {isPending ? <ChatLoading /> : renderMessages(messages)}
+                    {isPending ? (
+                      <div className="mt-12 flex justify-center">
+                        <Spinner
+                          className="animate-spin text-indigo-500"
+                          size={24}
+                        />
+                      </div>
+                    ) : (
+                      renderMessages(messages)
+                    )}
                   </ScrollArea>
                 </div>
               </ResizablePanel>
@@ -835,15 +812,14 @@ function ThreadDetail() {
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col rounded-lg bg-white px-2 py-2 dark:bg-background">
-                  <div className="flex flex-col space-y-2">
-                    <CustomerEvents
-                      customerId={activeThread?.customerId || ""}
-                      jwt={token}
-                      workspaceId={workspaceId}
-                    />
-                  </div>
-                </div>
+                {eventsIsPending ? (
+                  <Spinner
+                    className="animate-spin text-muted-foreground"
+                    size={16}
+                  />
+                ) : (
+                  <CustomerEvents error={eventsError} events={events || []} />
+                )}
               </div>
             </ScrollArea>
           </ResizablePanel>

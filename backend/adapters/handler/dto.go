@@ -477,21 +477,6 @@ func (tl ThreadLabelResp) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
-//type CustomerEventReq struct {
-//	Event    string `json:"event"`
-//	Body     string `json:"body"`
-//	Customer struct {
-//		CustomerId      *string `json:"customerId"`
-//		ExternalId      *string `json:"externalId"`
-//		Email           *string `json:"email"`
-//		Name            *string `json:"name"`
-//		IsEmailVerified *bool   `json:"isEmailVerified"`
-//	} `json:"customer"`
-//	Notify    bool   `json:"notify"`
-//	Severity  string `json:"severity"`
-//	Timestamp string `json:"timestamp"`
-//}
-
 type CustomerEventReq struct {
 	Customer struct {
 		CustomerId      *string `json:"customerId"`
@@ -507,50 +492,56 @@ type CustomerEventReq struct {
 }
 
 type CustomerEventAddedResp struct {
-	EventId   string    `json:"eventId"`
+	EventID   string    `json:"eventId"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 type CustomerEventResp struct {
-	EventId   string    `json:"eventId"`
-	Event     string    `json:"event"`
-	Body      string    `json:"body"`
-	Severity  string    `json:"severity"`
-	Timestamp time.Time `json:"timestamp"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	EventID    string                  `json:"eventId"`
+	Title      string                  `json:"title"`
+	Severity   string                  `json:"severity"`
+	Timestamp  time.Time               `json:"timestamp"`
+	Components []models.EventComponent `json:"components"`
+	Customer   CustomerActorResp       `json:"customer"`
+	CreatedAt  time.Time               `json:"createdAt"`
+	UpdatedAt  time.Time               `json:"updatedAt"`
 }
 
 func (cv CustomerEventResp) MarshalJSON() ([]byte, error) {
 	aux := &struct {
-		EventId   string `json:"eventId"`
-		Event     string `json:"event"`
-		Body      string `json:"body"`
-		Severity  string `json:"severity"`
-		Timestamp string `json:"timestamp"`
-		CreatedAt string `json:"createdAt"`
-		UpdatedAt string `json:"updatedAt"`
+		EventID    string                  `json:"eventId"`
+		Title      string                  `json:"title"`
+		Severity   string                  `json:"severity"`
+		Timestamp  string                  `json:"timestamp"`
+		Components []models.EventComponent `json:"components"`
+		Customer   CustomerActorResp       `json:"customer"`
+		CreatedAt  string                  `json:"createdAt"`
+		UpdatedAt  string                  `json:"updatedAt"`
 	}{
-		EventId:   cv.EventId,
-		Event:     cv.Event,
-		Body:      cv.Body,
-		Severity:  cv.Severity,
-		Timestamp: cv.Timestamp.Format(time.RFC3339),
-		CreatedAt: cv.CreatedAt.Format(time.RFC3339),
-		UpdatedAt: cv.UpdatedAt.Format(time.RFC3339),
+		EventID:    cv.EventID,
+		Title:      cv.Title,
+		Severity:   cv.Severity,
+		Timestamp:  cv.Timestamp.Format(time.RFC3339),
+		Components: cv.Components,
+		Customer:   cv.Customer,
+		CreatedAt:  cv.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:  cv.UpdatedAt.Format(time.RFC3339),
 	}
-
 	return json.Marshal(aux)
 }
 
-func (cv CustomerEventResp) NewResponse(event *models.CustomerEvent) CustomerEventResp {
+func (cv CustomerEventResp) NewResponse(event *models.Event) CustomerEventResp {
 	return CustomerEventResp{
-		EventId:   event.EventId,
-		Event:     event.Event,
-		Body:      event.EventBody,
-		Severity:  event.Severity,
-		Timestamp: event.EventTimestamp,
+		EventID:    event.EventID,
+		Title:      event.Title,
+		Severity:   event.Severity.String(),
+		Timestamp:  event.Timestamp,
+		Components: event.Components,
+		Customer: CustomerActorResp{
+			CustomerId: event.Customer.CustomerId,
+			Name:       event.Customer.Name,
+		},
 		CreatedAt: event.CreatedAt,
 		UpdatedAt: event.UpdatedAt,
 	}

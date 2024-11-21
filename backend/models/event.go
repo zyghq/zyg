@@ -33,6 +33,10 @@ func (ev EventSeverity) IsValid() bool {
 	}
 }
 
+func (ev EventSeverity) String() string {
+	return string(ev)
+}
+
 // TextSize Represents text size for the text component.
 type TextSize string
 
@@ -383,12 +387,12 @@ func ValidateComponentBadge(cb *ComponentBadge, index int) error {
 
 // EventComponent Represents the collection of components in the event.
 type EventComponent struct {
-	ComponentText       *ComponentText       `json:"componentText"`
-	ComponentSpacer     *ComponentSpacer     `json:"componentSpacer"`
-	ComponentLinkButton *ComponentLinkButton `json:"componentLinkButton"`
-	ComponentDivider    *ComponentDivider    `json:"componentDivider"`
-	ComponentCopyButton *ComponentCopyButton `json:"componentCopyButton"`
-	ComponentBadge      *ComponentBadge      `json:"componentBadge"`
+	ComponentText       *ComponentText       `json:"componentText,omitempty"`
+	ComponentSpacer     *ComponentSpacer     `json:"componentSpacer,omitempty"`
+	ComponentLinkButton *ComponentLinkButton `json:"componentLinkButton,omitempty"`
+	ComponentDivider    *ComponentDivider    `json:"componentDivider,omitempty"`
+	ComponentCopyButton *ComponentCopyButton `json:"componentCopyButton,omitempty"`
+	ComponentBadge      *ComponentBadge      `json:"componentBadge,omitempty"`
 }
 
 // ValidateComponent performs validation on a EventComponent struct and its constituent components.
@@ -439,11 +443,11 @@ func ValidateComponent(comp *EventComponent, index int) error {
 // Event Represents the customer or thread event.
 type Event struct {
 	EventID    string
+	Customer   CustomerActor
 	Title      string
 	Severity   EventSeverity
 	Timestamp  time.Time
 	Components []EventComponent
-	Customer   CustomerActor
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 }

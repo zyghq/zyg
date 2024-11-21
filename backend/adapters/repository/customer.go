@@ -41,9 +41,17 @@ func claimedMailCols() builq.Columns {
 // customerEventCols returns the required columns for the `customer_event` table.
 func customerEventCols() builq.Columns {
 	return builq.Columns{
-		"event_id", "customer_id", "thread_id", "event", "event_body",
-		"severity", "event_timestamp", "notification_status", "idempotency_key",
+		"event_id", "customer_id",
+		"title", "severity", "timestamp", "components",
 		"created_at", "updated_at",
+	}
+}
+
+func customerEventJoinedCols() builq.Columns {
+	return builq.Columns{
+		"e.event_id", "c.customer_id", "c.name",
+		"e.title", "e.severity", "e.timestamp", "e.components",
+		"e.created_at", "e.updated_at",
 	}
 }
 
@@ -686,14 +694,15 @@ func (c *CustomerDB) LookupLatestClaimedMail(
 }
 
 func (c *CustomerDB) InsertEvent(
-	ctx context.Context, event models.CustomerEvent) (models.CustomerEvent, error) {
+	ctx context.Context, event models.Event) (models.Event, error) {
+
 	q := builq.New()
 	cols := customerEventCols()
 
-	q("INSERT INTO %s (%s)", "customer_event", cols)
-	q("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$)",
-		event.EventId, event.CustomerId, event.ThreadId, event.Event, event.EventBody,
-		event.Severity, event.EventTimestamp, event.NotificationStatus, event.IdempotencyKey,
+	q("INSERT INTO customer_event (%s)", cols)
+	q("VALUES (%$, %$, %$, %$, %$, %$, %$, %$)",
+		event.EventID, event.Customer.CustomerId,
+		event.Title, event.Severity, event.Timestamp, event.Components,
 		event.CreatedAt, event.UpdatedAt,
 	)
 	q("RETURNING %s", cols)
@@ -701,7 +710,7 @@ func (c *CustomerDB) InsertEvent(
 	stmt, _, err := q.Build()
 	if err != nil {
 		slog.Error("failed to build query", slog.Any("err", err))
-		return models.CustomerEvent{}, ErrQuery
+		return models.Event{}, ErrQuery
 	}
 
 	if zyg.DBQueryDebug() {
@@ -710,42 +719,45 @@ func (c *CustomerDB) InsertEvent(
 	}
 
 	err = c.db.QueryRow(ctx, stmt,
-		event.EventId, event.CustomerId, event.ThreadId, event.Event, event.EventBody,
-		event.Severity, event.EventTimestamp, event.NotificationStatus, event.IdempotencyKey,
+		event.EventID, event.Customer.CustomerId,
+		event.Title, event.Severity, event.Timestamp, event.Components,
 		event.CreatedAt, event.UpdatedAt,
 	).Scan(
-		&event.EventId, &event.CustomerId, &event.ThreadId, &event.Event, &event.EventBody,
-		&event.Severity, &event.EventTimestamp, &event.NotificationStatus, &event.IdempotencyKey,
+		&event.EventID, &event.Customer.CustomerId,
+		&event.Title, &event.Severity, &event.Timestamp, &event.Components,
 		&event.CreatedAt, &event.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("error", err))
-		return models.CustomerEvent{}, ErrEmpty
+		return models.Event{}, ErrEmpty
 	}
 	if err != nil {
 		slog.Error("failed to query", slog.Any("error", err))
-		return models.CustomerEvent{}, ErrQuery
+		return models.Event{}, ErrQuery
 	}
 	return event, nil
 }
 
 func (c *CustomerDB) FetchEventsByCustomerId(
-	ctx context.Context, customerId string) ([]models.CustomerEvent, error) {
-	var event models.CustomerEvent
+	ctx context.Context, customerId string) ([]models.Event, error) {
+	var event models.Event
+	var events []models.Event
 	limit := 11
-	events := make([]models.CustomerEvent, 0, limit)
+	events = make([]models.Event, 0, limit)
 
 	q := builq.New()
-	cols := customerEventCols()
+	cols := customerEventJoinedCols()
 
-	q("SELECT %s FROM %s", cols, "customer_event")
-	q("WHERE customer_id = %$ ORDER BY event_timestamp DESC", customerId)
+	q("SELECT %s FROM customer_event e", cols)
+	q("INNER JOIN customer c ON e.customer_id = c.customer_id")
+	q("WHERE e.customer_id = %$", customerId)
+	q("ORDER BY timestamp DESC")
 	q("LIMIT %d", limit)
 
 	stmt, _, err := q.Build()
 	if err != nil {
 		slog.Error("failed to build query", slog.Any("err", err))
-		return []models.CustomerEvent{}, ErrQuery
+		return []models.Event{}, ErrQuery
 	}
 
 	rows, _ := c.db.Query(ctx, stmt, customerId)
@@ -753,18 +765,16 @@ func (c *CustomerDB) FetchEventsByCustomerId(
 	defer rows.Close()
 
 	_, err = pgx.ForEachRow(rows, []any{
-		&event.EventId, &event.CustomerId, &event.ThreadId, &event.Event, &event.EventBody,
-		&event.Severity, &event.EventTimestamp, &event.NotificationStatus, &event.IdempotencyKey,
+		&event.EventID, &event.Customer.CustomerId, &event.Customer.Name,
+		&event.Title, &event.Severity, &event.Timestamp, &event.Components,
 		&event.CreatedAt, &event.UpdatedAt,
 	}, func() error {
 		events = append(events, event)
 		return nil
 	})
-
 	if err != nil {
 		slog.Error("failed to query", slog.Any("error", err))
-		return []models.CustomerEvent{}, ErrQuery
+		return []models.Event{}, ErrQuery
 	}
-
 	return events, nil
 }

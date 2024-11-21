@@ -234,19 +234,20 @@ func (s *CustomerService) ClaimMailForVerification(
 	return claim, nil
 }
 
-func (s *CustomerService) AppendEvent(
-	ctx context.Context, event models.CustomerEvent) (models.CustomerEvent, error) {
+func (s *CustomerService) AddEvent(
+	ctx context.Context, event models.Event) (models.Event, error) {
 	event, err := s.repo.InsertEvent(ctx, event)
 	if err != nil {
-		return models.CustomerEvent{}, ErrCustomerEvent
+		return models.Event{}, ErrCustomerEvent
 	}
 	return event, nil
 }
 
-func (s *CustomerService) ListEvents(ctx context.Context, customerId string) ([]models.CustomerEvent, error) {
+func (s *CustomerService) ListEvents(
+	ctx context.Context, customerId string) ([]models.Event, error) {
 	events, err := s.repo.FetchEventsByCustomerId(ctx, customerId)
 	if err != nil {
-		return []models.CustomerEvent{}, ErrCustomerEvent
+		return []models.Event{}, ErrCustomerEvent
 	}
 	return events, nil
 }

@@ -182,13 +182,92 @@ export type CustomerResponse = z.infer<typeof customerResponseSchema>;
 
 export type PatResponse = z.infer<typeof patResponseSchema>;
 
+// Component schemas
+const ComponentText = z.object({
+  componentText: z.object({
+    text: z.string(),
+    textSize: z.string(),
+  }),
+});
+
+const ComponentSpacer = z.object({
+  componentSpacer: z.object({
+    spacerSize: z.string(),
+  }),
+});
+
+const ComponentLinkButton = z.object({
+  componentLinkButton: z.object({
+    linkButtonLabel: z.string(),
+    linkButtonUrl: z.string().url(),
+  }),
+});
+
+const ComponentDivider = z.object({
+  componentDivider: z.object({
+    dividerSize: z.string(),
+  }),
+});
+
+const ComponentCopyButton = z.object({
+  componentCopyButton: z.object({
+    copyButtonToolTipLabel: z.string(),
+    copyButtonValue: z.string(),
+  }),
+});
+
+const ComponentBadge = z.object({
+  componentBadge: z.object({
+    badgeColor: z.string(),
+    badgeLabel: z.string(),
+  }),
+});
+
+// Row component needs to reference other component types
+const ComponentRow = z.object({
+  componentRow: z.object({
+    rowAsideContent: z.array(
+      z.union([
+        ComponentBadge,
+        ComponentText,
+        ComponentSpacer,
+        ComponentLinkButton,
+        ComponentDivider,
+        ComponentCopyButton,
+      ]),
+    ),
+    rowMainContent: z.array(
+      z.union([
+        ComponentBadge,
+        ComponentText,
+        ComponentSpacer,
+        ComponentLinkButton,
+        ComponentDivider,
+        ComponentCopyButton,
+      ]),
+    ),
+  }),
+});
+
+// Union type for all possible components
+const Component = z.union([
+  ComponentText,
+  ComponentSpacer,
+  ComponentLinkButton,
+  ComponentDivider,
+  ComponentCopyButton,
+  ComponentBadge,
+  ComponentRow,
+]);
+
+// Main customer event schema
 export const customerEventSchema = z.object({
-  body: z.string(),
+  components: z.array(Component),
   createdAt: z.string(),
-  event: z.string(),
   eventId: z.string(),
   severity: z.string(),
   timestamp: z.string(),
+  title: z.string(),
   updatedAt: z.string(),
 });
 

@@ -134,21 +134,16 @@ CREATE TABLE claimed_mail(
 CREATE TABLE customer_event(
     event_id VARCHAR(255) NOT NULL, -- primary key
     customer_id VARCHAR(255) NOT NULL, -- fk to customer
-    thread_id VARCHAR(255) NULL, -- nullable fk to thread
-    event VARCHAR(511) NOT NULL,
-    event_body TEXT NOT NULL,
+    title VARCHAR(511) NOT NULL,
     severity VARCHAR(127) NOT NULL,
-    event_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    notification_status VARCHAR(128) NOT NULL,
-    idempotency_key VARCHAR(255) NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    components JSONB NOT NULL,
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT customer_event_event_id_pkey PRIMARY KEY (event_id),
-    CONSTRAINT customer_event_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer,
-    CONSTRAINT customer_event_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES thread,
-    CONSTRAINT customer_event_idempotency_key_key UNIQUE (idempotency_key)
+    CONSTRAINT customer_event_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer
 );
 
 -- @sanchitrk: changed usage?

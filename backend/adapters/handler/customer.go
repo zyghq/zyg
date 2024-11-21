@@ -3,7 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
 	"github.com/zyghq/zyg/services"
@@ -80,8 +79,7 @@ func (h *CustomerHandler) handleCreateCustomerEvent(
 		return
 	}
 
-	// add event for customer identified by customer ID.
-	// a customer must exist with the customer ID, otherwise returns a http Bad Status.
+	// Add event for customer identified by customer ID.
 	if ci.CustomerId != nil {
 		customer, err := h.ws.GetCustomer(ctx, workspace.WorkspaceId, *ci.CustomerId, nil)
 		if errors.Is(err, services.ErrCustomerNotFound) {
@@ -94,12 +92,7 @@ func (h *CustomerHandler) handleCreateCustomerEvent(
 			return
 		}
 
-		fmt.Println("event request payload", reqp)
-		fmt.Println("reqp Event Title", reqp.Title)
-		fmt.Println("reqp Event Severity", reqp.Severity)
-		fmt.Println("reqp Event Components", reqp.Components)
-
-		event, err := models.NewEvent(
+		newEvent, err := models.NewEvent(
 			reqp.Title,
 			models.SetEventCustomer(customer.AsCustomerActor()),
 			models.SetEventSeverity(reqp.Severity),
@@ -111,10 +104,15 @@ func (h *CustomerHandler) handleCreateCustomerEvent(
 			return
 		}
 
-		fmt.Println("validEvent", event)
+		event, err := h.cs.AddEvent(ctx, *newEvent)
+		if err != nil {
+			slog.Error("failed to add customer event", slog.Any("err", err))
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
 
 		resp := CustomerEventAddedResp{
-			EventId:   event.EventID,
+			EventID:   event.EventID,
 			CreatedAt: event.CreatedAt,
 			UpdatedAt: event.UpdatedAt,
 		}
@@ -133,14 +131,7 @@ func (h *CustomerHandler) handleCreateCustomerEvent(
 			return
 		}
 
-		fmt.Println("customer", customer)
-
-		fmt.Println("event request payload", reqp)
-		fmt.Println("Event", reqp.Title)
-		fmt.Println("Severity", reqp.Severity)
-		fmt.Println("Components", reqp.Components)
-
-		event, err := models.NewEvent(
+		newEvent, err := models.NewEvent(
 			reqp.Title,
 			models.SetEventCustomer(customer.AsCustomerActor()),
 			models.SetEventSeverity(reqp.Severity),
@@ -152,10 +143,15 @@ func (h *CustomerHandler) handleCreateCustomerEvent(
 			return
 		}
 
-		fmt.Println("validEvent", event)
+		event, err := h.cs.AddEvent(ctx, *newEvent)
+		if err != nil {
+			slog.Error("failed to add customer event", slog.Any("err", err))
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
 
 		resp := CustomerEventAddedResp{
-			EventId:   event.EventID,
+			EventID:   event.EventID,
 			CreatedAt: event.CreatedAt,
 			UpdatedAt: event.UpdatedAt,
 		}
@@ -180,14 +176,7 @@ func (h *CustomerHandler) handleCreateCustomerEvent(
 			return
 		}
 
-		fmt.Println("customer", customer)
-
-		fmt.Println("event request payload", reqp)
-		fmt.Println("Event", reqp.Title)
-		fmt.Println("Severity", reqp.Severity)
-		fmt.Println("Components", reqp.Components)
-
-		event, err := models.NewEvent(
+		newEvent, err := models.NewEvent(
 			reqp.Title,
 			models.SetEventCustomer(customer.AsCustomerActor()),
 			models.SetEventSeverity(reqp.Severity),
@@ -199,10 +188,15 @@ func (h *CustomerHandler) handleCreateCustomerEvent(
 			return
 		}
 
-		fmt.Println("validEvent", event)
+		event, err := h.cs.AddEvent(ctx, *newEvent)
+		if err != nil {
+			slog.Error("failed to add customer event", slog.Any("err", err))
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
 
 		resp := CustomerEventAddedResp{
-			EventId:   event.EventID,
+			EventID:   event.EventID,
 			CreatedAt: event.CreatedAt,
 			UpdatedAt: event.UpdatedAt,
 		}
@@ -213,7 +207,6 @@ func (h *CustomerHandler) handleCreateCustomerEvent(
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
-
 	} else {
 		slog.Error("at least one of `customerId`, `externalId` or `email` is required")
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -242,6 +235,7 @@ func (h *CustomerHandler) handleGetCustomerEvents(
 	if err != nil {
 		slog.Error("failed to fetch customer", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
 	}
 
 	// fetch list of customer events.

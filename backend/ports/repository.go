@@ -100,8 +100,8 @@ type CustomerRepositorer interface {
 	LookupLatestClaimedMail(
 		ctx context.Context, workspaceId string, customerId string,
 	) (models.ClaimedMail, error)
-	InsertEvent(ctx context.Context, event models.CustomerEvent) (models.CustomerEvent, error)
-	FetchEventsByCustomerId(ctx context.Context, customerId string) ([]models.CustomerEvent, error)
+	InsertEvent(ctx context.Context, event models.Event) (models.Event, error)
+	FetchEventsByCustomerId(ctx context.Context, customerId string) ([]models.Event, error)
 }
 
 type ThreadRepositorer interface {
