@@ -24,12 +24,12 @@
 CREATE TABLE account (
     account_id VARCHAR(255) NOT NULL, -- primary key
     email VARCHAR(255) NOT NULL,
-    provider VARCHAR(255) NOT NULL, 
+    provider VARCHAR(255) NOT NULL,
     auth_user_id VARCHAR(255) NOT NULL, -- key to auth provider
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
+
     CONSTRAINT account_account_id_pkey PRIMARY KEY (account_id),
     CONSTRAINT account_email_key UNIQUE (email),
     CONSTRAINT account_auth_user_id_key UNIQUE (auth_user_id)
@@ -47,7 +47,7 @@ CREATE TABLE account_pat (
     description TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
+
     CONSTRAINT account_pat_pat_id_pkey PRIMARY KEY (pat_id),
     CONSTRAINT account_pat_account_id_fkey FOREIGN KEY (account_id) REFERENCES account (account_id),
     CONSTRAINT account_pat_token_key UNIQUE (token)
@@ -62,7 +62,7 @@ CREATE TABLE workspace (
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
+
     CONSTRAINT workspace_workspace_id_pkey PRIMARY KEY (workspace_id),
     CONSTRAINT workspace_account_id_fkey FOREIGN KEY (account_id) REFERENCES account (account_id)
 );
@@ -211,7 +211,7 @@ CREATE TABLE outbound_message (
 );
 
 CREATE TABLE thread (
-    thread_id VARCHAR(255) NOT NULL, 
+    thread_id VARCHAR(255) NOT NULL,
     workspace_id VARCHAR(255) NOT NULL,
     customer_id VARCHAR(255) NOT NULL,
     assignee_id VARCHAR(255) NULL,
@@ -231,7 +231,7 @@ CREATE TABLE thread (
     updated_by_id VARCHAR(255) NOT NULL, -- fk to member
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
+
     CONSTRAINT thread_thread_id_pkey PRIMARY KEY (thread_id),
     CONSTRAINT thread_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
     CONSTRAINT thread_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
@@ -243,24 +243,6 @@ CREATE TABLE thread (
         REFERENCES outbound_message (message_id),
     CONSTRAINT thread_created_by_id_fkey FOREIGN KEY (created_by_id) REFERENCES member (member_id),
     CONSTRAINT thread_updated_by_id_fkey FOREIGN KEY (updated_by_id) REFERENCES member (member_id)
-);
-
--- Deprecated.
-CREATE TABLE chat (
-    chat_id VARCHAR(255) NOT NULL,
-    thread_id VARCHAR(255) NOT NULL,
-    body TEXT NOT NULL,
-    sequence BIGINT NOT NULL DEFAULT fn_next_id(),
-    customer_id VARCHAR(255) NULL,
-    member_id VARCHAR(255) NULL,
-    is_head BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT chat_chat_id_pkey PRIMARY KEY (chat_id),
-    CONSTRAINT chat_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES thread (thread_id),
-    CONSTRAINT chat_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
-    CONSTRAINT chat_member_id_fkey FOREIGN KEY (member_id) REFERENCES member (member_id)
 );
 
 -- Represents the multichannel thread message.
@@ -311,7 +293,7 @@ CREATE TABLE label (
     icon VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
+
     CONSTRAINT label_label_id_pkey PRIMARY KEY (label_id),
     CONSTRAINT label_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
     CONSTRAINT label_workspace_id_name_key UNIQUE (workspace_id, name)
@@ -340,7 +322,7 @@ CREATE TABLE widget (
     configuration JSONB NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
+
     CONSTRAINT widget_widget_id_pkey PRIMARY KEY (widget_id),
     CONSTRAINT widget_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id)
 );

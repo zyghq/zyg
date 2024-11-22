@@ -3,9 +3,10 @@ package models
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/rs/xid"
 	"github.com/zyghq/zyg/utils"
-	"time"
 )
 
 // EventSeverity Represents the event severity
@@ -238,6 +239,7 @@ type ComponentCopyButton struct {
 	CopyButtonValue        string `json:"copyButtonValue"`
 }
 
+// ComponentBadge represents the badge component in event components.
 type ComponentBadge struct {
 	BadgeColor BadgeColor `json:"badgeColor"`
 	BadgeLabel string     `json:"badgeLabel"`
@@ -272,9 +274,12 @@ func (cb *ComponentBadge) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// ComponentRow represents row components that can contain main content and aside content.
+// Each field is an array of EventComponents, allowing for multiple components to be arranged
+// horizontally in either the main or aside sections of the row.
 type ComponentRow struct {
-	RowMainContent  []EventComponent `json:"rowMainContent"`
-	RowAsideContent []EventComponent `json:"rowAsideContent"`
+	RowMainContent  []EventComponent `json:"rowMainContent"`  // Components in the main content area of the row
+	RowAsideContent []EventComponent `json:"rowAsideContent"` // Components in the aside content area of the row
 }
 
 // ValidateComponentText checks if the ComponentText has valid text and textSize fields.
@@ -390,6 +395,11 @@ func ValidateComponentBadge(cb *ComponentBadge, index int) error {
 	return nil
 }
 
+// ValidateComponentRow validates a ComponentRow struct and its contents.
+// It takes a ComponentRow pointer and an index indicating its position in a component array.
+// The function checks that both RowMainContent and RowAsideContent arrays contain valid
+// EventComponents by calling ValidateComponent on each item.
+// Returns nil if the row is nil or valid, otherwise returns validation error with row:column index.
 func ValidateComponentRow(cr *ComponentRow, index int) error {
 	if cr == nil {
 		return nil
@@ -494,8 +504,18 @@ func (e *Event) GenId() string {
 	return "ev" + xid.New().String()
 }
 
+// NewEvent creates a new Event with the given title and optional configurations.
+// It generates a unique event ID, sets creation and update timestamps to current UTC time,
+// and applies any provided EventOptions. The event is validated before being returned.
+//
+// Parameters:
+//   - title: The title for the event. If empty, will be set to "Untitled" during validation
+//   - opts: Optional variadic EventOptions that configure the event properties
+//
+// Returns:
+//   - *Event: The created and validated event
+//   - error: Error if validation fails, nil otherwise
 func NewEvent(title string, opts ...EventOptions) (*Event, error) {
-	var err error
 	eventId := (&Event{}).GenId()
 	now := time.Now().UTC()
 	event := &Event{
@@ -508,11 +528,11 @@ func NewEvent(title string, opts ...EventOptions) (*Event, error) {
 	for _, opt := range opts {
 		opt(event)
 	}
-	err = ValidateEvent(event)
-	if err != nil {
-		return &Event{}, err
+
+	if err := ValidateEvent(event); err != nil {
+		return nil, err // Return nil instead of empty Event on error
 	}
-	return event, err
+	return event, nil
 }
 
 func SetEventCustomer(customer CustomerActor) EventOptions {
@@ -539,6 +559,18 @@ func WithEventComponents(components []EventComponent) EventOptions {
 	}
 }
 
+// ValidateEvent validates an Event struct and its components.
+// It performs the following validations:
+// - Checks if the event is not nil
+// - Sets default title to "Untitled" if empty
+// - Sets default severity to "muted" if empty, otherwise validates severity value
+// - Validates all components in the event
+//
+// Parameters:
+//   - event: Pointer to the Event struct to validate
+//
+// Returns:
+//   - error: nil if validation passes, otherwise returns error describing the validation failure
 func ValidateEvent(event *Event) error {
 	if event == nil {
 		return fmt.Errorf("event cannot be nil")
