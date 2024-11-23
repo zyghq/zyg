@@ -55,3 +55,27 @@ func ResendApiKey() string {
 	}
 	return value
 }
+
+func CFAccountId() string {
+	value, ok := os.LookupEnv("CF_ACCOUNT_ID")
+	if !ok {
+		return ""
+	}
+	return value
+}
+
+func R2AccessKeyId() string {
+	value, ok := os.LookupEnv("R2_ACCESS_KEY_ID")
+	if !ok {
+		return ""
+	}
+	return value
+}
+
+func R2AccessSecretKey() string {
+	value, ok := os.LookupEnv("R2_ACCESS_SECRET_KEY")
+	if !ok {
+		return ""
+	}
+	return value
+}

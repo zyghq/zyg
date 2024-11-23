@@ -76,6 +76,19 @@ func SetMessageBody(body string) MessageOption {
 	}
 }
 
+type MessageAttachment struct {
+	AttachmentId string    `json:"attachmentId"`
+	Name         string    `json:"name"`
+	ContentType  string    `json:"contentType"`
+	ContentKey   string    `json:"contentKey"`
+	ContentUrl   string    `json:"contentUrl"`
+	Spam         bool      `json:"spam"`
+	HasError     bool      `json:"hasError"`
+	Error        string    `json:"error"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+}
+
 // PostmarkInboundMessage represents 1:1 mapping with Message
 // Attributes are specific to Postmark.
 type PostmarkInboundMessage struct {
