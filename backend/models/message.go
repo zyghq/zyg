@@ -2,8 +2,9 @@ package models
 
 import (
 	"fmt"
-	"github.com/rs/xid"
 	"time"
+
+	"github.com/rs/xid"
 )
 
 // Message represents multi-channel Thread message

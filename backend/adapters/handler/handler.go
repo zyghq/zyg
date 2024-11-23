@@ -118,6 +118,11 @@ func NewServer(
 	mux.Handle("GET /workspaces/{workspaceId}/widgets/{$}",
 		NewEnsureMemberAuth(wh.handleGetWidgets, authService))
 
+	// handles postmark inbound message webhook for workspace.
+	// This URL path must also be configured in the postmark inbound settings.
+	mux.HandleFunc("POST /webhooks/{workspaceId}/postmark/inbound/{$}",
+		th.handlePostmarkInboundWebhook)
+
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"},

@@ -169,7 +169,7 @@ type ThreadServicer interface {
 	SetLabel(
 		ctx context.Context, threadId string, labelId string, addedBy string) (models.ThreadLabel, bool, error)
 	ListThreadLabels(
-		ctx context.Context, threadChatId string) ([]models.ThreadLabel, error)
+		ctx context.Context, threadId string) ([]models.ThreadLabel, error)
 	RemoveThreadLabel(
 		ctx context.Context, threadId string, labelId string) error
 

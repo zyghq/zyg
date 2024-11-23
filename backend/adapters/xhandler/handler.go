@@ -26,18 +26,6 @@ func NewCustomerHandler(
 	}
 }
 
-type ThreadHandler struct {
-	ws  ports.WorkspaceServicer
-	ths ports.ThreadServicer
-}
-
-func NewThreadHandler(ws ports.WorkspaceServicer, ths ports.ThreadServicer) *ThreadHandler {
-	return &ThreadHandler{
-		ws:  ws,
-		ths: ths,
-	}
-}
-
 // handleGetIndex returns the API index.
 func handleGetIndex(w http.ResponseWriter, _ *http.Request) {
 	tm := time.Now().UTC().Format(time.RFC1123)
@@ -53,13 +41,12 @@ func NewServer(
 	authService ports.CustomerAuthServicer,
 	workspaceService ports.WorkspaceServicer,
 	customerService ports.CustomerServicer,
-	threadChatService ports.ThreadServicer,
+	threadService ports.ThreadServicer,
 ) http.Handler {
 	// init new server mux
 	mux := http.NewServeMux()
 	// init handlers
-	ch := NewCustomerHandler(workspaceService, customerService, threadChatService)
-	th := NewThreadHandler(workspaceService, threadChatService)
+	ch := NewCustomerHandler(workspaceService, customerService, threadService)
 
 	mux.HandleFunc("GET /{$}", handleGetIndex)
 
@@ -83,11 +70,6 @@ func NewServer(
 	// Returns a list of thread chat messages.
 	mux.Handle("GET /widgets/{widgetId}/threads/chat/{threadId}/messages/{$}",
 		NewEnsureAuth(ch.handleGetThreadChatMessages, authService))
-
-	// handles postmark inbound message webhook for workspace.
-	// This URL path must also be configured in the postmark inbound settings.
-	mux.HandleFunc("POST /webhooks/{workspaceId}/postmark/inbound/{$}",
-		th.handlePostmarkInboundMessage)
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
