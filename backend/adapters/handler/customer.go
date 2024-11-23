@@ -3,12 +3,13 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"github.com/zyghq/zyg/models"
-	"github.com/zyghq/zyg/ports"
-	"github.com/zyghq/zyg/services"
 	"io"
 	"log/slog"
 	"net/http"
+
+	"github.com/zyghq/zyg/models"
+	"github.com/zyghq/zyg/ports"
+	"github.com/zyghq/zyg/services"
 )
 
 type CustomerHandler struct {

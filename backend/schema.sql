@@ -70,13 +70,15 @@ CREATE TABLE workspace (
 -- Represents the member table
 -- This table is used to store the member information linked to the workspace.
 -- Each member is uniquely identified by the combination of `workspace_id` and `account_id`
--- Member ability to authenticate to the workspace, hence the link to account
+-- Members can authenticate to the workspace through their linked account
+-- System members (bots, integrations) have null account_id
+-- The role field determines member permissions within the workspace
 CREATE TABLE member (
-    member_id VARCHAR(255) NOT NULL, -- primary key
-    workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
-    account_id VARCHAR(255) NULL, -- fk to account
-    name VARCHAR (255) NOT NULL,
-    role VARCHAR(255) NOT NULL,
+    member_id VARCHAR(255) NOT NULL, -- Unique identifier for the member
+    workspace_id VARCHAR(255) NOT NULL, -- Reference to workspace this member belongs to
+    account_id VARCHAR(255) NULL, -- Reference to associated account (can be null for system members)
+    name VARCHAR(255) NOT NULL, -- Display name of the member
+    role VARCHAR(255) NOT NULL, -- Member's role/permissions in the workspace
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -88,17 +90,19 @@ CREATE TABLE member (
 
 -- Represents the customer table
 -- There can be multiple customers per workspace
--- Each customer is uniquely identified by one of
--- `external_id`, `email` and `phone`, each unique to the workspace
+-- Each customer is uniquely identified by one of:
+-- - workspace_id + external_id
+-- - workspace_id + email
+-- - workspace_id + phone
 CREATE TABLE customer (
     customer_id VARCHAR(255) NOT NULL, -- primary key
     workspace_id VARCHAR(255) NOT NULL, -- fk to workspace
-    external_id VARCHAR(255) NULL, -- external id of the customer
-    email VARCHAR(255) NULL, -- email of the customer
-    phone VARCHAR(255) NULL, -- phone of the customer
-    name VARCHAR(255)  NOT NULL, -- name of the customer
-    role VARCHAR(255) NOT NULL, -- role of the customer
-    is_email_verified BOOLEAN NOT NULL DEFAULT FALSE, -- email verification status
+    external_id VARCHAR(255) NULL, -- external id of the customer (optional identifier)
+    email VARCHAR(255) NULL, -- email address of the customer (optional identifier)
+    phone VARCHAR(255) NULL, -- phone number of the customer (optional identifier)
+    name VARCHAR(255) NOT NULL, -- display name of the customer
+    role VARCHAR(255) NOT NULL, -- role/type of the customer
+    is_email_verified BOOLEAN NOT NULL DEFAULT FALSE, -- whether email has been verified
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -130,20 +134,19 @@ CREATE TABLE claimed_mail(
     CONSTRAINT claimed_mail_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer
 );
 
-
 CREATE TABLE customer_event(
     event_id VARCHAR(255) NOT NULL, -- primary key
     customer_id VARCHAR(255) NOT NULL, -- fk to customer
-    title VARCHAR(511) NOT NULL,
-    severity VARCHAR(127) NOT NULL,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    components JSONB NOT NULL,
+    title VARCHAR(511) NOT NULL, -- title of the event
+    severity VARCHAR(127) NOT NULL, -- severity level of the event
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- when the event occurred
+    components JSONB NOT NULL, -- custom JSON data structure for the event
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- record creation timestamp
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- record last updated timestamp
 
     CONSTRAINT customer_event_event_id_pkey PRIMARY KEY (event_id),
-    CONSTRAINT customer_event_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer
+    CONSTRAINT customer_event_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id)
 );
 
 -- @sanchitrk: changed usage?
@@ -210,25 +213,28 @@ CREATE TABLE outbound_message (
     CONSTRAINT outbound_message_member_id_fkey FOREIGN KEY (member_id) REFERENCES member (member_id)
 );
 
+-- Represents a thread which is a conversation between a customer and members
+-- Each thread belongs to a workspace and is associated with a customer
+-- Threads can be assigned to members and have various statuses and priorities
 CREATE TABLE thread (
-    thread_id VARCHAR(255) NOT NULL,
-    workspace_id VARCHAR(255) NOT NULL,
-    customer_id VARCHAR(255) NOT NULL,
-    assignee_id VARCHAR(255) NULL,
-    assigned_at TIMESTAMP NULL,
-    title TEXT NOT NULL,
-    description TEXT NOT NULL,
-    status VARCHAR(127) NOT NULL, -- status of the thread
-    status_changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    status_changed_by_id VARCHAR(255) NOT NULL,
-    stage VARCHAR(127) NOT NULL, -- stage of the thread
-    replied BOOLEAN NOT NULL DEFAULT FALSE,  -- is replied by the member
-    priority VARCHAR(255) NOT NULL, -- priority of the thread
-    channel VARCHAR(127) NOT NULL, -- channel of the thread
-    inbound_message_id VARCHAR(255) NULL, -- fk to inbound_message
-    outbound_message_id VARCHAR(255) NULL, -- fk to outbound_message
-    created_by_id VARCHAR(255) NOT NULL, -- fk to member
-    updated_by_id VARCHAR(255) NOT NULL, -- fk to member
+    thread_id VARCHAR(255) NOT NULL,            -- Unique identifier for the thread
+    workspace_id VARCHAR(255) NOT NULL,         -- Workspace this thread belongs to
+    customer_id VARCHAR(255) NOT NULL,          -- Customer associated with this thread
+    assignee_id VARCHAR(255) NULL,              -- Member assigned to handle this thread
+    assigned_at TIMESTAMP NULL,                 -- When the thread was assigned
+    title TEXT NOT NULL,                        -- Thread title
+    description TEXT NOT NULL,                  -- Thread description
+    status VARCHAR(127) NOT NULL,               -- Current status of the thread
+    status_changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- When status was last changed
+    status_changed_by_id VARCHAR(255) NOT NULL, -- Member who last changed the status
+    stage VARCHAR(127) NOT NULL,                -- Current stage in the workflow
+    replied BOOLEAN NOT NULL DEFAULT FALSE,     -- Whether a member has replied
+    priority VARCHAR(255) NOT NULL,             -- Thread priority level
+    channel VARCHAR(127) NOT NULL,              -- Communication channel used
+    inbound_message_id VARCHAR(255) NULL,       -- Associated incoming message if any
+    outbound_message_id VARCHAR(255) NULL,      -- Associated outgoing message if any
+    created_by_id VARCHAR(255) NOT NULL,        -- Member who created the thread
+    updated_by_id VARCHAR(255) NOT NULL,        -- Member who last updated the thread
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -246,41 +252,50 @@ CREATE TABLE thread (
 );
 
 -- Represents the multichannel thread message.
-create table message (
-    message_id varchar(255) not null,
-    thread_id varchar(255) not null,
-    text_body text not null,
-    body text not null,
-    customer_id varchar(255) null,
-    member_id varchar(255) null,
-    is_head boolean not null default false,
-    channel varchar(255) not null,
-    created_at timestamp default current_timestamp,
-    updated_at timestamp default current_timestamp,
+-- This table stores messages that are part of a thread, supporting multiple communication channels.
+-- Messages can be from either a customer or a member (but not both).
+-- Each message has both a text_body (plain text) and body (formatted/rich text).
+CREATE TABLE message (
+    message_id VARCHAR(255) NOT NULL,        -- Unique identifier for the message
+    thread_id VARCHAR(255) NOT NULL,         -- Thread this message belongs to
+    text_body TEXT NOT NULL,                 -- Plain text content of the message
+    body TEXT NOT NULL,                      -- Rich text/formatted content of the message
+    customer_id VARCHAR(255) NULL,           -- Customer who sent the message (if from customer)
+    member_id VARCHAR(255) NULL,             -- Member who sent the message (if from member)
+    channel VARCHAR(255) NOT NULL,           -- Communication channel used (email, chat, etc)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    constraint message_message_id_pkey primary key (message_id),
-    constraint message_thread_id_fkey foreign key (thread_id) references thread(thread_id),
-    constraint message_customer_id_fkey foreign key (customer_id) references customer(customer_id),
-    constraint message_member_id_fkey foreign key (member_id) references member(member_id)
+    CONSTRAINT message_message_id_pkey PRIMARY KEY (message_id),
+    CONSTRAINT message_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES thread(thread_id),
+    CONSTRAINT message_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer(customer_id),
+    CONSTRAINT message_member_id_fkey FOREIGN KEY (member_id) REFERENCES member(member_id),
+    CONSTRAINT message_sender_check CHECK (
+        (customer_id IS NULL AND member_id IS NOT NULL) OR
+        (customer_id IS NOT NULL AND member_id IS NULL)
+    )
 );
 
 -- Represents postmark inbound message stream payload linked to message.
-create table postmark_inbound_message (
-    message_id varchar(255) not null,
-    payload jsonb not null,
-    pm_message_id varchar(255) not null,
-    mail_message_id varchar(255) not null,
-    reply_mail_message_id varchar(255) null,
-    created_at timestamp default current_timestamp,
-    updated_at timestamp default current_timestamp,
+-- This table stores Postmark-specific inbound message data including the original payload
+-- and various message identifiers for tracking and correlation.
+CREATE TABLE postmark_inbound_message (
+    message_id VARCHAR(255) NOT NULL,           -- References parent message
+    payload JSONB NOT NULL,                     -- Original Postmark webhook payload
+    pm_message_id VARCHAR(255) NOT NULL,        -- Postmark's internal message ID
+    mail_message_id VARCHAR(255) NOT NULL,      -- Email Message-ID header
+    reply_mail_message_id VARCHAR(255) NULL,    -- References header for replies
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    constraint postmark_inb_message_id_pkey primary key (message_id),
-    constraint postmark_inb_message_id_fkey foreign key (message_id) references message(message_id),
+    CONSTRAINT postmark_inbound_message_id_pkey PRIMARY KEY (message_id),
+    CONSTRAINT postmark_inbound_message_id_fkey FOREIGN KEY (message_id) REFERENCES message(message_id),
 
-    constraint pm_inb_msg_pm_message_id_key unique (pm_message_id),
-    constraint pm_inb_msg_mail_message_id_key unique (mail_message_id)
+    CONSTRAINT postmark_inbound_msg_pm_message_id_key UNIQUE (pm_message_id),
+    CONSTRAINT postmark_inbound_msg_mail_message_id_key UNIQUE (mail_message_id)
 );
-create index pm_inb_msg_reply_mail_message_idx on postmark_inbound_message(reply_mail_message_id);
+
+CREATE INDEX postmark_inbound_msg_reply_mail_message_idx ON postmark_inbound_message(reply_mail_message_id);
 
 
 -- Represents the label table
