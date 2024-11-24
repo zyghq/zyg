@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -67,7 +68,7 @@ func removeDataURLPrefix(base64String string) string {
 // ProcessMessageAttachment handles the processing and uploading of file attachments to S3.
 // It takes a base64-encoded file content, content type, filename and other metadata,
 // decodes the content, uploads it to S3 and returns a MessageAttachment object with
-// the result details.
+// the result details and error if any.
 //
 // Parameters:
 // - ctx: Context for the operation
@@ -80,15 +81,15 @@ func removeDataURLPrefix(base64String string) string {
 // - s3Client: S3 client configuration
 //
 // Returns:
-// A MessageAttachment object containing the upload results or error details if failed
+// A MessageAttachment object containing the upload results or error details if failed and error object.
 func ProcessMessageAttachment(
 	ctx context.Context, workspaceId, threadId, messageId,
-	base64Content, contentType, filename string, s3Client store.S3Config) models.MessageAttachment {
+	base64Content, contentType, filename string, s3Client store.S3Config) (models.MessageAttachment, error) {
 	if base64Content == "" {
 		return models.MessageAttachment{
 			HasError: true,
 			Error:    "base64Content cannot be empty",
-		}
+		}, errors.New("base64Content cannot be empty")
 	}
 
 	now := time.Now().UTC()
@@ -104,8 +105,8 @@ func ProcessMessageAttachment(
 	decodedData, err := base64.StdEncoding.DecodeString(removeDataURLPrefix(base64Content))
 	if err != nil {
 		attachment.HasError = true
-		attachment.Error = fmt.Sprintf("failed to decode base64: %v", err)
-		return attachment
+		attachment.Error = fmt.Sprintf("failed to decode base64 content: %v", err)
+		return attachment, errors.New("failed to decode base64 content")
 	}
 
 	s3Key := generateS3Key(workspaceId, threadId, messageId, attachment.Name)
@@ -120,10 +121,10 @@ func ProcessMessageAttachment(
 	if err != nil {
 		attachment.HasError = true
 		attachment.Error = fmt.Sprintf("failed to upload attachment: %v", err)
-		return attachment
+		return attachment, errors.New("failed to upload attachment")
 	}
 
 	attachment.ContentKey = s3Key
 	attachment.ContentUrl = generateS3URL(s3Client.BaseEndpoint, s3Client.BucketName, s3Key)
-	return attachment
+	return attachment, nil
 }
