@@ -112,7 +112,7 @@ type ThreadRepositorer interface {
 	// InsertPostmarkInboundThreadMessage inserts a new thread message with Postmark inbound data and returns
 	// the updated thread, message, and an error if any occurs.
 	InsertPostmarkInboundThreadMessage(
-		ctx context.Context, inbound models.ThreadMessageWithPostmarkInbound) (models.Thread, models.Message, error)
+		ctx context.Context, inbound models.PostmarkInboundThreadMessage) (models.Thread, models.Message, error)
 
 	// AppendInboundThreadMessage appends an inbound message to the thread.
 	AppendInboundThreadMessage(
@@ -121,12 +121,14 @@ type ThreadRepositorer interface {
 
 	// AppendPostmarkInboundThreadMessage appends a new postmark inbound message to an existing thread.
 	AppendPostmarkInboundThreadMessage(
-		ctx context.Context, inbound models.ThreadMessageWithPostmarkInbound) (models.Message, error)
+		ctx context.Context, inbound models.PostmarkInboundThreadMessage) (models.Message, error)
 
 	// AppendOutboundThreadMessage appends an outbound message to the thread.
 	AppendOutboundThreadMessage(
 		ctx context.Context, outbound models.ThreadMessage,
 	) (models.Message, error)
+
+	CheckPostmarkInboundMessageExists(ctx context.Context, postmarkId string) (bool, error)
 
 	FetchThreadByPostmarkInboundInReplyMessageId(
 		ctx context.Context, workspaceId string, inReplyMessageId string) (models.Thread, error)

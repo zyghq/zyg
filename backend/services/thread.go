@@ -60,7 +60,8 @@ func (s *ThreadService) GetPostmarkInboundInReplyThread(
 	if inboundMessage == nil || inboundMessage.ReplyMailMessageId == nil {
 		return nil, ErrPostmarkInbound
 	}
-	thread, err := s.repo.FetchThreadByPostmarkInboundInReplyMessageId(ctx, workspaceId, *inboundMessage.ReplyMailMessageId)
+	thread, err := s.repo.FetchThreadByPostmarkInboundInReplyMessageId(
+		ctx, workspaceId, *inboundMessage.ReplyMailMessageId)
 	if errors.Is(err, repository.ErrEmpty) {
 		return nil, ErrThreadNotFound
 	}
@@ -71,13 +72,21 @@ func (s *ThreadService) GetPostmarkInboundInReplyThread(
 	return &thread, nil
 }
 
-// hTMLToMarkdown converts an HTML string to a Markdown string.
+func (s *ThreadService) IsPostmarkInboundProcessed(ctx context.Context, messageId string) (bool, error) {
+	exists, err := s.repo.CheckPostmarkInboundMessageExists(ctx, messageId)
+	if err != nil {
+		return false, ErrPostmarkInbound
+	}
+	return exists, nil
+}
+
+// htmlToMarkdown converts an HTML string to a Markdown string.
 // Parameters:
 // - html: A string containing the HTML content to convert.
 // Returns:
 // - A string containing the converted Markdown content.
 // - An error if the conversion fails.
-func hTMLToMarkdown(html string) (string, error) {
+func htmlToMarkdown(html string) (string, error) {
 	cleaned, err := utils.CleanHTML(html, utils.DefaultHTMLMatchers())
 	if err != nil {
 		return "", err
@@ -99,7 +108,7 @@ func (s *ThreadService) ProcessPostmarkInbound(
 
 	channel := models.ThreadChannel{}.Email()
 	var thread, exists, err = func(channel string) (*models.Thread, bool, error) {
-		// Check for in-reply mail message ID for existing reply message.
+		// Check for in-reply mail Message ID for existing reply message.
 		if message.ReplyMailMessageId != nil {
 			// Get existing thread for postmark inbound in-reply mail message if exists.
 			thread, err := s.GetPostmarkInboundInReplyThread(ctx, workspaceId, message)
@@ -107,8 +116,8 @@ func (s *ThreadService) ProcessPostmarkInbound(
 				// Create a new thread
 				thread := models.NewThread(
 					workspaceId, customer, createdBy, channel,
-					models.SetThreadTitle(message.Subject()),
-					models.SetThreadDescription(message.PlainText()),
+					models.SetThreadTitle(message.Subject),
+					models.SetThreadDescription(message.TextBody),
 				)
 				return thread, false, nil
 			}
@@ -121,10 +130,10 @@ func (s *ThreadService) ProcessPostmarkInbound(
 		// Create new thread
 		thread := models.NewThread(
 			workspaceId, customer, createdBy, channel,
-			models.SetThreadTitle(message.Subject()),
-			models.SetThreadDescription(message.PlainText()),
+			models.SetThreadTitle(message.Subject),
+			models.SetThreadDescription(message.TextBody),
 		)
-		// Returns new thread.
+		// Return new thread.
 		return thread, false, nil
 	}(channel)
 	if err != nil {
@@ -132,8 +141,8 @@ func (s *ThreadService) ProcessPostmarkInbound(
 		return models.Thread{}, models.Message{}, ErrThread
 	}
 
-	body := message.HTML()
-	markdown, err := hTMLToMarkdown(message.HTML())
+	body := message.HTMLBody
+	markdown, err := htmlToMarkdown(message.HTMLBody)
 	if err != nil {
 		slog.Error("failed to convert html to markdown", slog.Any("err", err))
 	} else {
@@ -143,7 +152,7 @@ func (s *ThreadService) ProcessPostmarkInbound(
 	newMessage := models.NewMessage(
 		thread.ThreadId, channel,
 		models.SetMessageCustomer(customer),
-		models.SetMessageTextBody(message.PlainText()),
+		models.SetMessageTextBody(message.TextBody),
 		models.SetMessageBody(body),
 	)
 
@@ -155,7 +164,7 @@ func (s *ThreadService) ProcessPostmarkInbound(
 		thread.SetNewInboundMessage(customer, newMessage.PreviewText())
 	}
 
-	inbound := models.ThreadMessageWithPostmarkInbound{
+	inbound := models.PostmarkInboundThreadMessage{
 		ThreadMessage: models.ThreadMessage{
 			Thread:  thread,
 			Message: newMessage,
@@ -163,7 +172,7 @@ func (s *ThreadService) ProcessPostmarkInbound(
 		PostmarkInboundMessage: message,
 	}
 
-	// If thread exists, append postmark inbound message to existing thread.
+	// If thread exists, append message to the existing thread.
 	if exists {
 		insMessage, err := s.repo.AppendPostmarkInboundThreadMessage(ctx, inbound)
 		if err != nil {
@@ -172,6 +181,7 @@ func (s *ThreadService) ProcessPostmarkInbound(
 		return *thread, insMessage, nil
 	}
 
+	// Insert new thread
 	insThread, insMessage, err := s.repo.InsertPostmarkInboundThreadMessage(ctx, inbound)
 	if err != nil {
 		return models.Thread{}, models.Message{}, ErrPostmarkInbound

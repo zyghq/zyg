@@ -18,6 +18,7 @@ require (
 	github.com/rs/cors v1.10.1
 	github.com/rs/xid v1.5.0
 	github.com/sanchitrk/namingo v0.1.2
+	github.com/zyghq/postmark v0.0.0-20241124072348-43ea03b027fe
 	golang.org/x/net v0.31.0
 )
 

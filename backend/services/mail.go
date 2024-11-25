@@ -16,6 +16,7 @@ import (
 	"github.com/zyghq/zyg/models"
 )
 
+//goland:noinspection ALL
 func getExtensionFromContentType(contentType string) string {
 	extensions := map[string]string{
 		"text/plain":         ".txt",

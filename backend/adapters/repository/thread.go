@@ -173,7 +173,7 @@ func postmarkInboundMessageCols() builq.Columns {
 	return builq.Columns{
 		"message_id", // PK
 		"payload",
-		"pm_message_id",
+		"postmark_message_id",
 		"mail_message_id",
 		"reply_mail_message_id",
 		"created_at",
@@ -534,29 +534,12 @@ func (tc *ThreadDB) InsertInboundThreadMessage(
 	return *thread, *message, nil
 }
 
-func (tc *ThreadDB) InsertPostmarkInboundThreadMessage(
-	ctx context.Context, inbound models.ThreadMessageWithPostmarkInbound) (models.Thread, models.Message, error) {
-	tx, err := tc.db.Begin(ctx)
-	if err != nil {
-		slog.Error("failed to begin transaction", slog.Any("err", err))
-		return models.Thread{}, models.Message{}, ErrTxQuery
-	}
-
-	defer func(tx pgx.Tx, ctx context.Context) {
-		if err := tx.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
-			slog.Error("failed to rollback transaction", slog.Any("err", err))
-		}
-	}(tx, ctx)
-
-	thread := inbound.Thread
-	message := inbound.Message
-	pmInboundMessage := inbound.PostmarkInboundMessage
-
-	// Checks if the thread has an inbound message.
-	// If not, adding inbound thread is not allowed.
+func InsertInboundThreadTx(
+	ctx context.Context, tx pgx.Tx, thread *models.Thread) (*models.Thread, error) {
+	// Make sure InboundMessage exists for inbound Thread.
 	if thread.InboundMessage == nil {
 		slog.Error("thread inbound message cannot be empty", slog.Any("thread", thread))
-		return models.Thread{}, models.Message{}, ErrQuery
+		return thread, ErrQuery
 	}
 
 	inboundMessage := thread.InboundMessage
@@ -580,7 +563,7 @@ func (tc *ThreadDB) InsertPostmarkInboundThreadMessage(
 	insertQuery, _, err := insertB.Build()
 	if err != nil {
 		slog.Error("failed to build insert query", slog.Any("err", err))
-		return models.Thread{}, models.Message{}, ErrQuery
+		return thread, ErrQuery
 	}
 
 	// Build the select query required after insert.
@@ -594,7 +577,7 @@ func (tc *ThreadDB) InsertPostmarkInboundThreadMessage(
 	stmt, _, err := q.Build()
 	if err != nil {
 		slog.Error("failed to build query", slog.Any("err", err))
-		return models.Thread{}, models.Message{}, ErrQuery
+		return thread, ErrQuery
 	}
 
 	if zyg.DBQueryDebug() {
@@ -613,11 +596,11 @@ func (tc *ThreadDB) InsertPostmarkInboundThreadMessage(
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("err", err))
-		return models.Thread{}, models.Message{}, ErrEmpty
+		return thread, ErrQuery
 	}
 	if err != nil {
 		slog.Error("failed to insert query", slog.Any("err", err))
-		return models.Thread{}, models.Message{}, ErrQuery
+		return thread, ErrQuery
 	}
 
 	// hold db values for nullables.
@@ -683,7 +666,7 @@ func (tc *ThreadDB) InsertPostmarkInboundThreadMessage(
 	insertQuery, _, err = insertB.Build()
 	if err != nil {
 		slog.Error("failed to build insert query", slog.Any("err", err))
-		return models.Thread{}, models.Message{}, ErrEmpty
+		return thread, ErrQuery
 	}
 
 	// Build the select query required after insert.
@@ -705,7 +688,7 @@ func (tc *ThreadDB) InsertPostmarkInboundThreadMessage(
 	stmt, _, err = q.Build()
 	if err != nil {
 		slog.Error("failed to build query", slog.Any("err", err))
-		return models.Thread{}, models.Message{}, ErrEmpty
+		return thread, ErrQuery
 	}
 
 	if zyg.DBQueryDebug() {
@@ -735,11 +718,11 @@ func (tc *ThreadDB) InsertPostmarkInboundThreadMessage(
 
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("err", err))
-		return models.Thread{}, models.Message{}, ErrEmpty
+		return thread, ErrQuery
 	}
 	if err != nil {
 		slog.Error("failed to insert query", slog.Any("err", err))
-		return models.Thread{}, models.Message{}, ErrEmpty
+		return thread, ErrQuery
 	}
 
 	// Sets the assigned member if a valid assigned member exists,
@@ -793,10 +776,15 @@ func (tc *ThreadDB) InsertPostmarkInboundThreadMessage(
 	} else {
 		thread.ClearOutboundMessage()
 	}
+	return thread, nil
+}
 
-	// hold db nullables.
+func InsertThreadMessageTx(
+	ctx context.Context, tx pgx.Tx, message *models.Message) (*models.Message, error) {
+	// Hold db nullables
 	var customerId, customerName sql.NullString
 	var memberId, memberName sql.NullString
+
 	if message.Customer != nil {
 		customerId = sql.NullString{String: message.Customer.CustomerId, Valid: true}
 	}
@@ -805,9 +793,9 @@ func (tc *ThreadDB) InsertPostmarkInboundThreadMessage(
 	}
 
 	// Persist the message with referenced thread ID
-	insertB = builq.Builder{}
-	insertCols = threadMessageCols()
-	insertParams = []any{
+	insertB := builq.Builder{}
+	insertCols := threadMessageCols()
+	insertParams := []any{
 		message.MessageId, message.ThreadId, message.TextBody, message.Body,
 		customerId, memberId, message.Channel, message.CreatedAt, message.UpdatedAt,
 	}
@@ -816,25 +804,25 @@ func (tc *ThreadDB) InsertPostmarkInboundThreadMessage(
 	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$)", insertParams...)
 	insertB.Addf("RETURNING %s", insertCols)
 
-	insertQuery, _, err = insertB.Build()
+	insertQuery, _, err := insertB.Build()
 	if err != nil {
 		slog.Error("failed to build insert query", slog.Any("err", err))
-		return models.Thread{}, models.Message{}, ErrQuery
+		return message, ErrQuery
 	}
 
 	// Build the select query required after insert
-	q = builq.New()
-	joinedCols = threadMessageJoinedCols()
+	q := builq.New()
+	joinedCols := threadMessageJoinedCols()
 
 	q("WITH ins AS (%s)", insertQuery)
 	q("SELECT %s FROM %s", joinedCols, "ins msg")
 	q("LEFT OUTER JOIN customer c ON msg.customer_id = c.customer_id")
 	q("LEFT OUTER JOIN member m ON msg.member_id = m.member_id")
 
-	stmt, _, err = q.Build()
+	stmt, _, err := q.Build()
 	if err != nil {
 		slog.Error("failed to build query", slog.Any("err", err))
-		return models.Thread{}, models.Message{}, ErrQuery
+		return message, ErrQuery
 	}
 
 	if zyg.DBQueryDebug() {
@@ -850,11 +838,11 @@ func (tc *ThreadDB) InsertPostmarkInboundThreadMessage(
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("err", err))
-		return models.Thread{}, models.Message{}, ErrEmpty
+		return message, ErrEmpty
 	}
 	if err != nil {
 		slog.Error("failed to insert query", slog.Any("err", err))
-		return models.Thread{}, models.Message{}, ErrQuery
+		return message, ErrQuery
 	}
 
 	if customerId.Valid {
@@ -869,35 +857,65 @@ func (tc *ThreadDB) InsertPostmarkInboundThreadMessage(
 			Name:     memberName.String,
 		}
 	}
+	return message, nil
+}
 
-	// Insert the Postmark inbound message
-	q = builq.New()
-	pmInboundCols := postmarkInboundMessageCols()
+func (tc *ThreadDB) InsertPostmarkInboundThreadMessage(
+	ctx context.Context, inbound models.PostmarkInboundThreadMessage) (models.Thread, models.Message, error) {
+	tx, err := tc.db.Begin(ctx)
+	if err != nil {
+		slog.Error("failed to begin transaction", slog.Any("err", err))
+		return models.Thread{}, models.Message{}, ErrTxQuery
+	}
 
-	insertParams = []any{
-		message.MessageId, pmInboundMessage.Payload, pmInboundMessage.PMMessageId,
+	defer func(tx pgx.Tx, ctx context.Context) {
+		if err := tx.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
+			slog.Error("failed to rollback transaction", slog.Any("err", err))
+		}
+	}(tx, ctx)
+
+	pmInboundMessage := inbound.PostmarkInboundMessage
+
+	// Insert inbound thread
+	thread, err := InsertInboundThreadTx(ctx, tx, inbound.Thread)
+	if err != nil {
+		slog.Error("failed to insert inbound thread", slog.Any("err", err))
+		return models.Thread{}, models.Message{}, ErrQuery
+	}
+
+	// Insert thread message
+	message, err := InsertThreadMessageTx(ctx, tx, inbound.Message)
+	if err != nil {
+		slog.Error("failed to insert thread message", slog.Any("err", err))
+		return models.Thread{}, models.Message{}, ErrQuery
+	}
+
+	insertCols := postmarkInboundMessageCols()
+	insertParams := []any{
+		message.MessageId, pmInboundMessage.Payload, pmInboundMessage.PostmarkMessageId,
 		pmInboundMessage.MailMessageId, pmInboundMessage.ReplyMailMessageId,
-		// consider the time space of the message rather than the postmark message.
 		message.CreatedAt, message.UpdatedAt,
 	}
 
-	q("INSERT INTO postmark_inbound_message (%s)", pmInboundCols)
-	q("VALUES (%$, %$, %$, %$, %$, %$, %$)", insertParams...)
-	q("RETURNING %s", pmInboundCols)
+	var insertB builq.Builder
+	insertB.Addf("INSERT INTO message (%s)", insertCols)
+	insertB.Addf("VALUES (%+$)", insertParams...)
+	insertB.Addf("RETURNING %s", insertCols)
 
-	stmt, _, err = q.Build()
+	insertQuery, _, err := insertB.Build()
 	if err != nil {
-		slog.Error("failed to build query", slog.Any("err", err))
+		slog.Error("failed to build insert query", slog.Any("err", err))
 		return models.Thread{}, models.Message{}, ErrQuery
 	}
 
 	if zyg.DBQueryDebug() {
-		debug := q.DebugBuild()
+		debug := insertB.DebugBuild()
 		debugQuery(debug)
 	}
+
 	var throwablePk string
-	err = tx.QueryRow(ctx, stmt, insertParams...).Scan(
-		&throwablePk, &pmInboundMessage.Payload, &pmInboundMessage.PMMessageId,
+	err = tx.QueryRow(ctx, insertQuery, insertParams...).Scan(
+		&throwablePk, &pmInboundMessage.Payload, &pmInboundMessage.PostmarkMessageId,
 		&pmInboundMessage.MailMessageId, &pmInboundMessage.ReplyMailMessageId,
 		&pmInboundMessage.CreatedAt, &pmInboundMessage.UpdatedAt,
 	)
@@ -2004,7 +2022,6 @@ func (tc *ThreadDB) CheckThreadInWorkspaceExists(
 		slog.Error("failed to query", slog.Any("error", err))
 		return false, ErrQuery
 	}
-
 	return isExist, nil
 }
 
@@ -2843,7 +2860,7 @@ func (tc *ThreadDB) FetchThreadByPostmarkInboundInReplyMessageId(
 }
 
 func (tc *ThreadDB) AppendPostmarkInboundThreadMessage(
-	ctx context.Context, inbound models.ThreadMessageWithPostmarkInbound) (models.Message, error) {
+	ctx context.Context, inbound models.PostmarkInboundThreadMessage) (models.Message, error) {
 
 	// start transaction
 	// If fails then stop the execution and return the error.
@@ -3037,7 +3054,7 @@ func (tc *ThreadDB) AppendPostmarkInboundThreadMessage(
 	pmInboundCols := postmarkInboundMessageCols()
 
 	insertParams = []any{
-		message.MessageId, pmInboundMessage.Payload, pmInboundMessage.PMMessageId,
+		message.MessageId, pmInboundMessage.Payload, pmInboundMessage.PostmarkMessageId,
 		pmInboundMessage.MailMessageId, pmInboundMessage.ReplyMailMessageId,
 		// consider the time space of the message rather than the postmark message.
 		message.CreatedAt, message.UpdatedAt,
@@ -3060,7 +3077,7 @@ func (tc *ThreadDB) AppendPostmarkInboundThreadMessage(
 
 	var throwablePk string
 	err = tx.QueryRow(ctx, stmt, insertParams...).Scan(
-		&throwablePk, &pmInboundMessage.Payload, &pmInboundMessage.PMMessageId,
+		&throwablePk, &pmInboundMessage.Payload, &pmInboundMessage.PostmarkMessageId,
 		&pmInboundMessage.MailMessageId, &pmInboundMessage.ReplyMailMessageId,
 		&pmInboundMessage.CreatedAt, &pmInboundMessage.UpdatedAt,
 	)
@@ -3080,4 +3097,18 @@ func (tc *ThreadDB) AppendPostmarkInboundThreadMessage(
 		return models.Message{}, ErrTxQuery
 	}
 	return *message, nil
+}
+
+func (tc *ThreadDB) CheckPostmarkInboundMessageExists(ctx context.Context, messageId string) (bool, error) {
+	var isExist bool
+	stmt := `SELECT EXISTS(
+		SELECT 1 FROM postmark_inbound_message WHERE postmark_message_id = $1	
+	)`
+
+	err := tc.db.QueryRow(ctx, stmt, messageId).Scan(&isExist)
+	if err != nil {
+		slog.Error("failed to query", slog.Any("err", err))
+		return false, ErrQuery
+	}
+	return isExist, nil
 }

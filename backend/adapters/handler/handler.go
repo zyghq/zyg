@@ -120,8 +120,7 @@ func NewServer(
 
 	// handles postmark inbound message webhook for workspace.
 	// This URL path must also be configured in the postmark inbound settings.
-	mux.HandleFunc("POST /webhooks/{workspaceId}/postmark/inbound/{$}",
-		th.handlePostmarkInboundWebhook)
+	mux.HandleFunc("POST /webhooks/{workspaceId}/postmark/inbound/{$}", th.handlePostmarkInboundWebhook)
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},

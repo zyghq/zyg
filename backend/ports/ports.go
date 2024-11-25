@@ -142,6 +142,8 @@ type ThreadServicer interface {
 	AppendOutboundThreadChat(
 		ctx context.Context, thread models.Thread, member models.Member, message string) (models.Message, error)
 
+	IsPostmarkInboundProcessed(ctx context.Context, messageId string) (bool, error)
+
 	ProcessPostmarkInbound(
 		ctx context.Context, workspaceId string,
 		customer models.CustomerActor, createdBy models.MemberActor, inboundMessage *models.PostmarkInboundMessage,

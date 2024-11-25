@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/zyghq/zyg/integrations/email"
 	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
 	"github.com/zyghq/zyg/services"
@@ -652,26 +653,32 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 		slog.Any("workspaceId", workspace.WorkspaceId),
 	)
 
-	inboundMessage, err := (&models.PostmarkInboundMessage{}).FromPayload(reqp)
+	inboundReq, err := email.FromPostmarkInboundRequest(reqp)
 	if err != nil {
 		slog.Error("error parsing postmark inbound message", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Println("*********** Postmark Inbound Message ***********")
-	fmt.Println(inboundMessage.Subject())
-	fmt.Println(inboundMessage.PlainText())
-	fmt.Println(inboundMessage.HTML())
-	fmt.Println("*********************************************")
-
-	// Pull Customer mail and name from the inbound mail and get or create the Customer.
-	fromEmail := inboundMessage.FromEmail()
-	fromName := inboundMessage.FromName()
-	customer, _, err := h.ws.CreateCustomerWithEmail(
-		ctx, workspace.WorkspaceId, fromEmail, true, fromName)
+	// Check if the Postmark inbound message request has already been processed.
+	isProcessed, err := h.ths.IsPostmarkInboundProcessed(ctx, inboundReq.MessageID)
 	if err != nil {
-		slog.Error("error creating customer for postmark inbound message", slog.Any("err", err))
+		slog.Error("failed to check inbound message request processed", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if isProcessed {
+		slog.Info("postmark inbound message is already processed")
+		http.Error(w, http.StatusText(http.StatusOK), http.StatusOK)
+		return
+	}
+
+	inboundMessage := inboundReq.ToPostmarkInboundMessage()
+
+	customer, _, err := h.ws.CreateCustomerWithEmail(
+		ctx, workspace.WorkspaceId, inboundMessage.FromEmail, true, inboundMessage.FromName)
+	if err != nil {
+		slog.Error("failed to create customer for postmark inbound message", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -679,18 +686,18 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 	// Get the system Member from the Workspace which will process this inbound mail.
 	member, err := h.ws.GetSystemMember(ctx, workspace.WorkspaceId)
 	if err != nil {
-		slog.Error("error getting system member for postmark inbound message", slog.Any("err", err))
+		slog.Error("failed to get system member for postmark inbound message", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	// process the postmark inbound message.
+	// Process the postmark inbound message.
 	thread, message, err := h.ths.ProcessPostmarkInbound(
 		ctx, workspace.WorkspaceId, customer.AsCustomerActor(),
-		member.AsMemberActor(), inboundMessage,
+		member.AsMemberActor(), &inboundMessage,
 	)
 	if err != nil {
-		slog.Error("error processing postmark inbound message", slog.Any("err", err))
+		slog.Error("failed to process postmark inbound message", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}

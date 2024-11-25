@@ -282,16 +282,16 @@ CREATE TABLE message (
 CREATE TABLE postmark_inbound_message (
     message_id VARCHAR(255) NOT NULL,           -- References parent message
     payload JSONB NOT NULL,                     -- Original Postmark webhook payload
-    pm_message_id VARCHAR(255) NOT NULL,        -- Postmark's internal message ID
-    mail_message_id VARCHAR(255) NOT NULL,      -- Email Message-ID header
-    reply_mail_message_id VARCHAR(255) NULL,    -- References header for replies
+    postmark_message_id VARCHAR(255) NOT NULL,        -- Postmark's internal message ID
+    mail_message_id VARCHAR(255) NOT NULL,      -- Email `Message-ID` header
+    reply_mail_message_id VARCHAR(255) NULL,    -- Email `In-Reply-To` header
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT postmark_inbound_message_id_pkey PRIMARY KEY (message_id),
     CONSTRAINT postmark_inbound_message_id_fkey FOREIGN KEY (message_id) REFERENCES message(message_id),
 
-    CONSTRAINT postmark_inbound_msg_pm_message_id_key UNIQUE (pm_message_id),
+    CONSTRAINT postmark_inbound_msg_pm_message_id_key UNIQUE (postmark_message_id),
     CONSTRAINT postmark_inbound_msg_mail_message_id_key UNIQUE (mail_message_id)
 );
 
