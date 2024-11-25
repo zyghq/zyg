@@ -77,6 +77,7 @@ func SetMessageBody(body string) MessageOption {
 
 type MessageAttachment struct {
 	AttachmentId string    `json:"attachmentId"`
+	MessageId    string    `json:"messageId"`
 	Name         string    `json:"name"`
 	ContentType  string    `json:"contentType"`
 	ContentKey   string    `json:"contentKey"`
@@ -84,8 +85,21 @@ type MessageAttachment struct {
 	Spam         bool      `json:"spam"`
 	HasError     bool      `json:"hasError"`
 	Error        string    `json:"error"`
+	MD5Hash      string    `json:"md5Hash"`
 	CreatedAt    time.Time `json:"createdAt"`
 	UpdatedAt    time.Time `json:"updatedAt"`
+}
+
+func (m *MessageAttachment) GenId() string {
+	return "att" + xid.New().String()
+}
+
+type PostmarkMessageAttachment struct {
+	Name        string
+	ContentType string
+	Content     string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 // PostmarkInboundMessage represents 1:1 mapping with Message
@@ -101,15 +115,17 @@ type PostmarkInboundMessage struct {
 	// From mail protocol `In-Reply-To` To `Message-ID` in headers
 	ReplyMailMessageId *string
 
-	Subject  string
-	TextBody string
-	HTMLBody string
-
 	FromEmail string
 	FromName  string
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
+
+	Subject  string
+	TextBody string
+	HTMLBody string
+
+	Attachments []PostmarkMessageAttachment
 }
 
 // ThreadMessage combines a Thread and its associated Message.

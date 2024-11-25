@@ -276,6 +276,24 @@ CREATE TABLE message (
     )
 );
 
+CREATE TABLE message_attachment (
+    attachment_id VARCHAR(255) NOT NULL,
+    message_id VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    content_type VARCHAR(511) NOT NULL,
+    content_key VARCHAR(511) NOT NULL,
+    content_url VARCHAR(511) NOT NULL,
+    spam BOOLEAN NOT NULL DEFAULT FALSE,
+    has_error BOOLEAN NOT NULL DEFAULT FALSE,
+    error TEXT NOT NULL,
+    md5_has VARCHAR(511) NOT NULL,
+    created_at timestamp DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT message_attachment_id_pkey PRIMARY KEY (attachment_id),
+    CONSTRAINT message_attachment_message_id_fkey FOREIGN KEY (message_id) REFERENCES message(message_id)
+);
+
 -- Represents postmark inbound message stream payload linked to message.
 -- This table stores Postmark-specific inbound message data including the original payload
 -- and various message identifiers for tracking and correlation.

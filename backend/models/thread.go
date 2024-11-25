@@ -269,7 +269,7 @@ func SetThreadTitle(title string) ThreadOption {
 }
 
 func SetThreadDescription(description string) ThreadOption {
-	maxLength := 512
+	maxLength := 511
 	if len(description) > maxLength {
 		description = description[:maxLength]
 	}

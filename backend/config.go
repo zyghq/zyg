@@ -79,3 +79,11 @@ func R2AccessSecretKey() string {
 	}
 	return value
 }
+
+func S3Bucket() string {
+	value, ok := os.LookupEnv("S3_BUCKET")
+	if !ok {
+		return "zygdev"
+	}
+	return value
+}

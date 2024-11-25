@@ -3,6 +3,7 @@ package services
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -95,6 +96,7 @@ func ProcessMessageAttachment(
 
 	now := time.Now().UTC()
 	attachment := models.MessageAttachment{
+		MessageId:    messageId,
 		AttachmentId: xid.New().String(),
 		Name:         getFilename(filename, contentType),
 		ContentType:  contentType,
@@ -110,7 +112,7 @@ func ProcessMessageAttachment(
 		return attachment, errors.New("failed to decode base64 content")
 	}
 
-	s3Key := generateS3Key(workspaceId, threadId, messageId, attachment.Name)
+	s3Key := generateS3Key(workspaceId, threadId, attachment.MessageId, attachment.Name)
 
 	// Upload decoded data to S3
 	_, err = s3Client.Client.PutObject(ctx, &s3.PutObjectInput{
@@ -125,6 +127,10 @@ func ProcessMessageAttachment(
 		return attachment, errors.New("failed to upload attachment")
 	}
 
+	hash := md5.Sum(decodedData)
+	md5String := fmt.Sprintf("%x", hash)
+
+	attachment.MD5Hash = md5String
 	attachment.ContentKey = s3Key
 	attachment.ContentUrl = generateS3URL(s3Client.BaseEndpoint, s3Client.BucketName, s3Key)
 	return attachment, nil

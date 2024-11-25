@@ -3,7 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -666,12 +665,6 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 		slog.Error("failed to log postmark inbound request", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
-	err = h.ths.LogPostmarkInboundRequest(ctx, workspaceId, inboundReq.MessageID, inboundReq.Payload)
-	if err != nil {
-		slog.Error("failed to log postmark inbound request", slog.Any("err", err))
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
 
 	// Check if the Postmark inbound message request has already been processed.
 	isProcessed, err := h.ths.IsPostmarkInboundProcessed(ctx, inboundReq.MessageID)
@@ -696,7 +689,7 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 		return
 	}
 
-	// Get the system Member from the Workspace which will process this inbound mail.
+	// Get the system member for the workspace which will process the inbound mail.
 	member, err := h.ws.GetSystemMember(ctx, workspace.WorkspaceId)
 	if err != nil {
 		slog.Error("failed to get system member for postmark inbound message", slog.Any("err", err))
@@ -704,7 +697,7 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 		return
 	}
 
-	// Process the postmark inbound message.
+	// Process the Postmark inbound message.
 	thread, message, err := h.ths.ProcessPostmarkInbound(
 		ctx, workspace.WorkspaceId, customer.AsCustomerActor(),
 		member.AsMemberActor(), &inboundMessage,
@@ -714,12 +707,8 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-
-	fmt.Println("********* thread + message **********")
-	fmt.Println("ThreadID", thread.ThreadId)
-	fmt.Println("MessageID", message.MessageId)
-	fmt.Println("Thread Title", thread.Title)
-	fmt.Println("*********************************************")
+	slog.Info("processed postmark inbound message with threadId %s and messageId %s",
+		thread.ThreadId, message.MessageId)
 
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write([]byte("ok"))

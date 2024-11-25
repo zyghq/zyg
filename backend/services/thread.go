@@ -109,39 +109,40 @@ func (s *ThreadService) ProcessPostmarkInbound(
 	ctx context.Context, workspaceId string,
 	customer models.CustomerActor, createdBy models.MemberActor, message *models.PostmarkInboundMessage,
 ) (models.Thread, models.Message, error) {
+	var insMessage models.Message
 	if message == nil {
 		return models.Thread{}, models.Message{}, ErrPostmarkInbound
 	}
 
 	channel := models.ThreadChannel{}.Email()
 	var thread, exists, err = func(channel string) (*models.Thread, bool, error) {
-		// Check for in-reply mail Message ID for existing reply message.
+		// Check if this message is a reply to existing message.
 		if message.ReplyMailMessageId != nil {
-			// Get existing thread for postmark inbound in-reply mail message if exists.
-			thread, err := s.GetPostmarkInboundInReplyThread(ctx, workspaceId, message)
+			// Get existing thread for Postmark inbound in-reply message if exists.
+			// Otherwise, creates a new thread.
+			existingThread, err := s.GetPostmarkInboundInReplyThread(ctx, workspaceId, message)
 			if errors.Is(err, ErrThreadNotFound) {
-				// Create a new thread
-				thread := models.NewThread(
+				newThread := models.NewThread(
 					workspaceId, customer, createdBy, channel,
 					models.SetThreadTitle(message.Subject),
 					models.SetThreadDescription(message.TextBody),
 				)
-				return thread, false, nil
+				return newThread, false, nil
 			}
 			if err != nil {
 				return nil, false, ErrThread
 			}
 			// Returns existing thread.
-			return thread, true, nil
+			return existingThread, true, nil
 		}
-		// Create new thread
-		thread := models.NewThread(
+		// If message is not a reply, start a new thread.
+		newThread := models.NewThread(
 			workspaceId, customer, createdBy, channel,
 			models.SetThreadTitle(message.Subject),
 			models.SetThreadDescription(message.TextBody),
 		)
 		// Return new thread.
-		return thread, false, nil
+		return newThread, false, nil
 	}(channel)
 	if err != nil {
 		slog.Error("failed to get or create thread", slog.Any("err", err))
@@ -181,19 +182,52 @@ func (s *ThreadService) ProcessPostmarkInbound(
 
 	// If thread exists, append message to the existing thread.
 	if exists {
-		insMessage, err := s.repo.AppendPostmarkInboundThreadMessage(ctx, inbound)
+		insMessage, err = s.repo.AppendPostmarkInboundThreadMessage(ctx, inbound)
 		if err != nil {
 			return models.Thread{}, models.Message{}, ErrPostmarkInbound
 		}
-		return *thread, insMessage, nil
+	} else {
+		// Insert a new thread.
+		var insThread models.Thread
+		insThread, insMessage, err = s.repo.InsertPostmarkInboundThreadMessage(ctx, inbound)
+		if err != nil {
+			return models.Thread{}, models.Message{}, ErrPostmarkInbound
+		}
+		// Set the new inserted thread.
+		thread = &insThread
 	}
 
-	// Insert new thread
-	insThread, insMessage, err := s.repo.InsertPostmarkInboundThreadMessage(ctx, inbound)
-	if err != nil {
-		return models.Thread{}, models.Message{}, ErrPostmarkInbound
+	// Process attachments if any.
+	if len(inbound.PostmarkInboundMessage.Attachments) > 0 {
+		attachments := make([]models.MessageAttachment, 0, len(inbound.PostmarkInboundMessage.Attachments))
+		accountId := zyg.CFAccountId()
+		accessKeyId := zyg.R2AccessKeyId()
+		accessKeySecret := zyg.R2AccessSecretKey()
+		s3Bucket := zyg.S3Bucket()
+		s3Client, err := store.NewS3(ctx, s3Bucket, accountId, accessKeyId, accessKeySecret)
+		if err != nil {
+			slog.Error("failed to connect s3 to process message attachments", slog.Any("err", err))
+		} else {
+			for _, a := range inbound.PostmarkInboundMessage.Attachments {
+				att, aErr := ProcessMessageAttachment(
+					ctx, thread.WorkspaceId, thread.ThreadId, insMessage.MessageId,
+					a.Content, a.ContentType, a.Name, s3Client,
+				)
+				if aErr != nil {
+					slog.Error("failed to process message attachment", slog.Any("err", aErr))
+				}
+				attachments = append(attachments, att)
+			}
+		}
+		// Persists processed message attachments
+		for _, a := range attachments {
+			_, err := s.repo.UpsertMessageAttachment(ctx, a)
+			if err != nil {
+				slog.Error("failed to insert message attachment", slog.Any("err", err))
+			}
+		}
 	}
-	return insThread, insMessage, nil
+	return *thread, insMessage, nil
 }
 
 func (s *ThreadService) UpdateThread(

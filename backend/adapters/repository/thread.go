@@ -181,6 +181,23 @@ func postmarkInboundMessageCols() builq.Columns {
 	}
 }
 
+func messageAttachmentCols() builq.Columns {
+	return builq.Columns{
+		"attachment_id",
+		"message_id",
+		"name",
+		"content_type",
+		"content_key",
+		"content_url",
+		"spam",
+		"has_error",
+		"error",
+		"md5_hash",
+		"created_at",
+		"updated_at",
+	}
+}
+
 // InsertInboundThreadMessage inserts a new inbound thread message for the customer in a transaction.
 // First, insert the inbound message.
 // Then, insert the Thread with in persisted inbound message ID.
@@ -781,7 +798,6 @@ func InsertInboundThreadTx(
 
 func InsertThreadMessageTx(
 	ctx context.Context, tx pgx.Tx, message *models.Message) (*models.Message, error) {
-	// Hold db nullables
 	var customerId, customerName sql.NullString
 	var memberId, memberName sql.NullString
 
@@ -874,7 +890,7 @@ func (tc *ThreadDB) InsertPostmarkInboundThreadMessage(
 		}
 	}(tx, ctx)
 
-	pmInboundMessage := inbound.PostmarkInboundMessage
+	postmarkInbound := inbound.PostmarkInboundMessage
 
 	// Insert inbound thread
 	thread, err := InsertInboundThreadTx(ctx, tx, inbound.Thread)
@@ -892,14 +908,14 @@ func (tc *ThreadDB) InsertPostmarkInboundThreadMessage(
 
 	insertCols := postmarkInboundMessageCols()
 	insertParams := []any{
-		message.MessageId, pmInboundMessage.Payload, pmInboundMessage.PostmarkMessageId,
-		pmInboundMessage.MailMessageId, pmInboundMessage.ReplyMailMessageId,
+		message.MessageId, postmarkInbound.Payload, postmarkInbound.PostmarkMessageId,
+		postmarkInbound.MailMessageId, postmarkInbound.ReplyMailMessageId,
 		message.CreatedAt, message.UpdatedAt,
 	}
 
 	var insertB builq.Builder
-	insertB.Addf("INSERT INTO message (%s)", insertCols)
-	insertB.Addf("VALUES (%+$)", insertParams...)
+	insertB.Addf("INSERT INTO postmark_inbound_message (%s)", insertCols)
+	insertB.Addf("VALUES (%+$)", insertParams)
 	insertB.Addf("RETURNING %s", insertCols)
 
 	insertQuery, _, err := insertB.Build()
@@ -915,9 +931,9 @@ func (tc *ThreadDB) InsertPostmarkInboundThreadMessage(
 
 	var throwablePk string
 	err = tx.QueryRow(ctx, insertQuery, insertParams...).Scan(
-		&throwablePk, &pmInboundMessage.Payload, &pmInboundMessage.PostmarkMessageId,
-		&pmInboundMessage.MailMessageId, &pmInboundMessage.ReplyMailMessageId,
-		&pmInboundMessage.CreatedAt, &pmInboundMessage.UpdatedAt,
+		&throwablePk, &postmarkInbound.Payload, &postmarkInbound.PostmarkMessageId,
+		&postmarkInbound.MailMessageId, &postmarkInbound.ReplyMailMessageId,
+		&postmarkInbound.CreatedAt, &postmarkInbound.UpdatedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("err", err))
@@ -3111,4 +3127,46 @@ func (tc *ThreadDB) CheckPostmarkInboundMessageExists(ctx context.Context, messa
 		return false, ErrQuery
 	}
 	return isExist, nil
+}
+
+func (tc *ThreadDB) UpsertMessageAttachment(
+	ctx context.Context, attachment models.MessageAttachment) (models.MessageAttachment, error) {
+	cols := messageAttachmentCols()
+	q := builq.New()
+	insertParams := []any{
+		attachment.AttachmentId, attachment.MessageId, attachment.Name,
+		attachment.ContentType, attachment.ContentKey, attachment.ContentUrl,
+		attachment.Spam, attachment.HasError, attachment.Error, attachment.MD5Hash,
+		attachment.CreatedAt, attachment.UpdatedAt,
+	}
+	q("INSERT INTO message_attachment (%s)", cols)
+	q("VALUES (%+$)", insertParams)
+	q("RETURNING %s", cols)
+
+	stmt, _, err := q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return models.MessageAttachment{}, ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
+
+	err = tc.db.QueryRow(ctx, stmt, insertParams...).Scan(
+		&attachment.AttachmentId, &attachment.MessageId, &attachment.Name,
+		&attachment.ContentType, &attachment.ContentKey, &attachment.ContentUrl,
+		&attachment.Spam, &attachment.HasError, &attachment.Error, &attachment.MD5Hash,
+		&attachment.CreatedAt, &attachment.UpdatedAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
+		return models.MessageAttachment{}, ErrEmpty
+	}
+	if err != nil {
+		slog.Error("failed to insert query", slog.Any("err", err))
+		return models.MessageAttachment{}, ErrQuery
+	}
+	return attachment, nil
 }

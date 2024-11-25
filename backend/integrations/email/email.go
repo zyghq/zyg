@@ -24,6 +24,7 @@ func (p *PostmarkInboundMessageReq) ToPostmarkInboundMessage() models.PostmarkIn
 		FromName:          p.FromFull.Name,
 		CreatedAt:         now,
 		UpdatedAt:         now,
+		Attachments:       p.ToMessageAttachments(),
 	}
 	for _, h := range p.Headers {
 		if h.Name == "Message-ID" {
@@ -34,6 +35,21 @@ func (p *PostmarkInboundMessageReq) ToPostmarkInboundMessage() models.PostmarkIn
 		}
 	}
 	return message
+}
+
+func (p *PostmarkInboundMessageReq) ToMessageAttachments() []models.PostmarkMessageAttachment {
+	var attachments []models.PostmarkMessageAttachment
+	now := time.Now().UTC()
+	for _, m := range p.Attachments {
+		attachments = append(attachments, models.PostmarkMessageAttachment{
+			CreatedAt:   now,
+			UpdatedAt:   now,
+			Name:        m.Name,
+			ContentType: m.ContentType,
+			Content:     m.Content,
+		})
+	}
+	return attachments
 }
 
 func FromPostmarkInboundRequest(
