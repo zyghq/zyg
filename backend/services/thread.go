@@ -1,8 +1,15 @@
 package services
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/zyghq/zyg"
+	"github.com/zyghq/zyg/adapters/store"
 	"github.com/zyghq/zyg/utils"
 	"log/slog"
 
@@ -383,6 +390,40 @@ func (s *ThreadService) RemoveThreadLabel(
 	err := s.repo.DeleteThreadLabelById(ctx, threadId, labelId)
 	if err != nil {
 		return ErrThreadLabel
+	}
+	return nil
+}
+
+func (s *ThreadService) LogPostmarkInboundRequest(
+	ctx context.Context, workspaceId string, messageId string, payload map[string]interface{}) error {
+	accountId := zyg.CFAccountId()
+	accessKeyId := zyg.R2AccessKeyId()
+	accessSecretKey := zyg.R2AccessSecretKey()
+
+	s3Client, err := store.NewS3(ctx, "zygdev", accountId, accessKeyId, accessSecretKey)
+	if err != nil {
+		return fmt.Errorf("failed to create S3: %v", err)
+	}
+
+	// Convert map to JSON
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal JSON: %v", err)
+	}
+
+	// In format: <workspaceId>/logs/<integration>/<event>/<id>
+	bucketKey := fmt.Sprintf("%s/logs/postmark/inbound/%s.json", workspaceId, messageId)
+
+	input := &s3.PutObjectInput{
+		Bucket:      &s3Client.BucketName,
+		Key:         &bucketKey,
+		Body:        bytes.NewReader(jsonData),
+		ContentType: aws.String("application/json"),
+	}
+
+	_, err = s3Client.Client.PutObject(ctx, input)
+	if err != nil {
+		return fmt.Errorf("failed to put object: %v", err)
 	}
 	return nil
 }

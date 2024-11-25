@@ -180,4 +180,7 @@ type ThreadServicer interface {
 
 	GenerateMemberThreadMetrics(
 		ctx context.Context, workspaceId string, memberId string) (models.ThreadMemberMetrics, error)
+
+	LogPostmarkInboundRequest(
+		ctx context.Context, workspaceId, messageId string, payload map[string]interface{}) error
 }

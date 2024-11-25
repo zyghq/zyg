@@ -28,13 +28,12 @@ type S3Config struct {
 //
 //	S3Config - Configuration for R2 storage operations
 //	error - Any error that occurred during setup
-func NewS3(bucketName, accountId, accessKeyId, accessKeySecret string) (S3Config, error) {
+func NewS3(ctx context.Context, bucketName, accountId, accessKeyId, accessKeySecret string) (S3Config, error) {
 	if bucketName == "" || accountId == "" || accessKeyId == "" || accessKeySecret == "" {
 		return S3Config{}, fmt.Errorf("s3 parameters are required")
 	}
 
-	cfg, err := config.LoadDefaultConfig(
-		context.TODO(),
+	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithCredentialsProvider(
 			credentials.NewStaticCredentialsProvider(accessKeyId, accessKeySecret, "")),
 		config.WithRegion("auto"),

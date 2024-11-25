@@ -660,6 +660,19 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 		return
 	}
 
+	// Log inbound request for history and auditability.
+	err = h.ths.LogPostmarkInboundRequest(ctx, workspaceId, inboundReq.MessageID, inboundReq.Payload)
+	if err != nil {
+		slog.Error("failed to log postmark inbound request", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+	err = h.ths.LogPostmarkInboundRequest(ctx, workspaceId, inboundReq.MessageID, inboundReq.Payload)
+	if err != nil {
+		slog.Error("failed to log postmark inbound request", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
 	// Check if the Postmark inbound message request has already been processed.
 	isProcessed, err := h.ths.IsPostmarkInboundProcessed(ctx, inboundReq.MessageID)
 	if err != nil {
