@@ -507,7 +507,7 @@ func (h *CustomerHandler) handleGetThreadChatMessages(
 		return
 	}
 
-	messages, err := h.ths.ListThreadChatMessages(ctx, thread.ThreadId)
+	messages, err := h.ths.ListThreadMessages(ctx, thread.ThreadId)
 	if err != nil {
 		slog.Error("failed to fetch thread messages", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

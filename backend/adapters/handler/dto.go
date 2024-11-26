@@ -418,6 +418,94 @@ func (m MessageResp) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
+type MessageWithAttachmentsResp struct {
+	MessageResp
+	Attachments []models.MessageAttachment `json:"attachments"`
+}
+
+func (m MessageWithAttachmentsResp) MarshalJSON() ([]byte, error) {
+	var customer *CustomerActorResp
+	var member *MemberActorResp
+
+	if m.Customer != nil {
+		customer = m.Customer
+	}
+	if m.Member != nil {
+		member = m.Member
+	}
+
+	// Create formatted attachments with RFC3339 time strings
+	formattedAttachments := make([]struct {
+		AttachmentId string `json:"attachmentId"`
+		MessageId    string `json:"messageId"`
+		Name         string `json:"name"`
+		ContentType  string `json:"contentType"`
+		ContentKey   string `json:"contentKey"`
+		ContentUrl   string `json:"contentUrl"`
+		Spam         bool   `json:"spam"`
+		HasError     bool   `json:"hasError"`
+		Error        string `json:"error"`
+		MD5Hash      string `json:"md5Hash"`
+		CreatedAt    string `json:"createdAt"`
+		UpdatedAt    string `json:"updatedAt"`
+	}, len(m.Attachments))
+
+	for i, att := range m.Attachments {
+		formattedAttachments[i] = struct {
+			AttachmentId string `json:"attachmentId"`
+			MessageId    string `json:"messageId"`
+			Name         string `json:"name"`
+			ContentType  string `json:"contentType"`
+			ContentKey   string `json:"contentKey"`
+			ContentUrl   string `json:"contentUrl"`
+			Spam         bool   `json:"spam"`
+			HasError     bool   `json:"hasError"`
+			Error        string `json:"error"`
+			MD5Hash      string `json:"md5Hash"`
+			CreatedAt    string `json:"createdAt"`
+			UpdatedAt    string `json:"updatedAt"`
+		}{
+			AttachmentId: att.AttachmentId,
+			MessageId:    att.MessageId,
+			Name:         att.Name,
+			ContentType:  att.ContentType,
+			ContentKey:   att.ContentKey,
+			ContentUrl:   att.ContentUrl,
+			Spam:         att.Spam,
+			HasError:     att.HasError,
+			Error:        att.Error,
+			MD5Hash:      att.MD5Hash,
+			CreatedAt:    att.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:    att.UpdatedAt.Format(time.RFC3339),
+		}
+	}
+
+	aux := &struct {
+		ThreadId    string             `json:"threadId"`
+		MessageId   string             `json:"messageId"`
+		TextBody    string             `json:"textBody"`
+		Body        string             `json:"body"`
+		Customer    *CustomerActorResp `json:"customer,omitempty"`
+		Member      *MemberActorResp   `json:"member,omitempty"`
+		Channel     string             `json:"channel"`
+		CreatedAt   string             `json:"createdAt"`
+		UpdatedAt   string             `json:"updatedAt"`
+		Attachments interface{}        `json:"attachments"`
+	}{
+		ThreadId:    m.ThreadId,
+		MessageId:   m.MessageId,
+		TextBody:    m.TextBody,
+		Body:        m.Body,
+		Customer:    customer,
+		Member:      member,
+		Channel:     m.Channel,
+		CreatedAt:   m.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   m.UpdatedAt.Format(time.RFC3339),
+		Attachments: formattedAttachments,
+	}
+	return json.Marshal(aux)
+}
+
 type LabelResp struct {
 	LabelId   string `json:"labelId"`
 	Name      string `json:"name"`

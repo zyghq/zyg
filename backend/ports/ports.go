@@ -175,8 +175,10 @@ type ThreadServicer interface {
 	RemoveThreadLabel(
 		ctx context.Context, threadId string, labelId string) error
 
-	ListThreadChatMessages(
+	ListThreadMessages(
 		ctx context.Context, threadId string) ([]models.Message, error)
+	ListThreadMessagesWithAttachments(
+		ctx context.Context, threadId string) ([]models.MessageWithAttachments, error)
 
 	GenerateMemberThreadMetrics(
 		ctx context.Context, workspaceId string, memberId string) (models.ThreadMemberMetrics, error)

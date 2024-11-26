@@ -384,11 +384,20 @@ func (s *ThreadService) AppendOutboundThreadChat(
 	return message, nil
 }
 
-func (s *ThreadService) ListThreadChatMessages(
+func (s *ThreadService) ListThreadMessages(
 	ctx context.Context, threadId string) ([]models.Message, error) {
-	messages, err := s.repo.FetchThreadMessagesByThreadId(ctx, threadId)
+	messages, err := s.repo.FetchMessagesByThreadId(ctx, threadId)
 	if err != nil {
 		return []models.Message{}, ErrThreadMessage
+	}
+	return messages, nil
+}
+
+func (s *ThreadService) ListThreadMessagesWithAttachments(
+	ctx context.Context, threadId string) ([]models.MessageWithAttachments, error) {
+	messages, err := s.repo.FetchMessagesWithAttachmentsByThreadId(ctx, threadId)
+	if err != nil {
+		return []models.MessageWithAttachments{}, ErrThreadMessage
 	}
 	return messages, nil
 }

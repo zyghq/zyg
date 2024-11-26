@@ -94,6 +94,11 @@ func (m *MessageAttachment) GenId() string {
 	return "att" + xid.New().String()
 }
 
+type MessageWithAttachments struct {
+	Message
+	Attachments []MessageAttachment
+}
+
 type PostmarkMessageAttachment struct {
 	Name        string
 	ContentType string

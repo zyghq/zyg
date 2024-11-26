@@ -3,7 +3,9 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 
 	"github.com/cristalhq/builq"
@@ -2553,7 +2555,7 @@ func (tc *ThreadDB) AppendOutboundThreadMessage(
 	return *message, nil
 }
 
-func (tc *ThreadDB) FetchThreadMessagesByThreadId(
+func (tc *ThreadDB) FetchMessagesByThreadId(
 	ctx context.Context, threadId string) ([]models.Message, error) {
 	var message models.Message
 	messages := make([]models.Message, 0, 100)
@@ -2615,6 +2617,117 @@ func (tc *ThreadDB) FetchThreadMessagesByThreadId(
 	return messages, nil
 }
 
+func (tc *ThreadDB) FetchMessagesWithAttachmentsByThreadId(
+	ctx context.Context, threadId string) ([]models.MessageWithAttachments, error) {
+	var message models.MessageWithAttachments
+
+	limit := 100
+	messages := make([]models.MessageWithAttachments, 0, limit)
+	cols := threadMessageJoinedCols()
+
+	stmt := `SELECT
+		%s,
+		COALESCE(
+			(
+				SELECT JSON_AGG(
+					JSON_BUILD_OBJECT(
+						'attachmentId', ma.attachment_id,
+						'messageId', ma.message_id,
+						'name', ma.name,
+						'contentType', ma.content_type,
+						'contentKey', ma.content_key,
+						'contentUrl', ma.content_url,
+						'spam', ma.spam,
+						'hasError', ma.has_error,
+						'error', ma.error,
+						'md5Hash', ma.md5_hash,
+						'createdAt', ma.created_at AT TIME ZONE 'UTC',
+						'updatedAt', ma.updated_at AT TIME ZONE 'UTC'
+					)
+				)
+				FROM (
+					SELECT *
+					FROM message_attachment
+					WHERE message_id = msg.message_id
+					ORDER BY created_at ASC
+					LIMIT 10
+				) ma
+			), 
+			'[]'::json
+		) as attachments
+	FROM message msg
+	LEFT OUTER JOIN customer c ON msg.customer_id = c.customer_id
+	LEFT OUTER JOIN member m ON msg.member_id = m.member_id`
+
+	stmt = fmt.Sprintf(stmt, cols)
+
+	q := builq.New()
+	q("%s", stmt)
+	q("WHERE msg.thread_id = %$", threadId)
+	q("ORDER BY msg.created_at ASC")
+	q("LIMIT %d", limit)
+
+	stmt, _, err := q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return nil, ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
+
+	var customerId, customerName sql.NullString
+	var memberId, memberName sql.NullString
+	var attachmentsJson []byte
+
+	rows, _ := tc.db.Query(ctx, stmt, threadId)
+
+	defer rows.Close()
+
+	_, err = pgx.ForEachRow(rows, []any{
+		&message.MessageId, &message.ThreadId, &message.TextBody,
+		&message.Body, &customerId, &customerName,
+		&memberId, &memberName,
+		&message.Channel,
+		&message.CreatedAt, &message.UpdatedAt,
+		&attachmentsJson,
+	}, func() error {
+		if customerId.Valid {
+			message.Customer = &models.CustomerActor{
+				CustomerId: customerId.String,
+				Name:       customerName.String,
+			}
+		}
+		if memberId.Valid {
+			message.Member = &models.MemberActor{
+				MemberId: memberId.String,
+			}
+		}
+		var attachments []models.MessageAttachment
+		if len(attachmentsJson) > 0 {
+			if err := json.Unmarshal(attachmentsJson, &attachments); err != nil {
+				slog.Error("failed to unmarshal attachments",
+					slog.String("messageId", message.MessageId))
+				slog.Any("err", err)
+				return err
+			}
+			message.Attachments = attachments
+		} else {
+			message.Attachments = []models.MessageAttachment{}
+		}
+		messageCopy := message
+		messages = append(messages, messageCopy)
+		return nil
+	})
+	if err != nil {
+		slog.Error("failed to query", slog.Any("err", err))
+		return []models.MessageWithAttachments{}, ErrQuery
+	}
+	return messages, nil
+}
+
 // ComputeStatusMetricsByWorkspaceId computes the thread count metrics for the workspace.
 // Returns the count of active threads, needs first response threads, waiting on customer threads,
 // hold threads, and needs next response threads.
@@ -2624,10 +2737,14 @@ func (tc *ThreadDB) ComputeStatusMetricsByWorkspaceId(
 	var metrics models.ThreadMetrics
 	stmt := `SELECT
 		COALESCE(SUM(CASE WHEN status = 'todo' THEN 1 ELSE 0 END), 0) AS active_count,
-		COALESCE(SUM(CASE WHEN status = 'todo' AND stage = 'needs_first_response' THEN 1 ELSE 0 END), 0) AS needs_first_response_count,
-		COALESCE(SUM(CASE WHEN status = 'todo' AND stage = 'waiting_on_customer' THEN 1 ELSE 0 END), 0) AS waiting_on_customer_count,
-		COALESCE(SUM(CASE WHEN status = 'todo' AND stage = 'hold' THEN 1 ELSE 0 END), 0) AS hold_count,
-		COALESCE(SUM(CASE WHEN status = 'todo' AND stage = 'needs_next_response' THEN 1 ELSE 0 END), 0) AS needs_next_response_count
+		COALESCE(SUM(CASE WHEN status = 'todo' AND stage = 'needs_first_response' THEN 1 ELSE 0 END), 0)
+		AS needs_first_response_count,
+		COALESCE(SUM(CASE WHEN status = 'todo' AND stage = 'waiting_on_customer' THEN 1 ELSE 0 END), 0)
+		AS waiting_on_customer_count,
+		COALESCE(SUM(CASE WHEN status = 'todo' AND stage = 'hold' THEN 1 ELSE 0 END), 0)
+		AS hold_count,
+		COALESCE(SUM(CASE WHEN status = 'todo' AND stage = 'needs_next_response' THEN 1 ELSE 0 END), 0)
+		AS needs_next_response_count
 	FROM 
 		thread th
 	INNER JOIN customer c ON th.customer_id = c.customer_id
