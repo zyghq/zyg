@@ -328,14 +328,14 @@ func (h *ThreadHandler) handleGetThreadMessages(
 		return
 	}
 
-	messages, err := h.ths.ListThreadChatMessages(ctx, thread.ThreadId)
+	messages, err := h.ths.ListThreadMessagesWithAttachments(ctx, thread.ThreadId)
 	if err != nil {
 		slog.Error("failed to fetch thread messages", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	items := make([]MessageResp, 0, 100)
+	items := make([]MessageWithAttachmentsResp, 0, 100)
 	for _, message := range messages {
 		var messageCustomer *CustomerActorResp
 		var messageMember *MemberActorResp
@@ -350,16 +350,19 @@ func (h *ThreadHandler) handleGetThreadMessages(
 				Name:     message.Member.Name,
 			}
 		}
-		resp := MessageResp{
-			ThreadId:  message.ThreadId,
-			MessageId: message.MessageId,
-			TextBody:  message.TextBody,
-			Body:      message.Body,
-			Customer:  messageCustomer,
-			Member:    messageMember,
-			Channel:   message.Channel,
-			CreatedAt: message.CreatedAt,
-			UpdatedAt: message.UpdatedAt,
+		resp := MessageWithAttachmentsResp{
+			MessageResp: MessageResp{
+				ThreadId:  message.ThreadId,
+				MessageId: message.MessageId,
+				TextBody:  message.TextBody,
+				Body:      message.Body,
+				Customer:  messageCustomer,
+				Member:    messageMember,
+				Channel:   message.Channel,
+				CreatedAt: message.CreatedAt,
+				UpdatedAt: message.UpdatedAt,
+			},
+			Attachments: message.Attachments,
 		}
 		items = append(items, resp)
 	}

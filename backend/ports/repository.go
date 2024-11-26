@@ -155,8 +155,12 @@ type ThreadRepositorer interface {
 	FetchAttachedLabelsByThreadId(
 		ctx context.Context, threadId string) ([]models.ThreadLabel, error)
 
-	FetchThreadMessagesByThreadId(
+	FetchMessagesByThreadId(
 		ctx context.Context, threadId string) ([]models.Message, error)
+
+	FetchMessagesWithAttachmentsByThreadId(
+		ctx context.Context, threadId string) ([]models.MessageWithAttachments, error)
+
 	ComputeStatusMetricsByWorkspaceId(
 		ctx context.Context, workspaceId string) (models.ThreadMetrics, error)
 	ComputeAssigneeMetricsByMember(
