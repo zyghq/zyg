@@ -87,3 +87,19 @@ func S3Bucket() string {
 	}
 	return value
 }
+
+func RedisAddr() string {
+	value, ok := os.LookupEnv("REDIS_ADDR")
+	if !ok {
+		return "localhost:6379"
+	}
+	return value
+}
+
+func RedisPassword() string {
+	value, ok := os.LookupEnv("REDIS_PWD")
+	if !ok {
+		return ""
+	}
+	return value
+}

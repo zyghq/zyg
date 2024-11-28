@@ -682,6 +682,7 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 		return
 	}
 
+	// Convert inbound request to Postmark Inbound Message for further processing.
 	inboundMessage := inboundReq.ToPostmarkInboundMessage()
 
 	customer, _, err := h.ws.CreateCustomerWithEmail(
