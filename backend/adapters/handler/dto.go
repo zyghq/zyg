@@ -441,7 +441,6 @@ func (m MessageWithAttachmentsResp) MarshalJSON() ([]byte, error) {
 		Name         string `json:"name"`
 		ContentType  string `json:"contentType"`
 		ContentKey   string `json:"contentKey"`
-		ContentUrl   string `json:"contentUrl"`
 		Spam         bool   `json:"spam"`
 		HasError     bool   `json:"hasError"`
 		Error        string `json:"error"`
@@ -457,7 +456,6 @@ func (m MessageWithAttachmentsResp) MarshalJSON() ([]byte, error) {
 			Name         string `json:"name"`
 			ContentType  string `json:"contentType"`
 			ContentKey   string `json:"contentKey"`
-			ContentUrl   string `json:"contentUrl"`
 			Spam         bool   `json:"spam"`
 			HasError     bool   `json:"hasError"`
 			Error        string `json:"error"`
@@ -470,7 +468,6 @@ func (m MessageWithAttachmentsResp) MarshalJSON() ([]byte, error) {
 			Name:         att.Name,
 			ContentType:  att.ContentType,
 			ContentKey:   att.ContentKey,
-			ContentUrl:   att.ContentUrl,
 			Spam:         att.Spam,
 			HasError:     att.HasError,
 			Error:        att.Error,
@@ -481,16 +478,17 @@ func (m MessageWithAttachmentsResp) MarshalJSON() ([]byte, error) {
 	}
 
 	aux := &struct {
-		ThreadId    string             `json:"threadId"`
-		MessageId   string             `json:"messageId"`
-		TextBody    string             `json:"textBody"`
-		Body        string             `json:"body"`
-		Customer    *CustomerActorResp `json:"customer,omitempty"`
-		Member      *MemberActorResp   `json:"member,omitempty"`
-		Channel     string             `json:"channel"`
-		CreatedAt   string             `json:"createdAt"`
-		UpdatedAt   string             `json:"updatedAt"`
-		Attachments interface{}        `json:"attachments"`
+		ThreadId            string             `json:"threadId"`
+		MessageId           string             `json:"messageId"`
+		TextBody            string             `json:"textBody"`
+		Body                string             `json:"body"`
+		Customer            *CustomerActorResp `json:"customer,omitempty"`
+		Member              *MemberActorResp   `json:"member,omitempty"`
+		Channel             string             `json:"channel"`
+		CreatedAt           string             `json:"createdAt"`
+		UpdatedAt           string             `json:"updatedAt"`
+		Attachments         interface{}        `json:"attachments"`
+		AttachmentsHasError bool               `json:"attachmentsHasError"`
 	}{
 		ThreadId:    m.ThreadId,
 		MessageId:   m.MessageId,

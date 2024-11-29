@@ -3,6 +3,8 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"github.com/zyghq/zyg"
+	"github.com/zyghq/zyg/adapters/store"
 	"io"
 	"log/slog"
 	"net/http"
@@ -350,6 +352,7 @@ func (h *ThreadHandler) handleGetThreadMessages(
 				Name:     message.Member.Name,
 			}
 		}
+
 		resp := MessageWithAttachmentsResp{
 			MessageResp: MessageResp{
 				ThreadId:  message.ThreadId,
@@ -372,6 +375,53 @@ func (h *ThreadHandler) handleGetThreadMessages(
 		slog.Error("failed to encode thread chat messages to json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
+	}
+}
+
+func (h *ThreadHandler) handleGetMessageAttachment(
+	w http.ResponseWriter, r *http.Request, _ *models.Member) {
+	ctx := r.Context()
+
+	messageId := r.PathValue("messageId")
+	attachmentId := r.PathValue("attachmentId")
+	attachment, err := h.ths.GetMessageAttachment(ctx, messageId, attachmentId)
+	if errors.Is(err, services.ErrMessageAttachmentNotFound) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		slog.Error("failed to fetch message attachment", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	// Generate presigned URL
+	accountId := zyg.CFAccountId()
+	accessKeyId := zyg.R2AccessKeyId()
+	accessKeySecret := zyg.R2AccessSecretKey()
+	s3Bucket := zyg.S3Bucket()
+	s3Client, err := store.NewS3(ctx, s3Bucket, accountId, accessKeyId, accessKeySecret)
+	if err != nil {
+		slog.Error("failed to create s3 client", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	expiresIn := time.Now().Add(time.Hour * 24) // Set expiry to 24hrs from now.
+	signedUrl, err := store.PresignedUrl(ctx, s3Client, attachment.ContentKey, expiresIn)
+	if err != nil {
+		slog.Error(
+			"failed to generate attachment signed url",
+			slog.Any("attachmentId", attachment.AttachmentId),
+			slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	attachment.ContentUrl = signedUrl
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(attachment); err != nil {
+		slog.Error("failed to encode json", slog.Any("err", err))
 	}
 }
 
