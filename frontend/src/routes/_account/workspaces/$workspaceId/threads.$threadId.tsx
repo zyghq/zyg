@@ -63,6 +63,7 @@ import {
   ArrowUpIcon,
   CopyIcon,
   DotsHorizontalIcon,
+  DownloadIcon,
   PlusIcon,
 } from "@radix-ui/react-icons";
 import { BorderDashedIcon, CheckIcon } from "@radix-ui/react-icons";
@@ -123,7 +124,7 @@ function Message({
 
   const isMe = message.member?.memberId === memberId;
 
-  const mutation = useMutation({
+  const mutationNewTab = useMutation({
     mutationFn: async (attachmentId: string) => {
       const { data, error } = await getMessageAttachment(
         token,
@@ -141,6 +142,40 @@ function Message({
     onSuccess: (data: MessageAttachmentResponse) => {
       const { contentUrl } = data;
       window.open(contentUrl, "_blank");
+    },
+  });
+
+  const mutationDownload = useMutation({
+    mutationFn: async (attachmentId: string) => {
+      const { data, error } = await getMessageAttachment(
+        token,
+        workspaceId,
+        message.messageId,
+        attachmentId,
+      );
+      if (error) throw new Error(error.message);
+      if (!data) throw new Error("no data returned");
+      return data as MessageAttachmentResponse;
+    },
+    onError: (error) => {
+      console.error(error);
+    },
+    onSuccess: async (data: MessageAttachmentResponse) => {
+      const { contentUrl, name } = data;
+      try {
+        const response = await fetch(contentUrl);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = name || "download";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error("Download failed:", error);
+      }
     },
   });
 
@@ -163,9 +198,7 @@ function Message({
               {isMe ? `You` : customerOrMemberName}
             </div>
             <Separator className="mx-2 h-3" orientation="vertical" />
-            <div className="text-xs text-muted-foreground">
-              {`${when} via chat`}
-            </div>
+            <div className="text-xs text-muted-foreground">{when}</div>
           </div>
           <Button size="sm" variant="ghost">
             <DotsHorizontalIcon className="h-4 w-4" />
@@ -182,14 +215,34 @@ function Message({
         <div className="mt-4 flex space-x-1">
           {message.attachments.map((attachment) => (
             <div
-              className="flex max-w-40 cursor-pointer items-center gap-1 rounded-lg border border-border/50 bg-muted/50 p-3 transition-colors hover:bg-muted"
+              className="flex cursor-pointer items-center gap-2 rounded-lg border border-border/50 bg-muted/50 p-1 transition-colors hover:bg-accent dark:bg-background"
               key={attachment.attachmentId}
-              onClick={() => mutation.mutate(attachment.attachmentId)}
             >
-              <FileTextIcon className="h-5 w-5 text-muted-foreground" />
-              <div className="truncate text-xs font-medium">
-                {attachment.name}
+              <div
+                className="flex items-center gap-1"
+                onClick={() => mutationNewTab.mutate(attachment.attachmentId)}
+              >
+                {mutationNewTab.isPending ? (
+                  <Spinner className="h-5 w-5 animate-spin text-muted-foreground" />
+                ) : (
+                  <FileTextIcon className="h-5 w-5 text-muted-foreground" />
+                )}
+                <div className="max-w-32 truncate text-xs font-medium">
+                  {attachment.name}
+                </div>
               </div>
+              <Button
+                className="hover:bg-white dark:bg-background dark:hover:bg-accent"
+                onClick={() => mutationDownload.mutate(attachment.attachmentId)}
+                size="icon"
+                variant="outline"
+              >
+                {mutationDownload.isPending ? (
+                  <Spinner className="h-5 w-5 animate-spin text-muted-foreground" />
+                ) : (
+                  <DownloadIcon className="h-4 w-4" />
+                )}
+              </Button>
             </div>
           ))}
         </div>
