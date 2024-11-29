@@ -36,6 +36,7 @@ import {
 import { ThreadList } from "@/components/workspace/thread/threads";
 import {
   deleteThreadLabel,
+  getMessageAttachment,
   getThreadLabels,
   getWorkspaceThreadMessages,
   putThreadLabel,
@@ -48,6 +49,7 @@ import {
 } from "@/db/helpers";
 import { Label, Thread, threadTransformer } from "@/db/models";
 import {
+  MessageAttachmentResponse,
   ThreadLabelResponse,
   ThreadMessageResponse,
   ThreadResponse,
@@ -73,6 +75,7 @@ import {
   CheckCircleIcon,
   CircleIcon,
   EclipseIcon,
+  FileTextIcon,
   PanelRightIcon,
 } from "lucide-react";
 import React from "react";
@@ -101,9 +104,13 @@ function getPrevNextFromCurrent(threads: null | Thread[], threadId: string) {
 function Message({
   memberId,
   message,
+  token,
+  workspaceId,
 }: {
   memberId: string;
   message: ThreadMessageResponse;
+  token: string;
+  workspaceId: string;
 }) {
   const { createdAt } = message;
   const when = formatDistanceToNow(new Date(createdAt), {
@@ -115,6 +122,27 @@ function Message({
   const customerOrMemberName = message.customer?.name || message.member?.name;
 
   const isMe = message.member?.memberId === memberId;
+
+  const mutation = useMutation({
+    mutationFn: async (attachmentId: string) => {
+      const { data, error } = await getMessageAttachment(
+        token,
+        workspaceId,
+        message.messageId,
+        attachmentId,
+      );
+      if (error) throw new Error(error.message);
+      if (!data) throw new Error("no data returned");
+      return data as MessageAttachmentResponse;
+    },
+    onError: (error) => {
+      console.error(error);
+    },
+    onSuccess: (data: MessageAttachmentResponse) => {
+      const { contentUrl } = data;
+      window.open(contentUrl, "_blank");
+    },
+  });
 
   return (
     <div className="flex space-x-2 rounded-lg bg-white px-3 py-4 dark:bg-accent">
@@ -150,6 +178,20 @@ function Message({
         />
         <div>
           <ReactMarkdown>{message.body}</ReactMarkdown>
+        </div>
+        <div className="mt-4 flex space-x-1">
+          {message.attachments.map((attachment) => (
+            <div
+              className="flex max-w-40 cursor-pointer items-center gap-1 rounded-lg border border-border/50 bg-muted/50 p-3 transition-colors hover:bg-muted"
+              key={attachment.attachmentId}
+              onClick={() => mutation.mutate(attachment.attachmentId)}
+            >
+              <FileTextIcon className="h-5 w-5 text-muted-foreground" />
+              <div className="truncate text-xs font-medium">
+                {attachment.name}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -491,6 +533,8 @@ function ThreadDetail() {
               key={message.messageId}
               memberId={memberId}
               message={message}
+              token={token}
+              workspaceId={workspaceId}
             />
           ))}
           <div ref={bottomRef}></div>
