@@ -141,7 +141,23 @@ export const threadLabelResponseSchema = z.object({
   updatedAt: z.string(),
 });
 
+export const messageAttachmentResponseSchema = z.object({
+  attachmentId: z.string(),
+  contentKey: z.string(),
+  contentType: z.string(),
+  contentUrl: z.string().default(""),
+  createdAt: z.string(),
+  error: z.string().default(""),
+  hasError: z.boolean(),
+  md5Hash: z.string(),
+  messageId: z.string(),
+  name: z.string(),
+  spam: z.boolean(),
+  updatedAt: z.string(),
+});
+
 export const threadMessageResponseSchema = z.object({
+  attachments: z.array(messageAttachmentResponseSchema).default([]),
   body: z.string(),
   channel: z.string(),
   createdAt: z.string(),
@@ -164,6 +180,10 @@ export const threadMessageResponseSchema = z.object({
   threadId: z.string(),
   updatedAt: z.string(),
 });
+
+export type MessageAttachmentResponse = z.infer<
+  typeof messageAttachmentResponseSchema
+>;
 
 export type ThreadResponse = z.infer<typeof threadResponseSchema>;
 

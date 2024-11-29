@@ -22,6 +22,8 @@ import {
   labelResponseSchema,
   MemberResponse,
   memberResponseSchema,
+  MessageAttachmentResponse,
+  messageAttachmentResponseSchema,
   patResponseSchema,
   ThreadLabelResponse,
   threadLabelResponseSchema,
@@ -1318,6 +1320,53 @@ export async function getCustomerEvents(
       return {
         data: null,
         error: new Error("error parsing customer event schema"),
+      };
+    }
+  } catch (err) {
+    console.error(err);
+    return {
+      data: null,
+      error: new Error("something went wrong"),
+    };
+  }
+}
+
+export async function getMessageAttachment(
+  token: string,
+  workspaceId: string,
+  messageId: string,
+  attachmentId: string,
+): Promise<{ data: MessageAttachmentResponse | null; error: Error | null }> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/messages/${messageId}/attachments/${attachmentId}/`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        method: "GET",
+      },
+    );
+    if (!response.ok) {
+      const { status, statusText } = response;
+      return {
+        data: null,
+        error: new Error(
+          `error fetching customer events: ${status} ${statusText}`,
+        ),
+      };
+    }
+
+    try {
+      const data = await response.json();
+      const attachment = messageAttachmentResponseSchema.parse({ ...data });
+      return { data: attachment, error: null };
+    } catch (err) {
+      console.error(err);
+      return {
+        data: null,
+        error: new Error("error parsing message attachement schema"),
       };
     }
   } catch (err) {

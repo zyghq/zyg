@@ -99,9 +99,11 @@ func NewServer(
 	mux.Handle("POST /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
 		NewEnsureMemberAuth(th.handleCreateThreadChatMessage, authService))
 
-	// Returns a list of thread messages from all channels.
 	mux.Handle("GET /workspaces/{workspaceId}/threads/{threadId}/messages/{$}",
 		NewEnsureMemberAuth(th.handleGetThreadMessages, authService))
+
+	mux.Handle("GET /workspaces/{workspaceId}/messages/{messageId}/attachments/{attachmentId}/{$}",
+		NewEnsureMemberAuth(th.handleGetMessageAttachment, authService))
 
 	mux.Handle("PUT /workspaces/{workspaceId}/threads/{threadId}/labels/{$}",
 		NewEnsureMemberAuth(th.handleSetThreadLabel, authService))

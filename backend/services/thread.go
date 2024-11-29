@@ -221,7 +221,7 @@ func (s *ThreadService) ProcessPostmarkInbound(
 		}
 		// Persists processed message attachments
 		for _, a := range attachments {
-			_, err := s.repo.UpsertMessageAttachment(ctx, a)
+			_, err := s.repo.InsertMessageAttachment(ctx, a)
 			if err != nil {
 				slog.Error("failed to insert message attachment", slog.Any("err", err))
 			}
@@ -469,4 +469,16 @@ func (s *ThreadService) LogPostmarkInboundRequest(
 		return fmt.Errorf("failed to put object: %v", err)
 	}
 	return nil
+}
+
+func (s *ThreadService) GetMessageAttachment(
+	ctx context.Context, messageId, attachmentId string) (models.MessageAttachment, error) {
+	attachment, err := s.repo.FetchMessageAttachmentById(ctx, messageId, attachmentId)
+	if errors.Is(err, repository.ErrEmpty) {
+		return models.MessageAttachment{}, ErrMessageAttachmentNotFound
+	}
+	if err != nil {
+		return models.MessageAttachment{}, ErrMessageAttachment
+	}
+	return attachment, nil
 }

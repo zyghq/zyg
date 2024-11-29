@@ -12,7 +12,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/rs/xid"
 	"github.com/zyghq/zyg/adapters/store"
 	"github.com/zyghq/zyg/models"
 )
@@ -95,9 +94,10 @@ func ProcessMessageAttachment(
 	}
 
 	now := time.Now().UTC()
+	attachmentId := (&models.MessageAttachment{}).GenId()
 	attachment := models.MessageAttachment{
 		MessageId:    messageId,
-		AttachmentId: xid.New().String(),
+		AttachmentId: attachmentId,
 		Name:         getFilename(filename, contentType),
 		ContentType:  contentType,
 		CreatedAt:    now,

@@ -127,10 +127,13 @@ type ThreadRepositorer interface {
 	AppendOutboundThreadMessage(
 		ctx context.Context, outbound models.ThreadMessage) (models.Message, error)
 
-	CheckPostmarkInboundMessageExists(ctx context.Context, postmarkId string) (bool, error)
+	CheckPostmarkInboundMessageExists(ctx context.Context, messageId string) (bool, error)
 
-	UpsertMessageAttachment(
+	InsertMessageAttachment(
 		ctx context.Context, message models.MessageAttachment) (models.MessageAttachment, error)
+
+	FetchMessageAttachmentById(
+		ctx context.Context, messageId, attachmentId string) (models.MessageAttachment, error)
 
 	FetchThreadByPostmarkInboundInReplyMessageId(
 		ctx context.Context, workspaceId string, inReplyMessageId string) (models.Thread, error)

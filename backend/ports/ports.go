@@ -180,6 +180,9 @@ type ThreadServicer interface {
 	ListThreadMessagesWithAttachments(
 		ctx context.Context, threadId string) ([]models.MessageWithAttachments, error)
 
+	GetMessageAttachment(
+		ctx context.Context, messageId, attachmentId string) (models.MessageAttachment, error)
+
 	GenerateMemberThreadMetrics(
 		ctx context.Context, workspaceId string, memberId string) (models.ThreadMemberMetrics, error)
 

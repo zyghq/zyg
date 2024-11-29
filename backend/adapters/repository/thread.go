@@ -206,11 +206,11 @@ func messageAttachmentCols() builq.Columns {
 // Finally, insert the chat with in persisted thread ID.
 //
 // The IDs are already generated within the time space.
-func (tc *ThreadDB) InsertInboundThreadMessage(
+func (th *ThreadDB) InsertInboundThreadMessage(
 	ctx context.Context, inbound models.ThreadMessage) (models.Thread, models.Message, error) {
 	// start transaction
 	// If fails then stop the execution and return the error.
-	tx, err := tc.db.Begin(ctx)
+	tx, err := th.db.Begin(ctx)
 	if err != nil {
 		slog.Error("failed to start db tx", slog.Any("err", err))
 		return models.Thread{}, models.Message{}, ErrQuery
@@ -878,9 +878,9 @@ func InsertThreadMessageTx(
 	return message, nil
 }
 
-func (tc *ThreadDB) InsertPostmarkInboundThreadMessage(
+func (th *ThreadDB) InsertPostmarkInboundThreadMessage(
 	ctx context.Context, inbound models.PostmarkInboundThreadMessage) (models.Thread, models.Message, error) {
-	tx, err := tc.db.Begin(ctx)
+	tx, err := th.db.Begin(ctx)
 	if err != nil {
 		slog.Error("failed to begin transaction", slog.Any("err", err))
 		return models.Thread{}, models.Message{}, ErrTxQuery
@@ -955,7 +955,7 @@ func (tc *ThreadDB) InsertPostmarkInboundThreadMessage(
 	return *thread, *message, nil
 }
 
-func (tc *ThreadDB) ModifyThreadById(
+func (th *ThreadDB) ModifyThreadById(
 	ctx context.Context, thread models.Thread, fields []string) (models.Thread, error) {
 	upsertQ := builq.New()
 	upsertParams := make([]any, 0, len(fields)+1) // updates + thread ID
@@ -1047,7 +1047,7 @@ func (tc *ThreadDB) ModifyThreadById(
 		outboundUpdatedAt   sql.NullTime
 	)
 
-	err = tc.db.QueryRow(ctx, stmt, upsertParams...).Scan(
+	err = th.db.QueryRow(ctx, stmt, upsertParams...).Scan(
 		&thread.ThreadId, &thread.WorkspaceId, &thread.Customer.CustomerId, &thread.Customer.Name,
 		&assignedMemberId, &assignedMemberName, &assignedAt,
 		&thread.Title, &thread.Description,
@@ -1130,7 +1130,7 @@ func (tc *ThreadDB) ModifyThreadById(
 	return thread, nil
 }
 
-func (tc *ThreadDB) LookupByWorkspaceThreadId(
+func (th *ThreadDB) LookupByWorkspaceThreadId(
 	ctx context.Context, workspaceId string, threadId string, channel *string) (models.Thread, error) {
 	var thread models.Thread
 
@@ -1187,7 +1187,7 @@ func (tc *ThreadDB) LookupByWorkspaceThreadId(
 		outboundUpdatedAt   sql.NullTime
 	)
 
-	err = tc.db.QueryRow(ctx, stmt, params...).Scan(
+	err = th.db.QueryRow(ctx, stmt, params...).Scan(
 		&thread.ThreadId, &thread.WorkspaceId, &thread.Customer.CustomerId, &thread.Customer.Name,
 		&assignedMemberId, &assignedMemberName, &assignedAt,
 		&thread.Title, &thread.Description,
@@ -1270,7 +1270,7 @@ func (tc *ThreadDB) LookupByWorkspaceThreadId(
 	return thread, nil
 }
 
-func (tc *ThreadDB) FetchThreadsByCustomerId(
+func (th *ThreadDB) FetchThreadsByCustomerId(
 	ctx context.Context, customerId string, channel *string) ([]models.Thread, error) {
 	var thread models.Thread
 	limit := 100
@@ -1333,7 +1333,7 @@ func (tc *ThreadDB) FetchThreadsByCustomerId(
 		outboundUpdatedAt   sql.NullTime
 	)
 
-	rows, _ := tc.db.Query(ctx, stmt, params...)
+	rows, _ := th.db.Query(ctx, stmt, params...)
 
 	defer rows.Close()
 
@@ -1416,7 +1416,7 @@ func (tc *ThreadDB) FetchThreadsByCustomerId(
 	return threads, nil
 }
 
-func (tc *ThreadDB) FetchThreadsByWorkspaceId(
+func (th *ThreadDB) FetchThreadsByWorkspaceId(
 	ctx context.Context, workspaceId string, channel *string, role *string) ([]models.Thread, error) {
 	var thread models.Thread
 	limit := 100
@@ -1485,7 +1485,7 @@ func (tc *ThreadDB) FetchThreadsByWorkspaceId(
 		outboundUpdatedAt   sql.NullTime
 	)
 
-	rows, _ := tc.db.Query(ctx, stmt, params...)
+	rows, _ := th.db.Query(ctx, stmt, params...)
 
 	defer rows.Close()
 
@@ -1568,7 +1568,7 @@ func (tc *ThreadDB) FetchThreadsByWorkspaceId(
 	return threads, nil
 }
 
-func (tc *ThreadDB) FetchThreadsByAssignedMemberId(
+func (th *ThreadDB) FetchThreadsByAssignedMemberId(
 	ctx context.Context, memberId string, channel *string, role *string) ([]models.Thread, error) {
 	var thread models.Thread
 	limit := 100
@@ -1637,7 +1637,7 @@ func (tc *ThreadDB) FetchThreadsByAssignedMemberId(
 		outboundUpdatedAt   sql.NullTime
 	)
 
-	rows, _ := tc.db.Query(ctx, stmt, params...)
+	rows, _ := th.db.Query(ctx, stmt, params...)
 
 	defer rows.Close()
 
@@ -1721,7 +1721,7 @@ func (tc *ThreadDB) FetchThreadsByAssignedMemberId(
 	return threads, nil
 }
 
-func (tc *ThreadDB) FetchThreadsByMemberUnassigned(
+func (th *ThreadDB) FetchThreadsByMemberUnassigned(
 	ctx context.Context, workspaceId string, channel *string, role *string) ([]models.Thread, error) {
 	var thread models.Thread
 	limit := 100
@@ -1791,7 +1791,7 @@ func (tc *ThreadDB) FetchThreadsByMemberUnassigned(
 		outboundUpdatedAt   sql.NullTime
 	)
 
-	rows, _ := tc.db.Query(ctx, stmt, params...)
+	rows, _ := th.db.Query(ctx, stmt, params...)
 
 	defer rows.Close()
 
@@ -1874,7 +1874,7 @@ func (tc *ThreadDB) FetchThreadsByMemberUnassigned(
 	return threads, nil
 }
 
-func (tc *ThreadDB) FetchThreadsByLabelId(
+func (th *ThreadDB) FetchThreadsByLabelId(
 	ctx context.Context, labelId string, channel *string, role *string) ([]models.Thread, error) {
 	var thread models.Thread
 	limit := 100
@@ -1944,7 +1944,7 @@ func (tc *ThreadDB) FetchThreadsByLabelId(
 		outboundUpdatedAt   sql.NullTime
 	)
 
-	rows, _ := tc.db.Query(ctx, stmt, params...)
+	rows, _ := th.db.Query(ctx, stmt, params...)
 
 	defer rows.Close()
 
@@ -2027,7 +2027,7 @@ func (tc *ThreadDB) FetchThreadsByLabelId(
 	return threads, nil
 }
 
-func (tc *ThreadDB) CheckThreadInWorkspaceExists(
+func (th *ThreadDB) CheckThreadInWorkspaceExists(
 	ctx context.Context, workspaceId string, threadId string) (bool, error) {
 	var isExist bool
 	stmt := `SELECT EXISTS(
@@ -2035,7 +2035,7 @@ func (tc *ThreadDB) CheckThreadInWorkspaceExists(
 		WHERE workspace_id = $1 AND thread_id= $2
 	)`
 
-	err := tc.db.QueryRow(ctx, stmt, workspaceId, threadId).Scan(&isExist)
+	err := th.db.QueryRow(ctx, stmt, workspaceId, threadId).Scan(&isExist)
 	if err != nil {
 		slog.Error("failed to query", slog.Any("error", err))
 		return false, ErrQuery
@@ -2043,7 +2043,7 @@ func (tc *ThreadDB) CheckThreadInWorkspaceExists(
 	return isExist, nil
 }
 
-func (tc *ThreadDB) SetThreadLabel(
+func (th *ThreadDB) SetThreadLabel(
 	ctx context.Context, threadLabel models.ThreadLabel) (models.ThreadLabel, bool, error) {
 	var IsCreated bool
 	thLabelId := threadLabel.GenId()
@@ -2083,7 +2083,7 @@ func (tc *ThreadDB) SetThreadLabel(
 		WHERE tl.thread_id = $2 AND l.label_id = $3 AND NOT EXISTS (SELECT 1 FROM ins)
 	`
 
-	err := tc.db.QueryRow(ctx, stmt, thLabelId, threadLabel.ThreadId, threadLabel.LabelId, threadLabel.AddedBy).Scan(
+	err := th.db.QueryRow(ctx, stmt, thLabelId, threadLabel.ThreadId, threadLabel.LabelId, threadLabel.AddedBy).Scan(
 		&threadLabel.ThreadLabelId, &threadLabel.ThreadId, &threadLabel.LabelId,
 		&threadLabel.Name, &threadLabel.Icon, &threadLabel.AddedBy,
 		&threadLabel.CreatedAt, &threadLabel.UpdatedAt, &IsCreated,
@@ -2101,7 +2101,7 @@ func (tc *ThreadDB) SetThreadLabel(
 	return threadLabel, IsCreated, nil
 }
 
-func (tc *ThreadDB) DeleteThreadLabelById(
+func (th *ThreadDB) DeleteThreadLabelById(
 	ctx context.Context, threadId string, labelId string) error {
 
 	q := builq.New()
@@ -2119,7 +2119,7 @@ func (tc *ThreadDB) DeleteThreadLabelById(
 		debugQuery(debug)
 	}
 
-	_, err = tc.db.Exec(ctx, stmt, threadId, labelId)
+	_, err = th.db.Exec(ctx, stmt, threadId, labelId)
 	if err != nil {
 		slog.Error("failed to delete query", slog.Any("err", err))
 		return ErrQuery
@@ -2127,7 +2127,7 @@ func (tc *ThreadDB) DeleteThreadLabelById(
 	return nil
 }
 
-func (tc *ThreadDB) FetchAttachedLabelsByThreadId(
+func (th *ThreadDB) FetchAttachedLabelsByThreadId(
 	ctx context.Context, threadId string) ([]models.ThreadLabel, error) {
 	var label models.ThreadLabel
 	labels := make([]models.ThreadLabel, 0, 100)
@@ -2143,7 +2143,7 @@ func (tc *ThreadDB) FetchAttachedLabelsByThreadId(
 		WHERE tl.thread_id = $1
 		ORDER BY tl.created_at DESC LIMIT 100`
 
-	rows, _ := tc.db.Query(ctx, stmt, threadId)
+	rows, _ := th.db.Query(ctx, stmt, threadId)
 
 	defer rows.Close()
 
@@ -2164,10 +2164,10 @@ func (tc *ThreadDB) FetchAttachedLabelsByThreadId(
 	return labels, nil
 }
 
-func (tc *ThreadDB) AppendInboundThreadMessage(
+func (th *ThreadDB) AppendInboundThreadMessage(
 	ctx context.Context, inbound models.ThreadMessage,
 ) (models.Message, error) {
-	tx, err := tc.db.Begin(ctx)
+	tx, err := th.db.Begin(ctx)
 	if err != nil {
 		slog.Error("failed to begin transaction", slog.Any("err", err))
 		return models.Message{}, ErrTxQuery
@@ -2360,10 +2360,10 @@ func (tc *ThreadDB) AppendInboundThreadMessage(
 }
 
 // AppendOutboundThreadMessage inserts a member chat into the database.
-func (tc *ThreadDB) AppendOutboundThreadMessage(
+func (th *ThreadDB) AppendOutboundThreadMessage(
 	ctx context.Context, outbound models.ThreadMessage,
 ) (models.Message, error) {
-	tx, err := tc.db.Begin(ctx)
+	tx, err := th.db.Begin(ctx)
 	if err != nil {
 		slog.Error("failed to begin transaction", slog.Any("err", err))
 		return models.Message{}, ErrTxQuery
@@ -2555,7 +2555,7 @@ func (tc *ThreadDB) AppendOutboundThreadMessage(
 	return *message, nil
 }
 
-func (tc *ThreadDB) FetchMessagesByThreadId(
+func (th *ThreadDB) FetchMessagesByThreadId(
 	ctx context.Context, threadId string) ([]models.Message, error) {
 	var message models.Message
 	messages := make([]models.Message, 0, 100)
@@ -2584,7 +2584,7 @@ func (tc *ThreadDB) FetchMessagesByThreadId(
 	var customerId, customerName sql.NullString
 	var memberId, memberName sql.NullString
 
-	rows, _ := tc.db.Query(ctx, stmt, threadId)
+	rows, _ := th.db.Query(ctx, stmt, threadId)
 
 	defer rows.Close()
 
@@ -2617,7 +2617,7 @@ func (tc *ThreadDB) FetchMessagesByThreadId(
 	return messages, nil
 }
 
-func (tc *ThreadDB) FetchMessagesWithAttachmentsByThreadId(
+func (th *ThreadDB) FetchMessagesWithAttachmentsByThreadId(
 	ctx context.Context, threadId string) ([]models.MessageWithAttachments, error) {
 	var message models.MessageWithAttachments
 
@@ -2682,7 +2682,7 @@ func (tc *ThreadDB) FetchMessagesWithAttachmentsByThreadId(
 	var memberId, memberName sql.NullString
 	var attachmentsJson []byte
 
-	rows, _ := tc.db.Query(ctx, stmt, threadId)
+	rows, _ := th.db.Query(ctx, stmt, threadId)
 
 	defer rows.Close()
 
@@ -2732,7 +2732,7 @@ func (tc *ThreadDB) FetchMessagesWithAttachmentsByThreadId(
 // Returns the count of active threads, needs first response threads, waiting on customer threads,
 // hold threads, and needs next response threads.
 // Ignores visitor customer threads.
-func (tc *ThreadDB) ComputeStatusMetricsByWorkspaceId(
+func (th *ThreadDB) ComputeStatusMetricsByWorkspaceId(
 	ctx context.Context, workspaceId string) (models.ThreadMetrics, error) {
 	var metrics models.ThreadMetrics
 	stmt := `SELECT
@@ -2751,7 +2751,7 @@ func (tc *ThreadDB) ComputeStatusMetricsByWorkspaceId(
 	WHERE 
 		th.workspace_id = $1 AND c.role <> 'visitor'`
 
-	err := tc.db.QueryRow(ctx, stmt, workspaceId).Scan(
+	err := th.db.QueryRow(ctx, stmt, workspaceId).Scan(
 		&metrics.ActiveCount, &metrics.NeedsFirstResponseCount,
 		&metrics.WaitingOnCustomerCount, &metrics.HoldCount,
 		&metrics.NeedsNextResponseCount,
@@ -2771,7 +2771,7 @@ func (tc *ThreadDB) ComputeStatusMetricsByWorkspaceId(
 // ComputeAssigneeMetricsByMember computes the thread count metrics for the member.
 // Returns the count of member assigned threads, unassigned threads, and other assigned threads.
 // Ignores visitor customer threads.
-func (tc *ThreadDB) ComputeAssigneeMetricsByMember(
+func (th *ThreadDB) ComputeAssigneeMetricsByMember(
 	ctx context.Context, workspaceId string, memberId string) (models.ThreadAssigneeMetrics, error) {
 	var metrics models.ThreadAssigneeMetrics
 	stmt := `SELECT
@@ -2787,7 +2787,7 @@ func (tc *ThreadDB) ComputeAssigneeMetricsByMember(
 		WHERE
 			th.workspace_id = $1 AND c.role <> 'visitor'`
 
-	err := tc.db.QueryRow(ctx, stmt, workspaceId, memberId).Scan(
+	err := th.db.QueryRow(ctx, stmt, workspaceId, memberId).Scan(
 		&metrics.MeCount, &metrics.UnAssignedCount, &metrics.OtherAssignedCount,
 	)
 
@@ -2803,7 +2803,7 @@ func (tc *ThreadDB) ComputeAssigneeMetricsByMember(
 	return metrics, nil
 }
 
-func (tc *ThreadDB) ComputeLabelMetricsByWorkspaceId(
+func (th *ThreadDB) ComputeLabelMetricsByWorkspaceId(
 	ctx context.Context, workspaceId string) ([]models.ThreadLabelMetric, error) {
 	var metric models.ThreadLabelMetric
 	metrics := make([]models.ThreadLabelMetric, 0, 100)
@@ -2823,7 +2823,7 @@ func (tc *ThreadDB) ComputeLabelMetricsByWorkspaceId(
 		LIMIT 100
 	`
 
-	rows, _ := tc.db.Query(ctx, stmt, workspaceId)
+	rows, _ := th.db.Query(ctx, stmt, workspaceId)
 
 	defer rows.Close()
 
@@ -2842,7 +2842,7 @@ func (tc *ThreadDB) ComputeLabelMetricsByWorkspaceId(
 	return metrics, nil
 }
 
-func (tc *ThreadDB) FetchThreadByPostmarkInboundInReplyMessageId(
+func (th *ThreadDB) FetchThreadByPostmarkInboundInReplyMessageId(
 	ctx context.Context, workspaceId string, inReplyMessageId string) (models.Thread, error) {
 	var thread models.Thread
 
@@ -2910,7 +2910,7 @@ func (tc *ThreadDB) FetchThreadByPostmarkInboundInReplyMessageId(
 		outboundUpdatedAt   sql.NullTime
 	)
 
-	err = tc.db.QueryRow(ctx, stmt, workspaceId, inReplyMessageId).Scan(
+	err = th.db.QueryRow(ctx, stmt, workspaceId, inReplyMessageId).Scan(
 		&thread.ThreadId, &thread.WorkspaceId, &thread.Customer.CustomerId, &thread.Customer.Name,
 		&assignedMemberId, &assignedMemberName, &assignedAt,
 		&thread.Title, &thread.Description,
@@ -2992,12 +2992,12 @@ func (tc *ThreadDB) FetchThreadByPostmarkInboundInReplyMessageId(
 	return thread, nil
 }
 
-func (tc *ThreadDB) AppendPostmarkInboundThreadMessage(
+func (th *ThreadDB) AppendPostmarkInboundThreadMessage(
 	ctx context.Context, inbound models.PostmarkInboundThreadMessage) (models.Message, error) {
 
 	// start transaction
 	// If fails then stop the execution and return the error.
-	tx, err := tc.db.Begin(ctx)
+	tx, err := th.db.Begin(ctx)
 	if err != nil {
 		slog.Error("failed to start db tx", slog.Any("err", err))
 		return models.Message{}, ErrQuery
@@ -3232,13 +3232,13 @@ func (tc *ThreadDB) AppendPostmarkInboundThreadMessage(
 	return *message, nil
 }
 
-func (tc *ThreadDB) CheckPostmarkInboundMessageExists(ctx context.Context, messageId string) (bool, error) {
+func (th *ThreadDB) CheckPostmarkInboundMessageExists(ctx context.Context, messageId string) (bool, error) {
 	var isExist bool
 	stmt := `SELECT EXISTS(
 		SELECT 1 FROM postmark_inbound_message WHERE postmark_message_id = $1	
 	)`
 
-	err := tc.db.QueryRow(ctx, stmt, messageId).Scan(&isExist)
+	err := th.db.QueryRow(ctx, stmt, messageId).Scan(&isExist)
 	if err != nil {
 		slog.Error("failed to query", slog.Any("err", err))
 		return false, ErrQuery
@@ -3246,7 +3246,7 @@ func (tc *ThreadDB) CheckPostmarkInboundMessageExists(ctx context.Context, messa
 	return isExist, nil
 }
 
-func (tc *ThreadDB) UpsertMessageAttachment(
+func (th *ThreadDB) InsertMessageAttachment(
 	ctx context.Context, attachment models.MessageAttachment) (models.MessageAttachment, error) {
 	cols := messageAttachmentCols()
 	q := builq.New()
@@ -3271,7 +3271,7 @@ func (tc *ThreadDB) UpsertMessageAttachment(
 		debugQuery(debug)
 	}
 
-	err = tc.db.QueryRow(ctx, stmt, insertParams...).Scan(
+	err = th.db.QueryRow(ctx, stmt, insertParams...).Scan(
 		&attachment.AttachmentId, &attachment.MessageId, &attachment.Name,
 		&attachment.ContentType, &attachment.ContentKey, &attachment.ContentUrl,
 		&attachment.Spam, &attachment.HasError, &attachment.Error, &attachment.MD5Hash,
@@ -3283,6 +3283,44 @@ func (tc *ThreadDB) UpsertMessageAttachment(
 	}
 	if err != nil {
 		slog.Error("failed to insert query", slog.Any("err", err))
+		return models.MessageAttachment{}, ErrQuery
+	}
+	return attachment, nil
+}
+
+func (th *ThreadDB) FetchMessageAttachmentById(
+	ctx context.Context, messageId, attachmentId string) (models.MessageAttachment, error) {
+	var attachment models.MessageAttachment
+	cols := messageAttachmentCols()
+
+	q := builq.New()
+	q("SELECT %s FROM message_attachment", cols)
+	q("WHERE message_id = %$ AND attachment_id = %$", messageId, attachmentId)
+
+	stmt, _, err := q.Build()
+
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return models.MessageAttachment{}, ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
+
+	err = th.db.QueryRow(ctx, stmt, messageId, attachmentId).Scan(
+		&attachment.AttachmentId, &attachment.MessageId, &attachment.Name,
+		&attachment.ContentType, &attachment.ContentKey, &attachment.ContentUrl,
+		&attachment.Spam, &attachment.HasError, &attachment.Error, &attachment.MD5Hash,
+		&attachment.CreatedAt, &attachment.UpdatedAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
+		return models.MessageAttachment{}, ErrEmpty
+	}
+	if err != nil {
+		slog.Error("failed to query", slog.Any("err", err))
 		return models.MessageAttachment{}, ErrQuery
 	}
 	return attachment, nil
