@@ -858,9 +858,11 @@ function ThreadDetail() {
                     </Button>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">Email</div>
+                    <div className="text-xs">Email</div>
                     <div className="flex items-center space-x-2">
-                      <div className="text-sm">{customerEmail || "n/a"}</div>
+                      <div className="font-mono text-xs">
+                        {customerEmail || "n/a"}
+                      </div>
                       <Button
                         className="text-muted-foreground"
                         onClick={() => copyEmail(customerEmail || "n/a")}
@@ -873,11 +875,9 @@ function ThreadDetail() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">
-                      External ID
-                    </div>
+                    <div className="text-xs">External ID</div>
                     <div className="flex items-center space-x-2">
-                      <div className="text-sm">
+                      <div className="font-mono text-xs">
                         {customerExternalId || "n/a"}
                       </div>
                       <Button
@@ -894,9 +894,11 @@ function ThreadDetail() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">Phone</div>
+                    <div className="text-xs">Phone</div>
                     <div className="flex items-center space-x-2">
-                      <div className="text-sm">{customerPhone || "n/a"}</div>
+                      <div className="font-mono text-xs">
+                        {customerPhone || "n/a"}
+                      </div>
                       <Button
                         className="text-muted-foreground"
                         onClick={() => copyPhone(customerPhone || "n/a")}

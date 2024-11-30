@@ -133,7 +133,7 @@ export function SetThreadStatusForm({
   return (
     <Form {...form}>
       <form
-        className="flex flex-col w-52 gap-1"
+        className="flex w-52 flex-col gap-1"
         onSubmit={form.handleSubmit(onSubmit)}
       >
         <FormField
@@ -221,10 +221,10 @@ function SetAssignee({
   const [showNewTeamDialog, setShowNewTeamDialog] = React.useState(false);
 
   const members = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-    state.viewMembers(state)
+    state.viewMembers(state),
   );
   const memberName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
-    state.viewMemberName(state, value || "")
+    state.viewMemberName(state, value || ""),
   );
 
   const renderMemberName = () => {
@@ -252,7 +252,7 @@ function SetAssignee({
             variant="outline"
           >
             {value === "unassigned" || !value ? (
-              <PersonIcon className="w-4 h-4 text-muted-foreground" />
+              <PersonIcon className="h-4 w-4 text-muted-foreground" />
             ) : (
               <Avatar className="h-5 w-5">
                 <AvatarImage src={`https://avatar.vercel.sh/${value}`} />
@@ -270,7 +270,7 @@ function SetAssignee({
               <CommandEmpty>No member found.</CommandEmpty>
               {membersUpdated.map((member) => (
                 <CommandItem
-                  className="text-xs flex gap-2"
+                  className="flex gap-2 text-xs"
                   key={member.memberId}
                   onSelect={() => {
                     onValueChange(member.memberId);
@@ -278,7 +278,7 @@ function SetAssignee({
                   }}
                 >
                   {member.memberId === "unassigned" || !member.memberId ? (
-                    <PersonIcon className="w-4 h-4 text-muted-foreground" />
+                    <PersonIcon className="h-4 w-4 text-muted-foreground" />
                   ) : (
                     <Avatar className="h-5 w-5">
                       <AvatarImage
@@ -291,7 +291,7 @@ function SetAssignee({
                   <CheckIcon
                     className={cn(
                       "ml-auto h-4 w-4",
-                      value === member.memberId ? "opacity-100" : "opacity-0"
+                      value === member.memberId ? "opacity-100" : "opacity-0",
                     )}
                   />
                 </CommandItem>
@@ -302,7 +302,7 @@ function SetAssignee({
               <CommandGroup>
                 <DialogTrigger asChild>
                   <CommandItem
-                    className="text-xs flex gap-2"
+                    className="flex gap-2 text-xs"
                     onSelect={() => {
                       setOpen(false);
                       setShowNewTeamDialog(true);
@@ -385,7 +385,7 @@ export function SetThreadAssigneeForm({
         token,
         workspaceId,
         threadId,
-        body
+        body,
       );
       if (error) {
         throw new Error(error.message);
@@ -492,7 +492,7 @@ export function SetThreadPriorityForm({
         token,
         workspaceId,
         threadId,
-        body
+        body,
       );
       if (error) {
         throw new Error(error.message);
@@ -551,25 +551,25 @@ export function SetThreadPriorityForm({
                   <SelectItem value="urgent">
                     <div className="flex items-center gap-1">
                       <PriorityIcons.urgent className="h-5 w-5" />
-                      <span>Urgent</span>
+                      <span className="text-sm">Urgent</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="high">
                     <div className="flex items-center gap-1">
                       <PriorityIcons.high className="h-5 w-5" />
-                      <span>High</span>
+                      <span className="text-sm">High</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="normal">
                     <div className="flex items-center gap-1">
                       <PriorityIcons.normal className="h-5 w-5" />
-                      <span>Normal</span>
+                      <span className="text-sm">Normal</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="low">
                     <div className="flex items-center gap-1">
                       <PriorityIcons.low className="h-5 w-5" />
-                      <span>Low</span>
+                      <span className="text-sm">Low</span>
                     </div>
                   </SelectItem>
                 </SelectContent>
