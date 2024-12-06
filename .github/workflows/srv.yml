@@ -18,6 +18,8 @@ jobs:
   build:
     name: Build and Package
     runs-on: ubuntu-latest
+    environment:
+      name: staging
 
     permissions:
       id-token: write
