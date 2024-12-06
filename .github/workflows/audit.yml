@@ -13,6 +13,7 @@ on:
 
 jobs:
   audit:
+    name: Audit
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -29,7 +30,7 @@ jobs:
 
       - name: Verify
         run: go mod verify
-
+
       - name: Vet
         run: go vet ./...
 
