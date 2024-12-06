@@ -1,0 +1,147 @@
+name: Build and Deploy Srv
+
+on:
+  workflow_dispatch: {}
+
+env:
+  AWS_REGION: ap-southeast-1
+  STACK_ENV: staging
+  STACK_NAME: zyg-srv
+  APPLICATION: backend
+  ZYG_DB_QUERY_DEBUG: 0
+
+  CGO_ENABLED: 0
+  GOOS: linux
+  GOARCH: amd64
+
+jobs:
+  build:
+    name: Build and Package
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout Repository
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.IAMROLE_GITHUB }}
+          role-session-name: GitHub-Action-Role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+
+      - name: Pre Build
+        run: |
+          go mod download
+          go mod verify
+          go vet ./...
+          test -z $(gofmt -l .)
+          if [ -n "$(which golangci-lint)" ]; then golangci-lint run; fi
+
+      - name: Build Application
+        run: |
+          echo "Building Go application from source..."
+          GIT_COMMIT=${{ github.sha }}
+          go build -v \
+            -ldflags="-s -w \
+            -X main.GitCommit=$GIT_COMMIT \
+            -X main.BuildTime=$(date -u '+%Y-%m-%d_%H:%M:%S')" \
+            -o dist/bin/app cmd/srv/main.go
+
+      - name: Create Dist Package
+        run: |
+          if [ ! -f dist/bin/app ]; then
+            echo "Binary not found at dist/bin/app"
+            exit 1
+          fi
+          
+          echo "dist/ is the root path of the dist package"
+          echo "Make sure of relative path of the dist/ package when deploying"
+
+          cp infra/srv/appspec.yml dist/
+          cp -r infra/srv/scripts dist/
+
+          cat << 'EOF' > dist/scripts/srv.service
+          [Unit]
+          Description=Zyg Srv Go Application
+          After=network.target
+          
+          [Service]
+          Type=simple
+          User=ubuntu
+          Group=ubuntu
+          
+          ExecStart=/usr/local/bin/app
+          WorkingDirectory=/usr/local/bin/
+          
+          Environment=DATABASE_URL=${{ secrets.DATABASE_URL }}
+          Environment=SUPABASE_JWT_SECRET=${{ secrets.SUPABASE_JWT_SECRET }}
+          Environment=RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
+          
+          Environment=ZYG_DB_QUERY_DEBUG=${{ env.ZYG_DB_QUERY_DEBUG }}
+
+          Environment=CF_ACCOUNT_ID=${{ secrets.CF_ACCOUNT_ID }}
+          Environment=R2_ACCESS_KEY_ID=${{ secrets.R2_ACCESS_KEY_ID }}
+          Environment=R2_ACCESS_SECRET_KEY=${{ secrets.R2_ACCESS_SECRET_KEY }}
+
+          
+          Restart=on-failure 
+          RestartSec=5
+          
+          NoNewPrivileges=yes
+          
+          ProtectSystem=full
+          ProtectHome=true
+          PrivateTmp=true
+          
+          TimeoutStartSec=30
+          TimeoutStopSec=30
+         
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+          
+          cd dist
+          zip -r ../dist.zip .
+          cd ..
+
+      - name: Upload Artifacts to S3
+        run: |
+          BUCKET=${{ env.STACK_NAME }}-${{ env.STACK_ENV }}-${{ env.AWS_REGION }}-artifacts-${{ secrets.AWS_ACCOUNT_ID }}
+          aws s3 cp dist.zip s3://$BUCKET/${{ env.APPLICATION }}/${{ github.sha }}/
+
+  # deploy:
+  #   name: AWS Deploy
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   environment: Dev
+  #   permissions:
+  #     id-token: write
+  #     contents: read
+  #   steps:
+  #     - uses: aws-actions/configure-aws-credentials@v4
+  #       with:
+  #         role-to-assume: ${{ secrets.IAMROLE_GITHUB }}
+  #         role-session-name: GitHub-Action-Role
+  #         aws-region: ${{ env.AWS_REGION }}
+  #
+  #     - name: Deploy to AWS CodeDeploy
+  #       run: |
+  #         BUCKET="${{ env.STACK_NAME }}-${{ env.STACK_ENV }}-${{ env.AWS_REGION }}-artifacts-${{ secrets.AWS_ACCOUNT_ID }}"
+  #         DEPLOYMENT_NAME="${{ env.STACK_NAME }}-${{ env.STACK_ENV }}"
+  #         DEPLOYMENT_GROUP_NAME="${{ env.STACK_NAME }}-${{ env.STACK_ENV }}-deployment-group"
+  #
+  #         aws deploy create-deployment \
+  #           --application-name "${DEPLOYMENT_NAME}" \
+  #           --deployment-group-name "${DEPLOYMENT_GROUP_NAME}" \
+  #           --s3-location bucket=${BUCKET},key=${{ env.APPLICATION }}/${{ github.sha }}/dist.zip,bundleType=zip \
+  #           --ignore-application-stop-failures
+
