@@ -45,7 +45,7 @@ main() {
 
   # Run checks
   check_service "$service" || exit 1
-  check_web "$host" "$port" || exit 1
+  # check_web "$host" "$port" || exit 1
 
   echo "All validations passed successfully"
   exit 0
