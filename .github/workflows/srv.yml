@@ -127,30 +127,31 @@ jobs:
           BUCKET=${{ env.STACK_NAME }}-${{ env.STACK_ENV }}-${{ env.AWS_REGION }}-artifacts-${{ secrets.AWS_ACCOUNT_ID }}
           aws s3 cp dist.zip s3://$BUCKET/${{ env.APPLICATION }}/${{ github.sha }}/
 
-  # deploy:
-  #   name: AWS Deploy
-  #   needs: build
-  #   runs-on: ubuntu-latest
-  #   environment: Dev
-  #   permissions:
-  #     id-token: write
-  #     contents: read
-  #   steps:
-  #     - uses: aws-actions/configure-aws-credentials@v4
-  #       with:
-  #         role-to-assume: ${{ secrets.IAMROLE_GITHUB }}
-  #         role-session-name: GitHub-Action-Role
-  #         aws-region: ${{ env.AWS_REGION }}
-  #
-  #     - name: Deploy to AWS CodeDeploy
-  #       run: |
-  #         BUCKET="${{ env.STACK_NAME }}-${{ env.STACK_ENV }}-${{ env.AWS_REGION }}-artifacts-${{ secrets.AWS_ACCOUNT_ID }}"
-  #         DEPLOYMENT_NAME="${{ env.STACK_NAME }}-${{ env.STACK_ENV }}"
-  #         DEPLOYMENT_GROUP_NAME="${{ env.STACK_NAME }}-${{ env.STACK_ENV }}-deployment-group"
-  #
-  #         aws deploy create-deployment \
-  #           --application-name "${DEPLOYMENT_NAME}" \
-  #           --deployment-group-name "${DEPLOYMENT_GROUP_NAME}" \
-  #           --s3-location bucket=${BUCKET},key=${{ env.APPLICATION }}/${{ github.sha }}/dist.zip,bundleType=zip \
-  #           --ignore-application-stop-failures
+  deploy:
+    name: AWS Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.IAMROLE_GITHUB }}
+          role-session-name: GitHub-Action-Role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to AWS CodeDeploy
+        run: |
+          BUCKET="${{ env.STACK_NAME }}-${{ env.STACK_ENV }}-${{ env.AWS_REGION }}-artifacts-${{ secrets.AWS_ACCOUNT_ID }}"
+          DEPLOYMENT_NAME="${{ env.STACK_NAME }}-${{ env.STACK_ENV }}"
+          DEPLOYMENT_GROUP_NAME="${{ env.STACK_NAME }}-${{ env.STACK_ENV }}-deployment-group"
+
+          aws deploy create-deployment \
+            --application-name "${DEPLOYMENT_NAME}" \
+            --deployment-group-name "${DEPLOYMENT_GROUP_NAME}" \
+            --s3-location bucket=${BUCKET},key=${{ env.APPLICATION }}/${{ github.sha }}/dist.zip,bundleType=zip \
+            --ignore-application-stop-failures
 
