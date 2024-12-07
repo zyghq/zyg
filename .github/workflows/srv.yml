@@ -90,9 +90,11 @@ jobs:
           WorkingDirectory=/usr/local/bin/
           
           Environment=DATABASE_URL=${{ secrets.DATABASE_URL }}
+          Environment=REDIS_ADDR=${{ secrets.REDIS_ADDR }}
+
           Environment=SUPABASE_JWT_SECRET=${{ secrets.SUPABASE_JWT_SECRET }}
           Environment=RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
-          
+
           Environment=ZYG_DB_QUERY_DEBUG=${{ env.ZYG_DB_QUERY_DEBUG }}
 
           Environment=CF_ACCOUNT_ID=${{ secrets.CF_ACCOUNT_ID }}
