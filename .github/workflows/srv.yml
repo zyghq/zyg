@@ -86,7 +86,7 @@ jobs:
           User=ubuntu
           Group=ubuntu
           
-          ExecStart=/usr/local/bin/app -host 127.0.0.1 -port 8080
+          ExecStart=/usr/local/bin/app -host 0.0.0.0 -port 8080
           WorkingDirectory=/usr/local/bin/
           
           Environment=DATABASE_URL=${{ secrets.DATABASE_URL }}
