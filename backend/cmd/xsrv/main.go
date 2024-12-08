@@ -76,7 +76,7 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to ping redis got error: %v", err)
 	}
-	slog.Info("redis", slog.Any("redis status", status))
+	slog.Info("redis", slog.Any("status", status))
 
 	// init respective stores
 	workspaceStore := repository.NewWorkspaceDB(db)

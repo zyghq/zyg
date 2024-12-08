@@ -74,10 +74,9 @@ func run(ctx context.Context) error {
 	// If Redis is not running, error case is taken instead
 	status, err := rdb.Ping(ctx).Result()
 	if err != nil {
-		// return fmt.Errorf("failed to ping redis got error: %v", err)
-		slog.Error("failed to connect redis - JUST LOGGING FOR NOW!", slog.Any("err", err))
+		return fmt.Errorf("failed to ping redis got error: %v", err)
 	}
-	slog.Info("redis", slog.Any("redis status", status))
+	slog.Info("redis", slog.Any("status", status))
 
 	// init stores
 	accountStore := repository.NewAccountDB(db)
