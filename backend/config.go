@@ -97,7 +97,7 @@ func RedisAddr() string {
 }
 
 func RedisPassword() string {
-	value, ok := os.LookupEnv("REDIS_PWD")
+	value, ok := os.LookupEnv("REDIS_PASS")
 	if !ok {
 		return ""
 	}

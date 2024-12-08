@@ -13,10 +13,6 @@
       "name": "frontend"
     },
     {
-      "path": "widget",
-      "name": "widget"
-    },
-    {
       "path": ".",
       "name": "zyg"
     },
