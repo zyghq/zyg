@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"github.com/redis/go-redis/v9"
@@ -55,7 +56,10 @@ func run(ctx context.Context) error {
 		Addr:     zyg.RedisAddr(),
 		Username: zyg.RedisUsername(),
 		Password: zyg.RedisPassword(),
-		DB:       0,
+		TLSConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+		DB: 0,
 	})
 
 	defer func(rdb *redis.Client) {
