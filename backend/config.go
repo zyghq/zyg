@@ -96,6 +96,14 @@ func RedisAddr() string {
 	return value
 }
 
+func RedisUsername() string {
+	value, ok := os.LookupEnv("REDIS_USER")
+	if !ok {
+		return "zygdev"
+	}
+	return value
+}
+
 func RedisPassword() string {
 	value, ok := os.LookupEnv("REDIS_PASS")
 	if !ok {

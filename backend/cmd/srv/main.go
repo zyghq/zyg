@@ -53,6 +53,7 @@ func run(ctx context.Context) error {
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     zyg.RedisAddr(),
+		Username: zyg.RedisUsername(),
 		Password: zyg.RedisPassword(),
 		DB:       0,
 	})

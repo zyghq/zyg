@@ -92,8 +92,8 @@ jobs:
           Environment=DATABASE_URL=${{ secrets.DATABASE_URL }} 
           
           Environment=REDIS_ADDR=${{ secrets.REDIS_ADDR }}
+          Environment=REDIS_USER=${{ secrets.REDIS_USER }}
           Environment=REDIS_PASS=${{ secrets.REDIS_PASS }}
-
 
           Environment=SUPABASE_JWT_SECRET=${{ secrets.SUPABASE_JWT_SECRET }}
           Environment=RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
@@ -103,7 +103,6 @@ jobs:
           Environment=CF_ACCOUNT_ID=${{ secrets.CF_ACCOUNT_ID }}
           Environment=R2_ACCESS_KEY_ID=${{ secrets.R2_ACCESS_KEY_ID }}
           Environment=R2_ACCESS_SECRET_KEY=${{ secrets.R2_ACCESS_SECRET_KEY }}
-
           
           Restart=on-failure 
           RestartSec=5
