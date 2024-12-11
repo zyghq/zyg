@@ -24,8 +24,8 @@ go.work
 # Secrets or Envs
 *.env
 *.env.local
-.env.yaml
 env.sh
+env.local.sh
 
 
 # Python files and directories

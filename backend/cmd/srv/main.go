@@ -52,15 +52,21 @@ func run(ctx context.Context) error {
 
 	slog.Info("database", slog.Any("db time", tm.Format(time.RFC1123)))
 
-	rdb := redis.NewClient(&redis.Options{
+	// Redis options
+	opts := &redis.Options{
 		Addr:     zyg.RedisAddr(),
 		Username: zyg.RedisUsername(),
 		Password: zyg.RedisPassword(),
-		TLSConfig: &tls.Config{
+		DB:       0,
+	}
+
+	if zyg.RedisTLSEnabled() {
+		opts.TLSConfig = &tls.Config{
 			InsecureSkipVerify: true,
-		},
-		DB: 0,
-	})
+		}
+	}
+
+	rdb := redis.NewClient(opts)
 
 	defer func(rdb *redis.Client) {
 		err := rdb.Close()
