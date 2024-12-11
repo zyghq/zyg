@@ -92,8 +92,9 @@ jobs:
           Environment=DATABASE_URL=${{ secrets.DATABASE_URL }} 
           
           Environment=REDIS_ADDR=${{ secrets.REDIS_ADDR }}
-          Environment=REDIS_USER=${{ secrets.REDIS_USER }}
-          Environment=REDIS_PASS=${{ secrets.REDIS_PASS }}
+          Environment=REDIS_USERNAME=${{ secrets.REDIS_USERNAME }}
+          Environment=REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }} 
+          Environment=REDIS_TLS_ENABLED=${{ secrets.REDIS_TLS_ENABLED }}
 
           Environment=SUPABASE_JWT_SECRET=${{ secrets.SUPABASE_JWT_SECRET }}
           Environment=RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
