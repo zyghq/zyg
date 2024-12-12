@@ -10,5 +10,14 @@ export const Route = createFileRoute("/")({
       throw redirect({ to: "/signin" });
     }
   },
-  component: () => <div>Index Root at /</div>,
+  // component: () => <div>Index Root at /</div>,
+  component: () => (
+    <button
+      onClick={() => {
+        throw new Error("This is your first error!");
+      }}
+    >
+      Break the world
+    </button>
+  ),
 });
