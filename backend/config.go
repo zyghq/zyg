@@ -96,10 +96,26 @@ func RedisAddr() string {
 	return value
 }
 
+func RedisUsername() string {
+	value, ok := os.LookupEnv("REDIS_USERNAME")
+	if !ok {
+		return "zygdev"
+	}
+	return value
+}
+
 func RedisPassword() string {
-	value, ok := os.LookupEnv("REDIS_PWD")
+	value, ok := os.LookupEnv("REDIS_PASSWORD")
 	if !ok {
 		return ""
 	}
 	return value
+}
+
+func RedisTLSEnabled() bool {
+	enabled, err := strconv.ParseBool(os.Getenv("REDIS_TLS_ENABLED"))
+	if err != nil {
+		return false
+	}
+	return enabled
 }

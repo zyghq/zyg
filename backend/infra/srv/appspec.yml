@@ -1,0 +1,51 @@
+version: 0.0
+os: linux
+
+files:
+  - source: /bin/app
+    destination: /usr/local/bin/
+    permissions:
+      - object: /usr/local/bin/app
+        owner: ubuntu
+        group: ubuntu
+        mode: 755
+        type:
+          - file
+
+  - source: /scripts/srv.service
+    destination: /etc/systemd/system/
+    permissions:
+      - object: /etc/systemd/system/srv.service
+        owner: ubuntu
+        group: ubuntu
+        mode: 644
+        type:
+          - file
+
+hooks:
+  BeforeInstall:
+    - location: scripts/before.sh
+      timeout: 300
+      runas: root
+
+  AfterInstall:
+    - location: scripts/after.sh
+      timeout: 300
+      runas: root
+
+  ApplicationStop:
+    - location: scripts/stop.sh
+      timeout: 300
+      runas: root
+
+  ApplicationStart:
+    - location: scripts/start.sh
+      timeout: 300
+      runas: root
+
+  ValidateService:
+    - location: scripts/validate.sh
+      timeout: 300
+      runas: ubuntu
+
+file_exists_behavior: OVERWRITE

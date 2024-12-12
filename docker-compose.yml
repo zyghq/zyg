@@ -8,7 +8,7 @@ networks:
 
 services:
   database:
-    container_name: database
+    container_name: postgres
     image: postgres
     restart: always
     volumes:
@@ -18,6 +18,17 @@ services:
       - stack
     ports:
       - "5432:5432"
+
+  redis:
+    container_name: redis
+    image: redis
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD} --user ${REDIS_USERNAME} on '>${REDIS_PASSWORD}' '~*' allcommands
+    env_file: .env
+    networks:
+      - stack
+    ports:
+      - "6379:6379"
 
   srv:
     container_name: srv
@@ -33,11 +44,14 @@ services:
     restart: always
     depends_on:
       - database
+      - redis
     env_file: .env
     networks:
       - stack
     ports:
       - "${ZYG_SRV_PORT}:${ZYG_SRV_PORT}"
+    profiles:
+      - server
 
   xsrv:
     container_name: xsrv
@@ -53,8 +67,11 @@ services:
     restart: always
     depends_on:
       - database
+      - redis
     env_file: .env
     networks:
       - stack
     ports:
       - "${ZYG_XSRV_PORT}:${ZYG_XSRV_PORT}"
+    profiles:
+      - server
