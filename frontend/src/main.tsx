@@ -9,9 +9,15 @@ import "./globals.css";
 
 Sentry.init({
   dsn: "https://520d1dc4721849c3c4a8cd548896b039@o4508454426181632.ingest.us.sentry.io/4508454430441472",
+  enabled: import.meta.env.VITE_SENTRY_ENABLED === "1" || false,
+  environment: import.meta.env.VITE_SENTRY_ENV || "staging",
   integrations: [
     Sentry.browserTracingIntegration(),
     Sentry.replayIntegration(),
+    Sentry.feedbackIntegration({
+      // Additional SDK configuration goes in here, for example:
+      colorScheme: "system",
+    }),
   ],
   replaysOnErrorSampleRate: 1.0, // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
   // Session Replay

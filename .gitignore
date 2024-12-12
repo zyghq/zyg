@@ -80,3 +80,6 @@ redisdb/
 
 # IDEs
 .idea/
+
+# Sentry
+.env.sentry-build-plugin
