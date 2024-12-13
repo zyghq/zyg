@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/getsentry/sentry-go"
 	"log/slog"
 	"net/http"
 	"time"
@@ -88,5 +89,12 @@ func (em *EnsureMemberAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
+	ctx := r.Context()
+	hub := sentry.GetHubFromContext(ctx)
+	hub.Scope().SetTag("workspaceId", workspaceId)
+	hub.Scope().SetUser(sentry.User{
+		ID:   member.MemberId,
+		Name: member.Name,
+	})
 	em.handler(w, r, &member)
 }
