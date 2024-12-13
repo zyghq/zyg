@@ -119,3 +119,19 @@ func RedisTLSEnabled() bool {
 	}
 	return enabled
 }
+
+func SentryDebugEnabled() bool {
+	enabled, err := strconv.ParseBool(os.Getenv("SENTRY_DEBUG_ENABLED"))
+	if err != nil {
+		return false
+	}
+	return enabled
+}
+
+func SentryEnv() string {
+	value, ok := os.LookupEnv("SENTRY_ENV")
+	if !ok {
+		return "staging"
+	}
+	return value
+}

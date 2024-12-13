@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/getsentry/sentry-go"
 	"net/http"
 	"time"
 
@@ -8,7 +9,13 @@ import (
 	"github.com/zyghq/zyg/ports"
 )
 
-func handleGetIndex(w http.ResponseWriter, _ *http.Request) {
+func handleGetIndex(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	hub := sentry.GetHubFromContext(ctx)
+	hub.Scope().SetTag("url", r.URL.Path)
+	hub.CaptureMessage("Server OK")
+
 	tm := time.Now().UTC().Format(time.RFC1123)
 	w.Header().Set("x-datetime", tm)
 	w.WriteHeader(http.StatusOK)

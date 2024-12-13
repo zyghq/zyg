@@ -5,6 +5,8 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"github.com/getsentry/sentry-go"
+	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/redis/go-redis/v9"
 	"log/slog"
 	"net/http"
@@ -84,6 +86,28 @@ func run(ctx context.Context) error {
 	}
 	slog.Info("redis", slog.Any("status", status))
 
+	// setup sentry
+	if err := sentry.Init(sentry.ClientOptions{
+		Debug:         zyg.SentryDebugEnabled(),
+		EnableTracing: true,
+		Environment:   zyg.SentryEnv(),
+		TracesSampler: func(ctx sentry.SamplingContext) float64 {
+			// Don't sample Index
+			if ctx.Span.Name == "GET /" {
+				return 0.0
+			}
+			return 1.0
+		},
+	}); err != nil {
+		slog.Error(
+			"sentry init failed logging the error and continue...",
+			slog.Any("err", err))
+	}
+
+	// Flush buffered events before the program terminates.
+	// Set the timeout to the maximum duration the program can afford to wait.
+	defer sentry.Flush(2 * time.Second)
+
 	// init stores
 	accountStore := repository.NewAccountDB(db)
 	workspaceStore := repository.NewWorkspaceDB(db)
@@ -107,10 +131,13 @@ func run(ctx context.Context) error {
 		threadService,
 	)
 
+	// wrap sentry
+	sentryHandler := sentryhttp.New(sentryhttp.Options{}).Handle(srv)
+
 	addr = fmt.Sprintf("%s:%s", *host, *port)
 	httpServer := &http.Server{
 		Addr:              addr,
-		Handler:           srv,
+		Handler:           sentryHandler,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      90 * time.Second,
 		IdleTimeout:       5 * time.Minute,
@@ -118,7 +145,6 @@ func run(ctx context.Context) error {
 	}
 
 	slog.Info("server up and running", slog.String("addr", addr))
-
 	err = httpServer.ListenAndServe()
 	return err
 }
