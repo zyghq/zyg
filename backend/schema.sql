@@ -149,6 +149,33 @@ CREATE TABLE customer_event(
     CONSTRAINT customer_event_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id)
 );
 
+CREATE TABLE postmark_mail_server_setting (
+    workspace_id VARCHAR(255) NOT NULL,
+    server_id BIGINT NOT NULL,
+    server_token VARCHAR(255) NOT NULL,
+    is_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    email VARCHAR(255) NOT NULL,
+    domain VARCHAR(255) NOT NULL,
+    has_error BOOLEAN NOT NULL DEFAULT FALSE,
+    inbound_email VARCHAR(255) NULL,
+    has_forwarding_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    has_dns BOOLEAN NOT NULL DEFAULT FALSE,
+    is_dns_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    dns_verified_at TIMESTAMP NULL,
+    dns_domain_id BIGINT NULL,
+    dkim_pending_host VARCHAR(255) NULL,
+    dkim_pending_text_value TEXT NULL,
+    dkim_update_status VARCHAR(255) NULL,
+    return_path_domain VARCHAR(255) NULL,
+    return_path_domain_cname VARCHAR(255) NULL,
+    return_path_domain_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT postmark_mail_server_setting_workspace_id_pkey PRIMARY KEY (workspace_id),
+    CONSTRAINT postmark_mail_server_setting_inbound_email_key UNIQUE(inbound_email)
+);
+
 -- @sanchitrk: changed usage?
 -- Represents the workspace Thread QA table
 -- This table is used to store the QA thread information linked to the workspace.

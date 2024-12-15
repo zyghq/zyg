@@ -632,3 +632,11 @@ func (cv CustomerEventResp) NewResponse(event *models.Event) CustomerEventResp {
 		UpdatedAt: event.UpdatedAt,
 	}
 }
+
+type CreatePostmarkMailServer struct {
+	Email string `json:"email"`
+}
+
+type AddPostmarkMailServerDNS struct {
+	Domain string `json:"domain"`
+}

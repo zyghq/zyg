@@ -102,7 +102,6 @@ func NewServer(
 	mux.Handle("GET /workspaces/{workspaceId}/threads/parts/labels/{labelId}/{$}",
 		NewEnsureMemberAuth(th.handleGetLabelledThreads, authService))
 
-	// Creates a thread message for the chat channel.
 	mux.Handle("POST /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
 		NewEnsureMemberAuth(th.handleCreateThreadChatMessage, authService))
 
@@ -130,6 +129,14 @@ func NewServer(
 	// handles postmark inbound message webhook for workspace.
 	// This URL path must also be configured in the postmark inbound settings.
 	mux.HandleFunc("POST /webhooks/{workspaceId}/postmark/inbound/{$}", th.handlePostmarkInboundWebhook)
+
+	mux.Handle("POST /workspaces/{workspaceId}/postmark/servers/{$}",
+		NewEnsureMemberAuth(wh.handlePostmarkCreateMailServer, authService))
+
+	// TODO: add Postmark Bounce hook URL
+
+	mux.Handle("POST /workspaces/{workspaceId}/postmark/servers/parts/dns/add/{$}",
+		NewEnsureMemberAuth(wh.handlePostmarkMailServerAddDNS, authService))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},

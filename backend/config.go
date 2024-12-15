@@ -40,6 +40,14 @@ func GetXServerUrl() string {
 	return value
 }
 
+func ServerUrl() string {
+	value, ok := os.LookupEnv("ZYG_SERVER_URL")
+	if !ok {
+		return "http://localhost:8080"
+	}
+	return value
+}
+
 func LandingPageUrl() string {
 	value, ok := os.LookupEnv("ZYG_URL")
 	if !ok {
@@ -132,6 +140,15 @@ func SentryEnv() string {
 	value, ok := os.LookupEnv("SENTRY_ENV")
 	if !ok {
 		return "staging"
+	}
+	return value
+}
+
+// PostmarkAccountToken Todo: fix me
+func PostmarkAccountToken() string {
+	value, ok := os.LookupEnv("POSTMARK_ACCOUNT_TOKEN")
+	if !ok {
+		return "b9b40f75-770f-4f88-a549-a503b3df97ce"
 	}
 	return value
 }

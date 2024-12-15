@@ -3,9 +3,11 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"github.com/getsentry/sentry-go"
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/zyghq/zyg"
 
@@ -733,5 +735,112 @@ func (h *WorkspaceHandler) handleGetWidgets(
 		slog.Error("failed to encode json", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
+	}
+}
+
+func (h *WorkspaceHandler) handlePostmarkCreateMailServer(
+	w http.ResponseWriter, r *http.Request, member *models.Member) {
+	defer func(r io.ReadCloser) {
+		_, _ = io.Copy(io.Discard, r)
+		_ = r.Close()
+	}(r.Body)
+
+	ctx := r.Context()
+
+	hub := sentry.GetHubFromContext(ctx)
+
+	var reqp CreatePostmarkMailServer
+	err := json.NewDecoder(r.Body).Decode(&reqp)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	workspace, err := h.ws.GetWorkspace(ctx, member.WorkspaceId)
+	if errors.Is(err, services.ErrWorkspaceNotFound) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to fetch workspace", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	// split the domain from email
+	domain := strings.Split(reqp.Email, "@")[1]
+	if domain == "" {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	setting, err := h.ws.PostmarkCreateMailServer(ctx, workspace.WorkspaceId, reqp.Email, domain)
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to create postmark mail server", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(setting); err != nil {
+		slog.Error("failed to encode json", slog.Any("err", err))
+	}
+}
+
+func (h *WorkspaceHandler) handlePostmarkMailServerAddDNS(
+	w http.ResponseWriter, r *http.Request, member *models.Member) {
+	defer func(r io.ReadCloser) {
+		_, _ = io.Copy(io.Discard, r)
+		_ = r.Close()
+	}(r.Body)
+
+	ctx := r.Context()
+
+	hub := sentry.GetHubFromContext(ctx)
+
+	var reqp AddPostmarkMailServerDNS
+
+	err := json.NewDecoder(r.Body).Decode(&reqp)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	workspace, err := h.ws.GetWorkspace(ctx, member.WorkspaceId)
+	if errors.Is(err, services.ErrWorkspaceNotFound) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to fetch workspace", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	setting, err := h.ws.GetPostmarkMailServerSetting(ctx, workspace.WorkspaceId)
+	if errors.Is(err, services.ErrPostmarkSettingNotFound) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to fetch postmark mail server setting", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	// Add domain in Postmark
+	setting, err = h.ws.PostmarkMailServerAddDomain(ctx, setting, reqp.Domain)
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to add postmark mail server domain", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(setting); err != nil {
+		slog.Error("failed to encode json", slog.Any("err", err))
 	}
 }

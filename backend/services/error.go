@@ -38,4 +38,6 @@ const (
 	ErrPostmarkInbound           = serviceErr("postmark inbound error")
 	ErrMessageAttachment         = serviceErr("message attachment error")
 	ErrMessageAttachmentNotFound = serviceErr("message attachment not found")
+	ErrPostmarkSettingNotFound   = serviceErr("postmark setting not found")
+	ErrPostmarkSetting           = serviceErr("postmark setting error")
 )

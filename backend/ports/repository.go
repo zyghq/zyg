@@ -59,6 +59,10 @@ type WorkspaceRepositorer interface {
 		ctx context.Context, member models.Member) (models.Member, error)
 	LookupSystemMemberByOldest(
 		ctx context.Context, workspaceId string) (models.Member, error)
+	SavePostmarkMailServerSetting(
+		ctx context.Context, setting models.PostmarkMailServerSetting) (models.PostmarkMailServerSetting, error)
+	FetchPostmarkMailServerSettingByWorkspaceId(
+		ctx context.Context, workspaceId string) (models.PostmarkMailServerSetting, error)
 }
 
 type MemberRepositorer interface {

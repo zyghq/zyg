@@ -7,6 +7,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/getsentry/sentry-go"
+	"github.com/zyghq/postmark"
 	"log/slog"
 	"os"
 	"time"
@@ -77,17 +79,18 @@ func (ws *WorkspaceService) UpdateLabel(
 
 func (ws *WorkspaceService) GetWorkspace(
 	ctx context.Context, workspaceId string) (models.Workspace, error) {
+	hub := sentry.GetHubFromContext(ctx)
 	workspace, err := ws.workspaceRepo.FetchByWorkspaceId(ctx, workspaceId)
-
-	if errors.Is(err, repository.ErrQuery) {
-		return workspace, ErrWorkspace
-	}
 
 	if errors.Is(err, repository.ErrEmpty) {
 		return workspace, ErrWorkspaceNotFound
 	}
-
+	if errors.Is(err, repository.ErrQuery) {
+		hub.CaptureException(err)
+		return workspace, ErrWorkspace
+	}
 	if err != nil {
+		hub.CaptureException(err)
 		return workspace, err
 	}
 	return workspace, nil
@@ -450,4 +453,111 @@ func (ws *WorkspaceService) GetCustomerByEmail(
 		return models.Customer{}, ErrCustomer
 	}
 	return customer, nil
+}
+
+func (ws *WorkspaceService) PostmarkCreateMailServer(
+	ctx context.Context, workspaceId, email, domain string) (models.PostmarkMailServerSetting, error) {
+	hub := sentry.GetHubFromContext(ctx)
+	// Requires Account Token to manage servers.
+	client := postmark.NewClient("", zyg.PostmarkAccountToken())
+	// Deprecated:
+	// BounceHookUrl
+	// OpenHookUrl
+	// DeliveryHookUrl
+	// ClickHookUrl
+	inboundHookURL := fmt.Sprintf("%s/webhooks/%s/postmark/inbound/", zyg.ServerUrl(), workspaceId)
+	server := postmark.Server{
+		Name:           workspaceId,
+		Color:          "Green",
+		InboundHookURL: inboundHookURL,
+	}
+	server, err := client.CreateServer(ctx, server)
+	if err != nil {
+		hub.CaptureException(err)
+		return models.PostmarkMailServerSetting{}, err
+	}
+	// Capture message in Sentry as this helps in keeping track of interactions with Postmark in all env.
+	// We also want to make sure to audit.
+	hub.CaptureMessage(fmt.Sprintf("postmark server created with ID: %d", server.ID))
+	var serverToken string
+	if len(server.APITokens) > 0 {
+		serverToken = server.APITokens[0]
+	}
+	now := time.Now().UTC()
+	// Save in workspace Postmark settings
+	setting := models.PostmarkMailServerSetting{
+		WorkspaceId:          workspaceId,
+		ServerId:             server.ID,
+		ServerToken:          serverToken,
+		CreatedAt:            now,
+		UpdatedAt:            now,
+		IsEnabled:            false,
+		Email:                email,
+		Domain:               domain,
+		HasError:             false,
+		InboundEmail:         &server.InboundAddress,
+		HasForwardingEnabled: false,
+		HasDNS:               false,
+		IsDNSVerified:        false,
+	}
+	setting, err = ws.workspaceRepo.SavePostmarkMailServerSetting(ctx, setting)
+	if err != nil {
+		hub.CaptureException(err)
+		return models.PostmarkMailServerSetting{}, err
+	}
+	return setting, nil
+}
+
+func (ws *WorkspaceService) GetPostmarkMailServerSetting(
+	ctx context.Context, workspaceId string) (models.PostmarkMailServerSetting, error) {
+	hub := sentry.GetHubFromContext(ctx)
+	setting, err := ws.workspaceRepo.FetchPostmarkMailServerSettingByWorkspaceId(ctx, workspaceId)
+
+	if errors.Is(err, repository.ErrEmpty) {
+		return models.PostmarkMailServerSetting{}, ErrPostmarkSettingNotFound
+	}
+	if errors.Is(err, repository.ErrQuery) {
+		hub.CaptureException(err)
+		return models.PostmarkMailServerSetting{}, ErrPostmarkSetting
+	}
+	if err != nil {
+		hub.CaptureException(err)
+		return models.PostmarkMailServerSetting{}, err
+	}
+	return setting, nil
+}
+
+func (ws *WorkspaceService) PostmarkMailServerAddDomain(
+	ctx context.Context, setting models.PostmarkMailServerSetting, domain string,
+) (models.PostmarkMailServerSetting, error) {
+	hub := sentry.GetHubFromContext(ctx)
+	client := postmark.NewClient("", zyg.PostmarkAccountToken())
+	req := postmark.CreateDomainRequest{
+		Name: domain,
+	}
+	addedDomain, err := client.CreateDomain(ctx, req)
+	if err != nil {
+		hub.CaptureException(err)
+		return models.PostmarkMailServerSetting{}, err
+	}
+	// Capture message in Sentry as this helps in keeping track of interactions with Postmark in all env.
+	// We also want to make sure to audit.
+	hub.CaptureMessage(
+		fmt.Sprintf("postmark domain created with name: %s and ID: %d", addedDomain.Name, addedDomain.ID))
+	setting.HasDNS = true
+	setting.IsDNSVerified = false
+	setting.DNSDomainId = &addedDomain.ID
+	setting.DKIMPendingHost = &addedDomain.DKIMPendingHost
+	setting.DKIMPendingTextValue = &addedDomain.DKIMPendingTextValue
+	setting.DKIMUpdateStatus = &addedDomain.DKIMUpdateStatus
+	setting.ReturnPathDomain = &addedDomain.ReturnPathDomain
+	setting.ReturnPathDomainCNAME = &addedDomain.ReturnPathDomainCNAMEValue
+	setting.ReturnPathDomainVerified = addedDomain.ReturnPathDomainVerified
+
+	setting, err = ws.workspaceRepo.SavePostmarkMailServerSetting(ctx, setting)
+	if err != nil {
+		hub.CaptureException(err)
+		return models.PostmarkMailServerSetting{}, err
+	}
+	return setting, nil
 }

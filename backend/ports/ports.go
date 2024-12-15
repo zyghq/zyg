@@ -101,6 +101,13 @@ type WorkspaceServicer interface {
 	CreateWidgetSession(
 		ctx context.Context, sk string, workspaceId string, widgetId string,
 		sessionId string, name string) (models.Customer, bool, error)
+	PostmarkCreateMailServer(
+		ctx context.Context, workspaceId, email, domain string) (models.PostmarkMailServerSetting, error)
+	GetPostmarkMailServerSetting(
+		ctx context.Context, workspaceId string) (models.PostmarkMailServerSetting, error)
+	PostmarkMailServerAddDomain(
+		ctx context.Context, setting models.PostmarkMailServerSetting, domain string,
+	) (models.PostmarkMailServerSetting, error)
 }
 
 type CustomerServicer interface {
