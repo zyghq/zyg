@@ -6,14 +6,14 @@ export const accountResponseSchema = z.object({
   email: z.string(),
   name: z.string(),
   provider: z.string(),
-  updatedAt: z.string(),
+  updatedAt: z.string()
 });
 
 export const workspaceResponseSchema = z.object({
   createdAt: z.string(),
   name: z.string(),
   updatedAt: z.string(),
-  workspaceId: z.string(),
+  workspaceId: z.string()
 });
 
 export const authMemberResponseSchema = z.object({
@@ -21,7 +21,7 @@ export const authMemberResponseSchema = z.object({
   memberId: z.string(),
   name: z.string(),
   role: z.string(),
-  updatedAt: z.string(),
+  updatedAt: z.string()
 });
 
 export const patResponseSchema = z.object({
@@ -31,7 +31,7 @@ export const patResponseSchema = z.object({
   name: z.string(),
   patId: z.string(),
   token: z.string(),
-  updatedAt: z.string(),
+  updatedAt: z.string()
 });
 
 export const memberResponseSchema = z.object({
@@ -39,14 +39,14 @@ export const memberResponseSchema = z.object({
   memberId: z.string(),
   name: z.string(),
   role: z.string(),
-  updatedAt: z.string(),
+  updatedAt: z.string()
 });
 
 export const threadLabelMetricsSchema = z.object({
   count: z.number().default(0),
   icon: z.string().default(""),
   labelId: z.string(),
-  name: z.string().default(""),
+  name: z.string().default("")
 });
 
 export const threadCountMetricsSchema = z.object({
@@ -59,11 +59,11 @@ export const threadCountMetricsSchema = z.object({
   otherAssigned: z.number().default(0),
   snoozed: z.number().default(0),
   unassigned: z.number().default(0),
-  waitingOnCustomer: z.number().default(0),
+  waitingOnCustomer: z.number().default(0)
 });
 
 export const workspaceMetricsResponseSchema = z.object({
-  count: threadCountMetricsSchema,
+  count: threadCountMetricsSchema
 });
 
 export const customerResponseSchema = z.object({
@@ -75,14 +75,14 @@ export const customerResponseSchema = z.object({
   name: z.string(),
   phone: z.string().nullable().default(null),
   role: z.string(),
-  updatedAt: z.string(),
+  updatedAt: z.string()
 });
 
 export const threadResponseSchema = z.object({
   assignee: z
     .object({
       memberId: z.string(),
-      name: z.string(), // TODO: add support for avatarUrl
+      name: z.string() // TODO: add support for avatarUrl
     })
     .nullable()
     .default(null),
@@ -90,13 +90,13 @@ export const threadResponseSchema = z.object({
   createdAt: z.string(),
   customer: z.object({
     customerId: z.string(),
-    name: z.string(), // TODO: add support for avatarUrl
+    name: z.string() // TODO: add support for avatarUrl
   }),
   description: z.string(),
   inboundCustomer: z
     .object({
       customerId: z.string(),
-      name: z.string(),
+      name: z.string()
     })
     .nullable()
     .default(null),
@@ -107,7 +107,7 @@ export const threadResponseSchema = z.object({
   outboundMember: z
     .object({
       memberId: z.string(),
-      name: z.string(),
+      name: z.string()
     })
     .nullable()
     .default(null),
@@ -119,7 +119,7 @@ export const threadResponseSchema = z.object({
   statusChangedAt: z.string(),
   threadId: z.string(),
   title: z.string(),
-  updatedAt: z.string(),
+  updatedAt: z.string()
 });
 
 export const labelResponseSchema = z.object({
@@ -127,7 +127,7 @@ export const labelResponseSchema = z.object({
   icon: z.string(),
   labelId: z.string(),
   name: z.string(),
-  updatedAt: z.string(),
+  updatedAt: z.string()
 });
 
 export const threadLabelResponseSchema = z.object({
@@ -138,7 +138,7 @@ export const threadLabelResponseSchema = z.object({
   name: z.string(),
   threadId: z.string(),
   threadLabelId: z.string(),
-  updatedAt: z.string(),
+  updatedAt: z.string()
 });
 
 export const messageAttachmentResponseSchema = z.object({
@@ -153,7 +153,7 @@ export const messageAttachmentResponseSchema = z.object({
   messageId: z.string(),
   name: z.string(),
   spam: z.boolean(),
-  updatedAt: z.string(),
+  updatedAt: z.string()
 });
 
 export const threadMessageResponseSchema = z.object({
@@ -164,21 +164,21 @@ export const threadMessageResponseSchema = z.object({
   customer: z
     .object({
       customerId: z.string(),
-      name: z.string(),
+      name: z.string()
     })
     .nullable()
     .default(null),
   member: z
     .object({
       memberId: z.string(),
-      name: z.string(),
+      name: z.string()
     })
     .nullable()
     .default(null),
   messageId: z.string(),
   textBody: z.string(),
   threadId: z.string(),
-  updatedAt: z.string(),
+  updatedAt: z.string()
 });
 
 export type MessageAttachmentResponse = z.infer<
@@ -206,41 +206,41 @@ export type PatResponse = z.infer<typeof patResponseSchema>;
 const ComponentText = z.object({
   componentText: z.object({
     text: z.string(),
-    textSize: z.string(),
-  }),
+    textSize: z.string()
+  })
 });
 
 const ComponentSpacer = z.object({
   componentSpacer: z.object({
-    spacerSize: z.string(),
-  }),
+    spacerSize: z.string()
+  })
 });
 
 const ComponentLinkButton = z.object({
   componentLinkButton: z.object({
     linkButtonLabel: z.string(),
-    linkButtonUrl: z.string().url(),
-  }),
+    linkButtonUrl: z.string().url()
+  })
 });
 
 const ComponentDivider = z.object({
   componentDivider: z.object({
-    dividerSize: z.string(),
-  }),
+    dividerSize: z.string()
+  })
 });
 
 const ComponentCopyButton = z.object({
   componentCopyButton: z.object({
     copyButtonToolTipLabel: z.string(),
-    copyButtonValue: z.string(),
-  }),
+    copyButtonValue: z.string()
+  })
 });
 
 const ComponentBadge = z.object({
   componentBadge: z.object({
     badgeColor: z.string(),
-    badgeLabel: z.string(),
-  }),
+    badgeLabel: z.string()
+  })
 });
 
 // Row component needs to reference other component types
@@ -253,8 +253,8 @@ const ComponentRow = z.object({
         ComponentSpacer,
         ComponentLinkButton,
         ComponentDivider,
-        ComponentCopyButton,
-      ]),
+        ComponentCopyButton
+      ])
     ),
     rowMainContent: z.array(
       z.union([
@@ -263,10 +263,10 @@ const ComponentRow = z.object({
         ComponentSpacer,
         ComponentLinkButton,
         ComponentDivider,
-        ComponentCopyButton,
-      ]),
-    ),
-  }),
+        ComponentCopyButton
+      ])
+    )
+  })
 });
 
 // Union type for all possible components
@@ -277,7 +277,7 @@ const Component = z.union([
   ComponentDivider,
   ComponentCopyButton,
   ComponentBadge,
-  ComponentRow,
+  ComponentRow
 ]);
 
 // Main customer event schema
@@ -288,7 +288,35 @@ export const customerEventSchema = z.object({
   severity: z.string(),
   timestamp: z.string(),
   title: z.string(),
-  updatedAt: z.string(),
+  updatedAt: z.string()
 });
 
 export type CustomerEventResponse = z.infer<typeof customerEventSchema>;
+
+export const postmarkMailServerSettingSchema = z.object({
+  createdAt: z.string(),
+  dkimHost: z.string().optional(),
+  dkimTextValue: z.string().optional(),
+  dkimUpdateStatus: z.string().optional(),
+  dnsDomainId: z.number().int().optional(),
+  dnsVerifiedAt: z.string().optional(),
+  domain: z.string(),
+  email: z.string().email(),
+  hasDNS: z.boolean(),
+  hasError: z.boolean(),
+  hasForwardingEnabled: z.boolean(),
+  inboundEmail: z.string().optional(),
+  isDNSVerified: z.boolean(),
+  isEnabled: z.boolean(),
+  returnPathDomain: z.string().optional(),
+  returnPathDomainCNAME: z.string().optional(),
+  returnPathDomainVerified: z.boolean(),
+  serverId: z.number().int().positive(),
+  serverToken: z.string(),
+  updatedAt: z.string(),
+  workspaceId: z.string()
+});
+
+export type PostmarkMailServerSetting = z.infer<
+  typeof postmarkMailServerSettingSchema
+>;

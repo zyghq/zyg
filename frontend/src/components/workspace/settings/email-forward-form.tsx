@@ -15,7 +15,7 @@ const FormSchema = z.object({
   mobile: z.boolean().default(false).optional(),
 });
 
-export function EmailForwardEnableForm() {
+export function EmailForwardForm() {
   const form = useForm<z.infer<typeof FormSchema>>({
     defaultValues: {
       mobile: true,

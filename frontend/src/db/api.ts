@@ -34,6 +34,9 @@ import {
   WorkspaceMetricsResponse,
   workspaceMetricsResponseSchema,
   workspaceResponseSchema,
+  postmarkMailServerSettingSchema,
+  PostmarkMailServerSetting
+
 } from "./schema";
 import {
   CustomerMap,
@@ -1367,6 +1370,54 @@ export async function getMessageAttachment(
       return {
         data: null,
         error: new Error("error parsing message attachement schema"),
+      };
+    }
+  } catch (err) {
+    console.error(err);
+    return {
+      data: null,
+      error: new Error("something went wrong"),
+    };
+  }
+}
+
+
+export async function getEmailSetting(
+  token: string,
+  workspaceId: string,
+): Promise<{
+  data: PostmarkMailServerSetting | null;
+  error: Error | null;
+}> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/postmark/servers/`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        method: "GET",
+      },
+    );
+    if (!response.ok) {
+      const { status, statusText } = response;
+      return {
+        data: null,
+        error: new Error(
+          `error fetching mail setting: ${status} ${statusText}`,
+        ),
+      };
+    }
+    try {
+      const data = await response.json();
+      const setting = postmarkMailServerSettingSchema.parse({ ...data });
+      return { data: setting, error: null };
+    } catch (err) {
+      console.error(err);
+      return {
+        data: null,
+        error: new Error("error parsing email setting schema"),
       };
     }
   } catch (err) {

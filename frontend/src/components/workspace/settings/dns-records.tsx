@@ -2,30 +2,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Check, Copy } from "lucide-react";
 
-interface DNSRecords {
+interface DNSRecord {
   hostname: string;
   status: "Pending" | "Verified";
   type: string;
   value: string;
 }
 
-export function DNSRecords() {
-  const records: DNSRecords[] = [
-    {
-      hostname: "202409060608l7pm_domainkey",
-      status: "Verified",
-      type: "TXT",
-      value:
-        "k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCASM7yBUZ7AgwT1ioQGOhHXgXCE8JThXrEsibGWU0RqZY3bmmSVzm4MoZ8uVnuJN3o9TJ1BEwfJSDPGzJdPXPEVBCHVQ7Lw4dl1OPgo7hcJUcGGNs0XPgoPqqgGNQPG63LCUcg2vBNJIbYOkhQPqgfmPH0Q19XlYDCBgQCAS4GNADCBiQKBgQCAS",
-    },
-    {
-      hostname: "plain-bounces",
-      status: "Verified",
-      type: "CNAME",
-      value: "pm.mtasv.net",
-    },
-  ];
-
+export function DNSRecords({ records }: { records: DNSRecord[]}) {
   return (
     <Card className="rounded-md shadow-none">
       <CardContent className="p-4">
