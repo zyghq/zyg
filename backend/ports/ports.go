@@ -108,6 +108,8 @@ type WorkspaceServicer interface {
 	PostmarkMailServerAddDomain(
 		ctx context.Context, setting models.PostmarkMailServerSetting, domain string,
 	) (models.PostmarkMailServerSetting, bool, error)
+	PostmarkMailServerVerifyDomain(
+		ctx context.Context, setting models.PostmarkMailServerSetting) (models.PostmarkMailServerSetting, error)
 }
 
 type CustomerServicer interface {

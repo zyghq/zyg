@@ -853,3 +853,59 @@ func (h *WorkspaceHandler) handlePostmarkMailServerAddDNS(
 		slog.Error("failed to encode json", slog.Any("err", err))
 	}
 }
+
+func (h *WorkspaceHandler) handlePostmarkMailServerVerifyDNS(
+	w http.ResponseWriter, r *http.Request, member *models.Member) {
+	defer func(r io.ReadCloser) {
+		_, _ = io.Copy(io.Discard, r)
+		_ = r.Close()
+	}(r.Body)
+
+	ctx := r.Context()
+
+	hub := sentry.GetHubFromContext(ctx)
+
+	workspace, err := h.ws.GetWorkspace(ctx, member.WorkspaceId)
+	if errors.Is(err, services.ErrWorkspaceNotFound) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to fetch workspace", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	setting, err := h.ws.GetPostmarkMailServerSetting(ctx, workspace.WorkspaceId)
+	if errors.Is(err, services.ErrPostmarkSettingNotFound) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to fetch postmark mail server setting", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if dns domain ID exists
+	// dns domain ID must exist before verifying
+	if setting.DNSDomainId == nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	// Verify domain in Postmark
+	setting, err = h.ws.PostmarkMailServerVerifyDomain(ctx, setting)
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to verify postmark mail server domain", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(setting); err != nil {
+		slog.Error("failed to encode json", slog.Any("err", err))
+	}
+}

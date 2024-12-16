@@ -5,6 +5,11 @@ import (
 	"time"
 )
 
+const (
+	DKIMUpdateStatusPending  = "Pending"
+	DKIMUpdateStatusVerified = "Verified"
+)
+
 type PostmarkMailServerSetting struct {
 	WorkspaceId              string     `json:"workspaceId"`
 	ServerId                 int64      `json:"serverId"`
@@ -49,4 +54,13 @@ func (pm PostmarkMailServerSetting) MarshalJSON() ([]byte, error) {
 		ServerToken: token,
 	}
 	return json.Marshal(aux)
+}
+
+// DNSHasVerified checks if the DKIM update status is "Verified" and the return path domain is verified
+// returning true or false.
+func (pm PostmarkMailServerSetting) DNSHasVerified() bool {
+	if pm.DKIMUpdateStatus != nil {
+		return *pm.DKIMUpdateStatus == DKIMUpdateStatusVerified && pm.ReturnPathDomainVerified
+	}
+	return false
 }

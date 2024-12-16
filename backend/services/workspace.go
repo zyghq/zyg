@@ -558,6 +558,8 @@ func (ws *WorkspaceService) PostmarkMailServerAddDomain(
 		created = true
 	}
 
+	// Pick the latest DKIM Host and TXT Value
+	// As per the docs *Pending* should be the latest.
 	var dkimHost, dkimTextValue string
 	if addedDomain.DKIMPendingHost != "" {
 		dkimHost = addedDomain.DKIMPendingHost
@@ -576,6 +578,7 @@ func (ws *WorkspaceService) PostmarkMailServerAddDomain(
 	setting.DKIMHost = &dkimHost
 	setting.DKIMTextValue = &dkimTextValue
 	setting.DKIMUpdateStatus = &addedDomain.DKIMUpdateStatus
+
 	setting.ReturnPathDomain = &addedDomain.ReturnPathDomain
 	setting.ReturnPathDomainCNAME = &addedDomain.ReturnPathDomainCNAMEValue
 	setting.ReturnPathDomainVerified = addedDomain.ReturnPathDomainVerified
@@ -586,4 +589,61 @@ func (ws *WorkspaceService) PostmarkMailServerAddDomain(
 		return models.PostmarkMailServerSetting{}, created, err
 	}
 	return setting, created, nil
+}
+
+func (ws *WorkspaceService) PostmarkMailServerVerifyDomain(
+	ctx context.Context, setting models.PostmarkMailServerSetting,
+) (models.PostmarkMailServerSetting, error) {
+
+	hub := sentry.GetHubFromContext(ctx)
+	client := postmark.NewClient("", zyg.PostmarkAccountToken())
+
+	now := time.Now().UTC()
+	verifiedDKIM, err := client.VerifyDKIM(ctx, *setting.DNSDomainId)
+	if err != nil {
+		hub.CaptureException(err)
+		return models.PostmarkMailServerSetting{}, err
+	}
+
+	verifiedReturnPath, err := client.VerifyReturnPath(ctx, *setting.DNSDomainId)
+	if err != nil {
+		hub.CaptureException(err)
+		return models.PostmarkMailServerSetting{}, err
+	}
+
+	// Pick the latest DKIM Host and TXT Value
+	// As per the docs *Pending* should be the latest.
+	var dkimHost, dkimTextValue string
+	if verifiedDKIM.DKIMPendingHost != "" {
+		dkimHost = verifiedDKIM.DKIMPendingHost
+	} else {
+		dkimHost = verifiedDKIM.DKIMHost
+	}
+	if verifiedDKIM.DKIMPendingTextValue != "" {
+		dkimTextValue = verifiedDKIM.DKIMPendingTextValue
+	} else {
+		dkimTextValue = verifiedDKIM.DKIMTextValue
+	}
+
+	setting.HasDNS = true
+	setting.DNSVerifiedAt = &now
+	setting.DKIMHost = &dkimHost
+	setting.DKIMTextValue = &dkimTextValue
+	setting.DKIMUpdateStatus = &verifiedDKIM.DKIMUpdateStatus
+
+	setting.ReturnPathDomain = &verifiedReturnPath.ReturnPathDomain
+	setting.ReturnPathDomainCNAME = &verifiedReturnPath.ReturnPathDomainCNAMEValue
+	setting.ReturnPathDomainVerified = verifiedReturnPath.ReturnPathDomainVerified
+	if setting.DNSHasVerified() {
+		setting.IsDNSVerified = true
+	} else {
+		setting.IsDNSVerified = false
+	}
+
+	setting, err = ws.workspaceRepo.SavePostmarkMailServerSetting(ctx, setting)
+	if err != nil {
+		hub.CaptureException(err)
+		return models.PostmarkMailServerSetting{}, err
+	}
+	return setting, nil
 }

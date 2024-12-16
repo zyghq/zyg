@@ -132,6 +132,9 @@ func NewServer(
 	mux.Handle("POST /workspaces/{workspaceId}/postmark/servers/parts/dns/add/{$}",
 		NewEnsureMemberAuth(wh.handlePostmarkMailServerAddDNS, authService))
 
+	mux.Handle("PUT /workspaces/{workspaceId}/postmark/servers/parts/dns/verify/{$}",
+		NewEnsureMemberAuth(wh.handlePostmarkMailServerVerifyDNS, authService))
+
 	// Webhooks
 	// handles postmark inbound message webhook for workspace.
 	// This URL path must also be configured in the postmark inbound settings.
