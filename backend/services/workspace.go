@@ -484,7 +484,7 @@ func (ws *WorkspaceService) PostmarkCreateMailServer(
 		serverToken = server.APITokens[0]
 	}
 	now := time.Now().UTC()
-	// Save in workspace Postmark settings
+	// Save in workspace Postmark setting
 	setting := models.PostmarkMailServerSetting{
 		WorkspaceId:          workspaceId,
 		ServerId:             server.ID,
@@ -529,21 +529,34 @@ func (ws *WorkspaceService) GetPostmarkMailServerSetting(
 
 func (ws *WorkspaceService) PostmarkMailServerAddDomain(
 	ctx context.Context, setting models.PostmarkMailServerSetting, domain string,
-) (models.PostmarkMailServerSetting, error) {
+) (models.PostmarkMailServerSetting, bool, error) {
+	var created bool
+	var addedDomain postmark.DomainDetail
+	var err error
+
 	hub := sentry.GetHubFromContext(ctx)
 	client := postmark.NewClient("", zyg.PostmarkAccountToken())
-	req := postmark.CreateDomainRequest{
-		Name: domain,
+
+	// Checks if the DNS domain is already added.
+	// If added we fetch the domain details from the Postmark API
+	// otherwise, add the domain in Postmark
+	if setting.DNSDomainId != nil {
+		addedDomain, err = client.GetDomain(ctx, *setting.DNSDomainId)
+		if err != nil {
+			hub.CaptureException(err)
+			return models.PostmarkMailServerSetting{}, created, err
+		}
+	} else {
+		req := postmark.CreateDomainRequest{
+			Name: domain,
+		}
+		addedDomain, err = client.CreateDomain(ctx, req)
+		if err != nil {
+			hub.CaptureException(err)
+			return models.PostmarkMailServerSetting{}, created, err
+		}
+		created = true
 	}
-	addedDomain, err := client.CreateDomain(ctx, req)
-	if err != nil {
-		hub.CaptureException(err)
-		return models.PostmarkMailServerSetting{}, err
-	}
-	// Capture message in Sentry as this helps in keeping track of interactions with Postmark in all env.
-	// We also want to make sure to audit.
-	hub.CaptureMessage(
-		fmt.Sprintf("postmark domain created with name: %s and ID: %d", addedDomain.Name, addedDomain.ID))
 	setting.HasDNS = true
 	setting.IsDNSVerified = false
 	setting.DNSDomainId = &addedDomain.ID
@@ -557,7 +570,7 @@ func (ws *WorkspaceService) PostmarkMailServerAddDomain(
 	setting, err = ws.workspaceRepo.SavePostmarkMailServerSetting(ctx, setting)
 	if err != nil {
 		hub.CaptureException(err)
-		return models.PostmarkMailServerSetting{}, err
+		return models.PostmarkMailServerSetting{}, created, err
 	}
-	return setting, nil
+	return setting, created, nil
 }

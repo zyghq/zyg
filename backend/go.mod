@@ -20,7 +20,7 @@ require (
 	github.com/rs/cors v1.10.1
 	github.com/rs/xid v1.5.0
 	github.com/sanchitrk/namingo v0.1.2
-	github.com/zyghq/postmark v0.0.0-20241215070642-2cc22a8468af
+	github.com/zyghq/postmark v0.0.0-20241215145731-f65e97ef28e3
 	golang.org/x/net v0.31.0
 )
 

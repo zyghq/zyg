@@ -830,16 +830,25 @@ func (h *WorkspaceHandler) handlePostmarkMailServerAddDNS(
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+
 	// Add domain in Postmark
-	setting, err = h.ws.PostmarkMailServerAddDomain(ctx, setting, reqp.Domain)
+	setting, created, err := h.ws.PostmarkMailServerAddDomain(ctx, setting, reqp.Domain)
 	if err != nil {
 		hub.CaptureException(err)
 		slog.Error("failed to add postmark mail server domain", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+	if created {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		if err := json.NewEncoder(w).Encode(setting); err != nil {
+			slog.Error("failed to encode json", slog.Any("err", err))
+		}
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(setting); err != nil {
 		slog.Error("failed to encode json", slog.Any("err", err))
 	}
