@@ -126,6 +126,9 @@ func NewServer(
 	mux.Handle("GET /workspaces/{workspaceId}/widgets/{$}",
 		NewEnsureMemberAuth(wh.handleGetWidgets, authService))
 
+	mux.Handle("GET /workspaces/{workspaceId}/postmark/servers/{$}",
+		NewEnsureMemberAuth(wh.handlePostmarkGetMailServer, authService))
+
 	mux.Handle("POST /workspaces/{workspaceId}/postmark/servers/{$}",
 		NewEnsureMemberAuth(wh.handlePostmarkCreateMailServer, authService))
 

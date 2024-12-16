@@ -39,7 +39,6 @@ func postmarkMailServerSettingCols() builq.Columns {
 
 func (wrk *WorkspaceDB) SavePostmarkMailServerSetting(
 	ctx context.Context, setting models.PostmarkMailServerSetting) (models.PostmarkMailServerSetting, error) {
-
 	q := builq.New()
 	cols := postmarkMailServerSettingCols()
 
@@ -59,7 +58,8 @@ func (wrk *WorkspaceDB) SavePostmarkMailServerSetting(
 	}
 	if setting.DNSVerifiedAt != nil {
 		dnsVerifiedAt = sql.NullTime{
-			Time: *setting.DNSVerifiedAt,
+			Time:  *setting.DNSVerifiedAt,
+			Valid: true,
 		}
 	}
 	if setting.DNSDomainId != nil {
@@ -72,30 +72,35 @@ func (wrk *WorkspaceDB) SavePostmarkMailServerSetting(
 	if setting.DKIMHost != nil {
 		dkimHost = sql.NullString{
 			String: *setting.DKIMHost,
+			Valid:  true,
 		}
 	}
 
 	if setting.DKIMTextValue != nil {
 		dkimTextValue = sql.NullString{
 			String: *setting.DKIMTextValue,
+			Valid:  true,
 		}
 	}
 
 	if setting.DKIMUpdateStatus != nil {
 		dkimUpdateStatus = sql.NullString{
 			String: *setting.DKIMUpdateStatus,
+			Valid:  true,
 		}
 	}
 
 	if setting.ReturnPathDomain != nil {
 		returnPathDomain = sql.NullString{
 			String: *setting.ReturnPathDomain,
+			Valid:  true,
 		}
 	}
 
 	if setting.ReturnPathDomainCNAME != nil {
 		returnPathDomainCname = sql.NullString{
 			String: *setting.ReturnPathDomainCNAME,
+			Valid:  true,
 		}
 	}
 
