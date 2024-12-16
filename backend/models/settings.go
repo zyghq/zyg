@@ -19,8 +19,8 @@ type PostmarkMailServerSetting struct {
 	IsDNSVerified            bool       `json:"isDNSVerified"`
 	DNSVerifiedAt            *time.Time `json:"dnsVerifiedAt"`            // After DNS is verified
 	DNSDomainId              *int64     `json:"dnsDomainId"`              // After adding domain
-	DKIMPendingHost          *string    `json:"dkimPendingHost"`          // After adding domain
-	DKIMPendingTextValue     *string    `json:"dkimPendingTextValue"`     // After adding domain
+	DKIMHost                 *string    `json:"dkimHost"`                 // After adding domain - tracks latest
+	DKIMTextValue            *string    `json:"dkimTextValue"`            // After adding domain - tracks latest
 	DKIMUpdateStatus         *string    `json:"dkimUpdateStatus"`         // After adding domain
 	ReturnPathDomain         *string    `json:"returnPathDomain"`         // After adding domain
 	ReturnPathDomainCNAME    *string    `json:"returnPathDomainCNAME"`    // After adding domain

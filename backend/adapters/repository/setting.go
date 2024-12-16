@@ -26,8 +26,8 @@ func postmarkMailServerSettingCols() builq.Columns {
 		"is_dns_verified",
 		"dns_verified_at",          // nullable
 		"dns_domain_id",            // nullable
-		"dkim_pending_host",        // nullable
-		"dkim_pending_text_value",  // nullable
+		"dkim_host",                // nullable
+		"dkim_text_value",          // nullable
 		"dkim_update_status",       // nullable
 		"return_path_domain",       // nullable
 		"return_path_domain_cname", // nullable
@@ -47,7 +47,7 @@ func (wrk *WorkspaceDB) SavePostmarkMailServerSetting(
 		inboundEmail  sql.NullString
 		dnsVerifiedAt sql.NullTime
 		dnsDomainId   sql.NullInt64
-		dkimPendingHost, dkimPendingTextValue, dkimUpdateStatus,
+		dkimHost, dkimTextValue, dkimUpdateStatus,
 		returnPathDomain, returnPathDomainCname sql.NullString
 	)
 
@@ -69,15 +69,15 @@ func (wrk *WorkspaceDB) SavePostmarkMailServerSetting(
 		}
 	}
 
-	if setting.DKIMPendingHost != nil {
-		dkimPendingHost = sql.NullString{
-			String: *setting.DKIMPendingHost,
+	if setting.DKIMHost != nil {
+		dkimHost = sql.NullString{
+			String: *setting.DKIMHost,
 		}
 	}
 
-	if setting.DKIMPendingTextValue != nil {
-		dkimPendingTextValue = sql.NullString{
-			String: *setting.DKIMPendingTextValue,
+	if setting.DKIMTextValue != nil {
+		dkimTextValue = sql.NullString{
+			String: *setting.DKIMTextValue,
 		}
 	}
 
@@ -105,7 +105,7 @@ func (wrk *WorkspaceDB) SavePostmarkMailServerSetting(
 		setting.HasError, inboundEmail,
 		setting.HasForwardingEnabled,
 		setting.HasDNS, setting.IsDNSVerified, dnsVerifiedAt, dnsDomainId,
-		dkimPendingHost, dkimPendingTextValue, dkimUpdateStatus,
+		dkimHost, dkimTextValue, dkimUpdateStatus,
 		returnPathDomain, returnPathDomainCname, setting.ReturnPathDomainVerified,
 		setting.CreatedAt,
 		setting.UpdatedAt,
@@ -126,8 +126,8 @@ func (wrk *WorkspaceDB) SavePostmarkMailServerSetting(
 	q("is_dns_verified = EXCLUDED.is_dns_verified,")
 	q("dns_verified_at = EXCLUDED.dns_verified_at,")
 	q("dns_domain_id = EXCLUDED.dns_domain_id,")
-	q("dkim_pending_host = EXCLUDED.dkim_pending_host,")
-	q("dkim_pending_text_value = EXCLUDED.dkim_pending_text_value,")
+	q("dkim_host = EXCLUDED.dkim_host,")
+	q("dkim_text_value = EXCLUDED.dkim_text_value,")
 	q("dkim_update_status = EXCLUDED.dkim_update_status,")
 	q("return_path_domain = EXCLUDED.return_path_domain,")
 	q("return_path_domain_cname = EXCLUDED.return_path_domain_cname,")
@@ -152,7 +152,7 @@ func (wrk *WorkspaceDB) SavePostmarkMailServerSetting(
 		&setting.HasError, &inboundEmail,
 		&setting.HasForwardingEnabled,
 		&setting.HasDNS, &setting.IsDNSVerified, &dnsVerifiedAt, &dnsDomainId,
-		&dkimPendingHost, &dkimPendingTextValue, &dkimUpdateStatus,
+		&dkimHost, &dkimTextValue, &dkimUpdateStatus,
 		&returnPathDomain, &returnPathDomainCname, &setting.ReturnPathDomainVerified,
 		&setting.CreatedAt,
 		&setting.UpdatedAt,
@@ -175,11 +175,11 @@ func (wrk *WorkspaceDB) SavePostmarkMailServerSetting(
 	if dnsDomainId.Valid {
 		setting.DNSDomainId = &dnsDomainId.Int64
 	}
-	if dkimPendingHost.Valid {
-		setting.DKIMPendingHost = &dkimPendingHost.String
+	if dkimHost.Valid {
+		setting.DKIMHost = &dkimHost.String
 	}
-	if dkimPendingTextValue.Valid {
-		setting.DKIMPendingTextValue = &dkimPendingTextValue.String
+	if dkimTextValue.Valid {
+		setting.DKIMTextValue = &dkimTextValue.String
 	}
 	if dkimUpdateStatus.Valid {
 		setting.DKIMUpdateStatus = &dkimUpdateStatus.String
@@ -200,7 +200,7 @@ func (wrk *WorkspaceDB) FetchPostmarkMailServerSettingByWorkspaceId(
 		inboundEmail  sql.NullString
 		dnsVerifiedAt sql.NullTime
 		dnsDomainId   sql.NullInt64
-		dkimPendingHost, dkimPendingTextValue, dkimUpdateStatus,
+		dkimHost, dkimTextValue, dkimUpdateStatus,
 		returnPathDomain, returnPathDomainCname sql.NullString
 	)
 
@@ -227,7 +227,7 @@ func (wrk *WorkspaceDB) FetchPostmarkMailServerSettingByWorkspaceId(
 		&setting.HasError, &inboundEmail,
 		&setting.HasForwardingEnabled,
 		&setting.HasDNS, &setting.IsDNSVerified, &dnsVerifiedAt, &dnsDomainId,
-		&dkimPendingHost, &dkimPendingTextValue, &dkimUpdateStatus,
+		&dkimHost, &dkimTextValue, &dkimUpdateStatus,
 		&returnPathDomain, &returnPathDomainCname, &setting.ReturnPathDomainVerified,
 		&setting.CreatedAt,
 		&setting.UpdatedAt,
@@ -250,11 +250,11 @@ func (wrk *WorkspaceDB) FetchPostmarkMailServerSettingByWorkspaceId(
 	if dnsDomainId.Valid {
 		setting.DNSDomainId = &dnsDomainId.Int64
 	}
-	if dkimPendingHost.Valid {
-		setting.DKIMPendingHost = &dkimPendingHost.String
+	if dkimHost.Valid {
+		setting.DKIMHost = &dkimHost.String
 	}
-	if dkimPendingTextValue.Valid {
-		setting.DKIMPendingTextValue = &dkimPendingTextValue.String
+	if dkimTextValue.Valid {
+		setting.DKIMTextValue = &dkimTextValue.String
 	}
 	if dkimUpdateStatus.Valid {
 		setting.DKIMUpdateStatus = &dkimUpdateStatus.String

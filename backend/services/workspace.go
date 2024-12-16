@@ -557,11 +557,24 @@ func (ws *WorkspaceService) PostmarkMailServerAddDomain(
 		}
 		created = true
 	}
+
+	var dkimHost, dkimTextValue string
+	if addedDomain.DKIMPendingHost != "" {
+		dkimHost = addedDomain.DKIMPendingHost
+	} else {
+		dkimHost = addedDomain.DKIMHost
+	}
+	if addedDomain.DKIMPendingTextValue != "" {
+		dkimTextValue = addedDomain.DKIMPendingTextValue
+	} else {
+		dkimTextValue = addedDomain.DKIMTextValue
+	}
+
 	setting.HasDNS = true
 	setting.IsDNSVerified = false
 	setting.DNSDomainId = &addedDomain.ID
-	setting.DKIMPendingHost = &addedDomain.DKIMPendingHost
-	setting.DKIMPendingTextValue = &addedDomain.DKIMPendingTextValue
+	setting.DKIMHost = &dkimHost
+	setting.DKIMTextValue = &dkimTextValue
 	setting.DKIMUpdateStatus = &addedDomain.DKIMUpdateStatus
 	setting.ReturnPathDomain = &addedDomain.ReturnPathDomain
 	setting.ReturnPathDomainCNAME = &addedDomain.ReturnPathDomainCNAMEValue
