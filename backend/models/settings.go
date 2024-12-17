@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	DKIMUpdateStatusPending  = "Pending"
-	DKIMUpdateStatusVerified = "Verified"
+	DKIMUpdateStatusPending  = "Pending"  // Depends on Postmark
+	DKIMUpdateStatusVerified = "Verified" // Depends on Postmark
 )
 
 type PostmarkMailServerSetting struct {

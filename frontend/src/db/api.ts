@@ -25,6 +25,8 @@ import {
   MessageAttachmentResponse,
   messageAttachmentResponseSchema,
   patResponseSchema,
+  PostmarkMailServerSetting,
+  postmarkMailServerSettingSchema,
   ThreadLabelResponse,
   threadLabelResponseSchema,
   ThreadMessageResponse,
@@ -33,9 +35,7 @@ import {
   threadResponseSchema,
   WorkspaceMetricsResponse,
   workspaceMetricsResponseSchema,
-  workspaceResponseSchema,
-  postmarkMailServerSettingSchema,
-  PostmarkMailServerSetting
+  workspaceResponseSchema
 
 } from "./schema";
 import {
@@ -1369,7 +1369,7 @@ export async function getMessageAttachment(
       console.error(err);
       return {
         data: null,
-        error: new Error("error parsing message attachement schema"),
+        error: new Error("error parsing message attachment schema"),
       };
     }
   } catch (err) {
@@ -1386,7 +1386,7 @@ export async function getEmailSetting(
   token: string,
   workspaceId: string,
 ): Promise<{
-  data: PostmarkMailServerSetting | null;
+  data: null | PostmarkMailServerSetting;
   error: Error | null;
 }> {
   try {
@@ -1401,6 +1401,13 @@ export async function getEmailSetting(
       },
     );
     if (!response.ok) {
+      if (response.status === 404) {
+        return {
+          data: null,
+          error: null,
+        };
+      }
+      // something went wrong
       const { status, statusText } = response;
       return {
         data: null,

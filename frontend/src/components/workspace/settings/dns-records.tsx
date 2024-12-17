@@ -66,7 +66,7 @@ export function DNSRecords({ records }: { records: DNSRecord[]}) {
                     Status
                   </div>
                   <div className="flex items-center gap-2 text-green-600">
-                    <Check className="h-4 w-4" />
+                    <Check className="h-4 w-4 mt-1" />
                     {record.status}
                   </div>
                 </div>
