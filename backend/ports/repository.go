@@ -61,8 +61,11 @@ type WorkspaceRepositorer interface {
 		ctx context.Context, workspaceId string) (models.Member, error)
 	SavePostmarkMailServerSetting(
 		ctx context.Context, setting models.PostmarkMailServerSetting) (models.PostmarkMailServerSetting, error)
-	FetchPostmarkMailServerSettingByWorkspaceId(
+	FetchPostmarkMailServerSettingById(
 		ctx context.Context, workspaceId string) (models.PostmarkMailServerSetting, error)
+	ModifyPostmarkMailServerSettingById(
+		ctx context.Context, setting models.PostmarkMailServerSetting, fields []string,
+	) (models.PostmarkMailServerSetting, error)
 }
 
 type MemberRepositorer interface {

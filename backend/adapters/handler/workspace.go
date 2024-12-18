@@ -946,3 +946,105 @@ func (h *WorkspaceHandler) handlePostmarkMailServerVerifyDNS(
 		slog.Error("failed to encode json", slog.Any("err", err))
 	}
 }
+
+// handlePostmarkUpdateMailServer updates the Postmark mail server settings of a workspace based on the provided HTTP request.
+func (h *WorkspaceHandler) handlePostmarkUpdateMailServer(
+	w http.ResponseWriter, r *http.Request, member *models.Member) {
+	defer func(r io.ReadCloser) {
+		_, _ = io.Copy(io.Discard, r)
+		_ = r.Close()
+	}(r.Body)
+
+	ctx := r.Context()
+
+	hub := sentry.GetHubFromContext(ctx)
+
+	var reqp map[string]interface{}
+	err := json.NewDecoder(r.Body).Decode(&reqp)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	workspace, err := h.ws.GetWorkspace(ctx, member.WorkspaceId)
+	if errors.Is(err, services.ErrWorkspaceNotFound) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to fetch workspace", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	setting, err := h.ws.GetPostmarkMailServerSetting(ctx, workspace.WorkspaceId)
+	if errors.Is(err, services.ErrPostmarkSettingNotFound) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to fetch postmark mail server setting", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	var isModified bool
+	var blockEnabling bool
+
+	// fields for updates
+	fields := make([]string, 0, len(reqp))
+
+	if hasForwardingEnabled, found := reqp["hasForwardingEnabled"]; found {
+		isModified = true
+		if hasForwardingEnabled == nil {
+			setting.HasForwardingEnabled = false
+			fields = append(fields, "hasForwardingEnabled")
+		} else {
+			f := hasForwardingEnabled.(bool)
+			setting.HasForwardingEnabled = f
+			fields = append(fields, "hasForwardingEnabled")
+		}
+	}
+
+	if !setting.HasForwardingEnabled {
+		blockEnabling = true
+		setting.IsEnabled = false
+		fields = append(fields, "enabled")
+	}
+
+	// If the forwarding is disabled, then enable flag cannot be updated and IsEnabled flag is set to false
+	if enabled, found := reqp["enabled"]; found && !blockEnabling {
+		isModified = true
+		if enabled == nil {
+			setting.IsEnabled = false
+			fields = append(fields, "enabled")
+		} else {
+			f := enabled.(bool)
+			if f && setting.HasForwardingEnabled {
+
+			}
+			setting.IsEnabled = f
+			fields = append(fields, "enabled")
+		}
+	}
+
+	// persist if modified
+	if isModified {
+		setting, err = h.ws.PostmarkMailServerUpdate(ctx, setting, fields)
+		if err != nil {
+			hub.CaptureException(err)
+			slog.Error("failed to modify postmark mail server setting", slog.Any("err", err))
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(setting); err != nil {
+		slog.Error("failed to encode json", slog.Any("err", err))
+	}
+}

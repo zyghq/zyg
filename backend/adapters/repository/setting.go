@@ -198,7 +198,7 @@ func (wrk *WorkspaceDB) SavePostmarkMailServerSetting(
 	return setting, nil
 }
 
-func (wrk *WorkspaceDB) FetchPostmarkMailServerSettingByWorkspaceId(
+func (wrk *WorkspaceDB) FetchPostmarkMailServerSettingById(
 	ctx context.Context, workspaceId string) (models.PostmarkMailServerSetting, error) {
 	var setting models.PostmarkMailServerSetting
 	var (
@@ -243,6 +243,97 @@ func (wrk *WorkspaceDB) FetchPostmarkMailServerSettingByWorkspaceId(
 	}
 	if err != nil {
 		slog.Error("failed to query", slog.Any("err", err))
+		return models.PostmarkMailServerSetting{}, ErrQuery
+	}
+
+	if inboundEmail.Valid {
+		setting.InboundEmail = &inboundEmail.String
+	}
+	if dnsVerifiedAt.Valid {
+		setting.DNSVerifiedAt = &dnsVerifiedAt.Time
+	}
+	if dnsDomainId.Valid {
+		setting.DNSDomainId = &dnsDomainId.Int64
+	}
+	if dkimHost.Valid {
+		setting.DKIMHost = &dkimHost.String
+	}
+	if dkimTextValue.Valid {
+		setting.DKIMTextValue = &dkimTextValue.String
+	}
+	if dkimUpdateStatus.Valid {
+		setting.DKIMUpdateStatus = &dkimUpdateStatus.String
+	}
+	if returnPathDomain.Valid {
+		setting.ReturnPathDomain = &returnPathDomain.String
+	}
+	if returnPathDomainCname.Valid {
+		setting.ReturnPathDomainCNAME = &returnPathDomainCname.String
+	}
+	return setting, nil
+}
+
+func (wrk *WorkspaceDB) ModifyPostmarkMailServerSettingById(
+	ctx context.Context, setting models.PostmarkMailServerSetting, fields []string) (models.PostmarkMailServerSetting, error) {
+	upsertQ := builq.New()
+	upsertParams := make([]any, 0, len(fields)+1) // updates + workspaceID
+	cols := postmarkMailServerSettingCols()
+
+	// nullables
+	var (
+		inboundEmail  sql.NullString
+		dnsVerifiedAt sql.NullTime
+		dnsDomainId   sql.NullInt64
+		dkimHost, dkimTextValue, dkimUpdateStatus,
+		returnPathDomain, returnPathDomainCname sql.NullString
+	)
+
+	upsertQ("UPDATE postmark_mail_server_setting SET")
+
+	for _, field := range fields {
+		switch field {
+		case "hasForwardingEnabled":
+			upsertQ("has_forwarding_enabled = %$,", setting.HasForwardingEnabled)
+			upsertParams = append(upsertParams, setting.HasForwardingEnabled)
+		case "enabled":
+			upsertQ("is_enabled = %$,", setting.IsEnabled)
+			upsertParams = append(upsertParams, setting.IsEnabled)
+		}
+	}
+	upsertQ("updated_at = NOW()")
+	upsertQ("WHERE workspace_id = %$", setting.WorkspaceId)
+	upsertParams = append(upsertParams, setting.WorkspaceId)
+
+	upsertQ("RETURNING %s", cols)
+
+	stmt, _, err := upsertQ.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return models.PostmarkMailServerSetting{}, ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := upsertQ.DebugBuild()
+		debugQuery(debug)
+	}
+
+	err = wrk.db.QueryRow(ctx, stmt, upsertParams...).Scan(
+		&setting.WorkspaceId, &setting.ServerId, &setting.ServerToken, &setting.IsEnabled, &setting.Email,
+		&setting.Domain,
+		&setting.HasError, &inboundEmail,
+		&setting.HasForwardingEnabled,
+		&setting.HasDNS, &setting.IsDNSVerified, &dnsVerifiedAt, &dnsDomainId,
+		&dkimHost, &dkimTextValue, &dkimUpdateStatus,
+		&returnPathDomain, &returnPathDomainCname, &setting.ReturnPathDomainVerified,
+		&setting.CreatedAt,
+		&setting.UpdatedAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
+		return models.PostmarkMailServerSetting{}, ErrEmpty
+	}
+	if err != nil {
+		slog.Error("failed to insert query", slog.Any("err", err))
 		return models.PostmarkMailServerSetting{}, ErrQuery
 	}
 

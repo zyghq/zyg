@@ -959,7 +959,7 @@ func (th *ThreadDB) ModifyThreadById(
 	ctx context.Context, thread models.Thread, fields []string) (models.Thread, error) {
 	upsertQ := builq.New()
 	upsertParams := make([]any, 0, len(fields)+1) // updates + thread ID
-	threadCols := threadCols()
+	cols := threadCols()
 
 	upsertQ("UPDATE thread SET")
 	var assignedMemberId sql.NullString
@@ -992,7 +992,7 @@ func (th *ThreadDB) ModifyThreadById(
 	upsertQ("WHERE thread_id = %$", thread.ThreadId)
 	upsertParams = append(upsertParams, thread.ThreadId)
 
-	upsertQ("RETURNING %s", threadCols)
+	upsertQ("RETURNING %s", cols)
 
 	stmt, _, err := upsertQ.Build()
 	if err != nil {

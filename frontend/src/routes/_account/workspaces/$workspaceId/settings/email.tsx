@@ -4,10 +4,15 @@ import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { DNSRecords } from "@/components/workspace/settings/dns-records";
-import { EmailForwardForm } from "@/components/workspace/settings/email-forward-form.tsx";
+import {
+  ConfirmDomainForm,
+  EmailForwardForm,
+} from "@/components/workspace/settings/email/forms.tsx";
 import { EnableEmail } from "@/components/workspace/settings/enable-email";
 import { getEmailSetting } from "@/db/api.ts";
 import { PostmarkMailServerSetting } from "@/db/schema.ts";
+import { WorkspaceStoreState } from "@/db/store.ts";
+import { useWorkspaceStore } from "@/providers.tsx";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCopyToClipboard } from "@uidotdev/usehooks";
@@ -15,6 +20,7 @@ import { CopyIcon } from "lucide-react";
 import { motion } from "motion/react";
 import * as React from "react";
 import { useForm } from "react-hook-form";
+import { useStore } from "zustand";
 
 export const Route = createFileRoute(
   "/_account/workspaces/$workspaceId/settings/email",
@@ -73,6 +79,7 @@ const CustomerServiceEmail = ({
   const [, copyToClipboard] = useCopyToClipboard();
   const [isEditable, setIsEditable] = React.useState(editable);
 
+  // TODO: implement this
   const onSubmit = (data: SupportEmailFormValues) => {
     console.log(data);
   };
@@ -86,6 +93,7 @@ const CustomerServiceEmail = ({
   const { reset } = form;
   const value = form.getValues("email");
 
+  // on props change
   React.useEffect(() => {
     setPropEmail(email);
     setIsEditable(editable);
@@ -169,10 +177,21 @@ const CustomerServiceEmail = ({
 };
 
 interface ReceivingEmailProps {
+  hasForwardingEnabled: boolean;
   inboundEmail: string;
+  refetch: () => void;
+  token: string;
+  workspaceId: string;
 }
 
-const ReceivingEmail = ({ inboundEmail }: ReceivingEmailProps) => {
+const ReceivingEmail = ({
+  hasForwardingEnabled,
+  inboundEmail,
+  refetch = () => {},
+  token,
+  workspaceId,
+}: ReceivingEmailProps) => {
+  const [, copyToClipboard] = useCopyToClipboard();
   return (
     <motion.section className="flex flex-col" variants={sectionVariants}>
       <h2 className="mb-2 text-xl">2. Receiving emails</h2>
@@ -182,42 +201,47 @@ const ReceivingEmail = ({ inboundEmail }: ReceivingEmailProps) => {
       <div className="mb-2 text-sm font-semibold">
         Forward inbound emails to this address:
       </div>
-      <motion.code
-        className="mb-2 flex rounded-md bg-accent p-4"
-        whileHover={{ scale: 1.01 }}
-      >
-        {inboundEmail}
-      </motion.code>
-      <EmailForwardForm />
+      <div className="mb-2 flex items-center">
+        <code className="mr-1 w-full rounded-md bg-accent p-2">
+          {inboundEmail}
+        </code>
+        <Button
+          onClick={() => copyToClipboard(inboundEmail)}
+          size="icon"
+          type="button"
+          variant="ghost"
+        >
+          <CopyIcon className="h-4 w-4" />
+        </Button>
+      </div>
+      <EmailForwardForm
+        enabled={hasForwardingEnabled}
+        refetch={refetch}
+        token={token}
+        workspaceId={workspaceId}
+      />
     </motion.section>
   );
 };
 
-interface SendingEmailsProps {
-  records: DNSRecord[];
-}
-
-const SendingEmails = ({ records }: SendingEmailsProps) => (
-  <motion.section className="flex flex-col" variants={sectionVariants}>
-    <h2 className="mb-2 text-xl">3. Sending emails</h2>
-    <div className="mb-4 text-sm text-muted-foreground">
-      Allows Zyg to send emails on your behalf. Verifying your domain gives
-      email clients it was sent by Zyg with your permissions.
-    </div>
-    <div className="mb-2 text-sm font-semibold">
-      Add the following DNS records for logly.dev.
-    </div>
-    <DNSRecords records={records} />
-  </motion.section>
-);
-
 function EmailSettings() {
   const { token } = Route.useRouteContext();
   const { workspaceId } = Route.useParams();
+
+  const workspaceStore = useWorkspaceStore();
+  const workspaceName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.getWorkspaceName(state),
+  );
+
+  const memberName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.getMemberName(state),
+  );
+
   const {
     data: setting,
     error,
     isPending,
+    refetch: refetchSetting,
   } = useQuery({
     enabled: !!token,
     queryFn: async () => {
@@ -276,22 +300,59 @@ function EmailSettings() {
           </p>
         </motion.header>
         <Separator />
+
         <CustomerServiceEmail
           editable={!setting?.email}
           email={setting?.email || ""}
-          memberName={"Sanchit"}
-          workspaceName={"Zyg"}
+          memberName={memberName}
+          workspaceName={workspaceName}
         />
         <Separator />
 
         {setting?.inboundEmail && (
-          <ReceivingEmail inboundEmail={setting?.inboundEmail} />
+          <ReceivingEmail
+            hasForwardingEnabled={setting?.hasForwardingEnabled}
+            inboundEmail={setting?.inboundEmail}
+            refetch={refetchSetting}
+            token={token}
+            workspaceId={workspaceId}
+          />
         )}
-
         {setting?.inboundEmail && <Separator />}
 
-        {setting?.hasDNS && <SendingEmails records={dnsRecords()} />}
-
+        <motion.section className="flex flex-col" variants={sectionVariants}>
+          <h2 className="mb-2 text-xl">3. Sending emails</h2>
+          <div className="mb-4 text-sm text-muted-foreground">
+            Allows Zyg to send emails on your behalf. Verifying your domain
+            gives email clients it was sent by Zyg with your permissions.
+          </div>
+          {setting?.hasDNS ? (
+            <motion.div
+              className="flex flex-col space-y-4"
+              variants={sectionVariants}
+            >
+              <div className="mb-2 text-sm font-semibold">
+                Add the following DNS records for logly.dev.
+              </div>
+              <DNSRecords records={dnsRecords()} />
+              <div>
+                <Button variant="outline">Verify DNS</Button>
+              </div>
+              <div className={"text-sm text-muted-foreground"}>
+                It may take a few minutes for your DNS changes to propagate
+                throughout the internet. In some cases, this process can take up
+                to 24 hours.
+              </div>
+            </motion.div>
+          ) : (
+            <ConfirmDomainForm
+              domain={setting?.domain}
+              refetch={refetchSetting}
+              token={token}
+              workspaceId={workspaceId}
+            />
+          )}
+        </motion.section>
         {setting?.hasDNS && <Separator />}
 
         {setting?.hasForwardingEnabled && (

@@ -6,7 +6,6 @@ import (
 )
 
 const (
-	DKIMUpdateStatusPending  = "Pending"  // Depends on Postmark
 	DKIMUpdateStatusVerified = "Verified" // Depends on Postmark
 )
 

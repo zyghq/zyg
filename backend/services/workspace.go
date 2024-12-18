@@ -511,7 +511,7 @@ func (ws *WorkspaceService) PostmarkCreateMailServer(
 func (ws *WorkspaceService) GetPostmarkMailServerSetting(
 	ctx context.Context, workspaceId string) (models.PostmarkMailServerSetting, error) {
 	hub := sentry.GetHubFromContext(ctx)
-	setting, err := ws.workspaceRepo.FetchPostmarkMailServerSettingByWorkspaceId(ctx, workspaceId)
+	setting, err := ws.workspaceRepo.FetchPostmarkMailServerSettingById(ctx, workspaceId)
 
 	if errors.Is(err, repository.ErrEmpty) {
 		return models.PostmarkMailServerSetting{}, ErrPostmarkSettingNotFound
@@ -643,6 +643,16 @@ func (ws *WorkspaceService) PostmarkMailServerVerifyDomain(
 	setting, err = ws.workspaceRepo.SavePostmarkMailServerSetting(ctx, setting)
 	if err != nil {
 		hub.CaptureException(err)
+		return models.PostmarkMailServerSetting{}, err
+	}
+	return setting, nil
+}
+
+func (ws *WorkspaceService) PostmarkMailServerUpdate(
+	ctx context.Context, setting models.PostmarkMailServerSetting, fields []string,
+) (models.PostmarkMailServerSetting, error) {
+	setting, err := ws.workspaceRepo.ModifyPostmarkMailServerSettingById(ctx, setting, fields)
+	if err != nil {
 		return models.PostmarkMailServerSetting{}, err
 	}
 	return setting, nil

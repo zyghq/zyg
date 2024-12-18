@@ -35,8 +35,7 @@ import {
   threadResponseSchema,
   WorkspaceMetricsResponse,
   workspaceMetricsResponseSchema,
-  workspaceResponseSchema
-
+  workspaceResponseSchema,
 } from "./schema";
 import {
   CustomerMap,
@@ -1381,7 +1380,6 @@ export async function getMessageAttachment(
   }
 }
 
-
 export async function getEmailSetting(
   token: string,
   workspaceId: string,
@@ -1432,6 +1430,100 @@ export async function getEmailSetting(
     return {
       data: null,
       error: new Error("something went wrong"),
+    };
+  }
+}
+
+export async function updateEmailSetting(
+  token: string,
+  workspaceId: string,
+  body: { enabled?: boolean; hasForwardingEnabled?: boolean },
+): Promise<{
+  data: null | PostmarkMailServerSetting;
+  error: Error | null;
+}> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/postmark/servers/`,
+      {
+        body: JSON.stringify({ ...body }),
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        method: "PATCH",
+      },
+    );
+    if (!response.ok) {
+      const { status, statusText } = response;
+      const error = new Error(
+        `error updating email setting with status: ${status} and statusText: ${statusText}`,
+      );
+      return { data: null, error };
+    }
+    try {
+      const data = await response.json();
+      const setting = postmarkMailServerSettingSchema.parse({ ...data });
+      return { data: setting, error: null };
+    } catch (err) {
+      console.error(err);
+      return {
+        data: null,
+        error: new Error("error parsing email setting schema"),
+      };
+    }
+  } catch (err) {
+    console.error(err);
+    return {
+      data: null,
+      error: new Error("error updating mail setting - something went wrong"),
+    };
+  }
+}
+
+export async function addEmailDomain(
+  token: string,
+  workspaceId: string,
+  body: { domain: string },
+): Promise<{
+  data: null | PostmarkMailServerSetting;
+  error: Error | null;
+}> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/postmark/servers/parts/dns/add/`,
+      {
+        body: JSON.stringify({ ...body }),
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      },
+    );
+    if (!response.ok) {
+      const { status, statusText } = response;
+      const error = new Error(
+        `error adding domain with status: ${status} and statusText: ${statusText}`,
+      );
+      return { data: null, error };
+    }
+    try {
+      const data = await response.json();
+      const setting = postmarkMailServerSettingSchema.parse({ ...data });
+      return { data: setting, error: null };
+    } catch (err) {
+      console.error(err);
+      return {
+        data: null,
+        error: new Error("error parsing email setting schema"),
+      };
+    }
+  } catch (err) {
+    console.error(err);
+    return {
+      data: null,
+      error: new Error("error adding domain - something went wrong"),
     };
   }
 }

@@ -96,14 +96,6 @@ github.com/stretchr/testify v1.8.2 h1:+h33VjcLVPDHtOdpUCuF+7gSuG3yGIftsP1YvFihtJ
 github.com/stretchr/testify v1.8.2/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/yuin/goldmark v1.7.8 h1:iERMLn0/QJeHFhxSt3p6PeN9mGnvIKSpG9YYorDMnic=
 github.com/yuin/goldmark v1.7.8/go.mod h1:uzxRWxtg69N339t3louHJ7+O03ezfj6PlliRlaOzY1E=
-github.com/zyghq/postmark v0.0.0-20241215025841-148071c7afa0 h1:+hinOKWlXtJo8wgULEM0GN0L+kSosAd7M7GaQEbikDs=
-github.com/zyghq/postmark v0.0.0-20241215025841-148071c7afa0/go.mod h1:lw+GPEYtrM/OT77TVPwYYEEJzOeaaitzVjNZHka/I1k=
-github.com/zyghq/postmark v0.0.0-20241215070642-2cc22a8468af h1:usLWmvzKL3QkR8R9Hht/LAgXhKtRHOFYUskYwOq8Kdc=
-github.com/zyghq/postmark v0.0.0-20241215070642-2cc22a8468af/go.mod h1:lw+GPEYtrM/OT77TVPwYYEEJzOeaaitzVjNZHka/I1k=
-github.com/zyghq/postmark v0.0.0-20241215145731-f65e97ef28e3 h1:mU08HMaYn+nhj+SXw+IUGVYaTg4TXPQGfbpQE6771CU=
-github.com/zyghq/postmark v0.0.0-20241215145731-f65e97ef28e3/go.mod h1:lw+GPEYtrM/OT77TVPwYYEEJzOeaaitzVjNZHka/I1k=
-github.com/zyghq/postmark v0.0.0-20241216101736-5e93d24f5e25 h1:NyTYrKe94CLeFqAHPuxcjmgLBGr8+UkNgEnvTydEsNk=
-github.com/zyghq/postmark v0.0.0-20241216101736-5e93d24f5e25/go.mod h1:lw+GPEYtrM/OT77TVPwYYEEJzOeaaitzVjNZHka/I1k=
 github.com/zyghq/postmark v0.0.0-20241216112403-9cea20d6da97 h1:hkilX+ZQ/Io7XeJ1lj4YJEwVPi+COehQ+P6pKBt/0fA=
 github.com/zyghq/postmark v0.0.0-20241216112403-9cea20d6da97/go.mod h1:lw+GPEYtrM/OT77TVPwYYEEJzOeaaitzVjNZHka/I1k=
 golang.org/x/crypto v0.29.0 h1:L5SG1JTTXupVV3n6sUqMTeWbjAyfPwoda2DLX8J8FrQ=
