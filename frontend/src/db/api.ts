@@ -1380,6 +1380,53 @@ export async function getMessageAttachment(
   }
 }
 
+export async function createEmailSetting(
+  token: string,
+  workspaceId: string,
+  body: { email: string },
+): Promise<{
+  data: null | PostmarkMailServerSetting;
+  error: Error | null;
+}> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/postmark/servers/`,
+      {
+        body: JSON.stringify({ ...body }),
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      },
+    );
+    if (!response.ok) {
+      const { status, statusText } = response;
+      const error = new Error(
+        `error creating email setting with status: ${status} and statusText: ${statusText}`,
+      );
+      return { data: null, error };
+    }
+    try {
+      const data = await response.json();
+      const setting = postmarkMailServerSettingSchema.parse({ ...data });
+      return { data: setting, error: null };
+    } catch (err) {
+      console.error(err);
+      return {
+        data: null,
+        error: new Error("error parsing email setting schema"),
+      };
+    }
+  } catch (err) {
+    console.error(err);
+    return {
+      data: null,
+      error: new Error("error creating email setting - something went wrong"),
+    };
+  }
+}
+
 export async function getEmailSetting(
   token: string,
   workspaceId: string,
@@ -1524,6 +1571,52 @@ export async function addEmailDomain(
     return {
       data: null,
       error: new Error("error adding domain - something went wrong"),
+    };
+  }
+}
+
+export async function verifyDNS(
+  token: string,
+  workspaceId: string,
+): Promise<{
+  data: null | PostmarkMailServerSetting;
+  error: Error | null;
+}> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/postmark/servers/parts/dns/verify/`,
+      {
+        body: JSON.stringify({}),
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        method: "PUT",
+      },
+    );
+    if (!response.ok) {
+      const { status, statusText } = response;
+      const error = new Error(
+        `error verifying dns with status: ${status} and statusText: ${statusText}`,
+      );
+      return { data: null, error };
+    }
+    try {
+      const data = await response.json();
+      const setting = postmarkMailServerSettingSchema.parse({ ...data });
+      return { data: setting, error: null };
+    } catch (err) {
+      console.error(err);
+      return {
+        data: null,
+        error: new Error("error parsing email setting schema"),
+      };
+    }
+  } catch (err) {
+    console.error(err);
+    return {
+      data: null,
+      error: new Error("error verifying dns - something went wrong"),
     };
   }
 }

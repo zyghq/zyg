@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Check, Copy } from "lucide-react";
+import { Button } from "@/components/ui/button.tsx";
+import { Card, CardContent } from "@/components/ui/card.tsx";
+import { Check, Clock, Copy } from "lucide-react";
 
 interface DNSRecord {
   hostname: string;
@@ -9,7 +9,7 @@ interface DNSRecord {
   value: string;
 }
 
-export function DNSRecords({ records }: { records: DNSRecord[]}) {
+export function Dns({ records }: { records: DNSRecord[] }) {
   return (
     <Card className="rounded-md shadow-none">
       <CardContent className="p-4">
@@ -65,10 +65,17 @@ export function DNSRecords({ records }: { records: DNSRecord[]}) {
                   <div className="text-sm font-medium text-muted-foreground">
                     Status
                   </div>
-                  <div className="flex items-center gap-2 text-green-600">
-                    <Check className="h-4 w-4 mt-1" />
-                    {record.status}
-                  </div>
+                  {record.status === "Verified" ? (
+                    <div className="flex items-center gap-2 text-green-600">
+                      <Check className="h-4 w-4" />
+                      {record.status}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      {record.status}
+                    </div>
+                  )}
                 </div>
               </div>
               {index < records.length - 1 && <div className="border-t" />}

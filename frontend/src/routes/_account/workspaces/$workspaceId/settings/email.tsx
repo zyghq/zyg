@@ -1,14 +1,14 @@
 import { Icons } from "@/components/icons.tsx";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { DNSRecords } from "@/components/workspace/settings/dns-records";
+import { Dns } from "@/components/workspace/settings/email/dns.tsx";
 import {
   ConfirmDomainForm,
   EmailForwardForm,
+  EnableEmailForm,
+  SupportEmailForm,
+  VerifyDNS,
 } from "@/components/workspace/settings/email/forms.tsx";
-import { EnableEmail } from "@/components/workspace/settings/enable-email";
 import { getEmailSetting } from "@/db/api.ts";
 import { PostmarkMailServerSetting } from "@/db/schema.ts";
 import { WorkspaceStoreState } from "@/db/store.ts";
@@ -18,8 +18,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCopyToClipboard } from "@uidotdev/usehooks";
 import { CopyIcon } from "lucide-react";
 import { motion } from "motion/react";
-import * as React from "react";
-import { useForm } from "react-hook-form";
 import { useStore } from "zustand";
 
 export const Route = createFileRoute(
@@ -56,124 +54,6 @@ const sectionVariants = {
     },
     y: 0,
   },
-};
-
-interface CustomerServiceEmailProps {
-  editable: boolean;
-  email: string;
-  memberName: string;
-  workspaceName: string;
-}
-
-interface SupportEmailFormValues {
-  email: string;
-}
-
-const CustomerServiceEmail = ({
-  editable,
-  email,
-  memberName,
-  workspaceName,
-}: CustomerServiceEmailProps) => {
-  const [propEmail, setPropEmail] = React.useState(email);
-  const [, copyToClipboard] = useCopyToClipboard();
-  const [isEditable, setIsEditable] = React.useState(editable);
-
-  // TODO: implement this
-  const onSubmit = (data: SupportEmailFormValues) => {
-    console.log(data);
-  };
-
-  const form = useForm<SupportEmailFormValues>({
-    defaultValues: {
-      email: propEmail,
-    },
-  });
-
-  const { reset } = form;
-  const value = form.getValues("email");
-
-  // on props change
-  React.useEffect(() => {
-    setPropEmail(email);
-    setIsEditable(editable);
-    reset({ email });
-  }, [email, editable, reset]);
-
-  return (
-    <motion.section className="flex flex-col" variants={sectionVariants}>
-      <h2 className="mb-2 text-xl">1. Your customer service email address</h2>
-      <div className="mb-4 text-sm text-muted-foreground">
-        The email address where you want customers to contact your company.
-        Outgoing emails to customers will also be sent from this email address.
-      </div>
-
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl className="mb-2">
-                  <div className="relative flex items-center">
-                    <Input
-                      {...field}
-                      className={!isEditable ? "mr-1" : ""} // Add padding when copy icon is visible
-                      disabled={!isEditable}
-                      type="email"
-                    />
-                    {!isEditable && (
-                      <Button
-                        onClick={() => copyToClipboard(field.value)}
-                        size="icon"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <CopyIcon className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <p className="mb-4 text-xs text-muted-foreground">
-            Outgoing emails will be sent using member's name and workspace name,
-            e.g.{" "}
-            <span className="font-semibold">
-              {memberName} at {workspaceName}
-            </span>{" "}
-            ({value || "support@example.com"})
-          </p>
-
-          <div className="flex space-x-2">
-            {isEditable ? (
-              <>
-                <Button type="submit">Save</Button>
-                <Button
-                  onClick={() => setIsEditable(false)}
-                  type="button"
-                  variant="outline"
-                >
-                  Cancel
-                </Button>
-              </>
-            ) : (
-              <Button
-                onClick={() => setIsEditable(true)}
-                type="button"
-                variant={"outline"}
-              >
-                Edit
-              </Button>
-            )}
-          </div>
-        </form>
-      </Form>
-    </motion.section>
-  );
 };
 
 interface ReceivingEmailProps {
@@ -232,7 +112,6 @@ function EmailSettings() {
   const workspaceName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.getWorkspaceName(state),
   );
-
   const memberName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.getMemberName(state),
   );
@@ -283,6 +162,8 @@ function EmailSettings() {
     return records;
   };
 
+  console.log(setting);
+
   return (
     <motion.div
       animate="visible"
@@ -301,12 +182,26 @@ function EmailSettings() {
         </motion.header>
         <Separator />
 
-        <CustomerServiceEmail
-          editable={!setting?.email}
-          email={setting?.email || ""}
-          memberName={memberName}
-          workspaceName={workspaceName}
-        />
+        <motion.section className="flex flex-col" variants={sectionVariants}>
+          <h2 className="mb-2 text-xl">
+            1. Your customer service email address
+          </h2>
+          <div className="mb-4 text-sm text-muted-foreground">
+            The email address where you want customers to contact your company.
+            Outgoing emails to customers will also be sent from this email
+            address.
+          </div>
+          <SupportEmailForm
+            editable={!setting?.email}
+            email={setting?.email || ""}
+            memberName={memberName}
+            refetch={refetchSetting}
+            token={token}
+            workspaceId={workspaceId}
+            workspaceName={workspaceName}
+          />
+        </motion.section>
+
         <Separator />
 
         {setting?.inboundEmail && (
@@ -320,40 +215,43 @@ function EmailSettings() {
         )}
         {setting?.inboundEmail && <Separator />}
 
-        <motion.section className="flex flex-col" variants={sectionVariants}>
-          <h2 className="mb-2 text-xl">3. Sending emails</h2>
-          <div className="mb-4 text-sm text-muted-foreground">
-            Allows Zyg to send emails on your behalf. Verifying your domain
-            gives email clients it was sent by Zyg with your permissions.
-          </div>
-          {setting?.hasDNS ? (
-            <motion.div
-              className="flex flex-col space-y-4"
-              variants={sectionVariants}
-            >
-              <div className="mb-2 text-sm font-semibold">
-                Add the following DNS records for logly.dev.
-              </div>
-              <DNSRecords records={dnsRecords()} />
-              <div>
-                <Button variant="outline">Verify DNS</Button>
-              </div>
-              <div className={"text-sm text-muted-foreground"}>
-                It may take a few minutes for your DNS changes to propagate
-                throughout the internet. In some cases, this process can take up
-                to 24 hours.
-              </div>
-            </motion.div>
-          ) : (
-            <ConfirmDomainForm
-              domain={setting?.domain}
-              refetch={refetchSetting}
-              token={token}
-              workspaceId={workspaceId}
-            />
-          )}
-        </motion.section>
-        {setting?.hasDNS && <Separator />}
+        {setting?.hasForwardingEnabled && (
+          <motion.section className="flex flex-col" variants={sectionVariants}>
+            <h2 className="mb-2 text-xl">3. Sending emails</h2>
+            <div className="mb-4 text-sm text-muted-foreground">
+              Allows Zyg to send emails on your behalf. Verifying your domain
+              gives email clients it was sent by Zyg with your permissions.
+            </div>
+            {setting?.hasDNS ? (
+              <motion.div
+                className="flex flex-col space-y-4"
+                variants={sectionVariants}
+              >
+                <div className="mb-2 text-sm font-semibold">
+                  Add the following DNS records for logly.dev.
+                </div>
+                <Dns records={dnsRecords()} />
+                <div>
+                  <VerifyDNS token={token} workspaceId={workspaceId} />
+                </div>
+                <div className={"text-sm text-muted-foreground"}>
+                  It may take a few minutes for your DNS changes to propagate
+                  throughout the internet. In some cases, this process can take
+                  up to 24 hours.
+                </div>
+              </motion.div>
+            ) : (
+              <ConfirmDomainForm
+                confirm={setting?.hasDNS}
+                domain={setting?.domain}
+                refetch={refetchSetting}
+                token={token}
+                workspaceId={workspaceId}
+              />
+            )}
+          </motion.section>
+        )}
+        {setting?.hasForwardingEnabled && <Separator />}
 
         {setting?.hasForwardingEnabled && (
           <motion.section className="flex flex-col" variants={sectionVariants}>
@@ -363,8 +261,12 @@ function EmailSettings() {
               enable this email address for use in the workspace.
             </div>
             <div className="flex items-center gap-4">
-              <EnableEmail />
-              <div className="text-sm font-semibold">Email is Disabled</div>
+              <EnableEmailForm
+                enabled={setting?.isEnabled || false}
+                refetch={refetchSetting}
+                token={token}
+                workspaceId={workspaceId}
+              />
             </div>
           </motion.section>
         )}
