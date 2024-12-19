@@ -309,7 +309,7 @@ export const postmarkMailServerSettingSchema = z.object({
   isDNSVerified: z.boolean(),
   isEnabled: z.boolean(),
   returnPathDomain: z.string().optional().nullable(),
-  returnPathDomainCNAME: z.string().optional().nullable(),
+  returnPathDomainCNAME: z.string().optional().nullable(), // the CNAME value
   returnPathDomainVerified: z.boolean(),
   serverId: z.number().int().positive(),
   serverToken: z.string(),

@@ -152,10 +152,10 @@ function EmailSettings() {
       value: setting?.dkimTextValue,
     } as DNSRecord;
     const cnameRecord = {
-      hostname: setting?.returnPathDomainCNAME,
+      hostname: setting?.returnPathDomain,
       status: setting?.returnPathDomainVerified ? "Verified" : "Pending",
       type: "CNAME",
-      value: setting?.returnPathDomain,
+      value: setting?.returnPathDomainCNAME,
     } as DNSRecord;
     records.push(dkimRecord);
     records.push(cnameRecord);
