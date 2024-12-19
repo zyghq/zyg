@@ -105,10 +105,13 @@ func BasicAuthWebhook(handler http.HandlerFunc, username, password string) http.
 		// Extract credentials from request header
 		user, pass, ok := r.BasicAuth()
 
+		ctx := r.Context()
+		hub := sentry.GetHubFromContext(ctx)
+
 		// Check if auth is provided and credentials match
 		if !ok || subtle.ConstantTimeCompare([]byte(user), []byte(username)) != 1 ||
 			subtle.ConstantTimeCompare([]byte(pass), []byte(password)) != 1 {
-
+			hub.CaptureMessage("Unauthorized Webhook Requested")
 			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
