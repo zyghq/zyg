@@ -18,5 +18,9 @@
     "frontend": false,
     "widget": false,
     "backend": false
-  }
+  },
+  "cSpell.words": [
+    "appspec",
+    "XSRV"
+  ]
 }

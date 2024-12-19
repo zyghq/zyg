@@ -8,7 +8,14 @@ env:
   STACK_ENV: staging
   STACK_NAME: zyg-srv
   APPLICATION: backend
+  REDIS_TLS_ENABLED: 1
+
   ZYG_DB_QUERY_DEBUG: 0
+  ZYG_SERVER_PROTO: https
+  ZYG_SERVER_DOMAIN: apisrvstaging.zyg.ai
+
+  SENTRY_DEBUG: 0
+  SENTRY_ENV: staging
 
   CGO_ENABLED: 0
   GOOS: linux
@@ -18,11 +25,11 @@ jobs:
   build:
     name: Build and Package
     runs-on: ubuntu-latest
-    
+
     defaults:
       run:
         working-directory: ./backend
-    
+
     environment:
       name: staging
 
@@ -69,7 +76,7 @@ jobs:
             echo "Binary not found at dist/bin/app"
             exit 1
           fi
-          
+
           echo "dist/ is the root path of the dist package"
           echo "Make sure of relative path of the dist/ package when deploying"
 
@@ -80,47 +87,58 @@ jobs:
           [Unit]
           Description=Zyg Srv Go Application
           After=network.target
-          
+
           [Service]
           Type=simple
           User=ubuntu
           Group=ubuntu
-          
+
           ExecStart=/usr/local/bin/app -host 0.0.0.0 -port 8080
           WorkingDirectory=/usr/local/bin/
-          
+
           Environment=DATABASE_URL=${{ secrets.DATABASE_URL }} 
-          
+
           Environment=REDIS_ADDR=${{ secrets.REDIS_ADDR }}
           Environment=REDIS_USERNAME=${{ secrets.REDIS_USERNAME }}
           Environment=REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }} 
-          Environment=REDIS_TLS_ENABLED=${{ secrets.REDIS_TLS_ENABLED }}
+          Environment=REDIS_TLS_ENABLED=${{ env.REDIS_TLS_ENABLED }}
 
           Environment=SUPABASE_JWT_SECRET=${{ secrets.SUPABASE_JWT_SECRET }}
           Environment=RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
 
-          Environment=ZYG_DB_QUERY_DEBUG=${{ env.ZYG_DB_QUERY_DEBUG }}
-
           Environment=CF_ACCOUNT_ID=${{ secrets.CF_ACCOUNT_ID }}
           Environment=R2_ACCESS_KEY_ID=${{ secrets.R2_ACCESS_KEY_ID }}
           Environment=R2_ACCESS_SECRET_KEY=${{ secrets.R2_ACCESS_SECRET_KEY }}
-          
+
+          Environment=SENTRY_DSN=${{ secrets.SENTRY_DSN }}
+          Environment=SENTRY_DEBUG=${{ env.SENTRY_DEBUG }}
+          Environment=SENTRY_ENV=${{ env.SENTRY_ENV }}
+
+          Environment=POSTMARK_ACCOUNT_TOKEN=${{ secrets.POSTMARK_ACCOUNT_TOKEN }}
+
+          Environment=WEBHOOK_USERNAME=${{ secrets.WEBHOOK_USERNAME }}
+          Environment=WEBHOOK_PASSWORD=${{ secrets.WEBHOOK_PASSWORD }}
+
+          Environment=ZYG_DB_QUERY_DEBUG=${{ env.ZYG_DB_QUERY_DEBUG }}
+          Environment=ZYG_SERVER_PROTO=${{ env.ZYG_SERVER_PROTO }}
+          Environment=ZYG_SERVER_DOMAIN=${{ env.ZYG_SERVER_DOMAIN }}
+
           Restart=on-failure 
           RestartSec=5
-          
+
           NoNewPrivileges=yes
-          
+
           ProtectSystem=full
           ProtectHome=true
           PrivateTmp=true
-          
+
           TimeoutStartSec=30
           TimeoutStopSec=30
-         
+
           [Install]
           WantedBy=multi-user.target
           EOF
-          
+
           cd dist
           zip -r ../dist.zip .
           cd ..
@@ -157,4 +175,3 @@ jobs:
             --deployment-group-name "${DEPLOYMENT_GROUP_NAME}" \
             --s3-location bucket=${BUCKET},key=${{ env.APPLICATION }}/${{ github.sha }}/dist.zip,bundleType=zip \
             --ignore-application-stop-failures
-
