@@ -2,6 +2,7 @@ package zyg
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"os"
 	"strconv"
 )
@@ -40,10 +41,18 @@ func GetXServerUrl() string {
 	return value
 }
 
-func ServerUrl() string {
-	value, ok := os.LookupEnv("ZYG_SERVER_URL")
+func ServerDomain() string {
+	value, ok := os.LookupEnv("ZYG_SERVER_DOMAIN")
 	if !ok {
-		return "http://localhost:8080"
+		return "localhost"
+	}
+	return value
+}
+
+func ServerProto() string {
+	value, ok := os.LookupEnv("ZYG_SERVER_PROTO")
+	if !ok {
+		return "http"
 	}
 	return value
 }
@@ -144,11 +153,40 @@ func SentryEnv() string {
 	return value
 }
 
-// PostmarkAccountToken Todo: fix me
 func PostmarkAccountToken() string {
 	value, ok := os.LookupEnv("POSTMARK_ACCOUNT_TOKEN")
 	if !ok {
-		return "b9b40f75-770f-4f88-a549-a503b3df97ce"
+		return ""
 	}
 	return value
+}
+
+// WebhookUsername retrieves the "WEBHOOK_USERNAME" environment variable or generates a UUID if not found.
+// If not set then generate random username for security reasons.
+func WebhookUsername() string {
+	value, ok := os.LookupEnv("WEBHOOK_USERNAME")
+	if !ok {
+		u, _ := uuid.NewUUID()
+		return u.String()
+	}
+	return value
+}
+
+// WebhookPassword retrieves the "WEBHOOK_PASSWORD" environment variable or generates a new UUID if not set.
+// If not set then generate random username for security reasons.
+func WebhookPassword() string {
+	value, ok := os.LookupEnv("WEBHOOK_PASSWORD")
+	if !ok {
+		u, _ := uuid.NewUUID()
+		return u.String()
+	}
+	return value
+}
+
+func WebhookUrl() string {
+	proto := ServerProto()
+	domain := ServerDomain()
+	u := WebhookUsername()
+	p := WebhookPassword()
+	return fmt.Sprintf("%s://%s:%s@%s", proto, u, p, domain)
 }

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"crypto/subtle"
 	"github.com/getsentry/sentry-go"
 	"log/slog"
 	"net/http"
@@ -97,4 +98,22 @@ func (em *EnsureMemberAuth) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Name: member.Name,
 	})
 	em.handler(w, r, &member)
+}
+
+func BasicAuthWebhook(handler http.HandlerFunc, username, password string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Extract credentials from request header
+		user, pass, ok := r.BasicAuth()
+
+		// Check if auth is provided and credentials match
+		if !ok || subtle.ConstantTimeCompare([]byte(user), []byte(username)) != 1 ||
+			subtle.ConstantTimeCompare([]byte(pass), []byte(password)) != 1 {
+
+			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		// Call the protected handler
+		handler(w, r)
+	}
 }

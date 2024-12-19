@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/getsentry/sentry-go"
+	"github.com/zyghq/zyg"
 	"net/http"
 	"time"
 
@@ -41,6 +42,9 @@ func NewServer(
 	wh := NewWorkspaceHandler(workspaceService, accountService, customerService)
 	th := NewThreadHandler(workspaceService, threadService)
 	ch := NewCustomerHandler(workspaceService, customerService)
+
+	webhookUsername := zyg.WebhookUsername()
+	webhookPassword := zyg.WebhookPassword()
 
 	mux.HandleFunc("GET /{$}", handleGetIndex)
 	mux.HandleFunc("POST /accounts/auth/{$}", ah.handleGetOrCreateAccount)
@@ -144,8 +148,8 @@ func NewServer(
 	// Webhooks
 	// handles postmark inbound message webhook for workspace.
 	// This URL path must also be configured in the postmark inbound settings.
-	mux.HandleFunc("POST /webhooks/{workspaceId}/postmark/inbound/{$}", th.handlePostmarkInboundWebhook)
-	// TODO: add Postmark Bounce hook URL
+	mux.HandleFunc("POST /webhooks/{workspaceId}/postmark/inbound/{$}",
+		BasicAuthWebhook(th.handlePostmarkInboundWebhook, webhookUsername, webhookPassword))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},

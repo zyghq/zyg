@@ -26,7 +26,8 @@ type WorkspaceService struct {
 }
 
 func NewWorkspaceService(
-	workspaceRepo ports.WorkspaceRepositorer, memberRepo ports.MemberRepositorer, customerRepo ports.CustomerRepositorer,
+	workspaceRepo ports.WorkspaceRepositorer,
+	memberRepo ports.MemberRepositorer, customerRepo ports.CustomerRepositorer,
 ) *WorkspaceService {
 	return &WorkspaceService{
 		workspaceRepo: workspaceRepo,
@@ -461,11 +462,11 @@ func (ws *WorkspaceService) PostmarkCreateMailServer(
 	// Requires Account Token to manage servers.
 	client := postmark.NewClient("", zyg.PostmarkAccountToken())
 	// Deprecated:
-	// BounceHookUrl
-	// OpenHookUrl
-	// DeliveryHookUrl
-	// ClickHookUrl
-	inboundHookURL := fmt.Sprintf("%s/webhooks/%s/postmark/inbound/", zyg.ServerUrl(), workspaceId)
+	// - BounceHookUrl
+	// - OpenHookUrl
+	// - DeliveryHookUrl
+	// - ClickHookUrl
+	inboundHookURL := fmt.Sprintf("%s/webhooks/%s/postmark/inbound/", zyg.WebhookUrl(), workspaceId)
 	server := postmark.Server{
 		Name:           workspaceId,
 		Color:          "Green",
