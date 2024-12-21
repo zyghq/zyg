@@ -183,3 +183,42 @@
     --chart-5: 340 75% 55%;
   }
 }
+
+/* TipTap */
+.tiptap p.is-editor-empty:first-child::before {
+  @apply text-muted-foreground text-opacity-80;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.tiptap {
+  :first-child {
+    margin-top: 0;
+  }
+  ul,
+  ol {
+    @apply my-2 ml-2 mr-4 px-4;
+  }
+
+  ul li p,
+  ol li p {
+    @apply my-1;
+  }
+
+  code {
+    @apply rounded bg-slate-100 px-1.5 py-1 text-red-400;
+  }
+
+  pre {
+    @apply rounded-lg bg-gray-700 p-2 font-mono text-white;
+  }
+
+  pre code {
+    @apply bg-transparent p-0 text-xs text-inherit;
+  }
+  blockquote {
+    @apply my-6 border-l-2 border-l-border pl-4;
+  }
+}

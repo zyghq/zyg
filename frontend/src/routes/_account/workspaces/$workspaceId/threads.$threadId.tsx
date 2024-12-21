@@ -3,6 +3,7 @@ import { channelIcon } from "@/components/icons";
 import { NotFound } from "@/components/notfound";
 import { Spinner } from "@/components/spinner";
 import { CustomerEvents } from "@/components/thread/customer-events";
+import { RichTextEditor } from "@/components/thread/editor";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -688,7 +689,7 @@ function ThreadDetail() {
           <ResizableHandle withHandle={false} />
           <ResizablePanel className="flex flex-col" defaultSize={50}>
             <ResizablePanelGroup direction="vertical">
-              <ResizablePanel defaultSize={75}>
+              <ResizablePanel defaultSize={80} minSize={20}>
                 <div className="flex h-full flex-col">
                   <div className="flex h-14 min-h-14 flex-col justify-center border-b px-4">
                     <div className="flex items-center justify-between space-x-2">
@@ -723,9 +724,15 @@ function ThreadDetail() {
                   </ScrollArea>
                 </div>
               </ResizablePanel>
-              <ResizableHandle withHandle={false} />
-              <ResizablePanel defaultSize={25} maxSize={50} minSize={20}>
-                <div className="flex h-full flex-col gap-2 overflow-auto p-2">
+              <ResizableHandle withHandle={true} />
+              <ResizablePanel
+                className="flex flex-col bg-accent p-2"
+                defaultSize={20}
+                maxSize={80}
+                minSize={20}
+              >
+                <RichTextEditor />
+                {/* <div className="flex h-full flex-col gap-2 overflow-auto p-2">
                   <MessageForm
                     customerName={customerName}
                     refetch={refetch}
@@ -778,7 +785,7 @@ function ThreadDetail() {
                       )}
                     </div>
                   </div>
-                </div>
+                </div> */}
               </ResizablePanel>
             </ResizablePanelGroup>
           </ResizablePanel>
