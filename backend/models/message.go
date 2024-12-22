@@ -77,6 +77,12 @@ func SetMarkdownBody(body string) MessageOption {
 	}
 }
 
+func SetHTMLBody(body string) MessageOption {
+	return func(message *Message) {
+		message.HTMLBody = body
+	}
+}
+
 type MessageAttachment struct {
 	AttachmentId string    `json:"attachmentId"`
 	MessageId    string    `json:"messageId"`

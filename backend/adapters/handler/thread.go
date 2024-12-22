@@ -757,16 +757,17 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 		_ = r.Close()
 	}(r.Body)
 
+	ctx := r.Context()
+	hub := sentry.GetHubFromContext(ctx)
+
 	var reqp map[string]interface{}
 	err := json.NewDecoder(r.Body).Decode(&reqp)
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("error decoding json payload", slog.Any("error", err))
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
-
-	ctx := r.Context()
-	hub := sentry.GetHubFromContext(ctx)
 
 	workspaceId := r.PathValue("workspaceId")
 	workspace, err := h.ws.GetWorkspace(ctx, workspaceId)
@@ -780,11 +781,6 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-
-	hub.CaptureMessage("got postmark inbound message for workspace")
-	slog.Info("got postmark inbound message for workspace",
-		slog.Any("workspaceId", workspace.WorkspaceId),
-	)
 
 	inboundReq, err := email.FromPostmarkInboundRequest(reqp)
 	if err != nil {
@@ -804,6 +800,7 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 	// Check if the Postmark inbound message request has already been processed.
 	isProcessed, err := h.ths.IsPostmarkInboundProcessed(ctx, inboundReq.MessageID)
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed to check inbound message request processed", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -820,6 +817,7 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 	customer, _, err := h.ws.CreateCustomerWithEmail(
 		ctx, workspace.WorkspaceId, inboundMessage.FromEmail, true, inboundMessage.FromName)
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed to create customer for postmark inbound message", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -828,6 +826,7 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 	// Get the system member for the workspace which will process the inbound mail.
 	member, err := h.ws.GetSystemMember(ctx, workspace.WorkspaceId)
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed to get system member for postmark inbound message", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -839,6 +838,7 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 		member.AsMemberActor(), &inboundMessage,
 	)
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed to process postmark inbound message", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return

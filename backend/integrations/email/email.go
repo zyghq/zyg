@@ -15,6 +15,12 @@ type PostmarkInboundMessageReq struct {
 // ToPostmarkInboundMessage converts a PostmarkInboundMessageReq to a PostmarkInboundMessage model instance.
 func (p *PostmarkInboundMessageReq) ToPostmarkInboundMessage() models.PostmarkInboundMessage {
 	now := time.Now().UTC()
+	//var textBody string
+	//if p.StrippedTextReply != "" {
+	//	textBody = p.StrippedTextReply
+	//} else {
+	//	textBody = p.TextBody
+	//}
 	message := models.PostmarkInboundMessage{
 		Payload:           p.Payload,
 		PostmarkMessageId: p.MessageID, // Postmark MessageID
@@ -34,6 +40,11 @@ func (p *PostmarkInboundMessageReq) ToPostmarkInboundMessage() models.PostmarkIn
 		if h.Name == "In-Reply-To" {
 			message.ReplyMailMessageId = &h.Value // From mail protocol headers
 		}
+	}
+	// If this message is a reply to an existing mail message ID
+	// check if the stripped text is provided - take that as the text body instead.
+	if message.ReplyMailMessageId != nil && p.StrippedTextReply != "" {
+		message.TextBody = p.StrippedTextReply
 	}
 	return message
 }

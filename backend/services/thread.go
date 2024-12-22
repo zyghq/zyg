@@ -168,6 +168,7 @@ func (s *ThreadService) ProcessPostmarkInbound(
 	newMessage := models.NewMessage(
 		thread.ThreadId, channel,
 		models.SetMessageCustomer(customer),
+		models.SetHTMLBody(inboundMessage.HTMLBody),
 		models.SetMessageTextBody(inboundMessage.TextBody),
 		models.SetMarkdownBody(body),
 	)
