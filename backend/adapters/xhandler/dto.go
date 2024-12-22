@@ -256,12 +256,14 @@ func (th ThreadResp) NewResponse(thread *models.Thread) ThreadResp {
 }
 
 type MessageResp struct {
-	ThreadId  string
-	MessageId string
-	TextBody  string
-	Body      string
-	Customer  *CustomerActorResp
-	Member    *MemberActorResp
+	ThreadId     string
+	MessageId    string
+	TextBody     string
+	MarkdownBody string
+	HTMLBody     string
+	Customer     *CustomerActorResp
+	Member       *MemberActorResp
+	// Deprecated
 	Channel   string
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -279,25 +281,27 @@ func (m MessageResp) MarshalJSON() ([]byte, error) {
 	}
 
 	aux := &struct {
-		ThreadId  string             `json:"threadId"`
-		MessageId string             `json:"messageId"`
-		TextBody  string             `json:"textBody"`
-		Body      string             `json:"body"`
-		Customer  *CustomerActorResp `json:"customer,omitempty"`
-		Member    *MemberActorResp   `json:"member,omitempty"`
-		Channel   string             `json:"channel"`
-		CreatedAt string             `json:"createdAt"`
-		UpdatedAt string             `json:"updatedAt"`
+		ThreadId     string             `json:"threadId"`
+		MessageId    string             `json:"messageId"`
+		TextBody     string             `json:"textBody"`
+		MarkdownBody string             `json:"markdownBody"`
+		HTMLBody     string             `json:"htmlBody"`
+		Customer     *CustomerActorResp `json:"customer,omitempty"`
+		Member       *MemberActorResp   `json:"member,omitempty"`
+		Channel      string             `json:"channel"`
+		CreatedAt    string             `json:"createdAt"`
+		UpdatedAt    string             `json:"updatedAt"`
 	}{
-		ThreadId:  m.ThreadId,
-		MessageId: m.MessageId,
-		TextBody:  m.TextBody,
-		Body:      m.Body,
-		Customer:  customer,
-		Member:    member,
-		Channel:   m.Channel,
-		CreatedAt: m.CreatedAt.Format(time.RFC3339),
-		UpdatedAt: m.UpdatedAt.Format(time.RFC3339),
+		ThreadId:     m.ThreadId,
+		MessageId:    m.MessageId,
+		TextBody:     m.TextBody,
+		MarkdownBody: m.MarkdownBody,
+		HTMLBody:     m.HTMLBody,
+		Customer:     customer,
+		Member:       member,
+		Channel:      m.Channel,
+		CreatedAt:    m.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:    m.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
 }
@@ -387,15 +391,16 @@ func (t ThreadChatResp) NewResponse(thread *models.Thread, message *models.Messa
 	}
 
 	messageResp := MessageResp{
-		ThreadId:  thread.ThreadId,
-		MessageId: message.MessageId,
-		TextBody:  message.TextBody,
-		Body:      message.Body,
-		Customer:  messageCustomer,
-		Member:    messageMember,
-		Channel:   message.Channel,
-		CreatedAt: message.CreatedAt,
-		UpdatedAt: message.UpdatedAt,
+		ThreadId:     thread.ThreadId,
+		MessageId:    message.MessageId,
+		TextBody:     message.TextBody,
+		MarkdownBody: message.MarkdownBody,
+		HTMLBody:     message.HTMLBody,
+		Customer:     messageCustomer,
+		Member:       messageMember,
+		Channel:      message.Channel,
+		CreatedAt:    message.CreatedAt,
+		UpdatedAt:    message.UpdatedAt,
 	}
 
 	threadCustomer := CustomerActorResp{

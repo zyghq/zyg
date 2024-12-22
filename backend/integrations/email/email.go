@@ -8,10 +8,11 @@ import (
 )
 
 type PostmarkInboundMessageReq struct {
-	postmark.InboundMessageDetail
+	postmark.InboundWebhook
 	Payload map[string]interface{}
 }
 
+// ToPostmarkInboundMessage converts a PostmarkInboundMessageReq to a PostmarkInboundMessage model instance.
 func (p *PostmarkInboundMessageReq) ToPostmarkInboundMessage() models.PostmarkInboundMessage {
 	now := time.Now().UTC()
 	message := models.PostmarkInboundMessage{
@@ -52,6 +53,10 @@ func (p *PostmarkInboundMessageReq) ToMessageAttachments() []models.PostmarkMess
 	return attachments
 }
 
+// FromPostmarkInboundRequest parses an inbound webhook payload from Postmark into a
+// PostmarkInboundMessageReq structure.
+// It takes a map[string]interface{} request payload and returns the parsed
+// PostmarkInboundMessageReq or an error if parsing fails.
 func FromPostmarkInboundRequest(
 	reqp map[string]interface{}) (PostmarkInboundMessageReq, error) {
 	// Convert to JSON bytes
@@ -68,4 +73,20 @@ func FromPostmarkInboundRequest(
 
 	payload.Payload = reqp
 	return payload, nil
+}
+
+// PostmarkOutboxQueue represents a structure for managing message details in a Postmark-based outbox queue system.
+// It contains fields for tracking message identifiers, recipient details, error statuses, and timestamps.
+type PostmarkOutboxQueue struct {
+	MessageId          string    `json:"messageId"`
+	PostmarkMessageId  string    `json:"postmarkMessageId"`
+	ReplyMailMessageId *string   `json:"replyMailMessageId"`
+	HasError           bool      `json:"hasError"`
+	MailTo             string    `json:"mailTo"`
+	SubmittedAt        time.Time `json:"submittedAt"`
+	ErrorCode          int64     `json:"errorCode"`
+	Message            string    `json:"message"`
+	Acknowledged       bool      `json:"acknowledged"`
+	CreatedAt          time.Time `json:"createdAt"`
+	UpdatedAt          time.Time `json:"updatedAt"`
 }

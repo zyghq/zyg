@@ -471,15 +471,16 @@ func (h *CustomerHandler) handleCreateThreadChatMessage(
 	}
 
 	resp := MessageResp{
-		ThreadId:  message.ThreadId,
-		MessageId: message.MessageId,
-		TextBody:  message.TextBody,
-		Body:      message.Body,
-		Customer:  messageCustomer,
-		Member:    messageMember,
-		Channel:   message.Channel,
-		CreatedAt: message.CreatedAt,
-		UpdatedAt: message.UpdatedAt,
+		ThreadId:     message.ThreadId,
+		MessageId:    message.MessageId,
+		TextBody:     message.TextBody,
+		MarkdownBody: message.MarkdownBody,
+		HTMLBody:     message.HTMLBody,
+		Customer:     messageCustomer,
+		Member:       messageMember,
+		Channel:      message.Channel,
+		CreatedAt:    message.CreatedAt,
+		UpdatedAt:    message.UpdatedAt,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -530,15 +531,16 @@ func (h *CustomerHandler) handleGetThreadChatMessages(
 			}
 		}
 		resp := MessageResp{
-			ThreadId:  message.ThreadId,
-			MessageId: message.MessageId,
-			TextBody:  message.TextBody,
-			Body:      message.Body,
-			Customer:  messageCustomer,
-			Member:    messageMember,
-			Channel:   message.Channel,
-			CreatedAt: message.CreatedAt,
-			UpdatedAt: message.UpdatedAt,
+			ThreadId:     message.ThreadId,
+			MessageId:    message.MessageId,
+			TextBody:     message.TextBody,
+			MarkdownBody: message.MarkdownBody,
+			HTMLBody:     message.HTMLBody,
+			Customer:     messageCustomer,
+			Member:       messageMember,
+			Channel:      message.Channel,
+			CreatedAt:    message.CreatedAt,
+			UpdatedAt:    message.UpdatedAt,
 		}
 		items = append(items, resp)
 	}

@@ -372,15 +372,16 @@ func (th ThreadResp) NewResponse(thread *models.Thread) ThreadResp {
 }
 
 type MessageResp struct {
-	ThreadId  string
-	MessageId string
-	TextBody  string
-	Body      string
-	Customer  *CustomerActorResp
-	Member    *MemberActorResp
-	Channel   string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ThreadId     string
+	MessageId    string
+	TextBody     string
+	MarkdownBody string
+	HTMLBody     string
+	Customer     *CustomerActorResp
+	Member       *MemberActorResp
+	Channel      string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 func (m MessageResp) MarshalJSON() ([]byte, error) {
@@ -395,25 +396,27 @@ func (m MessageResp) MarshalJSON() ([]byte, error) {
 	}
 
 	aux := &struct {
-		ThreadId  string             `json:"threadId"`
-		MessageId string             `json:"messageId"`
-		TextBody  string             `json:"textBody"`
-		Body      string             `json:"body"`
-		Customer  *CustomerActorResp `json:"customer,omitempty"`
-		Member    *MemberActorResp   `json:"member,omitempty"`
-		Channel   string             `json:"channel"`
-		CreatedAt string             `json:"createdAt"`
-		UpdatedAt string             `json:"updatedAt"`
+		ThreadId     string             `json:"threadId"`
+		MessageId    string             `json:"messageId"`
+		TextBody     string             `json:"textBody"`
+		MarkdownBody string             `json:"markdownBody"`
+		HTMLBody     string             `json:"htmlBody"`
+		Customer     *CustomerActorResp `json:"customer,omitempty"`
+		Member       *MemberActorResp   `json:"member,omitempty"`
+		Channel      string             `json:"channel"`
+		CreatedAt    string             `json:"createdAt"`
+		UpdatedAt    string             `json:"updatedAt"`
 	}{
-		ThreadId:  m.ThreadId,
-		MessageId: m.MessageId,
-		TextBody:  m.TextBody,
-		Body:      m.Body,
-		Customer:  customer,
-		Member:    member,
-		Channel:   m.Channel,
-		CreatedAt: m.CreatedAt.Format(time.RFC3339),
-		UpdatedAt: m.UpdatedAt.Format(time.RFC3339),
+		ThreadId:     m.ThreadId,
+		MessageId:    m.MessageId,
+		TextBody:     m.TextBody,
+		MarkdownBody: m.MarkdownBody,
+		HTMLBody:     m.HTMLBody,
+		Customer:     customer,
+		Member:       member,
+		Channel:      m.Channel,
+		CreatedAt:    m.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:    m.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
 }
@@ -481,7 +484,8 @@ func (m MessageWithAttachmentsResp) MarshalJSON() ([]byte, error) {
 		ThreadId            string             `json:"threadId"`
 		MessageId           string             `json:"messageId"`
 		TextBody            string             `json:"textBody"`
-		Body                string             `json:"body"`
+		MarkdownBody        string             `json:"markdownBody"`
+		HTMLBody            string             `json:"htmlBody"`
 		Customer            *CustomerActorResp `json:"customer,omitempty"`
 		Member              *MemberActorResp   `json:"member,omitempty"`
 		Channel             string             `json:"channel"`
@@ -490,16 +494,17 @@ func (m MessageWithAttachmentsResp) MarshalJSON() ([]byte, error) {
 		Attachments         interface{}        `json:"attachments"`
 		AttachmentsHasError bool               `json:"attachmentsHasError"`
 	}{
-		ThreadId:    m.ThreadId,
-		MessageId:   m.MessageId,
-		TextBody:    m.TextBody,
-		Body:        m.Body,
-		Customer:    customer,
-		Member:      member,
-		Channel:     m.Channel,
-		CreatedAt:   m.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:   m.UpdatedAt.Format(time.RFC3339),
-		Attachments: formattedAttachments,
+		ThreadId:     m.ThreadId,
+		MessageId:    m.MessageId,
+		TextBody:     m.TextBody,
+		MarkdownBody: m.MarkdownBody,
+		HTMLBody:     m.HTMLBody,
+		Customer:     customer,
+		Member:       member,
+		Channel:      m.Channel,
+		CreatedAt:    m.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:    m.UpdatedAt.Format(time.RFC3339),
+		Attachments:  formattedAttachments,
 	}
 	return json.Marshal(aux)
 }
@@ -639,4 +644,12 @@ type CreatePostmarkMailServer struct {
 
 type AddPostmarkMailServerDNS struct {
 	Domain string `json:"domain"`
+}
+
+// ReplyThreadMailReq represents the reply thread mail request body
+// MarkdownBody is sent as Plain Text in mail
+type ReplyThreadMailReq struct {
+	HTMLBody     string `json:"htmlBody"`
+	TextBody     string `json:"textBody"`
+	MarkdownBody string `json:"markdownBody"`
 }

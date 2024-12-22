@@ -46,7 +46,7 @@ func (s *ThreadService) CreateInboundThreadChat(
 		newThread.ThreadId, channel,
 		models.SetMessageCustomer(customer.AsCustomerActor()),
 		models.SetMessageTextBody(messageText),
-		models.SetMessageBody(messageText),
+		models.SetMarkdownBody(messageText),
 	)
 	// Set new inbound message sequence.
 	newThread.SetNewInboundMessage(customer.AsCustomerActor(), newMessage.PreviewText())
@@ -105,27 +105,35 @@ func htmlToMarkdown(html string) (string, error) {
 	return m, nil
 }
 
+// ProcessPostmarkInbound processes an inbound message from Postmark, creating or updating a thread and associated message.
+// It handles thread creation or retrieval, message generation, attachment processing, and stores relevant data in the repository.
+// Returns the thread, message, and an error if any operation fails.
 func (s *ThreadService) ProcessPostmarkInbound(
 	ctx context.Context, workspaceId string,
-	customer models.CustomerActor, createdBy models.MemberActor, message *models.PostmarkInboundMessage,
+	customer models.CustomerActor, createdBy models.MemberActor, inboundMessage *models.PostmarkInboundMessage,
 ) (models.Thread, models.Message, error) {
 	var insMessage models.Message
-	if message == nil {
+	if inboundMessage == nil {
 		return models.Thread{}, models.Message{}, ErrPostmarkInbound
 	}
 
+	// Check if an existing thread already exists for the inbound Postmark based on reply mail message ID
+	// otherwise, creates a new thread for the channel.
 	channel := models.ThreadChannel{}.Email()
 	var thread, exists, err = func(channel string) (*models.Thread, bool, error) {
-		// Check if this message is a reply to existing message.
-		if message.ReplyMailMessageId != nil {
-			// Get existing thread for Postmark inbound in-reply message if exists.
+		// Check if this inboundMessage is a reply to existing inboundMessage.
+		// It's possible that reply mail message ID might exist for the inbound without
+		// the corresponding thread in our system.
+		if inboundMessage.ReplyMailMessageId != nil {
+			// Get existing thread for Postmark inbound in-reply inboundMessage if exists.
 			// Otherwise, creates a new thread.
-			existingThread, err := s.GetPostmarkInboundInReplyThread(ctx, workspaceId, message)
+			existingThread, err := s.GetPostmarkInboundInReplyThread(ctx, workspaceId, inboundMessage)
 			if errors.Is(err, ErrThreadNotFound) {
+				slog.Info("thread not found for postmark inbound reply mail message ID should start new thread")
 				newThread := models.NewThread(
 					workspaceId, customer, createdBy, channel,
-					models.SetThreadTitle(message.Subject),
-					models.SetThreadDescription(message.TextBody),
+					models.SetThreadTitle(inboundMessage.Subject),
+					models.SetThreadDescription(inboundMessage.TextBody),
 				)
 				return newThread, false, nil
 			}
@@ -135,11 +143,11 @@ func (s *ThreadService) ProcessPostmarkInbound(
 			// Returns existing thread.
 			return existingThread, true, nil
 		}
-		// If message is not a reply, start a new thread.
+		// If inboundMessage is not a reply, start a new thread.
 		newThread := models.NewThread(
 			workspaceId, customer, createdBy, channel,
-			models.SetThreadTitle(message.Subject),
-			models.SetThreadDescription(message.TextBody),
+			models.SetThreadTitle(inboundMessage.Subject),
+			models.SetThreadDescription(inboundMessage.TextBody),
 		)
 		// Return new thread.
 		return newThread, false, nil
@@ -149,8 +157,8 @@ func (s *ThreadService) ProcessPostmarkInbound(
 		return models.Thread{}, models.Message{}, ErrThread
 	}
 
-	body := message.HTMLBody
-	markdown, err := htmlToMarkdown(message.HTMLBody)
+	body := inboundMessage.HTMLBody
+	markdown, err := htmlToMarkdown(inboundMessage.HTMLBody)
 	if err != nil {
 		slog.Error("failed to convert html to markdown", slog.Any("err", err))
 	} else {
@@ -160,11 +168,11 @@ func (s *ThreadService) ProcessPostmarkInbound(
 	newMessage := models.NewMessage(
 		thread.ThreadId, channel,
 		models.SetMessageCustomer(customer),
-		models.SetMessageTextBody(message.TextBody),
-		models.SetMessageBody(body),
+		models.SetMessageTextBody(inboundMessage.TextBody),
+		models.SetMarkdownBody(body),
 	)
 
-	// Check if the thread has inbound message sequence.
+	// Check if the thread has inbound inboundMessage sequence.
 	// Set next new inbound sequence else create new inbound sequence.
 	if thread.InboundMessage != nil {
 		thread.SetNextInboundSeq(newMessage.PreviewText())
@@ -177,10 +185,10 @@ func (s *ThreadService) ProcessPostmarkInbound(
 			Thread:  thread,
 			Message: newMessage,
 		},
-		PostmarkInboundMessage: message,
+		PostmarkInboundMessage: inboundMessage,
 	}
 
-	// If thread exists, append message to the existing thread.
+	// If thread exists, append inboundMessage to the existing thread.
 	if exists {
 		insMessage, err = s.repo.AppendPostmarkInboundThreadMessage(ctx, inbound)
 		if err != nil {
@@ -206,7 +214,7 @@ func (s *ThreadService) ProcessPostmarkInbound(
 		s3Bucket := zyg.S3Bucket()
 		s3Client, err := store.NewS3(ctx, s3Bucket, accountId, accessKeyId, accessKeySecret)
 		if err != nil {
-			slog.Error("failed to connect s3 to process message attachments", slog.Any("err", err))
+			slog.Error("failed to connect s3 to process inboundMessage attachments", slog.Any("err", err))
 		} else {
 			for _, a := range inbound.PostmarkInboundMessage.Attachments {
 				att, aErr := ProcessMessageAttachment(
@@ -214,16 +222,16 @@ func (s *ThreadService) ProcessPostmarkInbound(
 					a.Content, a.ContentType, a.Name, s3Client,
 				)
 				if aErr != nil {
-					slog.Error("failed to process message attachment", slog.Any("err", aErr))
+					slog.Error("failed to process inboundMessage attachment", slog.Any("err", aErr))
 				}
 				attachments = append(attachments, att)
 			}
 		}
-		// Persists processed message attachments
+		// Persists processed inboundMessage attachments
 		for _, a := range attachments {
 			_, err := s.repo.InsertMessageAttachment(ctx, a)
 			if err != nil {
-				slog.Error("failed to insert message attachment", slog.Any("err", err))
+				slog.Error("failed to insert inboundMessage attachment", slog.Any("err", err))
 			}
 		}
 	}
@@ -345,7 +353,7 @@ func (s *ThreadService) AppendInboundThreadChat(
 		thread.ThreadId, channel,
 		models.SetMessageCustomer(thread.Customer),
 		models.SetMessageTextBody(messageText),
-		models.SetMessageBody(messageText),
+		models.SetMarkdownBody(messageText),
 	)
 	thread.SetNextInboundSeq(newMessage.PreviewText())
 
@@ -369,7 +377,7 @@ func (s *ThreadService) AppendOutboundThreadChat(
 		thread.ThreadId, channel,
 		models.SetMessageMember(member.AsMemberActor()),
 		models.SetMessageTextBody(messageText),
-		models.SetMessageBody(messageText),
+		models.SetMarkdownBody(messageText),
 	)
 	thread.SetNextInboundSeq(newMessage.PreviewText())
 
@@ -382,6 +390,12 @@ func (s *ThreadService) AppendOutboundThreadChat(
 		return models.Message{}, ErrThreadMessage
 	}
 	return message, nil
+}
+
+func (s *ThreadService) SendThreadMailReply(
+	ctx context.Context, thread models.Thread, member models.Member, textBody, htmlBody, markdownBody string,
+) (models.Message, error) {
+	return models.Message{}, nil
 }
 
 func (s *ThreadService) ListThreadMessages(

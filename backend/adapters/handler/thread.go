@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"github.com/getsentry/sentry-go"
 	"github.com/zyghq/zyg"
 	"github.com/zyghq/zyg/adapters/store"
 	"io"
@@ -295,15 +296,91 @@ func (h *ThreadHandler) handleCreateThreadChatMessage(
 	}
 
 	resp := MessageResp{
-		ThreadId:  message.ThreadId,
-		MessageId: message.MessageId,
-		TextBody:  message.TextBody,
-		Body:      message.Body,
-		Customer:  messageCustomer,
-		Member:    messageMember,
-		Channel:   message.Channel,
-		CreatedAt: message.CreatedAt,
-		UpdatedAt: message.UpdatedAt,
+		ThreadId:     message.ThreadId,
+		MessageId:    message.MessageId,
+		TextBody:     message.TextBody,
+		MarkdownBody: message.MarkdownBody,
+		HTMLBody:     message.HTMLBody,
+		Customer:     messageCustomer,
+		Member:       messageMember,
+		Channel:      message.Channel,
+		CreatedAt:    message.CreatedAt,
+		UpdatedAt:    message.UpdatedAt,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("failed to encode json", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *ThreadHandler) handleReplyThreadMail(
+	w http.ResponseWriter, r *http.Request, member *models.Member) {
+	defer func(r io.ReadCloser) {
+		_, _ = io.Copy(io.Discard, r)
+		_ = r.Close()
+	}(r.Body)
+
+	threadId := r.PathValue("threadId")
+
+	var reqp ReplyThreadMailReq
+	err := json.NewDecoder(r.Body).Decode(&reqp)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	hub := sentry.GetHubFromContext(ctx)
+
+	thread, err := h.ths.GetWorkspaceThread(ctx, member.WorkspaceId, threadId, nil)
+	if errors.Is(err, services.ErrThreadNotFound) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to fetch thread", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	message, err := h.ths.SendThreadMailReply(
+		ctx, thread, *member, reqp.TextBody, reqp.HTMLBody, reqp.HTMLBody)
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to send thread mail reply", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	var messageCustomer *CustomerActorResp
+	var messageMember *MemberActorResp
+	if message.Customer != nil {
+		messageCustomer = &CustomerActorResp{
+			CustomerId: message.Customer.CustomerId,
+			Name:       message.Customer.Name,
+		}
+	} else if message.Member != nil {
+		messageMember = &MemberActorResp{
+			MemberId: message.Member.MemberId,
+			Name:     message.Member.Name,
+		}
+	}
+
+	resp := MessageResp{
+		ThreadId:     message.ThreadId,
+		MessageId:    message.MessageId,
+		TextBody:     message.TextBody,
+		MarkdownBody: message.MarkdownBody,
+		HTMLBody:     message.HTMLBody,
+		Customer:     messageCustomer,
+		Member:       messageMember,
+		Channel:      message.Channel,
+		CreatedAt:    message.CreatedAt,
+		UpdatedAt:    message.UpdatedAt,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -355,15 +432,16 @@ func (h *ThreadHandler) handleGetThreadMessages(
 
 		resp := MessageWithAttachmentsResp{
 			MessageResp: MessageResp{
-				ThreadId:  message.ThreadId,
-				MessageId: message.MessageId,
-				TextBody:  message.TextBody,
-				Body:      message.Body,
-				Customer:  messageCustomer,
-				Member:    messageMember,
-				Channel:   message.Channel,
-				CreatedAt: message.CreatedAt,
-				UpdatedAt: message.UpdatedAt,
+				ThreadId:     message.ThreadId,
+				MessageId:    message.MessageId,
+				TextBody:     message.TextBody,
+				MarkdownBody: message.MarkdownBody,
+				HTMLBody:     message.HTMLBody,
+				Customer:     messageCustomer,
+				Member:       messageMember,
+				Channel:      message.Channel,
+				CreatedAt:    message.CreatedAt,
+				UpdatedAt:    message.UpdatedAt,
 			},
 			Attachments: message.Attachments,
 		}
@@ -688,6 +766,7 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 	}
 
 	ctx := r.Context()
+	hub := sentry.GetHubFromContext(ctx)
 
 	workspaceId := r.PathValue("workspaceId")
 	workspace, err := h.ws.GetWorkspace(ctx, workspaceId)
@@ -696,17 +775,20 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 		return
 	}
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed to fetch workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
+	hub.CaptureMessage("got postmark inbound message for workspace")
 	slog.Info("got postmark inbound message for workspace",
 		slog.Any("workspaceId", workspace.WorkspaceId),
 	)
 
 	inboundReq, err := email.FromPostmarkInboundRequest(reqp)
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("error parsing postmark inbound message", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -734,7 +816,7 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 
 	// Convert inbound request to Postmark Inbound Message for further processing.
 	inboundMessage := inboundReq.ToPostmarkInboundMessage()
-
+	// This also marks the email as verified for the customer as inbound is received directly from mail provider.
 	customer, _, err := h.ws.CreateCustomerWithEmail(
 		ctx, workspace.WorkspaceId, inboundMessage.FromEmail, true, inboundMessage.FromName)
 	if err != nil {

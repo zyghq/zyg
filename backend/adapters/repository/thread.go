@@ -146,7 +146,8 @@ func threadMessageCols() builq.Columns {
 		"message_id", // PK
 		"thread_id",  // FK to thread
 		"text_body",
-		"body",
+		"markdown_body",
+		"html_body",
 		"customer_id", // FK Nullable to customer
 		"member_id",   // FK Nullable to member
 		"channel",
@@ -160,7 +161,8 @@ func threadMessageJoinedCols() builq.Columns {
 		"msg.message_id",
 		"msg.thread_id",
 		"msg.text_body",
-		"msg.body",
+		"msg.markdown_body",
+		"msg.html_body",
 		"c.customer_id",
 		"c.name",
 		"m.member_id",
@@ -482,12 +484,12 @@ func (th *ThreadDB) InsertInboundThreadMessage(
 	insertB = builq.Builder{}
 	messageCols = threadMessageCols()
 	insertParams = []any{
-		message.MessageId, message.ThreadId, message.TextBody, message.Body,
+		message.MessageId, message.ThreadId, message.TextBody, message.MarkdownBody, message.HTMLBody,
 		customerId, memberId, message.Channel, message.CreatedAt, message.UpdatedAt,
 	}
 
 	insertB.Addf("INSERT INTO message (%s)", messageCols)
-	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$)", insertParams...)
+	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$, %$)", insertParams...)
 	insertB.Addf("RETURNING %s", messageCols)
 
 	insertQuery, _, err = insertB.Build()
@@ -517,7 +519,7 @@ func (th *ThreadDB) InsertInboundThreadMessage(
 	}
 
 	err = tx.QueryRow(ctx, stmt, insertParams...).Scan(
-		&message.MessageId, &message.ThreadId, &message.TextBody, &message.Body,
+		&message.MessageId, &message.ThreadId, &message.TextBody, &message.MarkdownBody, &message.HTMLBody,
 		&customerId, &customerName,
 		&memberId, &memberName,
 		&message.Channel, &message.CreatedAt, &message.UpdatedAt,
@@ -814,12 +816,12 @@ func InsertThreadMessageTx(
 	insertB := builq.Builder{}
 	insertCols := threadMessageCols()
 	insertParams := []any{
-		message.MessageId, message.ThreadId, message.TextBody, message.Body,
+		message.MessageId, message.ThreadId, message.TextBody, message.MarkdownBody, message.HTMLBody,
 		customerId, memberId, message.Channel, message.CreatedAt, message.UpdatedAt,
 	}
 
 	insertB.Addf("INSERT INTO message (%s)", insertCols)
-	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$)", insertParams...)
+	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$, %$)", insertParams...)
 	insertB.Addf("RETURNING %s", insertCols)
 
 	insertQuery, _, err := insertB.Build()
@@ -849,7 +851,7 @@ func InsertThreadMessageTx(
 	}
 
 	err = tx.QueryRow(ctx, stmt, insertParams...).Scan(
-		&message.MessageId, &message.ThreadId, &message.TextBody, &message.Body,
+		&message.MessageId, &message.ThreadId, &message.TextBody, &message.MarkdownBody, &message.HTMLBody,
 		&customerId, &customerName,
 		&memberId, &memberName,
 		&message.Channel, &message.CreatedAt, &message.UpdatedAt,
@@ -2288,12 +2290,12 @@ func (th *ThreadDB) AppendInboundThreadMessage(
 	insertB = builq.Builder{}
 	cols = threadMessageCols()
 	insertParams = []any{
-		message.MessageId, message.ThreadId, message.TextBody, message.Body,
+		message.MessageId, message.ThreadId, message.TextBody, message.MarkdownBody, message.HTMLBody,
 		customerId, memberId, message.Channel, message.CreatedAt, message.UpdatedAt,
 	}
 
 	insertB.Addf("INSERT INTO message (%s)", cols)
-	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$)", insertParams...)
+	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$, %$)", insertParams...)
 	insertB.Addf("RETURNING %s", cols)
 
 	insertQuery, _, err = insertB.Build()
@@ -2323,7 +2325,7 @@ func (th *ThreadDB) AppendInboundThreadMessage(
 	}
 
 	err = tx.QueryRow(ctx, stmt, insertParams...).Scan(
-		&message.MessageId, &message.ThreadId, &message.TextBody, &message.Body,
+		&message.MessageId, &message.ThreadId, &message.TextBody, &message.MarkdownBody, &message.HTMLBody,
 		&customerId, &customerName,
 		&memberId, &memberName,
 		&message.Channel, &message.CreatedAt, &message.UpdatedAt,
@@ -2484,12 +2486,12 @@ func (th *ThreadDB) AppendOutboundThreadMessage(
 	insertB = builq.Builder{}
 	cols = threadMessageCols()
 	insertParams = []any{
-		message.MessageId, message.ThreadId, message.TextBody, message.Body,
+		message.MessageId, message.ThreadId, message.TextBody, message.MarkdownBody, message.HTMLBody,
 		customerId, memberId, message.Channel, message.CreatedAt, message.UpdatedAt,
 	}
 
 	insertB.Addf("INSERT INTO message (%s)", cols)
-	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$)", insertParams...)
+	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$, %$)", insertParams...)
 	insertB.Addf("RETURNING %s", cols)
 
 	insertQuery, _, err = insertB.Build()
@@ -2519,7 +2521,7 @@ func (th *ThreadDB) AppendOutboundThreadMessage(
 	}
 
 	err = tx.QueryRow(ctx, stmt, insertParams...).Scan(
-		&message.MessageId, &message.ThreadId, &message.TextBody, &message.Body,
+		&message.MessageId, &message.ThreadId, &message.TextBody, &message.MarkdownBody, &message.HTMLBody,
 		&customerId, &customerName,
 		&memberId, &memberName,
 		&message.Channel, &message.CreatedAt, &message.UpdatedAt,
@@ -2589,8 +2591,8 @@ func (th *ThreadDB) FetchMessagesByThreadId(
 	defer rows.Close()
 
 	_, err = pgx.ForEachRow(rows, []any{
-		&message.MessageId, &message.ThreadId, &message.TextBody,
-		&message.Body, &customerId, &customerName,
+		&message.MessageId, &message.ThreadId, &message.TextBody, &message.MarkdownBody, &message.HTMLBody,
+		&customerId, &customerName,
 		&memberId, &memberName,
 		&message.Channel,
 		&message.CreatedAt, &message.UpdatedAt,
@@ -2687,8 +2689,8 @@ func (th *ThreadDB) FetchMessagesWithAttachmentsByThreadId(
 	defer rows.Close()
 
 	_, err = pgx.ForEachRow(rows, []any{
-		&message.MessageId, &message.ThreadId, &message.TextBody,
-		&message.Body, &customerId, &customerName,
+		&message.MessageId, &message.ThreadId, &message.TextBody, &message.MarkdownBody, &message.HTMLBody,
+		&customerId, &customerName,
 		&memberId, &memberName,
 		&message.Channel,
 		&message.CreatedAt, &message.UpdatedAt,
@@ -3120,12 +3122,12 @@ func (th *ThreadDB) AppendPostmarkInboundThreadMessage(
 	insertB = builq.Builder{}
 	cols = threadMessageCols()
 	insertParams = []any{
-		message.MessageId, message.ThreadId, message.TextBody, message.Body,
+		message.MessageId, message.ThreadId, message.TextBody, message.MarkdownBody, message.HTMLBody,
 		customerId, memberId, message.Channel, message.CreatedAt, message.UpdatedAt,
 	}
 
 	insertB.Addf("INSERT INTO message (%s)", cols)
-	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$)", insertParams...)
+	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$, %$)", insertParams...)
 	insertB.Addf("RETURNING %s", cols)
 
 	insertQuery, _, err = insertB.Build()
@@ -3155,7 +3157,7 @@ func (th *ThreadDB) AppendPostmarkInboundThreadMessage(
 	}
 
 	err = tx.QueryRow(ctx, stmt, insertParams...).Scan(
-		&message.MessageId, &message.ThreadId, &message.TextBody, &message.Body,
+		&message.MessageId, &message.ThreadId, &message.TextBody, &message.MarkdownBody, &message.HTMLBody,
 		&customerId, &customerName,
 		&memberId, &memberName,
 		&message.Channel, &message.CreatedAt, &message.UpdatedAt,

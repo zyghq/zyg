@@ -8,12 +8,14 @@ import (
 
 // Message represents multi-channel Thread message
 type Message struct {
-	MessageId string
-	ThreadId  string
-	TextBody  string
-	Body      string
-	Customer  *CustomerActor
-	Member    *MemberActor
+	MessageId    string
+	ThreadId     string
+	TextBody     string
+	MarkdownBody string
+	HTMLBody     string
+	Customer     *CustomerActor
+	Member       *MemberActor
+	// Deprecated
 	Channel   string
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -69,9 +71,9 @@ func SetMessageTextBody(textBody string) MessageOption {
 	}
 }
 
-func SetMessageBody(body string) MessageOption {
+func SetMarkdownBody(body string) MessageOption {
 	return func(message *Message) {
-		message.Body = body
+		message.MarkdownBody = body
 	}
 }
 

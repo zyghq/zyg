@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"github.com/getsentry/sentry-go"
 	"github.com/zyghq/zyg"
 	"net/http"
 	"time"
@@ -10,13 +9,7 @@ import (
 	"github.com/zyghq/zyg/ports"
 )
 
-func handleGetIndex(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	hub := sentry.GetHubFromContext(ctx)
-	hub.Scope().SetTag("url", r.URL.Path)
-	hub.CaptureMessage("Server OK")
-
+func handleGetIndex(w http.ResponseWriter, _ *http.Request) {
 	tm := time.Now().UTC().Format(time.RFC1123)
 	w.Header().Set("x-datetime", tm)
 	w.WriteHeader(http.StatusOK)
@@ -108,6 +101,9 @@ func NewServer(
 
 	mux.Handle("POST /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
 		NewEnsureMemberAuth(th.handleCreateThreadChatMessage, authService))
+
+	mux.Handle("POST /workspaces/{workspaceId}/threads/email/{threadId}/messages/{$}",
+		NewEnsureMemberAuth(th.handleReplyThreadMail, authService))
 
 	mux.Handle("GET /workspaces/{workspaceId}/threads/{threadId}/messages/{$}",
 		NewEnsureMemberAuth(th.handleGetThreadMessages, authService))

@@ -211,7 +211,7 @@ function Message({
           orientation="horizontal"
         />
         <div>
-          <ReactMarkdown>{message.body}</ReactMarkdown>
+          <ReactMarkdown>{message.markdownBody}</ReactMarkdown>
         </div>
         <div className="mt-4 flex space-x-1">
           {message.attachments.map((attachment) => (

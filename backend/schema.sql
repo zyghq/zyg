@@ -286,7 +286,7 @@ CREATE TABLE message (
     message_id VARCHAR(255) NOT NULL,        -- Unique identifier for the message
     thread_id VARCHAR(255) NOT NULL,         -- Thread this message belongs to
     text_body TEXT NOT NULL,                 -- Plain text content of the message
-    body TEXT NOT NULL,                      -- Rich text/formatted content of the message
+    markdown_body TEXT NOT NULL,                      -- Rich text/formatted content of the message
     customer_id VARCHAR(255) NULL,           -- Customer who sent the message (if from customer)
     member_id VARCHAR(255) NULL,             -- Member who sent the message (if from member)
     channel VARCHAR(255) NOT NULL,           -- Communication channel used (email, chat, etc)
@@ -339,8 +339,28 @@ CREATE TABLE postmark_inbound_message (
     CONSTRAINT postmark_inbound_msg_pm_message_id_key UNIQUE (postmark_message_id),
     CONSTRAINT postmark_inbound_msg_mail_message_id_key UNIQUE (mail_message_id)
 );
-
 CREATE INDEX postmark_inbound_msg_reply_mail_message_idx ON postmark_inbound_message(reply_mail_message_id);
+
+
+CREATE TABLE postmark_outbox_queue (
+    message_id            VARCHAR(255) NOT NULL, -- References parent message
+    postmark_message_id   VARCHAR(255) NOT NULL, -- Postmark's internal message ID
+    reply_mail_message_id VARCHAR(255) NULL,     -- Email `In-Reply-To` header
+    has_error             BOOLEAN      NOT NULL DEFAULT FALSE,
+    mail_to               VARCHAR(255) NOT NULL,
+    submitted_at          TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
+    error_code            bigint       NOT NULL,
+    message               TEXT         NOT NULL,
+    acknowledged BOOLEAN NOT NULL DEFAULT FALSE,
+
+    created_at            TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
+    updated_at            TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT postmark_outbox_queue_message_id_pkey PRIMARY KEY (message_id),
+    CONSTRAINT postmark_outbox_queue_message_id_fkey FOREIGN KEY (message_id) REFERENCES message (message_id),
+
+    CONSTRAINT postmark_outbox_queue_postmark_message_id_key UNIQUE (postmark_message_id)
+);
 
 
 -- Represents the label table
