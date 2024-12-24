@@ -335,7 +335,21 @@ func (h *ThreadHandler) handleReplyThreadMail(
 	ctx := r.Context()
 	hub := sentry.GetHubFromContext(ctx)
 
-	thread, err := h.ths.GetWorkspaceThread(ctx, member.WorkspaceId, threadId, nil)
+	// Get member workspace
+	workspace, err := h.ws.GetWorkspace(ctx, member.WorkspaceId)
+	if errors.Is(err, services.ErrWorkspaceNotFound) {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to fetch workspace", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	// Get workspace thread
+	thread, err := h.ths.GetWorkspaceThread(ctx, workspace.WorkspaceId, threadId, nil)
 	if errors.Is(err, services.ErrThreadNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -347,8 +361,32 @@ func (h *ThreadHandler) handleReplyThreadMail(
 		return
 	}
 
+	// Get Postmark setting for the workspace
+	// Postmark setting must be configured before sending a reply mail
+	setting, err := h.ws.GetPostmarkMailServerSetting(ctx, workspace.WorkspaceId)
+	if errors.Is(err, services.ErrPostmarkSettingNotFound) {
+		hub.CaptureMessage("postmark setting required before sending reply")
+		http.Error(w, http.StatusText(http.StatusPreconditionRequired), http.StatusPreconditionRequired)
+		return
+	}
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to fetch postmark mail server setting", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	// Get thread customer to send the reply mail
+	customer, err := h.ws.GetCustomer(ctx, workspace.WorkspaceId, thread.Customer.CustomerId, nil)
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to fetch customer", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
 	message, err := h.ths.SendThreadMailReply(
-		ctx, thread, *member, reqp.TextBody, reqp.HTMLBody, reqp.HTMLBody)
+		ctx, workspace, setting, thread, *member, customer, reqp.TextBody, reqp.HTMLBody)
 	if err != nil {
 		hub.CaptureException(err)
 		slog.Error("failed to send thread mail reply", slog.Any("err", err))
@@ -798,7 +836,7 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 	}
 
 	// Check if the Postmark inbound message request has already been processed.
-	isProcessed, err := h.ths.IsPostmarkInboundProcessed(ctx, inboundReq.MessageID)
+	isProcessed, err := h.ths.IsPostmarkMessageProcessed(ctx, inboundReq.MessageID)
 	if err != nil {
 		hub.CaptureException(err)
 		slog.Error("failed to check inbound message request processed", slog.Any("err", err))
@@ -843,8 +881,8 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	slog.Info("processed postmark inbound message with threadId %s and messageId %s",
-		thread.ThreadId, message.MessageId)
+	slog.Info("processed postmark inbound message",
+		slog.Any("threadId", thread.ThreadId), slog.Any("messageId", message.MessageId))
 
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write([]byte("ok"))

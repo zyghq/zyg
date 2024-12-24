@@ -647,9 +647,7 @@ type AddPostmarkMailServerDNS struct {
 }
 
 // ReplyThreadMailReq represents the reply thread mail request body
-// MarkdownBody is sent as Plain Text in mail
 type ReplyThreadMailReq struct {
-	HTMLBody     string `json:"htmlBody"`
-	TextBody     string `json:"textBody"`
-	MarkdownBody string `json:"markdownBody"`
+	HTMLBody string `json:"htmlBody"`
+	TextBody string `json:"textBody"`
 }

@@ -1,3 +1,5 @@
+import type { DetailedHTMLProps, HTMLAttributes } from "react";
+
 import { Icons } from "@/components/icons";
 import { channelIcon } from "@/components/icons";
 import { NotFound } from "@/components/notfound";
@@ -27,7 +29,7 @@ import {
 } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { MessageForm } from "@/components/workspace/thread/message-form";
+// import { MessageForm } from "@/components/workspace/thread/message-form";
 import { SidePanelThreadList } from "@/components/workspace/thread/sidepanel-thread-list";
 import {
   SetThreadAssigneeForm,
@@ -74,9 +76,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCopyToClipboard } from "@uidotdev/usehooks";
 import { formatDistanceToNow } from "date-fns";
 import {
-  CheckCircleIcon,
-  CircleIcon,
-  EclipseIcon,
+  // CheckCircleIcon,
+  // CircleIcon,
+  // EclipseIcon,
   FileTextIcon,
   PanelRightIcon,
 } from "lucide-react";
@@ -210,11 +212,20 @@ function Message({
           className="mb-3 mt-3 dark:bg-background"
           orientation="horizontal"
         />
-        <div>
-          <ReactMarkdown>
-            {message.markdownBody || message.textBody}
-          </ReactMarkdown>
-        </div>
+        <ReactMarkdown
+          components={{
+            code: ({ children }) => (
+              <code className="whitespace-pre-wrap break-all">{children}</code>
+            ),
+            pre: ({ children }) => (
+              <div className="overflow-x-auto">
+                <pre className="whitespace-pre-wrap break-all">{children}</pre>
+              </div>
+            ),
+          }}
+        >
+          {message.markdownBody || message.textBody}
+        </ReactMarkdown>
         <div className="mt-4 flex space-x-1">
           {message.attachments.map((attachment) => (
             <div

@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/rs/xid"
@@ -83,6 +84,7 @@ func SetHTMLBody(body string) MessageOption {
 	}
 }
 
+// MessageAttachment represents metadata and identification details for a file attachment linked to a message.
 type MessageAttachment struct {
 	AttachmentId string    `json:"attachmentId"`
 	MessageId    string    `json:"messageId"`
@@ -99,7 +101,7 @@ type MessageAttachment struct {
 }
 
 func (m *MessageAttachment) GenId() string {
-	return "att" + xid.New().String()
+	return "at" + xid.New().String()
 }
 
 type MessageWithAttachments struct {
@@ -115,8 +117,8 @@ type PostmarkMessageAttachment struct {
 	UpdatedAt   time.Time
 }
 
-// PostmarkInboundMessage represents 1:1 mapping with Message
-// Attributes are specific to Postmark.
+// PostmarkInboundMessage represents abstracted Postmark inbound webhook request.
+// Attributes are specific to Postmark and as required by the application.
 type PostmarkInboundMessage struct {
 	// Raw inbound request payload
 	Payload map[string]interface{}
@@ -141,6 +143,22 @@ type PostmarkInboundMessage struct {
 	Attachments []PostmarkMessageAttachment
 }
 
+func (p *PostmarkInboundMessage) NewPostmarkInboundLog(messageId string) PostmarkMessageLog {
+	now := time.Now().UTC()
+	return PostmarkMessageLog{
+		MessageId:          messageId,
+		Payload:            p.Payload,
+		PostmarkMessageId:  p.PostmarkMessageId,
+		MailMessageId:      p.MailMessageId,
+		ReplyMailMessageId: p.ReplyMailMessageId,
+		HasError:           false,
+		SubmittedAt:        now,
+		MessageType:        "inbound",
+		CreatedAt:          now,
+		UpdatedAt:          now,
+	}
+}
+
 // ThreadMessage combines a Thread and its associated Message.
 type ThreadMessage struct {
 	Thread  *Thread
@@ -148,7 +166,30 @@ type ThreadMessage struct {
 }
 
 // PostmarkInboundThreadMessage combines a ThreadMessage and a PostmarkInboundMessage.
-type PostmarkInboundThreadMessage struct {
-	ThreadMessage
-	PostmarkInboundMessage *PostmarkInboundMessage
+//type PostmarkInboundThreadMessage struct {
+//	ThreadMessage
+//	PostmarkInboundMessage *PostmarkInboundMessage
+//}
+
+type PostmarkMessageLog struct {
+	MessageId          string
+	Payload            map[string]interface{}
+	PostmarkMessageId  string
+	MailMessageId      string
+	ReplyMailMessageId *string
+	HasError           bool
+	SubmittedAt        time.Time
+	ErrorCode          int64
+	PostmarkMessage    string
+	MessageEvent       string
+	Acknowledged       bool // has Postmark outbound message acknowledged with details API
+	MessageType        string
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+}
+
+// SetOutboundMailMessageId sets outbound mail message ID with specified domain as configured.
+// This should be only used for outbound mails as inbound mail already has it generated from the client.
+func (m *PostmarkMessageLog) SetOutboundMailMessageId(d string) {
+	m.MailMessageId = fmt.Sprintf("<%s@%s>", m.MessageId, d)
 }

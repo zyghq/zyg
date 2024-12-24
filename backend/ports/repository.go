@@ -117,24 +117,23 @@ type ThreadRepositorer interface {
 	InsertInboundThreadMessage(
 		ctx context.Context, message models.ThreadMessage) (models.Thread, models.Message, error)
 
-	// InsertPostmarkInboundThreadMessage inserts a new thread message with Postmark inbound data and returns
-	// the updated thread, message, and an error if any occurs.
 	InsertPostmarkInboundThreadMessage(
-		ctx context.Context, inbound models.PostmarkInboundThreadMessage) (models.Thread, models.Message, error)
+		ctx context.Context, thread *models.Thread, postmarkMessageLog *models.PostmarkMessageLog,
+		message *models.Message) (*models.Thread, *models.Message, error)
 
 	// AppendInboundThreadMessage appends an inbound message to the thread.
 	AppendInboundThreadMessage(
 		ctx context.Context, inbound models.ThreadMessage) (models.Message, error)
 
-	// AppendPostmarkInboundThreadMessage appends a new postmark inbound message to an existing thread.
 	AppendPostmarkInboundThreadMessage(
-		ctx context.Context, inbound models.PostmarkInboundThreadMessage) (models.Message, error)
+		ctx context.Context, threadId string, inboundEvent *models.InboundMessage,
+		postmarkMessageLog *models.PostmarkMessageLog, message *models.Message) (*models.Message, error)
 
 	// AppendOutboundThreadMessage appends an outbound message to the thread.
 	AppendOutboundThreadMessage(
 		ctx context.Context, outbound models.ThreadMessage) (models.Message, error)
 
-	CheckPostmarkInboundMessageExists(ctx context.Context, messageId string) (bool, error)
+	CheckPostmarkMessageExists(ctx context.Context, messageId string) (bool, error)
 
 	InsertMessageAttachment(
 		ctx context.Context, message models.MessageAttachment) (models.MessageAttachment, error)

@@ -111,7 +111,8 @@ type WorkspaceServicer interface {
 	PostmarkMailServerVerifyDomain(
 		ctx context.Context, setting models.PostmarkMailServerSetting) (models.PostmarkMailServerSetting, error)
 	PostmarkMailServerUpdate(
-		ctx context.Context, setting models.PostmarkMailServerSetting, fields []string) (models.PostmarkMailServerSetting, error)
+		ctx context.Context, setting models.PostmarkMailServerSetting, fields []string,
+	) (models.PostmarkMailServerSetting, error)
 }
 
 type CustomerServicer interface {
@@ -154,10 +155,13 @@ type ThreadServicer interface {
 		ctx context.Context, thread models.Thread, member models.Member, message string) (models.Message, error)
 
 	SendThreadMailReply(
-		ctx context.Context, thread models.Thread, member models.Member, textBody, htmlBody, markdownBody string,
+		ctx context.Context,
+		workspace models.Workspace, setting models.PostmarkMailServerSetting, thread models.Thread,
+		member models.Member, customer models.Customer,
+		textBody, htmlBody string,
 	) (models.Message, error)
 
-	IsPostmarkInboundProcessed(ctx context.Context, messageId string) (bool, error)
+	IsPostmarkMessageProcessed(ctx context.Context, messageId string) (bool, error)
 
 	ProcessPostmarkInbound(
 		ctx context.Context, workspaceId string,

@@ -335,49 +335,31 @@ CREATE TABLE message_attachment
     CONSTRAINT message_attachment_message_id_fkey FOREIGN KEY (message_id) REFERENCES message (message_id)
 );
 
--- Represents postmark inbound message stream payload linked to message.
--- This table stores Postmark-specific inbound message data including the original payload
--- and various message identifiers for tracking and correlation.
-CREATE TABLE postmark_inbound_message
+
+CREATE TABLE postmark_message_log
 (
     message_id            VARCHAR(255) NOT NULL, -- References parent message
     payload               JSONB        NOT NULL, -- Original Postmark webhook payload
     postmark_message_id   VARCHAR(255) NOT NULL, -- Postmark's internal message ID
     mail_message_id       VARCHAR(255) NOT NULL, -- Email `Message-ID` header
     reply_mail_message_id VARCHAR(255) NULL,     -- Email `In-Reply-To` header
-    created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT postmark_inbound_message_id_pkey PRIMARY KEY (message_id),
-    CONSTRAINT postmark_inbound_message_id_fkey FOREIGN KEY (message_id) REFERENCES message (message_id),
-
-    CONSTRAINT postmark_inbound_msg_pm_message_id_key UNIQUE (postmark_message_id),
-    CONSTRAINT postmark_inbound_msg_mail_message_id_key UNIQUE (mail_message_id)
-);
-CREATE INDEX postmark_inbound_msg_reply_mail_message_idx ON postmark_inbound_message (reply_mail_message_id);
-
-
-CREATE TABLE postmark_outbox_queue
-(
-    message_id            VARCHAR(255) NOT NULL, -- References parent message
-    postmark_message_id   VARCHAR(255) NOT NULL, -- Postmark's internal message ID
-    reply_mail_message_id VARCHAR(255) NULL,     -- Email `In-Reply-To` header
     has_error             BOOLEAN      NOT NULL DEFAULT FALSE,
-    mail_to               VARCHAR(255) NOT NULL,
     submitted_at          TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
     error_code            bigint       NOT NULL,
-    message               TEXT         NOT NULL,
+    postmark_message      VARCHAR(255) NOT NULL,
+    message_event         VARCHAR(255) NOT NULL,
     acknowledged          BOOLEAN      NOT NULL DEFAULT FALSE,
-
+    message_type          VARCHAR(255) NOT NULL,
     created_at            TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
     updated_at            TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT postmark_outbox_queue_message_id_pkey PRIMARY KEY (message_id),
-    CONSTRAINT postmark_outbox_queue_message_id_fkey FOREIGN KEY (message_id) REFERENCES message (message_id),
+    CONSTRAINT postmark_log_message_id_pkey PRIMARY KEY (message_id),
+    CONSTRAINT postmark_log_message_id_fkey FOREIGN KEY (message_id) REFERENCES message (message_id),
 
-    CONSTRAINT postmark_outbox_queue_postmark_message_id_key UNIQUE (postmark_message_id)
+    CONSTRAINT postmark_log_pm_message_id_key UNIQUE (postmark_message_id),
+    CONSTRAINT postmark_log_mail_message_id_key UNIQUE (mail_message_id)
 );
-
+CREATE INDEX postmark_log_reply_mail_message_idx ON postmark_message_log (reply_mail_message_id);
 
 -- Represents the label table
 -- This table is used to store the labels linked to the workspace.

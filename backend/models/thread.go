@@ -171,8 +171,12 @@ func (c ThreadChannel) Email() string {
 
 // InboundMessage tracks the inbound message received from the Customer.
 // Common across channels.
+// TODO: rename this to InboundEvent - tracks inbound metadata
+// TODO: remove customer
+// TODO: use eventId instead of MessageId
 type InboundMessage struct {
-	MessageId   string
+	MessageId string
+	// Deprecated
 	Customer    CustomerActor
 	PreviewText string
 	FirstSeqId  string
@@ -188,7 +192,8 @@ func (im InboundMessage) GenId() string {
 // OutboundMessage tracks the outbound message sent by the Member.
 // Common across channels.
 type OutboundMessage struct {
-	MessageId   string
+	MessageId string
+	// Deprecated
 	Member      MemberActor
 	PreviewText string
 	FirstSeqId  string
@@ -291,15 +296,15 @@ func (th *Thread) ClearAssignedMember() {
 	th.AssignedMember = nil
 }
 
-// SetNewInboundMessage adds the inbound message info to the Thread.
+// setNewInboundMessage adds the inbound message info to the Thread.
 // Inbound messages are messages from the Customer.
-func (th *Thread) SetNewInboundMessage(customer CustomerActor, previewText string) {
+func (th *Thread) setNewInboundMessage(previewText string) {
 	messageId := InboundMessage{}.GenId()
 	seqId := xid.New().String()
 	now := time.Now().UTC()
 	th.InboundMessage = &InboundMessage{
 		MessageId:   messageId,
-		Customer:    customer,
+		Customer:    th.Customer,
 		PreviewText: previewText,
 		FirstSeqId:  seqId,
 		LastSeqId:   seqId, // starts with first seq.
@@ -308,6 +313,8 @@ func (th *Thread) SetNewInboundMessage(customer CustomerActor, previewText strin
 	}
 }
 
+// SetNextInboundSeq updates the inbound message sequence with a new sequence ID and timestamp
+// or creates a new inbound message.
 func (th *Thread) SetNextInboundSeq(previewText string) {
 	seqId := xid.New().String()
 	now := time.Now().UTC()
@@ -316,7 +323,7 @@ func (th *Thread) SetNextInboundSeq(previewText string) {
 		th.InboundMessage.LastSeqId = seqId
 		th.InboundMessage.UpdatedAt = now
 	} else {
-		th.SetNewInboundMessage(th.Customer, previewText)
+		th.setNewInboundMessage(previewText)
 	}
 }
 
@@ -324,11 +331,10 @@ func (th *Thread) ClearInboundMessage() {
 	th.InboundMessage = nil
 }
 
-// SetNewOutboundMessage adds the outbound message info to the Thread.
+// setNewOutboundMessage adds the outbound message info to the Thread.
 // Outbound messages are messages from the Member.
-func (th *Thread) SetNewOutboundMessage(
-	messageId string, member MemberActor, previewText string,
-) {
+func (th *Thread) setNewOutboundMessage(member MemberActor, previewText string) {
+	messageId := OutboundMessage{}.GenId()
 	seqId := xid.New().String()
 	now := time.Now().UTC()
 	th.OutboundMessage = &OutboundMessage{
@@ -350,8 +356,7 @@ func (th *Thread) SetNextOutboundSeq(member MemberActor, previewText string) {
 		th.OutboundMessage.LastSeqId = seqId
 		th.OutboundMessage.UpdatedAt = now
 	} else {
-		messageId := OutboundMessage{}.GenId()
-		th.SetNewOutboundMessage(messageId, member, previewText)
+		th.setNewOutboundMessage(member, previewText)
 	}
 }
 

@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+// PostmarkInboundMessageReq represents inbound webhook request from Postmark
+// with the raw JSON payload.
 type PostmarkInboundMessageReq struct {
 	postmark.InboundWebhook
 	Payload map[string]interface{}
@@ -15,12 +17,6 @@ type PostmarkInboundMessageReq struct {
 // ToPostmarkInboundMessage converts a PostmarkInboundMessageReq to a PostmarkInboundMessage model instance.
 func (p *PostmarkInboundMessageReq) ToPostmarkInboundMessage() models.PostmarkInboundMessage {
 	now := time.Now().UTC()
-	//var textBody string
-	//if p.StrippedTextReply != "" {
-	//	textBody = p.StrippedTextReply
-	//} else {
-	//	textBody = p.TextBody
-	//}
 	message := models.PostmarkInboundMessage{
 		Payload:           p.Payload,
 		PostmarkMessageId: p.MessageID, // Postmark MessageID
@@ -31,7 +27,7 @@ func (p *PostmarkInboundMessageReq) ToPostmarkInboundMessage() models.PostmarkIn
 		FromName:          p.FromFull.Name,
 		CreatedAt:         now,
 		UpdatedAt:         now,
-		Attachments:       p.ToMessageAttachments(),
+		Attachments:       p.ToPostmarkMessageAttachments(),
 	}
 	for _, h := range p.Headers {
 		if h.Name == "Message-ID" {
@@ -49,7 +45,7 @@ func (p *PostmarkInboundMessageReq) ToPostmarkInboundMessage() models.PostmarkIn
 	return message
 }
 
-func (p *PostmarkInboundMessageReq) ToMessageAttachments() []models.PostmarkMessageAttachment {
+func (p *PostmarkInboundMessageReq) ToPostmarkMessageAttachments() []models.PostmarkMessageAttachment {
 	var attachments []models.PostmarkMessageAttachment
 	now := time.Now().UTC()
 	for _, m := range p.Attachments {
@@ -68,8 +64,7 @@ func (p *PostmarkInboundMessageReq) ToMessageAttachments() []models.PostmarkMess
 // PostmarkInboundMessageReq structure.
 // It takes a map[string]interface{} request payload and returns the parsed
 // PostmarkInboundMessageReq or an error if parsing fails.
-func FromPostmarkInboundRequest(
-	reqp map[string]interface{}) (PostmarkInboundMessageReq, error) {
+func FromPostmarkInboundRequest(reqp map[string]interface{}) (PostmarkInboundMessageReq, error) {
 	// Convert to JSON bytes
 	jsonBytes, err := json.Marshal(reqp)
 	if err != nil {
@@ -86,18 +81,48 @@ func FromPostmarkInboundRequest(
 	return payload, nil
 }
 
-// PostmarkOutboxQueue represents a structure for managing message details in a Postmark-based outbox queue system.
-// It contains fields for tracking message identifiers, recipient details, error statuses, and timestamps.
-type PostmarkOutboxQueue struct {
-	MessageId          string    `json:"messageId"`
-	PostmarkMessageId  string    `json:"postmarkMessageId"`
-	ReplyMailMessageId *string   `json:"replyMailMessageId"`
-	HasError           bool      `json:"hasError"`
-	MailTo             string    `json:"mailTo"`
-	SubmittedAt        time.Time `json:"submittedAt"`
-	ErrorCode          int64     `json:"errorCode"`
-	Message            string    `json:"message"`
-	Acknowledged       bool      `json:"acknowledged"`
-	CreatedAt          time.Time `json:"createdAt"`
-	UpdatedAt          time.Time `json:"updatedAt"`
+type PostmarkEmailReqOption func(req *postmark.Email)
+
+func NewPostmarkEmailReq(from, to string, opts ...PostmarkEmailReqOption) *postmark.Email {
+	req := &postmark.Email{
+		From: from,
+		To:   to,
+	}
+	for _, opt := range opts {
+		opt(req)
+	}
+	return req
+}
+
+func SetPostmarkSubject(subject string) PostmarkEmailReqOption {
+	return func(req *postmark.Email) {
+		req.Subject = subject
+	}
+}
+
+func SetPostmarkTextBody(textBody string) PostmarkEmailReqOption {
+	return func(req *postmark.Email) {
+		req.TextBody = textBody
+	}
+}
+
+func SetPostmarkHTMLBody(htmlBody string) PostmarkEmailReqOption {
+	return func(req *postmark.Email) {
+		req.HTMLBody = htmlBody
+	}
+}
+
+func WithPostmarkHeader(name, value string) PostmarkEmailReqOption {
+	return func(req *postmark.Email) {
+		req.Headers = append(req.Headers, postmark.Header{
+			Name:  name,
+			Value: value,
+		})
+	}
+}
+
+func SetPostmarkTag(tag string) PostmarkEmailReqOption {
+	return func(req *postmark.Email) {
+		req.Tag = tag
+	}
 }
