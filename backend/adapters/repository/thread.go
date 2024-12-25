@@ -2883,8 +2883,8 @@ func (th *ThreadDB) ComputeLabelMetricsByWorkspaceId(
 	return metrics, nil
 }
 
-func (th *ThreadDB) FetchThreadByPostmarkInboundInReplyMessageId(
-	ctx context.Context, workspaceId string, inReplyMessageId string) (models.Thread, error) {
+func (th *ThreadDB) FindThreadByPostmarkReplyMessageId(
+	ctx context.Context, workspaceId string, mailMessageId string) (models.Thread, error) {
 	var thread models.Thread
 
 	var selectB builq.Builder
@@ -2951,7 +2951,7 @@ func (th *ThreadDB) FetchThreadByPostmarkInboundInReplyMessageId(
 		outboundUpdatedAt   sql.NullTime
 	)
 
-	err = th.db.QueryRow(ctx, stmt, workspaceId, inReplyMessageId).Scan(
+	err = th.db.QueryRow(ctx, stmt, workspaceId, mailMessageId).Scan(
 		&thread.ThreadId, &thread.WorkspaceId, &thread.Customer.CustomerId, &thread.Customer.Name,
 		&assignedMemberId, &assignedMemberName, &assignedAt,
 		&thread.Title, &thread.Description,
@@ -3160,7 +3160,7 @@ func (th *ThreadDB) AppendPostmarkInboundThreadMessage(
 	return message, nil
 }
 
-func (th *ThreadDB) CheckPostmarkMessageExists(ctx context.Context, messageId string) (bool, error) {
+func (th *ThreadDB) CheckPostmarkInboundMessageExists(ctx context.Context, messageId string) (bool, error) {
 	var isExist bool
 	stmt := `SELECT EXISTS(
 		SELECT 1 FROM postmark_message_log WHERE postmark_message_id = $1
@@ -3252,4 +3252,9 @@ func (th *ThreadDB) FetchMessageAttachmentById(
 		return models.MessageAttachment{}, ErrQuery
 	}
 	return attachment, nil
+}
+
+func (th *ThreadDB) FindRecentPostmarkLogMailMessageIdByThreadId(
+	ctx context.Context, threadId string) (string, error) {
+	return "", nil
 }

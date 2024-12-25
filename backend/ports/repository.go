@@ -133,7 +133,7 @@ type ThreadRepositorer interface {
 	AppendOutboundThreadMessage(
 		ctx context.Context, outbound models.ThreadMessage) (models.Message, error)
 
-	CheckPostmarkMessageExists(ctx context.Context, messageId string) (bool, error)
+	CheckPostmarkInboundMessageExists(ctx context.Context, messageId string) (bool, error)
 
 	InsertMessageAttachment(
 		ctx context.Context, message models.MessageAttachment) (models.MessageAttachment, error)
@@ -141,8 +141,11 @@ type ThreadRepositorer interface {
 	FetchMessageAttachmentById(
 		ctx context.Context, messageId, attachmentId string) (models.MessageAttachment, error)
 
-	FetchThreadByPostmarkInboundInReplyMessageId(
+	FindThreadByPostmarkReplyMessageId(
 		ctx context.Context, workspaceId string, inReplyMessageId string) (models.Thread, error)
+
+	FindRecentPostmarkLogMailMessageIdByThreadId(ctx context.Context, threadId string) (string, error)
+
 	LookupByWorkspaceThreadId(
 		ctx context.Context, workspaceId string, threadId string, channel *string) (models.Thread, error)
 	ModifyThreadById(

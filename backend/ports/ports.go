@@ -154,6 +154,9 @@ type ThreadServicer interface {
 	AppendOutboundThreadChat(
 		ctx context.Context, thread models.Thread, member models.Member, message string) (models.Message, error)
 
+	GetRecentPostmarkLogMailMessageId(
+		ctx context.Context, threadId string) (string, error)
+
 	SendThreadMailReply(
 		ctx context.Context,
 		workspace models.Workspace, setting models.PostmarkMailServerSetting, thread models.Thread,
@@ -161,12 +164,15 @@ type ThreadServicer interface {
 		textBody, htmlBody string,
 	) (models.Message, error)
 
-	IsPostmarkMessageProcessed(ctx context.Context, messageId string) (bool, error)
+	IsPostmarkInboundMessageProcessed(ctx context.Context, messageId string) (bool, error)
 
 	ProcessPostmarkInbound(
 		ctx context.Context, workspaceId string,
 		customer models.CustomerActor, createdBy models.MemberActor, inboundMessage *models.PostmarkInboundMessage,
 	) (models.Thread, models.Message, error)
+
+	GetPostmarkInReplyThread(
+		ctx context.Context, workspaceId, mailMessageId string) (*models.Thread, error)
 
 	GetWorkspaceThread(
 		ctx context.Context, workspaceId string, threadId string, channel *string) (models.Thread, error)

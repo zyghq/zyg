@@ -836,7 +836,7 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 	}
 
 	// Check if the Postmark inbound message request has already been processed.
-	isProcessed, err := h.ths.IsPostmarkMessageProcessed(ctx, inboundReq.MessageID)
+	isProcessed, err := h.ths.IsPostmarkInboundMessageProcessed(ctx, inboundReq.MessageID)
 	if err != nil {
 		hub.CaptureException(err)
 		slog.Error("failed to check inbound message request processed", slog.Any("err", err))

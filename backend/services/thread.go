@@ -62,13 +62,9 @@ func (s *ThreadService) CreateInboundThreadChat(
 	return insThread, insMessage, nil
 }
 
-func (s *ThreadService) GetPostmarkInboundInReplyThread(
-	ctx context.Context, workspaceId string, inboundMessage *models.PostmarkInboundMessage) (*models.Thread, error) {
-	if inboundMessage == nil || inboundMessage.ReplyMailMessageId == nil {
-		return nil, ErrPostmarkInbound
-	}
-	thread, err := s.repo.FetchThreadByPostmarkInboundInReplyMessageId(
-		ctx, workspaceId, *inboundMessage.ReplyMailMessageId)
+func (s *ThreadService) GetPostmarkInReplyThread(
+	ctx context.Context, workspaceId string, mailMessageId string) (*models.Thread, error) {
+	thread, err := s.repo.FindThreadByPostmarkReplyMessageId(ctx, workspaceId, mailMessageId)
 	if errors.Is(err, repository.ErrEmpty) {
 		return nil, ErrThreadNotFound
 	}
@@ -79,10 +75,10 @@ func (s *ThreadService) GetPostmarkInboundInReplyThread(
 	return &thread, nil
 }
 
-func (s *ThreadService) IsPostmarkMessageProcessed(ctx context.Context, messageId string) (bool, error) {
-	exists, err := s.repo.CheckPostmarkMessageExists(ctx, messageId)
+func (s *ThreadService) IsPostmarkInboundMessageProcessed(ctx context.Context, messageId string) (bool, error) {
+	exists, err := s.repo.CheckPostmarkInboundMessageExists(ctx, messageId)
 	if err != nil {
-		return false, ErrPostmarkInbound
+		return false, ErrPostmarkInboundNotFound
 	}
 	return exists, nil
 }
@@ -106,7 +102,7 @@ func (s *ThreadService) ProcessPostmarkInbound(
 		if inboundMessage.ReplyMailMessageId != nil {
 			// Get existing thread for Postmark inbound in-reply inboundMessage if exists.
 			// Otherwise, creates a new thread.
-			existingThread, err := s.GetPostmarkInboundInReplyThread(ctx, workspaceId, inboundMessage)
+			existingThread, err := s.GetPostmarkInReplyThread(ctx, workspaceId, *inboundMessage.ReplyMailMessageId)
 			if errors.Is(err, ErrThreadNotFound) {
 				slog.Info("thread not found for postmark inbound reply mail message ID should start new thread")
 				newThread := models.NewThread(
@@ -321,7 +317,7 @@ func (s *ThreadService) SetLabel(
 	}
 	label, created, err := s.repo.SetThreadLabel(ctx, label)
 	if err != nil {
-		return models.ThreadLabel{}, created, ErrThreadLabel
+		return models.ThreadLabel{}, created, ErrLabel
 	}
 
 	return label, created, nil
@@ -331,7 +327,7 @@ func (s *ThreadService) ListThreadLabels(
 	ctx context.Context, threadId string) ([]models.ThreadLabel, error) {
 	labels, err := s.repo.FetchAttachedLabelsByThreadId(ctx, threadId)
 	if err != nil {
-		return labels, ErrThreadLabel
+		return labels, ErrLabel
 	}
 	return labels, nil
 }
@@ -392,9 +388,7 @@ func (s *ThreadService) SendThreadMailReply(
 ) (models.Message, error) {
 	hub := sentry.GetHubFromContext(ctx)
 
-	fromEmail := setting.Email
 	fromName := fmt.Sprintf("%s at %s", member.Name, workspace.Name)
-	toEmail := customer.Email
 
 	// extract from HTML if text is empty
 	// fallback to specified text in any case
@@ -415,16 +409,25 @@ func (s *ThreadService) SendThreadMailReply(
 	if err != nil {
 		hub.CaptureMessage("failed to convert HTML to markdown for send reply mail")
 		hub.CaptureException(err)
+		slog.Error("failed to convert HTML to markdown for send reply mail", slog.Any("err", err))
 		markdownBody = htmlBody // fallback to HTML
 	}
 
-	fmt.Println("fromEmail", fromEmail)
+	// Get recent Postmark mail message ID
+	// The mail message ID is used in header for `In-Reply-To` maintaining a mail thread.
+	mailMsgId, err := s.GetRecentPostmarkLogMailMessageId(ctx, thread.ThreadId)
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to get recent postmark message log mail message ID", slog.Any("err", err))
+		return models.Message{}, ErrPostmarkOutbound
+	}
+
 	fmt.Println("fromName", fromName)
-	fmt.Println("toEmail", toEmail)
 	fmt.Println("subject", thread.Title)
 	fmt.Println("textBody", textBody)
 	fmt.Println("htmlBody", htmlBody)
 	fmt.Println("markdownBody", markdownBody)
+	fmt.Println("In-Reply-To", mailMsgId)
 
 	newMessage := models.NewMessage(
 		thread.ThreadId, models.ThreadChannel{}.Email(),
@@ -493,7 +496,7 @@ func (s *ThreadService) RemoveThreadLabel(
 	ctx context.Context, threadId string, labelId string) error {
 	err := s.repo.DeleteThreadLabelById(ctx, threadId, labelId)
 	if err != nil {
-		return ErrThreadLabel
+		return ErrLabel
 	}
 	return nil
 }
@@ -542,4 +545,14 @@ func (s *ThreadService) GetMessageAttachment(
 		return models.MessageAttachment{}, ErrMessageAttachment
 	}
 	return attachment, nil
+}
+
+func (s *ThreadService) GetRecentPostmarkLogMailMessageId(
+	ctx context.Context, threadId string) (string, error) {
+	msgId, err := s.repo.FindRecentPostmarkLogMailMessageIdByThreadId(ctx, threadId)
+	if errors.Is(err, repository.ErrEmpty) {
+		return "", nil
+	}
+	fmt.Println("msgId", msgId)
+	return "", nil
 }
