@@ -55,9 +55,8 @@ const (
 	ErrPostmarkSettingNotFound = serviceErr("postmark setting not found")
 	ErrPostmarkSetting         = serviceErr("postmark setting error")
 
-	ErrPostmarkInbound         = serviceErr("postmark inbound error")
-	ErrPostmarkInboundNotFound = serviceErr("postmark inbound not found")
-
-	ErrPostmarkOutbound         = serviceErr("postmark outbound error")
-	ErrPostmarkOutboundNotFound = serviceErr("postmark outbound not found")
+	ErrPostmarkLog         = serviceErr("postmark log error")
+	ErrPostmarkLogNotFound = serviceErr("postmark log not found")
+	ErrPostmarkInbound     = serviceErr("postmark inbound error")
+	ErrPostmarkOutbound    = serviceErr("postmark outbound error")
 )

@@ -190,3 +190,11 @@ func WebhookUrl() string {
 	p := WebhookPassword()
 	return fmt.Sprintf("%s://%s:%s@%s", proto, u, p, domain)
 }
+
+func PostmarkDeliveryDomain() string {
+	value, ok := os.LookupEnv("POSTMARK_DELIVERY_DOMAIN")
+	if !ok {
+		return "mtasv.net"
+	}
+	return value
+}

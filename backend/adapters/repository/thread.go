@@ -3163,7 +3163,7 @@ func (th *ThreadDB) AppendPostmarkInboundThreadMessage(
 func (th *ThreadDB) CheckPostmarkInboundMessageExists(ctx context.Context, messageId string) (bool, error) {
 	var isExist bool
 	stmt := `SELECT EXISTS(
-		SELECT 1 FROM postmark_message_log WHERE postmark_message_id = $1
+		SELECT 1 FROM postmark_message_log WHERE postmark_message_id = $1 AND message_type = 'inbound'
 	)`
 
 	err := th.db.QueryRow(ctx, stmt, messageId).Scan(&isExist)
@@ -3254,7 +3254,34 @@ func (th *ThreadDB) FetchMessageAttachmentById(
 	return attachment, nil
 }
 
-func (th *ThreadDB) FindRecentPostmarkLogMailMessageIdByThreadId(
-	ctx context.Context, threadId string) (string, error) {
-	return "", nil
+func (th *ThreadDB) GetRecentMailMessageIdByThreadId(ctx context.Context, threadId string) (string, error) {
+	var mailMessageId string
+	q := builq.New()
+	q("SELECT pml.mail_message_id FROM postmark_message_log pml")
+	q("INNER JOIN message m ON m.message_id = pml.message_id")
+	q("WHERE m.thread_id = %$", threadId)
+	q("ORDER BY m.message_id DESC")
+	q("LIMIT 1")
+
+	stmt, _, err := q.Build()
+	if err != nil {
+		slog.Error("failed to build query", slog.Any("err", err))
+		return "", ErrQuery
+	}
+
+	if zyg.DBQueryDebug() {
+		debug := q.DebugBuild()
+		debugQuery(debug)
+	}
+
+	err = th.db.QueryRow(ctx, stmt, threadId).Scan(&mailMessageId)
+	if errors.Is(err, pgx.ErrNoRows) {
+		slog.Error("no rows returned", slog.Any("err", err))
+		return "", ErrEmpty
+	}
+	if err != nil {
+		slog.Error("failed to query", slog.Any("err", err))
+		return "", ErrQuery
+	}
+	return mailMessageId, nil
 }

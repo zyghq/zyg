@@ -1,9 +1,12 @@
 package email
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/zyghq/postmark"
+	"github.com/zyghq/zyg/integrations"
 	"github.com/zyghq/zyg/models"
+	"log/slog"
 	"time"
 )
 
@@ -83,21 +86,16 @@ func FromPostmarkInboundRequest(reqp map[string]interface{}) (PostmarkInboundMes
 
 type PostmarkEmailReqOption func(req *postmark.Email)
 
-func NewPostmarkEmailReq(from, to string, opts ...PostmarkEmailReqOption) *postmark.Email {
+func NewPostmarkEmailReq(subject, from, to string, opts ...PostmarkEmailReqOption) *postmark.Email {
 	req := &postmark.Email{
-		From: from,
-		To:   to,
+		Subject: subject,
+		From:    from,
+		To:      to,
 	}
 	for _, opt := range opts {
 		opt(req)
 	}
 	return req
-}
-
-func SetPostmarkSubject(subject string) PostmarkEmailReqOption {
-	return func(req *postmark.Email) {
-		req.Subject = subject
-	}
 }
 
 func SetPostmarkTextBody(textBody string) PostmarkEmailReqOption {
@@ -125,4 +123,16 @@ func SetPostmarkTag(tag string) PostmarkEmailReqOption {
 	return func(req *postmark.Email) {
 		req.Tag = tag
 	}
+}
+
+func SendPostmarkMail(
+	ctx context.Context, setting models.PostmarkMailServerSetting, email *postmark.Email,
+) (postmark.EmailResponse, error) {
+	client := postmark.NewClient(setting.ServerToken, "")
+	r, err := client.SendEmail(ctx, *email)
+	if err != nil {
+		slog.Error("failed to send email", slog.Any("error", err), slog.Any("email", email))
+		return postmark.EmailResponse{}, integrations.ErrPostmarkSendMail
+	}
+	return r, nil
 }

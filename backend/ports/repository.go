@@ -144,7 +144,7 @@ type ThreadRepositorer interface {
 	FindThreadByPostmarkReplyMessageId(
 		ctx context.Context, workspaceId string, inReplyMessageId string) (models.Thread, error)
 
-	FindRecentPostmarkLogMailMessageIdByThreadId(ctx context.Context, threadId string) (string, error)
+	GetRecentMailMessageIdByThreadId(ctx context.Context, threadId string) (string, error)
 
 	LookupByWorkspaceThreadId(
 		ctx context.Context, workspaceId string, threadId string, channel *string) (models.Thread, error)

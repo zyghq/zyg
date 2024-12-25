@@ -154,7 +154,7 @@ type ThreadServicer interface {
 	AppendOutboundThreadChat(
 		ctx context.Context, thread models.Thread, member models.Member, message string) (models.Message, error)
 
-	GetRecentPostmarkLogMailMessageId(
+	GetRecentThreadMailMessageId(
 		ctx context.Context, threadId string) (string, error)
 
 	SendThreadMailReply(

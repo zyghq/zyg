@@ -16,10 +16,9 @@ type Message struct {
 	HTMLBody     string
 	Customer     *CustomerActor
 	Member       *MemberActor
-	// Deprecated
-	Channel   string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Channel      string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 type MessageOption func(message *Message)
@@ -143,7 +142,7 @@ type PostmarkInboundMessage struct {
 	Attachments []PostmarkMessageAttachment
 }
 
-func (p *PostmarkInboundMessage) NewPostmarkInboundLog(messageId string) PostmarkMessageLog {
+func (p *PostmarkInboundMessage) ToPostmarkMessageLog(messageId string) PostmarkMessageLog {
 	now := time.Now().UTC()
 	return PostmarkMessageLog{
 		MessageId:          messageId,
@@ -185,10 +184,10 @@ type PostmarkMessageLog struct {
 // SetOutboundMailMessageId sets outbound mail message ID with specified domain as configured.
 // This should be only used for outbound mails as inbound mail already has it generated from the client.
 func (m *PostmarkMessageLog) SetOutboundMailMessageId(d string) {
-	m.MailMessageId = fmt.Sprintf("<%s@%s>", m.MessageId, d)
+	m.MailMessageId = fmt.Sprintf("<%s@%s>", m.PostmarkMessageId, d)
 }
 
 type PostmarkMailThreadMessage struct {
 	PostmarkMessageLog *PostmarkMessageLog
-	Message            *Message
+	ThreadMessage      *ThreadMessage
 }

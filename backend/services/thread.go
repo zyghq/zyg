@@ -11,8 +11,10 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/zyghq/zyg"
 	"github.com/zyghq/zyg/adapters/store"
+	"github.com/zyghq/zyg/integrations/email"
 	"github.com/zyghq/zyg/utils"
 	"log/slog"
+	"time"
 
 	"github.com/zyghq/zyg/adapters/repository"
 	"github.com/zyghq/zyg/models"
@@ -78,7 +80,7 @@ func (s *ThreadService) GetPostmarkInReplyThread(
 func (s *ThreadService) IsPostmarkInboundMessageProcessed(ctx context.Context, messageId string) (bool, error) {
 	exists, err := s.repo.CheckPostmarkInboundMessageExists(ctx, messageId)
 	if err != nil {
-		return false, ErrPostmarkInboundNotFound
+		return false, ErrPostmarkInbound
 	}
 	return exists, nil
 }
@@ -159,7 +161,10 @@ func (s *ThreadService) ProcessPostmarkInbound(
 		models.SetMarkdownBody(markdownBody),
 	)
 	thread.SetNextInboundSeq(newMessage.PreviewText())
-	postmarkMessageLog := inboundMessage.NewPostmarkInboundLog(newMessage.MessageId)
+	// Convert postmark inbound message into Postmark message log.
+	// The is persisted for both inbound and outbound messages.
+	// Inbound as received from Postmark.
+	postmarkMessageLog := inboundMessage.ToPostmarkMessageLog(newMessage.MessageId)
 
 	// If thread exists, append to the existing thread.
 	if threadExists {
@@ -388,7 +393,18 @@ func (s *ThreadService) SendThreadMailReply(
 ) (models.Message, error) {
 	hub := sentry.GetHubFromContext(ctx)
 
+	// Make sure web have the customer email, to send reply.
+	if !customer.Email.Valid {
+		slog.Error("customer email is not valid",
+			slog.Any("customerId", customer.CustomerId), slog.Any("email", customer.Email))
+		hub.Scope().SetTag("customerId", customer.CustomerId)
+		hub.CaptureMessage("customer email is not valid or does not exist - cannot send reply mail")
+		return models.Message{}, ErrPostmarkOutbound
+	}
+
 	fromName := fmt.Sprintf("%s at %s", member.Name, workspace.Name)
+	from := fmt.Sprintf("%s <%s>", fromName, setting.Email)
+	replySubject := fmt.Sprintf("Re: %s", thread.Title)
 
 	// extract from HTML if text is empty
 	// fallback to specified text in any case
@@ -415,19 +431,12 @@ func (s *ThreadService) SendThreadMailReply(
 
 	// Get recent Postmark mail message ID
 	// The mail message ID is used in header for `In-Reply-To` maintaining a mail thread.
-	mailMsgId, err := s.GetRecentPostmarkLogMailMessageId(ctx, thread.ThreadId)
+	replyMailMessageId, err := s.GetRecentThreadMailMessageId(ctx, thread.ThreadId)
 	if err != nil {
 		hub.CaptureException(err)
 		slog.Error("failed to get recent postmark message log mail message ID", slog.Any("err", err))
 		return models.Message{}, ErrPostmarkOutbound
 	}
-
-	fmt.Println("fromName", fromName)
-	fmt.Println("subject", thread.Title)
-	fmt.Println("textBody", textBody)
-	fmt.Println("htmlBody", htmlBody)
-	fmt.Println("markdownBody", markdownBody)
-	fmt.Println("In-Reply-To", mailMsgId)
 
 	newMessage := models.NewMessage(
 		thread.ThreadId, models.ThreadChannel{}.Email(),
@@ -438,14 +447,53 @@ func (s *ThreadService) SendThreadMailReply(
 	)
 	thread.SetNextOutboundSeq(member.AsMemberActor(), newMessage.PreviewText())
 
-	threadMessage := models.ThreadMessage{
-		Thread:  &thread,
-		Message: newMessage,
+	pmEmailReq := email.NewPostmarkEmailReq(
+		replySubject, from, customer.Email.String,
+		email.WithPostmarkHeader("In-Reply-To", replyMailMessageId),
+		email.SetPostmarkTag(customer.CustomerId),
+		email.SetPostmarkTextBody(newMessage.TextBody),
+		email.SetPostmarkHTMLBody(newMessage.HTMLBody),
+	)
+
+	payload, err := utils.StructToMap(pmEmailReq)
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to marshal postmark email request", slog.Any("err", err))
+		return models.Message{}, ErrPostmarkOutbound
 	}
 
-	fmt.Println("threadMessage", threadMessage)
+	resp, err := email.SendPostmarkMail(ctx, setting, pmEmailReq)
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to send postmark email", slog.Any("err", err))
+		return models.Message{}, ErrPostmarkOutbound
+	}
 
-	return models.Message{}, nil
+	messageLog := models.PostmarkMessageLog{
+		MessageId:          newMessage.MessageId,
+		Payload:            payload,
+		PostmarkMessageId:  resp.MessageID,
+		ReplyMailMessageId: &replyMailMessageId,
+		HasError:           false,
+		SubmittedAt:        resp.SubmittedAt,
+		ErrorCode:          resp.ErrorCode,
+		PostmarkMessage:    resp.Message,
+		Acknowledged:       false,
+		MessageType:        "outbound",
+		CreatedAt:          time.Now(),
+		UpdatedAt:          time.Now(),
+	}
+	// Set outbound mail message ID for this message
+	messageLog.SetOutboundMailMessageId(zyg.PostmarkDeliveryDomain())
+
+	newMessage, err = s.repo.AppendPostmarkInboundThreadMessage(
+		ctx, thread.ThreadId, thread.InboundMessage, &messageLog, newMessage)
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to append postmark inbound thread message", slog.Any("err", err))
+		return models.Message{}, ErrPostmarkInbound
+	}
+	return *newMessage, nil
 }
 
 func (s *ThreadService) ListThreadMessages(
@@ -547,12 +595,13 @@ func (s *ThreadService) GetMessageAttachment(
 	return attachment, nil
 }
 
-func (s *ThreadService) GetRecentPostmarkLogMailMessageId(
-	ctx context.Context, threadId string) (string, error) {
-	msgId, err := s.repo.FindRecentPostmarkLogMailMessageIdByThreadId(ctx, threadId)
+func (s *ThreadService) GetRecentThreadMailMessageId(ctx context.Context, threadId string) (string, error) {
+	mailMessageId, err := s.repo.GetRecentMailMessageIdByThreadId(ctx, threadId)
 	if errors.Is(err, repository.ErrEmpty) {
-		return "", nil
+		return "", ErrPostmarkLogNotFound
 	}
-	fmt.Println("msgId", msgId)
-	return "", nil
+	if err != nil {
+		return "", ErrPostmarkLog
+	}
+	return mailMessageId, nil
 }

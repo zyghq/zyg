@@ -339,7 +339,7 @@ CREATE TABLE message_attachment
 CREATE TABLE postmark_message_log
 (
     message_id            VARCHAR(255) NOT NULL, -- References parent message
-    payload               JSONB        NOT NULL, -- Original Postmark webhook payload
+    payload               JSONB        NOT NULL, -- Request payload
     postmark_message_id   VARCHAR(255) NOT NULL, -- Postmark's internal message ID
     mail_message_id       VARCHAR(255) NOT NULL, -- Email `Message-ID` header
     reply_mail_message_id VARCHAR(255) NULL,     -- Email `In-Reply-To` header
