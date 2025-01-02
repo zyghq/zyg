@@ -1,5 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { ButtonProps } from "@/components/ui/button";
+import { sendThreadMailMessage } from "@/db/api.ts";
+import { ThreadMessageResponse } from "@/db/schema.ts";
+import { useMutation } from "@tanstack/react-query";
+import CharacterCount from "@tiptap/extension-character-count";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor } from "@tiptap/react";
@@ -12,6 +16,7 @@ import {
   ListOrdered,
   Strikethrough,
 } from "lucide-react";
+import React from "react";
 
 interface MenuButtonProps extends ButtonProps {
   active: boolean;
@@ -37,7 +42,23 @@ const MenuButton = ({
   </Button>
 );
 
-export function RichTextEditor() {
+export function RichTextEditor({
+  refetch,
+  subject,
+  threadId,
+  token,
+  workspaceId,
+}: {
+  refetch: () => void;
+  subject: string;
+  threadId: string;
+  token: string;
+  workspaceId: string;
+}) {
+  async function submit(html: string) {
+    await mutation.mutateAsync({ htmlBody: html });
+  }
+
   const editor = useEditor({
     editorProps: {
       attributes: {
@@ -49,13 +70,12 @@ export function RichTextEditor() {
       StarterKit.configure({
         blockquote: {
           HTMLAttributes: {
-            class:
-              "zyg-blockquote pl-4 border-l-2 border-muted-foreground/40 italic my-2",
+            class: "pl-4 border-l-2 border-muted-foreground/40 italic my-1",
           },
         },
         bulletList: {
           HTMLAttributes: {
-            class: "zyg-bulletlist list-disc ml-4",
+            class: "list-disc ml-4",
           },
           itemTypeName: "listItem",
           keepMarks: true,
@@ -66,20 +86,20 @@ export function RichTextEditor() {
         horizontalRule: false,
         orderedList: {
           HTMLAttributes: {
-            class: "zyg-orderedlist list-decimal ml-4",
+            class: "list-decimal ml-4",
           },
           itemTypeName: "listItem",
           keepMarks: true,
         },
         paragraph: {
           HTMLAttributes: {
-            class: "zyg-paragraph leading-7",
+            class: "leading-relaxed text-base text-gray-700",
           },
         },
       }),
       Placeholder.configure({
         emptyEditorClass: "is-editor-empty",
-        placeholder: "Press R to reply...",
+        placeholder: "Start typing...",
       }),
       Link.configure({
         HTMLAttributes: {
@@ -88,35 +108,56 @@ export function RichTextEditor() {
         },
         openOnClick: false,
       }),
+      CharacterCount.configure(),
     ],
+  });
+
+  const mutation = useMutation({
+    mutationFn: async (values: { htmlBody: string }) => {
+      const { htmlBody } = values;
+      const { data, error } = await sendThreadMailMessage(
+        token,
+        workspaceId,
+        threadId,
+        { htmlBody },
+      );
+      if (error) {
+        throw new Error(error.message);
+      }
+      if (!data) {
+        throw new Error("no data returned");
+      }
+      return data as ThreadMessageResponse;
+    },
+    onError: (error) => {
+      console.error(error);
+    },
+    onSuccess: (data) => {
+      console.log("onSuccess");
+      console.log(data);
+      refetch();
+      if (editor) editor.commands.clearContent();
+    },
   });
 
   if (!editor) {
     return null;
   }
 
+  const chars = editor.storage.characterCount.characters();
+
   return (
-    <div className="flex h-full flex-col rounded-md border bg-white p-4 shadow-md dark:bg-background">
+    <div className="flex h-full flex-col rounded-md border bg-white px-4 py-2 shadow-md dark:bg-background">
       <div className="flex items-center gap-2">
-        <input
-          className="flex-1 border-none bg-transparent text-sm font-medium text-muted-foreground outline-none"
-          defaultValue="Re: Check the attachment for Bug"
-          placeholder="Subject"
-          type="text"
-        />
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="ghost">
-            Cc
-          </Button>
-          <Button size="sm" variant="ghost">
-            Bcc
-          </Button>
+        <div className="flex-1 text-sm font-medium text-muted-foreground">
+          {`Re: ${subject || ""}`}
         </div>
+        <div className="flex items-center gap-2"></div>
       </div>
       <div className="flex-grow overflow-auto">
         <EditorContent className="h-full pr-2" editor={editor} />
       </div>
-      <div className="flex items-center justify-between pt-2">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-1">
           <MenuButton
             active={editor.isActive("bold")}
@@ -169,18 +210,19 @@ export function RichTextEditor() {
 
         <div className="flex items-center gap-2">
           <Button
-            className="gap-2"
-            onClick={() => {
-              console.log("Submit content:", editor.getHTML());
-            }}
-            size="sm"
+            disabled={chars === 0}
+            onClick={() => submit(editor.getHTML())}
           >
-            Reply & Investigate
-            <kbd className="pointer-events-none inline-flex select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] text-muted-foreground">
-              <span>⌘</span>⏎
-            </kbd>
+            Send
           </Button>
         </div>
+      </div>
+      <div className="mt-2 flex h-1 items-center justify-end">
+        {mutation.isError && (
+          <div className="text-xs font-semibold text-red-600">
+            Something went wrong
+          </div>
+        )}
       </div>
     </div>
   );

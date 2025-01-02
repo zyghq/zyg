@@ -1282,6 +1282,62 @@ export async function sendThreadChatMessage(
   }
 }
 
+export async function sendThreadMailMessage(
+  token: string,
+  workspaceId: string,
+  threadId: string,
+  body: { htmlBody: string },
+): Promise<{
+  data: null | ThreadMessageResponse;
+  error: Error | null;
+}> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/email/${threadId}/messages/`,
+      {
+        body: JSON.stringify({ ...body }),
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        method: "POST",
+      },
+    );
+
+    if (!response.ok) {
+      const { status, statusText } = response;
+      return {
+        data: null,
+        error: new Error(
+          `error fetching workspace thread mail messages: ${status} ${statusText}`,
+        ),
+      };
+    }
+
+    try {
+      const data = await response.json();
+      console.log(data);
+      const parsed = threadMessageResponseSchema.parse({ ...data });
+      return { data: parsed, error: null };
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        console.error(err.message);
+      } else console.error(err);
+      return {
+        data: null,
+        error: new Error("error parsing workspace thread mail message schema"),
+      };
+    }
+  } catch (err) {
+    console.error(err);
+    return {
+      data: null,
+      error: new Error(
+        "error sending workspace thread mail message - something went wrong",
+      ),
+    };
+  }
+}
+
 export async function getCustomerEvents(
   token: string,
   workspaceId: string,

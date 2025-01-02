@@ -1,5 +1,3 @@
-import type { DetailedHTMLProps, HTMLAttributes } from "react";
-
 import { Icons } from "@/components/icons";
 import { channelIcon } from "@/components/icons";
 import { NotFound } from "@/components/notfound";
@@ -29,7 +27,6 @@ import {
 } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-// import { MessageForm } from "@/components/workspace/thread/message-form";
 import { SidePanelThreadList } from "@/components/workspace/thread/sidepanel-thread-list";
 import {
   SetThreadAssigneeForm,
@@ -44,18 +41,17 @@ import {
   getWorkspaceThreadMessages,
   putThreadLabel,
 } from "@/db/api";
-import { getCustomerEvents, updateThread } from "@/db/api";
+import { getCustomerEvents } from "@/db/api";
 import {
   customerRoleVerboseName,
   getFromLocalStorage,
   getInitials,
 } from "@/db/helpers";
-import { Label, Thread, threadTransformer } from "@/db/models";
+import { Label, Thread } from "@/db/models";
 import {
   MessageAttachmentResponse,
   ThreadLabelResponse,
   ThreadMessageResponse,
-  ThreadResponse,
 } from "@/db/schema";
 import { WorkspaceStoreState } from "@/db/store";
 import { cn } from "@/lib/utils";
@@ -510,7 +506,6 @@ function ThreadDetail() {
     getFromLocalStorage("zyg:threadsQueuePath") ||
     "/workspaces/$workspaceId/threads/todo";
 
-  const threadStatus = activeThread?.status || "";
   const threadStage = activeThread?.stage || "";
 
   const { nextItem, prevItem } = getPrevNextFromCurrent(currentQueue, threadId);
@@ -564,31 +559,31 @@ function ThreadDetail() {
     }
   }, [messages]);
 
-  const statusMutation = useMutation({
-    mutationFn: async (values: { status: string }) => {
-      const { data, error } = await updateThread(token, workspaceId, threadId, {
-        ...values,
-      });
-      if (error) {
-        throw new Error(error.message);
-      }
-      if (!data) {
-        throw new Error("no data returned");
-      }
-      return data as ThreadResponse;
-    },
-    onError: (error) => {
-      console.error(error);
-    },
-    onSuccess: (data) => {
-      const transformer = threadTransformer();
-      const [, thread] = transformer.normalize(data);
-      workspaceStore.getState().updateThread(thread);
-    },
-  });
+  // const statusMutation = useMutation({
+  //   mutationFn: async (values: { status: string }) => {
+  //     const { data, error } = await updateThread(token, workspaceId, threadId, {
+  //       ...values,
+  //     });
+  //     if (error) {
+  //       throw new Error(error.message);
+  //     }
+  //     if (!data) {
+  //       throw new Error("no data returned");
+  //     }
+  //     return data as ThreadResponse;
+  //   },
+  //   onError: (error) => {
+  //     console.error(error);
+  //   },
+  //   onSuccess: (data) => {
+  //     const transformer = threadTransformer();
+  //     const [, thread] = transformer.normalize(data);
+  //     workspaceStore.getState().updateThread(thread);
+  //   },
+  // });
 
-  const { isError: isStatusMutErr, isPending: isStatusMutPending } =
-    statusMutation;
+  // const { isError: isStatusMutErr, isPending: isStatusMutPending } =
+  //   statusMutation;
 
   function renderMessages(messages?: ThreadMessageResponse[]) {
     if (messages && messages.length > 0) {
@@ -744,7 +739,13 @@ function ThreadDetail() {
                 maxSize={80}
                 minSize={20}
               >
-                <RichTextEditor />
+                <RichTextEditor
+                  refetch={refetch}
+                  subject={activeThread.title}
+                  threadId={threadId}
+                  token={token}
+                  workspaceId={workspaceId}
+                />
                 {/* <div className="flex h-full flex-col gap-2 overflow-auto p-2">
                   <MessageForm
                     customerName={customerName}

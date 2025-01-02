@@ -39,6 +39,7 @@
     "@tanstack/react-router": "^1.57.9",
     "@tanstack/react-virtual": "^3.10.7",
     "@tanstack/router-zod-adapter": "^1.58.3",
+    "@tiptap/extension-character-count": "^2.11.0",
     "@tiptap/extension-link": "^2.10.4",
     "@tiptap/extension-placeholder": "^2.10.4",
     "@tiptap/react": "^2.10.4",
