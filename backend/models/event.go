@@ -60,6 +60,26 @@ func (ts TextSize) IsValid() bool {
 	}
 }
 
+// TextColor Represents text color for the text component.
+type TextColor string
+
+const (
+	TextNormal  TextColor = "NORMAL"
+	TextMuted   TextColor = "MUTED"
+	TextWarning TextColor = "WARNING"
+	TextError   TextColor = "ERROR"
+	TextSuccess TextColor = "SUCCESS"
+)
+
+func (tc TextColor) IsValid() bool {
+	switch tc {
+	case TextNormal, TextMuted, TextWarning, TextError, TextSuccess:
+		return true
+	default:
+		return false
+	}
+}
+
 type SpacerSize string
 
 const (
@@ -127,8 +147,9 @@ func (bc BadgeColor) IsValid() bool {
 
 // ComponentText represents the component text in event components.
 type ComponentText struct {
-	Text     string   `json:"text"`
-	TextSize TextSize `json:"textSize"`
+	Text      string    `json:"text"`
+	TextSize  TextSize  `json:"textSize"`
+	TextColor TextColor `json:"textColor"`
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for ComponentText.
@@ -138,8 +159,9 @@ type ComponentText struct {
 // Returns an error if JSON unmarshal fails or if textSize is invalid.
 func (ct *ComponentText) UnmarshalJSON(data []byte) error {
 	type Aux struct {
-		Text     string `json:"text"`
-		TextSize string `json:"textSize"`
+		Text      string `json:"text"`
+		TextSize  string `json:"textSize"`
+		TextColor string `json:"textColor"`
 	}
 
 	var aux Aux
@@ -157,6 +179,16 @@ func (ct *ComponentText) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("invalid textSize value: %s", aux.TextSize)
 		}
 		ct.TextSize = ts
+	}
+	// Set default value to 'NORMAL' if textColor is empty
+	if aux.TextColor == "" {
+		ct.TextColor = TextNormal
+	} else {
+		tc := TextColor(aux.TextColor)
+		if !tc.IsValid() {
+			return fmt.Errorf("invalid textColor value: %s", aux.TextColor)
+		}
+		ct.TextColor = tc
 	}
 	return nil
 }

@@ -19,18 +19,34 @@ import Markdown from "react-markdown";
 
 type TextSize = "L" | "M" | "S" | "XS";
 
+type TextColor = "ERROR" | "MUTED" | "NORMAL" | "SUCCESS" | "WARNING";
+
 interface ComponentTextProps {
   text: string;
+  textColor?: TextColor;
   textSize?: TextSize;
 }
 
-// Renders markdown text component.
-export function ComponentText({ text, textSize = "S" }: ComponentTextProps) {
+// Renders Markdown text component.
+export function ComponentText({
+  text,
+  textColor = "NORMAL",
+  textSize = "S",
+}: ComponentTextProps) {
+
   const sizeMap: Record<TextSize, string> = {
     L: "text-lg",
     M: "text-base",
     S: "text-sm",
     XS: "text-xs",
+  };
+
+  const colorMap: Record<TextColor, string> = {
+    ERROR: "text-red-600 dark:text-red-400",
+    MUTED: "text-muted-foreground",
+    NORMAL: "text-gray-900 dark:text-gray-100",
+    SUCCESS: "text-green-600 dark:text-green-400",
+    WARNING: "text-yellow-600 dark:text-yellow-400",
   };
 
   return (
@@ -46,7 +62,11 @@ export function ComponentText({ text, textSize = "S" }: ComponentTextProps) {
         h3: ({ children }) => <h3 className="text-base">{children}</h3>,
         h4: ({ children }) => <h4 className="text-base">{children}</h4>,
         p: ({ children }) => (
-          <p className={sizeMap[textSize] || "text-sm"}>{children}</p>
+          <p
+            className={cn(sizeMap[textSize] || "text-sm", colorMap[textColor])}
+          >
+            {children}
+          </p>
         ),
         pre: ({ children }) => (
           <pre className="max-w-full overflow-auto whitespace-pre-wrap break-words">
@@ -259,7 +279,6 @@ export function RenderComponents({ components = [] }: RenderComponentsProps) {
       console.warn(`Unknown component type: ${componentType}`);
       return null;
     }
-
     return <Component key={index} {...props} />;
   };
 

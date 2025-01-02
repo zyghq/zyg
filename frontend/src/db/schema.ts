@@ -207,6 +207,7 @@ export type PatResponse = z.infer<typeof patResponseSchema>;
 const ComponentText = z.object({
   componentText: z.object({
     text: z.string(),
+    textColor: z.string(),
     textSize: z.string(),
   }),
 });
