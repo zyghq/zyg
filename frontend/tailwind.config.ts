@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+
 export default {
   content: [
     "./pages/**/*.{ts,tsx}",
@@ -64,7 +65,7 @@ export default {
       },
       gridTemplateColumns: {
         "custom-thread-list-default": "auto 1fr auto",
-        "custom-thread-list-xl": "18px 220px 1fr 220px",
+        "custom-thread-list-xl": "18px 180px 1fr 220px",
       },
       gridTemplateRows: {
         "custom-thread-list-default": "auto auto",
