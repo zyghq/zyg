@@ -295,21 +295,26 @@ CREATE TABLE thread
 -- Each message has both a text_body (plain text) and body (formatted/rich text).
 CREATE TABLE message
 (
-    message_id    VARCHAR(255) NOT NULL, -- Unique identifier for the message
-    thread_id     VARCHAR(255) NOT NULL, -- Thread this message belongs to
-    text_body     TEXT         NOT NULL, -- Plain text content of the message
-    markdown_body TEXT         NOT NULL, -- Rich text/formatted content of the message
-    html_body     TEXT         NOT NULL, -- Rich text/formatted html content of the message
-    customer_id   VARCHAR(255) NULL,     -- Customer who sent the message (if from customer)
-    member_id     VARCHAR(255) NULL,     -- Member who sent the message (if from member)
-    channel       VARCHAR(255) NOT NULL, -- Communication channel used (email, chat, etc)
-    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    message_id    VARCHAR(255) NOT NULL,               -- Unique identifier for the message
+    thread_id     VARCHAR(255) NOT NULL,               -- Thread this message belongs to
+    text_body     TEXT         NOT NULL,               -- Plain text content of the message
+    markdown_body TEXT         NOT NULL,               -- Rich text/formatted content of the message
+    html_body     TEXT         NOT NULL,               -- Rich text/formatted HTML content of the message
+    customer_id   VARCHAR(255) NULL,                   -- Customer who sent the message (if from customer)
+    member_id     VARCHAR(255) NULL,                   -- Member who sent the message (if from member)
+    channel       VARCHAR(255) NOT NULL,               -- Communication channel used (email, chat, etc)
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp when the message was created
+    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp when the message was last updated
 
+    -- Defining the primary key for the table
     CONSTRAINT message_message_id_pkey PRIMARY KEY (message_id),
+
+    -- Foreign key constraints
     CONSTRAINT message_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES thread (thread_id),
     CONSTRAINT message_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
     CONSTRAINT message_member_id_fkey FOREIGN KEY (member_id) REFERENCES member (member_id),
+
+    -- Check constraint to enforce valid sender (only one of customer_id or member_id can be set)
     CONSTRAINT message_sender_check CHECK (
         (customer_id IS NULL AND member_id IS NOT NULL) OR
         (customer_id IS NOT NULL AND member_id IS NULL)
@@ -327,7 +332,7 @@ CREATE TABLE message_attachment
     spam          BOOLEAN      NOT NULL DEFAULT FALSE,
     has_error     BOOLEAN      NOT NULL DEFAULT FALSE,
     error         TEXT         NOT NULL,
-    md5_has       VARCHAR(511) NOT NULL,
+    md5_hash      VARCHAR(511) NOT NULL,
     created_at    timestamp             DEFAULT CURRENT_TIMESTAMP,
     updated_at    timestamp             DEFAULT CURRENT_TIMESTAMP,
 
