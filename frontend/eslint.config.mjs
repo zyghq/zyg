@@ -1,29 +1,46 @@
-import globals from "globals";
 import pluginJs from "@eslint/js";
-import tseslint from "typescript-eslint";
-import pluginReact from "eslint-plugin-react";
 import prettier from "eslint-config-prettier";
+import perfectionist from "eslint-plugin-perfectionist";
+import pluginReact from "eslint-plugin-react";
+import globals from "globals";
+import tseslint from "typescript-eslint";
 
 /** @type {import("eslint").Linter.Config[]} */
 export default [
-  { files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"] },
+  pluginJs.configs.recommended,
   {
+    ...pluginReact.configs.flat.recommended,
+    settings: {
+      react: {
+        version: "detect",
+      },
+    },
+  },
+  pluginReact.configs.flat["jsx-runtime"],
+  ...tseslint.configs.recommended,
+  perfectionist.configs["recommended-natural"],
+  {
+    files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"],
     ignores: [
       "**/dist",
-      "**/.eslintrc.cjs",
+      "**/eslint.config.mjs",
       "**/components/ui/**/*",
       "**/postcss.config.js",
       "**/tailwind.config.ts",
     ],
-  },
-  {
+    languageOptions: {
+      globals: { ...globals.browser, ...globals.node },
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
+    },
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
+      "react/no-unescaped-entities": "off",
+      "react/prop-types": "off",
     },
   },
-  { languageOptions: { globals: globals.browser } },
-  pluginJs.configs.recommended,
-  ...tseslint.configs.recommended,
-  pluginReact.configs.flat.recommended,
   prettier,
 ];

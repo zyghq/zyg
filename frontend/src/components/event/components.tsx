@@ -16,6 +16,7 @@ import {
 } from "@radix-ui/react-icons";
 import { useCopyToClipboard } from "@uidotdev/usehooks";
 import Markdown from "react-markdown";
+import React from "react";
 
 type TextSize = "L" | "M" | "S" | "XS";
 
