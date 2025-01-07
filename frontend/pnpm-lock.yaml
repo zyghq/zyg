@@ -131,9 +131,6 @@ importers:
       immer:
         specifier: ^10.1.1
         version: 10.1.1
-      jotai:
-        specifier: ^2.11.0
-        version: 2.11.0(@types/react@19.0.3)(react@19.0.0)
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
@@ -2745,18 +2742,6 @@ packages:
   jiti@1.21.7:
     resolution: {integrity: sha512-/imKNG4EbWNrVjoNC/1H5/9GFy+tqjGBHCaSsN+P2RnPqjsLmv6UD3Ej+Kj8nBWaRAwyk7kK5ZUc+OEatnTR3A==}
     hasBin: true
-
-  jotai@2.11.0:
-    resolution: {integrity: sha512-zKfoBBD1uDw3rljwHkt0fWuja1B76R7CjznuBO+mSX6jpsO1EBeWNRKpeaQho9yPI/pvCv4recGfgOXGxwPZvQ==}
-    engines: {node: '>=12.20.0'}
-    peerDependencies:
-      '@types/react': '>=17.0.0'
-      react: '>=17.0.0'
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-      react:
-        optional: true
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
@@ -6549,11 +6534,6 @@ snapshots:
       '@pkgjs/parseargs': 0.11.0
 
   jiti@1.21.7: {}
-
-  jotai@2.11.0(@types/react@19.0.3)(react@19.0.0):
-    optionalDependencies:
-      '@types/react': 19.0.3
-      react: 19.0.0
 
   js-tokens@4.0.0: {}
 
