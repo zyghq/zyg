@@ -2,6 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -10,6 +11,7 @@ import {
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -23,6 +25,7 @@ import {
 import { WorkspaceMetrics } from "@/db/models";
 import { SortBy } from "@/db/store";
 import {
+  ChatBubbleIcon,
   CircleIcon,
   ExitIcon,
   GearIcon,
@@ -38,10 +41,13 @@ import {
   CheckCircleIcon,
   ChevronsUpDown,
   ClockIcon,
+  GitGraphIcon,
+  LifeBuoyIcon,
   LocateIcon,
   PauseIcon,
   ReplyIcon,
   Search,
+  UsersIcon,
 } from "lucide-react";
 import * as React from "react";
 
@@ -435,8 +441,54 @@ export function WorkspaceSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <FooterMenu />
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
+  );
+}
+
+function FooterMenu() {
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              size="lg"
+            >
+              <LifeBuoyIcon />
+              Support
+              <ChevronsUpDown className="ml-auto size-4" />
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+            sideOffset={4}
+          >
+            <DropdownMenuGroup>
+              <DropdownMenuItem>
+                <UsersIcon className="mr-2 h-4 w-4" />
+                Join Community
+                <OpenInNewWindowIcon className="ml-2 h-4 w-4" />
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <ChatBubbleIcon className="mr-2 h-4 w-4" />
+                Chat with Us
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <GitGraphIcon className="mr-2 h-4 w-4" />
+                Changelog
+                <OpenInNewWindowIcon className="ml-2 h-4 w-4" />
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
   );
 }
 
