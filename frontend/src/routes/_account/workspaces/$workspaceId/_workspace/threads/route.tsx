@@ -5,7 +5,7 @@ import { zodSearchValidator } from "@tanstack/router-zod-adapter";
 import * as React from "react";
 
 export const Route = createFileRoute(
-  "/_account/workspaces/$workspaceId/_workspace/threads"
+  "/_account/workspaces/$workspaceId/_workspace/threads",
 )({
   component: ThreadRoute,
   validateSearch: zodSearchValidator(threadSearchSchema),

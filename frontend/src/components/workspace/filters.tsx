@@ -249,7 +249,7 @@ function PrioritiesSubMenu({
               selectedPriorities ? selectedPriorities.includes("urgent") : false
             }
             onCheckedChange={(checked) => {
-              checked ? onChecked("urgent") : onUnchecked("urgent");
+              return checked ? onChecked("urgent") : onUnchecked("urgent");
             }}
             onSelect={(e) => e.preventDefault()}
           >
@@ -263,7 +263,7 @@ function PrioritiesSubMenu({
               selectedPriorities ? selectedPriorities.includes("high") : false
             }
             onCheckedChange={(checked) => {
-              checked ? onChecked("high") : onUnchecked("high");
+              return checked ? onChecked("high") : onUnchecked("high");
             }}
             onSelect={(e) => e.preventDefault()}
           >
@@ -277,7 +277,7 @@ function PrioritiesSubMenu({
               selectedPriorities ? selectedPriorities.includes("normal") : false
             }
             onCheckedChange={(checked) => {
-              checked ? onChecked("normal") : onUnchecked("normal");
+              return checked ? onChecked("normal") : onUnchecked("normal");
             }}
             onSelect={(e) => e.preventDefault()}
           >
@@ -291,7 +291,7 @@ function PrioritiesSubMenu({
               selectedPriorities ? selectedPriorities.includes("low") : false
             }
             onCheckedChange={(checked) => {
-              checked ? onChecked("low") : onUnchecked("low");
+              return checked ? onChecked("low") : onUnchecked("low");
             }}
             onSelect={(e) => e.preventDefault()}
           >
@@ -317,10 +317,9 @@ function StagesSubMenu({
 }) {
   const [selectedStages, setSelectedStages] = React.useState<
     string | string[] | undefined
-  >("");
+  >(undefined);
 
   React.useEffect(() => {
-    if (!stages) return;
     // check if multiple stages are selected
     if (Array.isArray(stages)) {
       setSelectedStages([...stages]);

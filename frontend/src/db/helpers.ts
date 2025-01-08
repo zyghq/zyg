@@ -1,19 +1,13 @@
 import { SortBy } from "@/db/store";
 
-export function threadStatusVerboseName(key: string): string {
+export function customerRoleVerboseName(key: string): string {
   switch (key) {
-    case "hold":
-      return "Hold";
-    case "needs_first_response":
-      return "Needs First Response";
-    case "needs_next_response":
-      return "Needs Next Response";
-    case "resolved":
-      return "Resolved";
-    case "spam":
-      return "Spam";
-    case "waiting_on_customer":
-      return "Waiting on Customer";
+    case "engaged":
+      return "Engaged";
+    case "lead":
+      return "Lead";
+    case "visitor":
+      return "Visitor";
     default:
       return key;
   }
@@ -42,14 +36,20 @@ export function ThreadSortKeyHumanized(key: SortBy): string {
   }
 }
 
-export function customerRoleVerboseName(key: string): string {
+export function threadStatusVerboseName(key: string): string {
   switch (key) {
-    case "engaged":
-      return "Engaged";
-    case "lead":
-      return "Lead";
-    case "visitor":
-      return "Visitor";
+    case "hold":
+      return "Hold";
+    case "needs_first_response":
+      return "Needs First Response";
+    case "needs_next_response":
+      return "Needs Next Response";
+    case "resolved":
+      return "Resolved";
+    case "spam":
+      return "Spam";
+    case "waiting_on_customer":
+      return "Waiting on Customer";
     default:
       return key;
   }
@@ -73,6 +73,8 @@ export const todoThreadStages = [
   "needs_next_response",
 ] as const;
 
+export const priorityKeys = ["urgent", "high", "normal", "low"] as const;
+
 export function getFromLocalStorage(key: string): any | null | string {
   try {
     // Get the item from localStorage
@@ -86,28 +88,14 @@ export function getFromLocalStorage(key: string): any | null | string {
     // Try to parse as JSON, if it fails return as string
     try {
       return JSON.parse(item);
-    } catch (error) {
+    } catch {
       return item; // If not JSON, return the raw string
     }
-  } catch (error) {
-    console.error("Error accessing localStorage:", error);
+  } catch (err) {
+    console.error("Error accessing localStorage:", err);
     return null; // Return null if there's an error
   }
 }
-
-export function setInLocalStorage(key: string, value: any) {
-  try {
-    // Check if the value is an object, if so, stringify it before storing
-    const item = typeof value === "object" ? JSON.stringify(value) : value;
-
-    // Store the item in localStorage
-    localStorage.setItem(key, item);
-  } catch (error) {
-    console.error("error setting in localStorage:", error);
-  }
-}
-
-
 
 export function getInitials(name: string): string {
   // Split the name by spaces
@@ -121,5 +109,17 @@ export function getInitials(name: string): string {
     const firstInitial = nameParts[0].charAt(0).toUpperCase();
     const lastInitial = nameParts[nameParts.length - 1].charAt(0).toUpperCase();
     return firstInitial + lastInitial;
+  }
+}
+
+export function setInLocalStorage(key: string, value: any) {
+  try {
+    // Check if the value is an object, if so, stringify it before storing
+    const item = typeof value === "object" ? JSON.stringify(value) : value;
+
+    // Store the item in localStorage
+    localStorage.setItem(key, item);
+  } catch (error) {
+    console.error("error setting in localStorage:", error);
   }
 }
