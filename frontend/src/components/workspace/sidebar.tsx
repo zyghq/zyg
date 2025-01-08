@@ -35,7 +35,9 @@ import { Link } from "@tanstack/react-router";
 import {
   Building2Icon,
   ChartColumnIncreasing,
+  CheckCircleIcon,
   ChevronsUpDown,
+  ClockIcon,
   LocateIcon,
   ReplyIcon,
   Search,
@@ -250,6 +252,7 @@ export function WorkspaceSidebar({
                 </SidebarMenuButton>
                 <SidebarMenuBadge>{metrics.active}</SidebarMenuBadge>
               </SidebarMenuItem>
+
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <Link
@@ -324,6 +327,75 @@ export function WorkspaceSidebar({
                   </Link>
                 </SidebarMenuButton>
                 <SidebarMenuBadge>{metrics.needsNextResponse}</SidebarMenuBadge>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link
+                    activeOptions={{ exact: true, includeSearch: false }}
+                    activeProps={{
+                      className:
+                        "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+                    }}
+                    className={"pl-5"}
+                    params={{ workspaceId }}
+                    search={{ sort }}
+                    to="/workspaces/$workspaceId/threads/waiting-on-customer"
+                  >
+                    {({ isActive }: { isActive: boolean }) => (
+                      <>
+                        {isActive ? (
+                          <>
+                            <ClockIcon className="h-5 w-5 text-indigo-500" />
+                            <span className="font-semibold">
+                              Waiting on Customer
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <ClockIcon className="h-5 w-5 text-indigo-500" />
+                            <span className="font-normal">
+                              Waiting on Customer
+                            </span>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+                <SidebarMenuBadge>{metrics.waitingOnCustomer}</SidebarMenuBadge>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link
+                    activeOptions={{ exact: true, includeSearch: false }}
+                    activeProps={{
+                      className:
+                        "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+                    }}
+                    params={{ workspaceId }}
+                    search={{ sort }}
+                    to="/workspaces/$workspaceId/threads/done"
+                  >
+                    {({ isActive }: { isActive: boolean }) => (
+                      <>
+                        {isActive ? (
+                          <>
+                            <CheckCircleIcon className="h-5 w-5 text-green-600" />
+                            <span className="font-semibold">Done</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircleIcon className="h-5 w-5 text-green-600" />
+                            <span className="font-normal">Done</span>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+                <SidebarMenuBadge>0</SidebarMenuBadge>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>

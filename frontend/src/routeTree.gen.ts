@@ -47,7 +47,6 @@ import { Route as AccountWorkspacesWorkspaceIdSettingsPatsAddImport } from './ro
 import { Route as AccountWorkspacesWorkspaceIdWorkspaceThreadsWaitingOnCustomerImport } from './routes/_account/workspaces/$workspaceId/_workspace/threads/waiting-on-customer'
 import { Route as AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedImport } from './routes/_account/workspaces/$workspaceId/_workspace/threads/unassigned'
 import { Route as AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoImport } from './routes/_account/workspaces/$workspaceId/_workspace/threads/todo'
-import { Route as AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamImport } from './routes/_account/workspaces/$workspaceId/_workspace/threads/spam'
 import { Route as AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsNextResponseImport } from './routes/_account/workspaces/$workspaceId/_workspace/threads/needs-next-response'
 import { Route as AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsFirstResponseImport } from './routes/_account/workspaces/$workspaceId/_workspace/threads/needs-first-response'
 import { Route as AccountWorkspacesWorkspaceIdWorkspaceThreadsMeImport } from './routes/_account/workspaces/$workspaceId/_workspace/threads/me'
@@ -298,14 +297,6 @@ const AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoRoute =
   AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoImport.update({
     id: '/todo',
     path: '/todo',
-    getParentRoute: () =>
-      AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute,
-  } as any)
-
-const AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamRoute =
-  AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamImport.update({
-    id: '/spam',
-    path: '/spam',
     getParentRoute: () =>
       AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRoute,
   } as any)
@@ -614,13 +605,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsNextResponseImport
       parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport
     }
-    '/_account/workspaces/$workspaceId/_workspace/threads/spam': {
-      id: '/_account/workspaces/$workspaceId/_workspace/threads/spam'
-      path: '/spam'
-      fullPath: '/workspaces/$workspaceId/threads/spam'
-      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamImport
-      parentRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteImport
-    }
     '/_account/workspaces/$workspaceId/_workspace/threads/todo': {
       id: '/_account/workspaces/$workspaceId/_workspace/threads/todo'
       path: '/todo'
@@ -674,7 +658,6 @@ interface AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteChildren {
   AccountWorkspacesWorkspaceIdWorkspaceThreadsMeRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsMeRoute
   AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsFirstResponseRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsFirstResponseRoute
   AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsNextResponseRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsNextResponseRoute
-  AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamRoute
   AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoRoute
   AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedRoute
   AccountWorkspacesWorkspaceIdWorkspaceThreadsWaitingOnCustomerRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsWaitingOnCustomerRoute
@@ -693,8 +676,6 @@ const AccountWorkspacesWorkspaceIdWorkspaceThreadsRouteRouteChildren: AccountWor
       AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsFirstResponseRoute,
     AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsNextResponseRoute:
       AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsNextResponseRoute,
-    AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamRoute:
-      AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamRoute,
     AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoRoute:
       AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoRoute,
     AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedRoute:
@@ -871,7 +852,6 @@ export interface FileRoutesByFullPath {
   '/workspaces/$workspaceId/threads/me': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsMeRoute
   '/workspaces/$workspaceId/threads/needs-first-response': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsFirstResponseRoute
   '/workspaces/$workspaceId/threads/needs-next-response': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsNextResponseRoute
-  '/workspaces/$workspaceId/threads/spam': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamRoute
   '/workspaces/$workspaceId/threads/todo': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoRoute
   '/workspaces/$workspaceId/threads/unassigned': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedRoute
   '/workspaces/$workspaceId/threads/waiting-on-customer': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsWaitingOnCustomerRoute
@@ -914,7 +894,6 @@ export interface FileRoutesByTo {
   '/workspaces/$workspaceId/threads/me': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsMeRoute
   '/workspaces/$workspaceId/threads/needs-first-response': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsFirstResponseRoute
   '/workspaces/$workspaceId/threads/needs-next-response': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsNextResponseRoute
-  '/workspaces/$workspaceId/threads/spam': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamRoute
   '/workspaces/$workspaceId/threads/todo': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoRoute
   '/workspaces/$workspaceId/threads/unassigned': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedRoute
   '/workspaces/$workspaceId/threads/waiting-on-customer': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsWaitingOnCustomerRoute
@@ -961,7 +940,6 @@ export interface FileRoutesById {
   '/_account/workspaces/$workspaceId/_workspace/threads/me': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsMeRoute
   '/_account/workspaces/$workspaceId/_workspace/threads/needs-first-response': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsFirstResponseRoute
   '/_account/workspaces/$workspaceId/_workspace/threads/needs-next-response': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsNeedsNextResponseRoute
-  '/_account/workspaces/$workspaceId/_workspace/threads/spam': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsSpamRoute
   '/_account/workspaces/$workspaceId/_workspace/threads/todo': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsTodoRoute
   '/_account/workspaces/$workspaceId/_workspace/threads/unassigned': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsUnassignedRoute
   '/_account/workspaces/$workspaceId/_workspace/threads/waiting-on-customer': typeof AccountWorkspacesWorkspaceIdWorkspaceThreadsWaitingOnCustomerRoute
@@ -1008,7 +986,6 @@ export interface FileRouteTypes {
     | '/workspaces/$workspaceId/threads/me'
     | '/workspaces/$workspaceId/threads/needs-first-response'
     | '/workspaces/$workspaceId/threads/needs-next-response'
-    | '/workspaces/$workspaceId/threads/spam'
     | '/workspaces/$workspaceId/threads/todo'
     | '/workspaces/$workspaceId/threads/unassigned'
     | '/workspaces/$workspaceId/threads/waiting-on-customer'
@@ -1050,7 +1027,6 @@ export interface FileRouteTypes {
     | '/workspaces/$workspaceId/threads/me'
     | '/workspaces/$workspaceId/threads/needs-first-response'
     | '/workspaces/$workspaceId/threads/needs-next-response'
-    | '/workspaces/$workspaceId/threads/spam'
     | '/workspaces/$workspaceId/threads/todo'
     | '/workspaces/$workspaceId/threads/unassigned'
     | '/workspaces/$workspaceId/threads/waiting-on-customer'
@@ -1095,7 +1071,6 @@ export interface FileRouteTypes {
     | '/_account/workspaces/$workspaceId/_workspace/threads/me'
     | '/_account/workspaces/$workspaceId/_workspace/threads/needs-first-response'
     | '/_account/workspaces/$workspaceId/_workspace/threads/needs-next-response'
-    | '/_account/workspaces/$workspaceId/_workspace/threads/spam'
     | '/_account/workspaces/$workspaceId/_workspace/threads/todo'
     | '/_account/workspaces/$workspaceId/_workspace/threads/unassigned'
     | '/_account/workspaces/$workspaceId/_workspace/threads/waiting-on-customer'
@@ -1223,7 +1198,6 @@ export const routeTree = rootRoute
         "/_account/workspaces/$workspaceId/_workspace/threads/me",
         "/_account/workspaces/$workspaceId/_workspace/threads/needs-first-response",
         "/_account/workspaces/$workspaceId/_workspace/threads/needs-next-response",
-        "/_account/workspaces/$workspaceId/_workspace/threads/spam",
         "/_account/workspaces/$workspaceId/_workspace/threads/todo",
         "/_account/workspaces/$workspaceId/_workspace/threads/unassigned",
         "/_account/workspaces/$workspaceId/_workspace/threads/waiting-on-customer",
@@ -1324,10 +1298,6 @@ export const routeTree = rootRoute
     },
     "/_account/workspaces/$workspaceId/_workspace/threads/needs-next-response": {
       "filePath": "_account/workspaces/$workspaceId/_workspace/threads/needs-next-response.tsx",
-      "parent": "/_account/workspaces/$workspaceId/_workspace/threads"
-    },
-    "/_account/workspaces/$workspaceId/_workspace/threads/spam": {
-      "filePath": "_account/workspaces/$workspaceId/_workspace/threads/spam.tsx",
       "parent": "/_account/workspaces/$workspaceId/_workspace/threads"
     },
     "/_account/workspaces/$workspaceId/_workspace/threads/todo": {
