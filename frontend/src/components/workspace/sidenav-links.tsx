@@ -48,88 +48,6 @@ import {
 } from "lucide-react";
 import React from "react";
 
-function SideNavLabelLinks({
-  labels,
-  sort,
-  workspaceId,
-}: {
-  labels: LabelMetrics[];
-  sort: SortBy;
-  workspaceId: string;
-}) {
-  const [isOpen, setIsOpen] = React.useState(false);
-  return (
-    <Collapsible
-      className="w-full space-y-2"
-      onOpenChange={setIsOpen}
-      open={isOpen}
-    >
-      <div className="flex items-center justify-between space-x-1">
-        <Button className="w-full pl-3" variant="ghost">
-          <div className="mr-auto flex">
-            <TagsIcon className="my-auto mr-2 h-4 w-4" />
-            <div className="font-normal">Labels</div>
-          </div>
-        </Button>
-        <CollapsibleTrigger asChild>
-          <Button size="icon" variant="ghost">
-            <CaretSortIcon className="h-4 w-4" />
-            <span className="sr-only">Toggle</span>
-          </Button>
-        </CollapsibleTrigger>
-      </div>
-      <CollapsibleContent className="space-y-1">
-        {labels.map((label) => (
-          <Link
-            activeOptions={{ exact: true }}
-            activeProps={{
-              className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
-            }}
-            className={cn(
-              buttonVariants({ variant: "ghost" }),
-              "flex w-full justify-between px-3 dark:text-accent-foreground"
-            )}
-            key={label.labelId}
-            params={{ labelId: label.labelId, workspaceId }}
-            search={{ sort }}
-            to="/workspaces/$workspaceId/threads/labels/$labelId"
-          >
-            {({ isActive }) => (
-              <>
-                {isActive ? (
-                  <>
-                    <div className="flex gap-x-2 ml-2">
-                      <TagIcon className="my-auto h-3 w-3 text-muted-foreground" />
-                      <div className="font-normal capitalize text-foreground">
-                        {label.name}
-                      </div>
-                    </div>
-                    <div className="font-mono font-light text-muted-foreground">
-                      {label.count}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex gap-x-2 ml-2">
-                      <TagIcon className="my-auto h-3 w-3 text-muted-foreground" />
-                      <div className="font-normal capitalize text-foreground">
-                        {label.name}
-                      </div>
-                    </div>
-                    <div className="font-mono font-light text-muted-foreground">
-                      {label.count}
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-          </Link>
-        ))}
-      </CollapsibleContent>
-    </Collapsible>
-  );
-}
-
 export default function SideNavLinks({
   email,
   maxHeight,
@@ -178,7 +96,7 @@ export default function SideNavLinks({
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <a href="https://zyg.ai/docs/" target="_blank">
+                <a href="https://zyg.ai/docs/" rel="noreferrer" target="_blank">
                   <ReaderIcon className="my-auto mr-2 h-4 w-4" />
                   <div className="my-auto">Documentation</div>
                   <OpenInNewWindowIcon className="my-auto ml-2 h-4 w-4" />
@@ -207,7 +125,7 @@ export default function SideNavLinks({
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
-                "flex w-full justify-between px-3 dark:text-accent-foreground"
+                "flex w-full justify-between px-3 dark:text-accent-foreground",
               )}
               onClick={() => openClose(false)}
               params={{ workspaceId }}
@@ -230,7 +148,7 @@ export default function SideNavLinks({
                         <div className="font-normal">Search</div>
                       </div>
                       <Badge
-                        className="font-mono text-muted-foreground bg-white dark:bg-accent"
+                        className="bg-white font-mono text-muted-foreground dark:bg-accent"
                         variant="outline"
                       >
                         {`/`}
@@ -247,7 +165,7 @@ export default function SideNavLinks({
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
-                "flex w-full justify-between px-3 dark:text-accent-foreground"
+                "flex w-full justify-between px-3 dark:text-accent-foreground",
               )}
               onClick={() => openClose(false)}
               params={{ workspaceId }}
@@ -280,7 +198,7 @@ export default function SideNavLinks({
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
-                "flex w-full justify-between px-3 dark:text-accent-foreground"
+                "flex w-full justify-between px-3 dark:text-accent-foreground",
               )}
               onClick={() => openClose(false)}
               params={{ workspaceId }}
@@ -301,7 +219,7 @@ export default function SideNavLinks({
                         </Avatar>
                         <div className="font-semibold">Your Threads</div>
                       </div>
-                      <span className="font-mono text-muted-foreground pr-2">
+                      <span className="pr-2 font-mono text-muted-foreground">
                         {metrics.assignedToMe}
                       </span>
                     </>
@@ -317,7 +235,7 @@ export default function SideNavLinks({
                         </Avatar>
                         <div className="font-normal">Your Threads</div>
                       </div>
-                      <span className="font-mono text-muted-foreground pr-2">
+                      <span className="pr-2 font-mono text-muted-foreground">
                         {metrics.assignedToMe}
                       </span>
                     </>
@@ -332,7 +250,7 @@ export default function SideNavLinks({
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
-                "flex w-full justify-between px-3 dark:text-accent-foreground"
+                "flex w-full justify-between px-3 dark:text-accent-foreground",
               )}
               onClick={() => openClose(false)}
               params={{ workspaceId }}
@@ -347,7 +265,7 @@ export default function SideNavLinks({
                         <PersonIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" />
                         <div className="font-semibold">Unassigned Threads</div>
                       </div>
-                      <span className="font-mono text-muted-foreground pr-2">
+                      <span className="pr-2 font-mono text-muted-foreground">
                         {metrics.unassigned}
                       </span>
                     </>
@@ -357,7 +275,7 @@ export default function SideNavLinks({
                         <PersonIcon className="my-auto mr-2 h-4 w-4 text-muted-foreground" />
                         <div className="font-normal">Unassigned Threads</div>
                       </div>
-                      <span className="font-mono text-muted-foreground pr-2">
+                      <span className="pr-2 font-mono text-muted-foreground">
                         {metrics.unassigned}
                       </span>
                     </>
@@ -372,7 +290,7 @@ export default function SideNavLinks({
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
-                "flex w-full justify-between px-3 dark:text-accent-foreground"
+                "flex w-full justify-between px-3 dark:text-accent-foreground",
               )}
               onClick={() => openClose(false)}
               params={{ workspaceId }}
@@ -412,7 +330,7 @@ export default function SideNavLinks({
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
-                "flex w-full justify-between px-3 dark:text-accent-foreground"
+                "flex w-full justify-between px-3 dark:text-accent-foreground",
               )}
               onClick={() => openClose(false)}
               params={{ workspaceId }}
@@ -423,21 +341,21 @@ export default function SideNavLinks({
                 <>
                   {isActive ? (
                     <>
-                      <div className="flex gap-x-2 ml-4">
-                        <LocateIcon className="my-auto w-4 h-4 text-indigo-500" />
+                      <div className="ml-4 flex gap-x-2">
+                        <LocateIcon className="my-auto h-4 w-4 text-indigo-500" />
                         <div className="font-medium">Needs First Response</div>
                       </div>
-                      <span className="font-mono text-muted-foreground pr-2">
+                      <span className="pr-2 font-mono text-muted-foreground">
                         {metrics.needsFirstResponse}
                       </span>
                     </>
                   ) : (
                     <>
-                      <div className="flex gap-x-2 ml-4">
-                        <LocateIcon className="my-auto w-4 h-4 text-indigo-500" />
+                      <div className="ml-4 flex gap-x-2">
+                        <LocateIcon className="my-auto h-4 w-4 text-indigo-500" />
                         <div className="font-normal">Needs First Response</div>
                       </div>
-                      <span className="font-mono text-muted-foreground pr-2">
+                      <span className="pr-2 font-mono text-muted-foreground">
                         {metrics.needsFirstResponse}
                       </span>
                     </>
@@ -452,7 +370,7 @@ export default function SideNavLinks({
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
-                "flex w-full justify-between px-3 dark:text-accent-foreground"
+                "flex w-full justify-between px-3 dark:text-accent-foreground",
               )}
               onClick={() => openClose(false)}
               params={{ workspaceId }}
@@ -463,21 +381,21 @@ export default function SideNavLinks({
                 <>
                   {isActive ? (
                     <>
-                      <div className="flex gap-x-2 ml-4">
-                        <ReplyIcon className="my-auto w-4 h-4 text-indigo-500" />
+                      <div className="ml-4 flex gap-x-2">
+                        <ReplyIcon className="my-auto h-4 w-4 text-indigo-500" />
                         <div className="font-medium">Needs Next Response</div>
                       </div>
-                      <span className="font-mono text-muted-foreground pr-2">
+                      <span className="pr-2 font-mono text-muted-foreground">
                         {metrics.needsNextResponse}
                       </span>
                     </>
                   ) : (
                     <>
-                      <div className="flex gap-x-2 ml-4">
-                        <ReplyIcon className="my-auto w-4 h-4 text-indigo-500" />
+                      <div className="ml-4 flex gap-x-2">
+                        <ReplyIcon className="my-auto h-4 w-4 text-indigo-500" />
                         <div className="font-normal">Needs Next Response</div>
                       </div>
-                      <span className="font-mono text-muted-foreground pr-2">
+                      <span className="pr-2 font-mono text-muted-foreground">
                         {metrics.needsNextResponse}
                       </span>
                     </>
@@ -492,7 +410,7 @@ export default function SideNavLinks({
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
-                "flex w-full justify-between px-3 dark:text-accent-foreground"
+                "flex w-full justify-between px-3 dark:text-accent-foreground",
               )}
               onClick={() => openClose(false)}
               params={{ workspaceId }}
@@ -503,21 +421,21 @@ export default function SideNavLinks({
                 <>
                   {isActive ? (
                     <>
-                      <div className="flex gap-x-2 ml-4">
-                        <PauseIcon className="my-auto w-4 h-4 text-indigo-500" />
+                      <div className="ml-4 flex gap-x-2">
+                        <PauseIcon className="my-auto h-4 w-4 text-indigo-500" />
                         <div className="font-medium">Hold</div>
                       </div>
-                      <span className="font-mono text-muted-foreground pr-2">
+                      <span className="pr-2 font-mono text-muted-foreground">
                         {metrics.hold}
                       </span>
                     </>
                   ) : (
                     <>
-                      <div className="flex gap-x-2 ml-4">
-                        <PauseIcon className="my-auto w-4 h-4 text-indigo-500" />
+                      <div className="ml-4 flex gap-x-2">
+                        <PauseIcon className="my-auto h-4 w-4 text-indigo-500" />
                         <div className="font-normal">Hold</div>
                       </div>
-                      <span className="font-mono text-muted-foreground pr-2">
+                      <span className="pr-2 font-mono text-muted-foreground">
                         {metrics.hold}
                       </span>
                     </>
@@ -532,7 +450,7 @@ export default function SideNavLinks({
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
-                "flex w-full justify-between px-3 dark:text-accent-foreground"
+                "flex w-full justify-between px-3 dark:text-accent-foreground",
               )}
               onClick={() => openClose(false)}
               params={{ workspaceId }}
@@ -543,21 +461,21 @@ export default function SideNavLinks({
                 <>
                   {isActive ? (
                     <>
-                      <div className="flex gap-x-2 ml-4">
-                        <ClockIcon className="my-auto w-4 h-4 text-indigo-500" />
+                      <div className="ml-4 flex gap-x-2">
+                        <ClockIcon className="my-auto h-4 w-4 text-indigo-500" />
                         <div className="font-medium">Waiting on Customer</div>
                       </div>
-                      <span className="font-mono text-muted-foreground pr-2">
+                      <span className="pr-2 font-mono text-muted-foreground">
                         {metrics.waitingOnCustomer}
                       </span>
                     </>
                   ) : (
                     <>
-                      <div className="flex gap-x-2 ml-4">
-                        <ClockIcon className="my-auto w-4 h-4 text-indigo-500" />
+                      <div className="ml-4 flex gap-x-2">
+                        <ClockIcon className="my-auto h-4 w-4 text-indigo-500" />
                         <div className="font-normal">Waiting on Customer</div>
                       </div>
-                      <span className="font-mono text-muted-foreground pr-2">
+                      <span className="pr-2 font-mono text-muted-foreground">
                         {metrics.waitingOnCustomer}
                       </span>
                     </>
@@ -572,7 +490,7 @@ export default function SideNavLinks({
               }}
               className={cn(
                 buttonVariants({ variant: "ghost" }),
-                "flex w-full justify-between px-3 dark:text-accent-foreground"
+                "flex w-full justify-between px-3 dark:text-accent-foreground",
               )}
               onClick={() => openClose(false)}
               params={{ workspaceId }}
@@ -635,6 +553,7 @@ export default function SideNavLinks({
                   <a
                     className="flex"
                     href="https://zyg.ai/docs/"
+                    rel="noreferrer"
                     target="_blank"
                   >
                     <ReaderIcon className="my-auto mr-2 h-4 w-4" />
@@ -657,5 +576,87 @@ export default function SideNavLinks({
         </div>
       </div>
     </React.Fragment>
+  );
+}
+
+function SideNavLabelLinks({
+  labels,
+  sort,
+  workspaceId,
+}: {
+  labels: LabelMetrics[];
+  sort: SortBy;
+  workspaceId: string;
+}) {
+  const [isOpen, setIsOpen] = React.useState(false);
+  return (
+    <Collapsible
+      className="w-full space-y-2"
+      onOpenChange={setIsOpen}
+      open={isOpen}
+    >
+      <div className="flex items-center justify-between space-x-1">
+        <Button className="w-full pl-3" variant="ghost">
+          <div className="mr-auto flex">
+            <TagsIcon className="my-auto mr-2 h-4 w-4" />
+            <div className="font-normal">Labels</div>
+          </div>
+        </Button>
+        <CollapsibleTrigger asChild>
+          <Button size="icon" variant="ghost">
+            <CaretSortIcon className="h-4 w-4" />
+            <span className="sr-only">Toggle</span>
+          </Button>
+        </CollapsibleTrigger>
+      </div>
+      <CollapsibleContent className="space-y-1">
+        {labels.map((label) => (
+          <Link
+            activeOptions={{ exact: true }}
+            activeProps={{
+              className: "bg-indigo-100 hover:bg-indigo-200 dark:bg-accent",
+            }}
+            className={cn(
+              buttonVariants({ variant: "ghost" }),
+              "flex w-full justify-between px-3 dark:text-accent-foreground",
+            )}
+            key={label.labelId}
+            params={{ labelId: label.labelId, workspaceId }}
+            search={{ sort }}
+            to="/workspaces/$workspaceId/threads/labels/$labelId"
+          >
+            {({ isActive }: { isActive: boolean }) => (
+              <>
+                {isActive ? (
+                  <>
+                    <div className="ml-2 flex gap-x-2">
+                      <TagIcon className="my-auto h-3 w-3 text-muted-foreground" />
+                      <div className="font-normal capitalize text-foreground">
+                        {label.name}
+                      </div>
+                    </div>
+                    <div className="font-mono font-light text-muted-foreground">
+                      {label.count}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="ml-2 flex gap-x-2">
+                      <TagIcon className="my-auto h-3 w-3 text-muted-foreground" />
+                      <div className="font-normal capitalize text-foreground">
+                        {label.name}
+                      </div>
+                    </div>
+                    <div className="font-mono font-light text-muted-foreground">
+                      {label.count}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </Link>
+        ))}
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

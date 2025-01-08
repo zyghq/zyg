@@ -1,4 +1,19 @@
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { Header } from "@/components/workspace/header";
+import { WorkspaceSidebar} from "@/components/workspace/sidebar";
 import SideNavLinks from "@/components/workspace/sidenav-links";
 import { WorkspaceStoreState } from "@/db/store";
 import { useAccountStore, useWorkspaceStore } from "@/providers";
@@ -9,7 +24,7 @@ import { useStore } from "zustand";
 export const Route = createFileRoute(
   "/_account/workspaces/$workspaceId/_workspace",
 )({
-  component: WorkspaceLayout,
+  component: WorkspaceLayoutV2,
 });
 
 function WorkspaceLayout() {
@@ -61,5 +76,51 @@ function WorkspaceLayout() {
         </main>
       </div>
     </React.Fragment>
+  );
+}
+
+function WorkspaceLayoutV2() {
+  const accountStore = useAccountStore();
+  const workspaceStore = useWorkspaceStore();
+
+  const email = useStore(accountStore, (state) => state.getEmail(state));
+  const workspaceId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.getWorkspaceId(state),
+  );
+  const workspaceName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.getWorkspaceName(state),
+  );
+  return (
+    <SidebarProvider>
+      <WorkspaceSidebar email={email} workspaceId={workspaceId} workspaceName={workspaceName}  />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator className="mr-2 h-4" orientation="vertical" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem className="hidden md:block">
+                <BreadcrumbLink href="#">
+                  Building Your Application
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator className="hidden md:block" />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Data Fetching</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </header>
+        <Outlet />
+        <div className="flex flex-1 flex-col gap-4 p-4">
+          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+            <div className="aspect-video rounded-xl bg-muted/50" />
+            <div className="aspect-video rounded-xl bg-muted/50" />
+            <div className="aspect-video rounded-xl bg-muted/50" />
+          </div>
+          <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min" />
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
