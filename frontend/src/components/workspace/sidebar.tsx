@@ -1,3 +1,4 @@
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,20 +15,260 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { WorkspaceMetrics } from "@/db/models";
+import { SortBy } from "@/db/store";
 import {
+  CircleIcon,
   ExitIcon,
   GearIcon,
   OpenInNewWindowIcon,
+  PersonIcon,
   ReaderIcon,
-  WidthIcon,
+  WidthIcon
 } from "@radix-ui/react-icons";
 import { Link } from "@tanstack/react-router";
-import { Building2Icon, ChevronsUpDown } from "lucide-react";
+import { Building2Icon, ChartColumnIncreasing, ChevronsUpDown, Search } from "lucide-react";
 import * as React from "react";
+
+type WorkspaceSidebarProps = React.ComponentProps<typeof Sidebar> & {
+  email: string;
+  memberId: string;
+  metrics: WorkspaceMetrics;
+  sort: SortBy;
+  workspaceId: string;
+  workspaceName: string;
+};
+
+export function WorkspaceSidebar({
+  email,
+  memberId,
+  metrics,
+  sort,
+  workspaceId,
+  workspaceName,
+  ...props
+}: WorkspaceSidebarProps) {
+  return (
+    <Sidebar {...props}>
+      <SidebarHeader>
+        <WorkspaceMenu
+          email={email}
+          workspaceId={workspaceId}
+          workspaceName={workspaceName}
+        />
+      </SidebarHeader>
+      <SidebarContent>
+        {/* We create a SidebarGroup for each parent. */}
+        {/*{data.navMain.map((item) => (*/}
+        {/*  <SidebarGroup key={item.title}>*/}
+        {/*    <SidebarGroupLabel>{item.title}</SidebarGroupLabel>*/}
+        {/*    <SidebarGroupContent>*/}
+        {/*      <SidebarMenu>*/}
+        {/*        {item.items.map((item) => (*/}
+        {/*          <SidebarMenuItem key={item.title}>*/}
+        {/*            <SidebarMenuButton asChild isActive={item.isActive}>*/}
+        {/*              <a href={item.url}>{item.title}</a>*/}
+        {/*            </SidebarMenuButton>*/}
+        {/*          </SidebarMenuItem>*/}
+        {/*        ))}*/}
+        {/*      </SidebarMenu>*/}
+        {/*    </SidebarGroupContent>*/}
+        {/*  </SidebarGroup>*/}
+        {/*))}*/}
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link
+                    activeOptions={{ exact: true, includeSearch: false }}
+                    activeProps={{
+                      className:
+                        "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+                    }}
+                    params={{ workspaceId }}
+                    search={{ sort }}
+                    to="/workspaces/$workspaceId/search"
+                  >
+                    {({ isActive }: { isActive: boolean }) => (
+                      <>
+                        {isActive ? (
+                          <>
+                            <Search className="h-5 w-5" />
+                            <span className="font-semibold">Search</span>
+                          </>
+                        ) : (
+                          <>
+                            <Search className="h-5 w-5 text-muted-foreground" />
+                            <span className="font-normal">Search</span>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link
+                    activeOptions={{ exact: true, includeSearch: false }}
+                    activeProps={{
+                      className:
+                        "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+                    }}
+                    params={{ workspaceId }}
+                    search={{ sort }}
+                    to="/workspaces/$workspaceId/insights"
+                  >
+                    {({ isActive }: { isActive: boolean }) => (
+                      <>
+                        {isActive ? (
+                          <>
+                            <ChartColumnIncreasing className="h-5 w-5" />
+                            <span className="font-semibold">Insights</span>
+                          </>
+                        ) : (
+                          <>
+                            <ChartColumnIncreasing className="h-5 w-5 text-muted-foreground" />
+                            <span className="font-normal">Insights</span>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Threads</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link
+                    activeOptions={{ exact: true, includeSearch: false }}
+                    activeProps={{
+                      className:
+                        "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+                    }}
+                    params={{ workspaceId }}
+                    search={{ sort }}
+                    to="/workspaces/$workspaceId/threads/me"
+                  >
+                    {({ isActive }: { isActive: boolean }) => (
+                      <>
+                        {isActive ? (
+                          <>
+                            <Avatar className="h-5 w-5">
+                              <AvatarImage
+                                alt={memberId}
+                                src={`https://avatar.vercel.sh/${memberId}`}
+                              />
+                              <AvatarFallback>U</AvatarFallback>
+                            </Avatar>
+                            <span className="font-semibold">Your Threads</span>
+                          </>
+                        ) : (
+                          <>
+                            <Avatar className="h-5 w-5">
+                              <AvatarImage
+                                alt={memberId}
+                                src={`https://avatar.vercel.sh/${memberId}`}
+                              />
+                              <AvatarFallback>CN</AvatarFallback>
+                            </Avatar>
+                            <span className="font-normal">Your Threads</span>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+                <SidebarMenuBadge>{metrics.assignedToMe}</SidebarMenuBadge>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link
+                    activeOptions={{ exact: true, includeSearch: false }}
+                    activeProps={{
+                      className:
+                        "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+                    }}
+                    params={{ workspaceId }}
+                    search={{ sort }}
+                    to="/workspaces/$workspaceId/threads/unassigned"
+                  >
+                    {({ isActive }: { isActive: boolean }) => (
+                      <>
+                        {isActive ? (
+                          <>
+                            <PersonIcon className="h-5 w-5" />
+                            <span className="font-semibold">
+                              Unassigned Threads
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <PersonIcon className="h-5 w-5 text-muted-foreground" />
+                            <span className="font-normal">
+                              Unassigned Threads
+                            </span>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+                <SidebarMenuBadge>{metrics.active}</SidebarMenuBadge>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link
+                    activeOptions={{ exact: true, includeSearch: false }}
+                    activeProps={{
+                      className:
+                        "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+                    }}
+                    params={{ workspaceId }}
+                    search={{ sort }}
+                    to="/workspaces/$workspaceId/threads/todo"
+                  >
+                    {({ isActive }: { isActive: boolean }) => (
+                      <>
+                        {isActive ? (
+                          <>
+                            <CircleIcon className="h-5 w-5 text-indigo-500" />
+                            <span className="font-semibold">Todo</span>
+                          </>
+                        ) : (
+                          <>
+                            <CircleIcon className="h-5 w-5 text-indigo-500" />
+                            <span className="font-normal">Todo</span>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+                <SidebarMenuBadge>{metrics.active}</SidebarMenuBadge>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarRail />
+    </Sidebar>
+  );
+}
 
 function WorkspaceMenu({
   email,
@@ -97,182 +338,5 @@ function WorkspaceMenu({
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  );
-}
-
-// This is sample data.
-const data = {
-  navMain: [
-    {
-      items: [
-        {
-          title: "Installation",
-          url: "#",
-        },
-        {
-          title: "Project Structure",
-          url: "#",
-        },
-      ],
-      title: "Getting Started",
-      url: "#",
-    },
-    {
-      items: [
-        {
-          title: "Routing",
-          url: "#",
-        },
-        {
-          isActive: true,
-          title: "Data Fetching",
-          url: "#",
-        },
-        {
-          title: "Rendering",
-          url: "#",
-        },
-        {
-          title: "Caching",
-          url: "#",
-        },
-        {
-          title: "Styling",
-          url: "#",
-        },
-        {
-          title: "Optimizing",
-          url: "#",
-        },
-        {
-          title: "Configuring",
-          url: "#",
-        },
-        {
-          title: "Testing",
-          url: "#",
-        },
-        {
-          title: "Authentication",
-          url: "#",
-        },
-        {
-          title: "Deploying",
-          url: "#",
-        },
-        {
-          title: "Upgrading",
-          url: "#",
-        },
-        {
-          title: "Examples",
-          url: "#",
-        },
-      ],
-      title: "Building Your Application",
-      url: "#",
-    },
-    {
-      items: [
-        {
-          title: "Components",
-          url: "#",
-        },
-        {
-          title: "File Conventions",
-          url: "#",
-        },
-        {
-          title: "Functions",
-          url: "#",
-        },
-        {
-          title: "next.config.js Options",
-          url: "#",
-        },
-        {
-          title: "CLI",
-          url: "#",
-        },
-        {
-          title: "Edge Runtime",
-          url: "#",
-        },
-      ],
-      title: "API Reference",
-      url: "#",
-    },
-    {
-      items: [
-        {
-          title: "Accessibility",
-          url: "#",
-        },
-        {
-          title: "Fast Refresh",
-          url: "#",
-        },
-        {
-          title: "Next.js Compiler",
-          url: "#",
-        },
-        {
-          title: "Supported Browsers",
-          url: "#",
-        },
-        {
-          title: "Turbopack",
-          url: "#",
-        },
-      ],
-      title: "Architecture",
-      url: "#",
-    },
-  ],
-  versions: ["1.0.1", "1.1.0-alpha", "2.0.0-beta1"],
-};
-
-type WorkspaceSidebarProps = React.ComponentProps<typeof Sidebar> & {
-  email: string;
-  workspaceId: string;
-  workspaceName: string;
-};
-
-export function WorkspaceSidebar({
-  email,
-  workspaceId,
-  workspaceName,
-  ...props
-}: WorkspaceSidebarProps) {
-  return (
-    <Sidebar {...props}>
-      <SidebarHeader>
-        <WorkspaceMenu
-          email={email}
-          workspaceId={workspaceId}
-          workspaceName={workspaceName}
-        />
-      </SidebarHeader>
-      <SidebarContent>
-        {/* We create a SidebarGroup for each parent. */}
-        {data.navMain.map((item) => (
-          <SidebarGroup key={item.title}>
-            <SidebarGroupLabel>{item.title}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {item.items.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={item.isActive}>
-                      <a href={item.url}>{item.title}</a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
-      </SidebarContent>
-      <SidebarRail />
-    </Sidebar>
   );
 }

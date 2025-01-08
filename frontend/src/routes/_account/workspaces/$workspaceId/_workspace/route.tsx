@@ -13,7 +13,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Header } from "@/components/workspace/header";
-import { WorkspaceSidebar} from "@/components/workspace/sidebar";
+import { WorkspaceSidebar } from "@/components/workspace/sidebar";
 import SideNavLinks from "@/components/workspace/sidenav-links";
 import { WorkspaceStoreState } from "@/db/store";
 import { useAccountStore, useWorkspaceStore } from "@/providers";
@@ -90,9 +90,25 @@ function WorkspaceLayoutV2() {
   const workspaceName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.getWorkspaceName(state),
   );
+  const memberId = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.getMemberId(state),
+  );
+  const metrics = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.getMetrics(state),
+  );
+  const sort = useStore(workspaceStore, (state) =>
+    state.viewThreadSortKey(state),
+  );
   return (
     <SidebarProvider>
-      <WorkspaceSidebar email={email} workspaceId={workspaceId} workspaceName={workspaceName}  />
+      <WorkspaceSidebar
+        email={email}
+        memberId={memberId}
+        metrics={metrics}
+        sort={sort}
+        workspaceId={workspaceId}
+        workspaceName={workspaceName}
+      />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
