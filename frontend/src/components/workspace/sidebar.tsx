@@ -35,8 +35,10 @@ import { Link } from "@tanstack/react-router";
 import {
   Building2Icon,
   ChartColumnIncreasing,
-  ChevronsUpDown, LocateIcon,
-  Search
+  ChevronsUpDown,
+  LocateIcon,
+  ReplyIcon,
+  Search,
 } from "lucide-react";
 import * as React from "react";
 
@@ -285,6 +287,43 @@ export function WorkspaceSidebar({
                 <SidebarMenuBadge>
                   {metrics.needsFirstResponse}
                 </SidebarMenuBadge>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link
+                    activeOptions={{ exact: true, includeSearch: false }}
+                    activeProps={{
+                      className:
+                        "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+                    }}
+                    className={"pl-5"}
+                    params={{ workspaceId }}
+                    search={{ sort }}
+                    to="/workspaces/$workspaceId/threads/needs-next-response"
+                  >
+                    {({ isActive }: { isActive: boolean }) => (
+                      <>
+                        {isActive ? (
+                          <>
+                            <ReplyIcon className="h-5 w-5 text-indigo-500" />
+                            <span className="font-semibold">
+                              Needs Next Response
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <ReplyIcon className="h-5 w-5 text-indigo-500" />
+                            <span className="font-normal">
+                              Needs Next Response
+                            </span>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+                <SidebarMenuBadge>{metrics.needsNextResponse}</SidebarMenuBadge>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
