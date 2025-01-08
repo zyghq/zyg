@@ -1,8 +1,6 @@
 import { stageIcon } from "@/components/icons";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-// import { Badge } from "@/components/ui/badge";
-// import { threadStatusVerboseName } from "@/db/helpers";
 import { channelIcon } from "@/components/icons";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Thread } from "@/db/models";
 import { useWorkspaceStore } from "@/providers";
 import { PersonIcon } from "@radix-ui/react-icons";

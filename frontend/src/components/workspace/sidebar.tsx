@@ -29,10 +29,15 @@ import {
   OpenInNewWindowIcon,
   PersonIcon,
   ReaderIcon,
-  WidthIcon
+  WidthIcon,
 } from "@radix-ui/react-icons";
 import { Link } from "@tanstack/react-router";
-import { Building2Icon, ChartColumnIncreasing, ChevronsUpDown, Search } from "lucide-react";
+import {
+  Building2Icon,
+  ChartColumnIncreasing,
+  ChevronsUpDown,
+  Search,
+} from "lucide-react";
 import * as React from "react";
 
 type WorkspaceSidebarProps = React.ComponentProps<typeof Sidebar> & {
@@ -63,24 +68,6 @@ export function WorkspaceSidebar({
         />
       </SidebarHeader>
       <SidebarContent>
-        {/* We create a SidebarGroup for each parent. */}
-        {/*{data.navMain.map((item) => (*/}
-        {/*  <SidebarGroup key={item.title}>*/}
-        {/*    <SidebarGroupLabel>{item.title}</SidebarGroupLabel>*/}
-        {/*    <SidebarGroupContent>*/}
-        {/*      <SidebarMenu>*/}
-        {/*        {item.items.map((item) => (*/}
-        {/*          <SidebarMenuItem key={item.title}>*/}
-        {/*            <SidebarMenuButton asChild isActive={item.isActive}>*/}
-        {/*              <a href={item.url}>{item.title}</a>*/}
-        {/*            </SidebarMenuButton>*/}
-        {/*          </SidebarMenuItem>*/}
-        {/*        ))}*/}
-        {/*      </SidebarMenu>*/}
-        {/*    </SidebarGroupContent>*/}
-        {/*  </SidebarGroup>*/}
-        {/*))}*/}
-
         <SidebarGroup>
           <SidebarGroupLabel>Workspace</SidebarGroupLabel>
           <SidebarGroupContent>
