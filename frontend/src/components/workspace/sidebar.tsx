@@ -39,6 +39,7 @@ import {
   ChevronsUpDown,
   ClockIcon,
   LocateIcon,
+  PauseIcon,
   ReplyIcon,
   Search,
 } from "lucide-react";
@@ -327,6 +328,39 @@ export function WorkspaceSidebar({
                   </Link>
                 </SidebarMenuButton>
                 <SidebarMenuBadge>{metrics.needsNextResponse}</SidebarMenuBadge>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link
+                    activeOptions={{ exact: true, includeSearch: false }}
+                    activeProps={{
+                      className:
+                        "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+                    }}
+                    className={"pl-5"}
+                    params={{ workspaceId }}
+                    search={{ sort }}
+                    to="/workspaces/$workspaceId/threads/hold"
+                  >
+                    {({ isActive }: { isActive: boolean }) => (
+                      <>
+                        {isActive ? (
+                          <>
+                            <PauseIcon className="h-5 w-5 text-indigo-500" />
+                            <span className="font-semibold">Hold</span>
+                          </>
+                        ) : (
+                          <>
+                            <PauseIcon className="h-5 w-5 text-indigo-500" />
+                            <span className="font-normal">Hold</span>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+                <SidebarMenuBadge>{metrics.hold}</SidebarMenuBadge>
               </SidebarMenuItem>
 
               <SidebarMenuItem>
