@@ -35,8 +35,8 @@ import { Link } from "@tanstack/react-router";
 import {
   Building2Icon,
   ChartColumnIncreasing,
-  ChevronsUpDown,
-  Search,
+  ChevronsUpDown, LocateIcon,
+  Search
 } from "lucide-react";
 import * as React from "react";
 
@@ -247,6 +247,44 @@ export function WorkspaceSidebar({
                   </Link>
                 </SidebarMenuButton>
                 <SidebarMenuBadge>{metrics.active}</SidebarMenuBadge>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link
+                    activeOptions={{ exact: true, includeSearch: false }}
+                    activeProps={{
+                      className:
+                        "bg-indigo-50 hover:bg-indigo-100 dark:bg-accent",
+                    }}
+                    className={"pl-5"}
+                    params={{ workspaceId }}
+                    search={{ sort }}
+                    to="/workspaces/$workspaceId/threads/needs-first-response"
+                  >
+                    {({ isActive }: { isActive: boolean }) => (
+                      <>
+                        {isActive ? (
+                          <>
+                            <LocateIcon className="h-5 w-5 text-indigo-500" />
+                            <span className="font-semibold">
+                              Needs First Response
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <LocateIcon className="h-5 w-5 text-indigo-500" />
+                            <span className="font-normal">
+                              Needs First Response
+                            </span>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+                <SidebarMenuBadge>
+                  {metrics.needsFirstResponse}
+                </SidebarMenuBadge>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
