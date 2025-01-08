@@ -1,3 +1,4 @@
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Filters } from "@/components/workspace/filters";
@@ -271,6 +272,13 @@ function MyThreads() {
 
       <div className="p-4">
         <div className="flex items-center space-x-2">
+          <Avatar className="h-5 w-5">
+            <AvatarImage
+              alt={memberId}
+              src={`https://avatar.vercel.sh/${memberId}`}
+            />
+            <AvatarFallback>CN</AvatarFallback>
+          </Avatar>
           <span className="font-serif text-lg font-medium sm:text-xl">
             {"Your Threads"}
           </span>

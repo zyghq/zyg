@@ -215,7 +215,7 @@ export function WorkspaceSidebar({
                     )}
                   </Link>
                 </SidebarMenuButton>
-                <SidebarMenuBadge>{metrics.active}</SidebarMenuBadge>
+                <SidebarMenuBadge>{metrics.unassigned}</SidebarMenuBadge>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
