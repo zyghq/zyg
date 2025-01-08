@@ -357,7 +357,7 @@ function Threads() {
       <div className="p-4">
         <div className="flex items-center space-x-2">
           <ClockIcon className="h-5 w-5 text-indigo-500" />
-          <span className="font-serif text-lg font-medium sm:text-xl">
+          <span className="font-serif text-lg font-medium">
             {"Waiting on Customer"}
           </span>
         </div>

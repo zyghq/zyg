@@ -279,7 +279,7 @@ function MyThreads() {
             />
             <AvatarFallback>CN</AvatarFallback>
           </Avatar>
-          <span className="font-serif text-lg font-medium sm:text-xl">
+          <span className="font-serif text-lg font-medium">
             {"Your Threads"}
           </span>
         </div>

@@ -267,7 +267,7 @@ function UnassignedThreads() {
       <div className="p-4">
         <div className="flex items-center space-x-2">
           <PersonIcon className="h-5 w-5" />
-          <span className="font-serif text-lg font-medium sm:text-xl">
+          <span className="font-serif text-lg font-medium">
             {"Unassigned Threads"}
           </span>
         </div>

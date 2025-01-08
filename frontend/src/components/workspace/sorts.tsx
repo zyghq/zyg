@@ -26,11 +26,11 @@ export function Sorts({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button className="border-dashed" size="sm" variant="outline">
-          <DoubleArrowUpIcon className="mr-1 h-3 w-3" />
+          <DoubleArrowUpIcon className="mr-1 h-2 w-2" />
           Sort
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64 mx-1">
+      <DropdownMenuContent align="end" className="mx-1 w-64">
         <DropdownMenuRadioGroup
           onSelect={(e) => e.preventDefault()}
           onValueChange={(value) => onChecked(value)}

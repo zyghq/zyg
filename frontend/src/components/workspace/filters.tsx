@@ -65,7 +65,7 @@ export function Filters({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button className="border-dashed" size="sm" variant="outline">
-          <MixerHorizontalIcon className="h-3 w-3" />
+          <MixerHorizontalIcon className="h-2 w-2" />
           <span>Filters</span>
         </Button>
       </DropdownMenuTrigger>
@@ -243,7 +243,7 @@ function PrioritiesSubMenu({
         )}
       </DropdownMenuSubTrigger>
       <DropdownMenuPortal>
-        <DropdownMenuSubContent alignOffset={4} className="mx-2 w-48">
+        <DropdownMenuSubContent alignOffset={4} className="mx-1 w-48">
           <DropdownMenuCheckboxItem
             checked={
               selectedPriorities ? selectedPriorities.includes("urgent") : false
