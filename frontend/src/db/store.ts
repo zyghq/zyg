@@ -23,9 +23,7 @@ import {
   WorkspaceMetrics,
 } from "./models";
 
-// add more entities as supported by store
-// e.g: Workspace | User | etc.
-type WorkspaceEntities = Customer | Label | Member | Pat | Thread | Workspace;
+export type CustomerMap = Dictionary<string, Customer>;
 
 export type Dictionary<
   K extends number | string,
@@ -33,16 +31,6 @@ export type Dictionary<
 > = {
   [key in K]: V;
 };
-
-export type ThreadMap = Dictionary<string, Thread>;
-
-export type CustomerMap = Dictionary<string, Customer>;
-
-export type LabelMap = Dictionary<string, Label>;
-
-export type MemberMap = Dictionary<string, Member>;
-
-export type PatMap = Dictionary<string, Pat>;
 
 export interface IWorkspaceEntities {
   customers: CustomerMap | null;
@@ -55,16 +43,11 @@ export interface IWorkspaceEntities {
   workspace: null | Workspace;
 }
 
-type StatusType = "done" | "todo";
-type Priority = "high" | "low" | "normal" | "urgent";
+export type LabelMap = Dictionary<string, Label>;
 
-type StageType =
-  | "hold"
-  | "needs_first_response"
-  | "needs_next_response"
-  | "resolved"
-  | "spam"
-  | "waiting_on_customer";
+export type MemberMap = Dictionary<string, Member>;
+
+export type PatMap = Dictionary<string, Pat>;
 
 export type SortBy =
   | "created-asc"
@@ -76,11 +59,45 @@ export type SortBy =
   | "status-changed-asc"
   | "status-changed-dsc";
 
+export type ThreadMap = Dictionary<string, Thread>;
+
+type Priority = "high" | "low" | "normal" | "urgent";
+type StageType =
+  | "hold"
+  | "needs_first_response"
+  | "needs_next_response"
+  | "resolved"
+  | "spam"
+  | "waiting_on_customer";
+
+type StatusType = "done" | "todo";
+
+// add more entities as supported by store
+// e.g: Workspace | User | etc.
+type WorkspaceEntities = Customer | Label | Member | Pat | Thread | Workspace;
+
 export const defaultSortKey = "created-asc";
 
-export type StagesFiltersType = StageType | StageType[] | undefined;
+export type Assignee = {
+  assigneeId: string;
+  name: string;
+};
 export type AssigneesFiltersType = string | string[] | undefined;
+
+export interface IWorkspaceValueObjects {
+  error: Error | null;
+  hasData: boolean;
+  isPending: boolean;
+  threadAppliedFilters: null | ThreadAppliedFilters;
+  threadSortKey: null | SortBy;
+}
+
 export type PrioritiesFiltersType = Priority | Priority[] | undefined;
+
+// export type sortByType = "last-message-dsc" | "created-asc" | "created-dsc";
+// export const defaultSortKey = "last-message-dsc";
+
+export type StagesFiltersType = StageType | StageType[] | undefined;
 
 export type ThreadAppliedFilters = {
   assignees: AssigneesFiltersType;
@@ -92,17 +109,15 @@ export type ThreadAppliedFilters = {
   status: StatusType;
 };
 
-// export type sortByType = "last-message-dsc" | "created-asc" | "created-dsc";
-// export const defaultSortKey = "last-message-dsc";
-
-export type Assignee = {
-  assigneeId: string;
-  name: string;
-};
+export type WorkspaceStoreState = IWorkspaceEntities &
+  IWorkspaceStoreActions &
+  IWorkspaceValueObjects;
 
 interface IWorkspaceStoreActions {
   addLabel(label: Label): void;
+
   addPat(pat: Pat): void;
+
   applyThreadFilters(
     status: StatusType,
     assignees: AssigneesFiltersType,
@@ -112,36 +127,58 @@ interface IWorkspaceStoreActions {
     memberId: null | string,
     isUnassigned: boolean | null,
   ): void;
+
   deletePat(patId: string): void;
+
   getMemberId(state: WorkspaceStoreState): string;
+
   getMemberName(state: WorkspaceStoreState): string;
+
   getMetrics(state: WorkspaceStoreState): WorkspaceMetrics;
+
   getThreadItem(state: WorkspaceStoreState, threadId: string): null | Thread;
+
   getWorkspaceId(state: WorkspaceStoreState): string;
+
   getWorkspaceName(state: WorkspaceStoreState): string;
+
   setThreadSortKey(sortKey: SortBy): void;
+
   updateLabel(labelId: string, label: Label): void;
+
   updateThread(thread: Thread): void;
+
   updateWorkspaceName(name: string): void;
+
   viewAssignees(state: WorkspaceStoreState): Assignee[];
+
   viewCurrentThreadQueue(state: WorkspaceStoreState): null | Thread[];
+
   viewCustomerEmail(
     state: WorkspaceStoreState,
     customerId: string,
   ): null | string;
+
   viewCustomerExternalId(
     state: WorkspaceStoreState,
     customerId: string,
   ): null | string;
+
   viewCustomerName(state: WorkspaceStoreState, customerId: string): string;
+
   viewCustomerPhone(
     state: WorkspaceStoreState,
     customerId: string,
   ): null | string;
+
   viewCustomerRole(state: WorkspaceStoreState, customerId: string): string;
+
   viewLabels(state: WorkspaceStoreState): Label[];
+
   viewMemberName(state: WorkspaceStoreState, memberId: string): string;
+
   viewMembers(state: WorkspaceStoreState): Member[];
+
   viewMyThreads(
     state: WorkspaceStoreState,
     status: StatusType,
@@ -151,11 +188,14 @@ interface IWorkspaceStoreActions {
     priorities: PrioritiesFiltersType,
     sortBy: SortBy,
   ): Thread[];
+
   viewPats(state: WorkspaceStoreState): Pat[];
+
   viewThreadAssigneeId(
     state: WorkspaceStoreState,
     threadId: string,
   ): null | string;
+
   viewThreads(
     state: WorkspaceStoreState,
     status: StatusType,
@@ -164,7 +204,9 @@ interface IWorkspaceStoreActions {
     priorities: PrioritiesFiltersType,
     sortBy: SortBy,
   ): Thread[];
+
   viewThreadSortKey(state: WorkspaceStoreState): SortBy;
+
   viewUnassignedThreads(
     state: WorkspaceStoreState,
     status: StatusType,
@@ -175,40 +217,18 @@ interface IWorkspaceStoreActions {
   ): Thread[];
 }
 
-export interface IWorkspaceValueObjects {
-  error: Error | null;
-  hasData: boolean;
-  isPending: boolean;
-  threadAppliedFilters: null | ThreadAppliedFilters;
-  threadSortKey: null | SortBy;
-}
-
-export type WorkspaceStoreState = IWorkspaceEntities &
-  IWorkspaceStoreActions &
-  IWorkspaceValueObjects;
-
-function filterByStages(threads: Thread[], stages: StagesFiltersType) {
-  const stageMap: Record<string, string> = {
-    hold: HOLD,
-    needs_first_response: NEEDS_FIRST_RESPONSE,
-    needs_next_response: NEEDS_NEXT_RESPONSE,
-    resolved: RESOLVED,
-    spam: SPAM,
-    waiting_on_customer: WAITING_ON_CUSTOMER,
-  };
-
-  if (stages) {
-    if (Array.isArray(stages)) {
-      const uniqueStages = [...new Set(stages)];
-      return threads.filter((t) =>
-        uniqueStages.some((stage) => t.stage === stageMap[stage]),
-      );
+function filterByAssignees(threads: Thread[], assignees: AssigneesFiltersType) {
+  if (assignees && Array.isArray(assignees)) {
+    const uniqueAssignees = [...new Set(assignees)];
+    const filtered = [];
+    for (const assignee of uniqueAssignees) {
+      filtered.push(...threads.filter((t) => t.assigneeId === assignee));
     }
-    if (stageMap[stages]) {
-      return threads.filter((t) => t.stage === stageMap[stages]);
-    }
+    return filtered;
   }
-
+  if (assignees) {
+    return threads.filter((t) => t.assigneeId === assignees);
+  }
   // no change
   return threads;
 }
@@ -233,18 +253,28 @@ function filterByPriorities(
   return threads;
 }
 
-function filterByAssignees(threads: Thread[], assignees: AssigneesFiltersType) {
-  if (assignees && Array.isArray(assignees)) {
-    const uniqueAssignees = [...new Set(assignees)];
-    const filtered = [];
-    for (const assignee of uniqueAssignees) {
-      filtered.push(...threads.filter((t) => t.assigneeId === assignee));
+function filterByStages(threads: Thread[], stages: StagesFiltersType) {
+  const stageMap: Record<string, string> = {
+    hold: HOLD,
+    needs_first_response: NEEDS_FIRST_RESPONSE,
+    needs_next_response: NEEDS_NEXT_RESPONSE,
+    resolved: RESOLVED,
+    spam: SPAM,
+    waiting_on_customer: WAITING_ON_CUSTOMER,
+  };
+
+  if (stages) {
+    if (Array.isArray(stages)) {
+      const uniqueStages = [...new Set(stages)];
+      return threads.filter((t) =>
+        uniqueStages.some((stage) => t.stage === stageMap[stage]),
+      );
     }
-    return filtered;
+    if (stageMap[stages]) {
+      return threads.filter((t) => t.stage === stageMap[stages]);
+    }
   }
-  if (assignees) {
-    return threads.filter((t) => t.assigneeId === assignees);
-  }
+
   // no change
   return threads;
 }
@@ -590,6 +620,8 @@ export const buildStore = (
   );
 };
 
+export type AccountStoreStateType = IAccount & IAccountStoreActions;
+
 export interface IAccount {
   account: Account | null;
   error: Error | null;
@@ -598,13 +630,15 @@ export interface IAccount {
 
 interface IAccountStoreActions {
   getAccount(state: AccountStoreStateType): Account | null;
+
   getAccountId(state: AccountStoreStateType): string;
+
   getEmail(state: AccountStoreStateType): string;
+
   getName(state: AccountStoreStateType): string;
+
   updateStore(): void;
 }
-
-export type AccountStoreStateType = IAccount & IAccountStoreActions;
 
 export const buildAccountStore = (initialState: IAccount) => {
   return createStore<AccountStoreStateType>()((set) => ({
