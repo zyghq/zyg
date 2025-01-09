@@ -198,3 +198,11 @@ func PostmarkDeliveryDomain() string {
 	}
 	return value
 }
+
+func ElectricBaseUrl() string {
+	value, ok := os.LookupEnv("ELECTRIC_BASE_URL")
+	if !ok {
+		return "http://localhost:8081"
+	}
+	return value
+}

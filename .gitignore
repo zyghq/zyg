@@ -83,3 +83,5 @@ redisdb/
 
 # Sentry
 .env.sentry-build-plugin
+
+.env.electric

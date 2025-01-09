@@ -35,6 +35,7 @@ func NewServer(
 	wh := NewWorkspaceHandler(workspaceService, accountService, customerService)
 	th := NewThreadHandler(workspaceService, threadService)
 	ch := NewCustomerHandler(workspaceService, customerService)
+	ss := NewSyncHandler(workspaceService, threadService)
 
 	webhookUsername := zyg.WebhookUsername()
 	webhookPassword := zyg.WebhookPassword()
@@ -140,6 +141,10 @@ func NewServer(
 
 	mux.Handle("PATCH /workspaces/{workspaceId}/postmark/servers/{$}",
 		NewEnsureMemberAuth(wh.handlePostmarkUpdateMailServer, authService))
+
+	// v1 sync handlers
+	mux.Handle("GET /v1/sync/workspaces/{workspaceId}/shapes/threads/parts/done/{$}",
+		NewEnsureMemberAuth(ss.syncThreadsWithDoneV1, authService))
 
 	// Webhooks
 	// handles postmark inbound message webhook for workspace.

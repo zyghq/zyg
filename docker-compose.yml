@@ -75,3 +75,15 @@ services:
       - "${ZYG_XSRV_PORT}:${ZYG_XSRV_PORT}"
     profiles:
       - server
+
+  electric:
+    container_name: electric
+    image: electricsql/electric:latest
+    restart: always
+    env_file: .env.electric
+    networks:
+      - stack
+    ports:
+      - "${ELECTRIC_PORT}:${ELECTRIC_PORT}"
+    profiles:
+      - electric
