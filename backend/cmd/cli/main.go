@@ -120,13 +120,15 @@ func initConnections(ctx context.Context) (*AppConnections, error) {
 // initServices initializes all application services
 func initServices(conn *AppConnections) *AppServices {
 	log.Info().Msg("Initializing application services...")
-	// Initialize stores
+	// Initialize application stores
 	accountStore := repository.NewAccountDB(conn.DB)
 	workspaceStore := repository.NewWorkspaceDB(conn.DB)
 	memberStore := repository.NewMemberDB(conn.DB)
 	customerStore := repository.NewCustomerDB(conn.DB)
 	threadStore := repository.NewThreadDB(conn.DB, conn.Redis)
-	syncStore := esync.NewSyncDB(conn.DB)
+
+	// Initialize sync store
+	syncStore := esync.NewSyncDB(conn.SyncDB)
 
 	// Initialize services
 	app := &AppServices{
