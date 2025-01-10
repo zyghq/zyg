@@ -41,7 +41,7 @@ func run(ctx context.Context) error {
 	// create pg connection pool
 	db, err := pgxpool.New(ctx, pgConnStr)
 	if err != nil {
-		return fmt.Errorf("unable to create pg connection pool: %v", err)
+		return fmt.Errorf("unable to create app pg connection pool: %v", err)
 	}
 	defer db.Close()
 
@@ -62,13 +62,13 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("db query failed got error: %v", err)
 	}
-	slog.Info("app database", slog.Any("time", tm.Format(time.RFC1123)))
+	slog.Info("app database", slog.String("time", tm.Format(time.RFC1123)))
 
 	err = syncDB.QueryRow(ctx, "SELECT NOW()").Scan(&tm)
 	if err != nil {
 		return fmt.Errorf("db query failed got error: %v", err)
 	}
-	slog.Info("sync database", slog.Any("time", tm.Format(time.RFC1123)))
+	slog.Info("sync database", slog.String("time", tm.Format(time.RFC1123)))
 
 	// Redis options
 	opts := &redis.Options{

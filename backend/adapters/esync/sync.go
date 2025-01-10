@@ -8,5 +8,8 @@ import (
 
 func (sy *SyncDB) SaveWorkspace(
 	ctx context.Context, workspace models.WorkspaceShape) (models.WorkspaceInSync, error) {
-	return models.WorkspaceInSync{}, fmt.Errorf("not implemented")
+	//hub := sentry.GetHubFromContext(ctx)
+	fmt.Println(" *** Saving workspace *** ")
+	fmt.Println(workspace)
+	return models.WorkspaceInSync{}, nil
 }
