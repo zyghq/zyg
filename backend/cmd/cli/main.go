@@ -23,6 +23,7 @@ import (
 )
 
 var workspaceID string
+var customerID string
 
 // AppServices holds all the application services
 type AppServices struct {
@@ -183,6 +184,60 @@ func cleanup(conn *AppConnections) {
 	log.Info().Msg("Cleanup complete.")
 }
 
+func runSyncWorkspace(cmd *cobra.Command, args []string) error {
+	ctx := cmd.Context()
+	log.Info().Msg("Starting workspace sync command...")
+
+	// Initialize Sentry
+	if err := initSentry(); err != nil {
+		return fmt.Errorf("failed to initialize sentry: %w", err)
+	}
+
+	// Initialize connections
+	conn, err := initConnections(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to initialize connections: %w", err)
+	}
+	defer cleanup(conn)
+
+	// Initialize services
+	app := initServices(conn)
+
+	log.Info().Msgf("Fetching workspace with ID: %s", workspaceID)
+	workspace, err := app.WorkspaceService.GetWorkspace(ctx, workspaceID)
+	if err != nil {
+		return fmt.Errorf("failed to get workspace %s: %w", workspaceID, err)
+	}
+
+	u, _ := uuid.NewUUID()
+	shape := models.WorkspaceShape{
+		WorkspaceID: workspace.WorkspaceId,
+		Name:        workspace.Name,
+		PublicName:  workspace.Name,
+		CreatedAt:   workspace.CreatedAt,
+		UpdatedAt:   workspace.UpdatedAt,
+		SyncedAt:    time.Now().UTC(),
+		VersionID:   u.String(),
+	}
+
+	log.Info().Msgf("Syncing workspace with ID: %s", workspaceID)
+	synced, err := app.SyncService.SyncWorkspace(ctx, shape)
+	if err != nil {
+		return fmt.Errorf("failed to sync workspace %s: %w", workspaceID, err)
+	}
+	log.Info().Msgf("Successfully synced workspace with ID: %s, versionID: %s", synced.WorkspaceID, synced.VersionID)
+	log.Info().Msg("Workspace sync command completed successfully.")
+	return nil
+}
+
+func runSyncWorkspaceCustomers(cmd *cobra.Command, args []string) error {
+	return fmt.Errorf("not implemented yet")
+}
+
+func runSyncWorkspaceCustomer(cmd *cobra.Command, args []string) error {
+	return fmt.Errorf("not implemented yet")
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "cli",
 	Short: "CLI for Zyg platform operations",
@@ -190,63 +245,51 @@ var rootCmd = &cobra.Command{
 }
 
 var syncCmd = &cobra.Command{
-	Use:   "sync workspace",
-	Short: "Sync a workspace",
+	Use:   "sync",
+	Short: "Sync operations",
+}
+
+var syncWorkspaceCmd = &cobra.Command{
+	Use:   "workspace",
+	Short: "Sync workspace related data",
+}
+
+var workspaceSubCmd = &cobra.Command{
+	Use:   "workspace",
+	Short: "Sync workspace data",
 	Long:  `Sync a workspace using its workspace ID.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		log.Info().Msg("Starting workspace sync command...")
+	RunE:  runSyncWorkspace,
+}
 
-		// Initialize Sentry
-		if err := initSentry(); err != nil {
-			return fmt.Errorf("failed to initialize sentry: %w", err)
-		}
+var customersSubCmd = &cobra.Command{
+	Use:   "customers",
+	Short: "Sync workspace customers",
+	RunE:  runSyncWorkspaceCustomers,
+}
 
-		// Initialize connections
-		conn, err := initConnections(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to initialize connections: %w", err)
-		}
-		defer cleanup(conn)
-
-		// Initialize services
-		services := initServices(conn)
-
-		log.Info().Msgf("Fetching workspace with ID: %s", workspaceID)
-		workspace, err := services.WorkspaceService.GetWorkspace(ctx, workspaceID)
-		if err != nil {
-			return fmt.Errorf("failed to get workspace %s: %w", workspaceID, err)
-		}
-
-		u, _ := uuid.NewUUID()
-		shape := models.WorkspaceShape{
-			WorkspaceID: workspace.WorkspaceId,
-			Name:        workspace.Name,
-			PublicName:  workspace.Name,
-			CreatedAt:   workspace.CreatedAt,
-			UpdatedAt:   workspace.UpdatedAt,
-			SyncedAt:    time.Now().UTC(),
-			VersionID:   u.String(),
-		}
-
-		log.Info().Msgf("Syncing workspace with ID: %s", workspaceID)
-		synced, err := services.SyncService.SyncWorkspace(ctx, shape)
-		if err != nil {
-			return fmt.Errorf("failed to sync workspace %s: %w", workspaceID, err)
-		}
-		log.Info().Msgf("Successfully synced workspace with ID: %s, versionID: %s", synced.WorkspaceID, synced.VersionID)
-		log.Info().Msg("Workspace sync command completed successfully.")
-		return nil
-	},
+var customerSubCmd = &cobra.Command{
+	Use:   "customer",
+	Short: "Sync specific customer",
+	RunE:  runSyncWorkspaceCustomer,
 }
 
 func init() {
 	rootCmd.AddCommand(syncCmd)
-	syncCmd.Flags().StringVar(&workspaceID, "id", "", "Workspace ID (required)")
-	err := syncCmd.MarkFlagRequired("id")
-	if err != nil {
+	syncCmd.AddCommand(syncWorkspaceCmd)
+
+	syncWorkspaceCmd.AddCommand(workspaceSubCmd)
+	syncWorkspaceCmd.AddCommand(customersSubCmd)
+
+	// Add the --id flag
+	syncWorkspaceCmd.PersistentFlags().StringVar(&workspaceID, "id", "", "Workspace ID (required)")
+	if err := syncWorkspaceCmd.MarkPersistentFlagRequired("id"); err != nil {
 		log.Fatal().Err(err).Msg("failed to mark id flag as required")
-		return
+	}
+
+	// Add the customer --id flag
+	customerSubCmd.Flags().StringVar(&customerID, "id", "", "Customer ID (required)")
+	if err := customerSubCmd.MarkFlagRequired("id"); err != nil {
+		log.Fatal().Err(err).Msg("failed to mark customer id flag as required")
 	}
 }
 
