@@ -134,7 +134,7 @@ func run(ctx context.Context) error {
 
 	// Initialize sync DB store.
 	// Not to be confused with application DB store.
-	syncStore := esync.NewSyncDB(db)
+	syncStore := esync.NewSyncDB(syncDB)
 
 	// Initialize application services with application DB stores.
 	authService := services.NewAuthService(accountStore, memberStore)

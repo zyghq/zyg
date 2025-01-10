@@ -33,7 +33,7 @@ func NewServer(
 
 	// initialize service handlers
 	ah := NewAccountHandler(accountService, workspaceService)
-	wh := NewWorkspaceHandler(workspaceService, accountService, customerService)
+	wh := NewWorkspaceHandler(workspaceService, accountService, customerService, syncService)
 	th := NewThreadHandler(workspaceService, threadService)
 	ch := NewCustomerHandler(workspaceService, customerService)
 	ss := NewSyncHandler(workspaceService, threadService)
