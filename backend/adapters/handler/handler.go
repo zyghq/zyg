@@ -27,6 +27,7 @@ func NewServer(
 	workspaceService ports.WorkspaceServicer,
 	customerService ports.CustomerServicer,
 	threadService ports.ThreadServicer,
+	syncService ports.SyncServicer,
 ) http.Handler {
 	mux := http.NewServeMux()
 

@@ -38,6 +38,7 @@ export default [
     },
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
+      "perfectionist/sort-modules": "off",
       "react/no-unescaped-entities": "off",
       "react/prop-types": "off",
     },
