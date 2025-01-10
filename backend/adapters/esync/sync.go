@@ -14,21 +14,18 @@ func (sy *SyncDB) SaveWorkspace(
 	hub := sentry.GetHubFromContext(ctx)
 
 	q := builq.New()
-	q(`INSERT INTO workspace (
-		"workspaceId", "name", "publicName", "createdAt", "updatedAt",
-		"versionId", "syncedAt"
-	) VALUES (%$, %$, %$, %$, %$, %$, %$)`,
+	q(`INSERT INTO workspace (workspace_id, name, public_name, created_at, updated_at, version_id, synced_at)`)
+	q(`VALUES (%$, %$, %$, %$, %$, %$, %$)`,
 		workspace.WorkspaceID, workspace.Name, workspace.PublicName,
-		workspace.CreatedAt, workspace.UpdatedAt, workspace.VersionID, workspace.SyncedAt,
-	)
-	q(`ON CONFLICT ("workspaceId") DO UPDATE SET`)
-	q(`"name" = EXCLUDED."name",`)
-	q(`"publicName" = EXCLUDED."publicName",`)
-	q(`"createdAt" = EXCLUDED."createdAt",`)
-	q(`"updatedAt" = EXCLUDED."updatedAt",`)
-	q(`"versionId" = EXCLUDED."versionId",`)
-	q(`"syncedAt" = EXCLUDED."syncedAt"`)
-	q(`RETURNING "workspaceId", "syncedAt", "versionId"`)
+		workspace.CreatedAt, workspace.UpdatedAt, workspace.VersionID, workspace.SyncedAt)
+	q(`ON CONFLICT (workspace_id) DO UPDATE SET`)
+	q(`name = EXCLUDED.name,`)
+	q(`public_name = EXCLUDED.public_name,`)
+	q(`created_at = EXCLUDED.created_at,`)
+	q(`updated_at = EXCLUDED.updated_at,`)
+	q(`version_id = EXCLUDED.version_id,`)
+	q(`synced_at = EXCLUDED.synced_at`)
+	q(`RETURNING workspace_id, synced_at, version_id`)
 
 	stmt, _, err := q.Build()
 	if err != nil {
