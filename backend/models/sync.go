@@ -39,3 +39,23 @@ type CustomerInSync struct {
 	SyncedAt   time.Time `json:"syncedAt"`
 	VersionID  string    `json:"versionId"`
 }
+
+type MemberShape struct {
+	MemberID    string                 `json:"memberId"`
+	WorkspaceID string                 `json:"workspaceId"`
+	Name        string                 `json:"name"`
+	PublicName  string                 `json:"publicName"`
+	Role        string                 `json:"role"`
+	Permissions map[string]interface{} `json:"permissions"`
+	AvatarURL   string                 `json:"avatarUrl"`
+	CreatedAt   time.Time              `json:"createdAt"`
+	UpdatedAt   time.Time              `json:"updatedAt"`
+	VersionID   string                 `json:"versionId"`
+	SyncedAt    time.Time              `json:"syncedAt"`
+}
+
+type MemberInSync struct {
+	MemberID  string    `json:"memberId"`
+	SyncedAt  time.Time `json:"syncedAt"`
+	VersionID string    `json:"versionId"`
+}

@@ -38,3 +38,14 @@ func (sy *SyncService) SyncCustomer(
 	}
 	return inSync, nil
 }
+
+func (sy *SyncService) SyncMember(
+	ctx context.Context, member models.MemberShape) (models.MemberInSync, error) {
+	hub := sentry.GetHubFromContext(ctx)
+	inSync, err := sy.syncDB.SaveMember(ctx, member)
+	if err != nil {
+		hub.CaptureException(err)
+		return models.MemberInSync{}, err
+	}
+	return inSync, nil
+}

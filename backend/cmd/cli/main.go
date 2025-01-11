@@ -24,6 +24,7 @@ import (
 
 var workspaceID string
 var customerID string
+var memberID string
 
 // AppServices holds all the application services
 type AppServices struct {
@@ -184,7 +185,7 @@ func cleanup(conn *AppConnections) {
 	log.Info().Msg("Cleanup complete.")
 }
 
-func runSyncWorkspace(cmd *cobra.Command, args []string) error {
+func runSyncWorkspace(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
 	log.Info().Msg("Starting workspace sync command...")
 
@@ -230,7 +231,7 @@ func runSyncWorkspace(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runSyncWorkspaceCustomers(cmd *cobra.Command, args []string) error {
+func runSyncWorkspaceCustomers(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
 	log.Info().Msgf("Starting sync customers WorkspaceID: %s...", workspaceID)
 
@@ -313,7 +314,7 @@ func runSyncWorkspaceCustomers(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runSyncWorkspaceCustomer(cmd *cobra.Command, args []string) error {
+func runSyncWorkspaceCustomer(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
 	log.Info().Msgf("Starting sync customer WorkspaceID: %s, CustomerID: %s...", workspaceID, customerID)
 
@@ -382,6 +383,62 @@ func runSyncWorkspaceCustomer(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func runSyncWorkspaceMember(cmd *cobra.Command, _ []string) error {
+	ctx := cmd.Context()
+	log.Info().Msgf("Starting sync member WorkspaceID: %s, MemberID: %s...", workspaceID, memberID)
+
+	// Initialize Sentry
+	if err := initSentry(); err != nil {
+		return fmt.Errorf("failed to initialize sentry: %w", err)
+	}
+	// Initialize connections
+	conn, err := initConnections(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to initialize connections: %w", err)
+	}
+	defer cleanup(conn)
+
+	// Initialize services
+	app := initServices(conn)
+
+	log.Info().Msgf("Fetching workspace with ID: %s", workspaceID)
+	workspace, err := app.WorkspaceService.GetWorkspace(ctx, workspaceID)
+	if err != nil {
+		return fmt.Errorf("failed to get workspace %s: %w", workspaceID, err)
+	}
+	member, err := app.WorkspaceService.GetMember(ctx, workspace.WorkspaceId, memberID)
+	if err != nil {
+		return fmt.Errorf("failed to get member %s: %w", memberID, err)
+	}
+
+	u, _ := uuid.NewUUID()
+	permissions := make(map[string]interface{})
+
+	shape := models.MemberShape{
+		MemberID:    member.MemberId,
+		WorkspaceID: member.WorkspaceId,
+		Name:        member.Name,
+		PublicName:  member.Name,
+		Role:        member.Role,
+		Permissions: permissions,
+		AvatarURL:   member.AvatarUrl(),
+		CreatedAt:   member.CreatedAt,
+		UpdatedAt:   member.UpdatedAt,
+		SyncedAt:    time.Now().UTC(),
+		VersionID:   u.String(),
+	}
+
+	log.Info().Msgf("Syncing member with ID: %s", memberID)
+	synced, err := app.SyncService.SyncMember(ctx, shape)
+	if err != nil {
+		return fmt.Errorf("failed to sync member %s: %w", customerID, err)
+	}
+	log.Info().Msgf(
+		"Successfully synced memberID: %s, versionID: %s", synced.MemberID, synced.VersionID)
+	log.Info().Msg("Member sync command completed successfully.")
+	return nil
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "cli",
 	Short: "CLI for Zyg platform operations",
@@ -417,6 +474,12 @@ var customerSubCmd = &cobra.Command{
 	RunE:  runSyncWorkspaceCustomer,
 }
 
+var memberSubCmd = &cobra.Command{
+	Use:   "member",
+	Short: "Sync specific member",
+	RunE:  runSyncWorkspaceMember,
+}
+
 func init() {
 	rootCmd.AddCommand(syncCmd)
 	syncCmd.AddCommand(syncWorkspaceCmd)
@@ -424,6 +487,8 @@ func init() {
 	syncWorkspaceCmd.AddCommand(workspaceSubCmd)
 	syncWorkspaceCmd.AddCommand(customerSubCmd)
 	syncWorkspaceCmd.AddCommand(customersSubCmd)
+
+	syncWorkspaceCmd.AddCommand(memberSubCmd)
 
 	// Add the workspaceID flag
 	syncWorkspaceCmd.PersistentFlags().StringVar(
@@ -436,6 +501,11 @@ func init() {
 	customerSubCmd.Flags().StringVar(&customerID, "customerID", "", "Customer ID (required)")
 	if err := customerSubCmd.MarkFlagRequired("customerID"); err != nil {
 		log.Fatal().Err(err).Msg("failed to mark customer id flag as required")
+	}
+
+	memberSubCmd.Flags().StringVar(&memberID, "memberID", "", "Member ID (required)")
+	if err := memberSubCmd.MarkFlagRequired("memberID"); err != nil {
+		log.Fatal().Err(err).Msg("failed to mark member id flag as required")
 	}
 }
 

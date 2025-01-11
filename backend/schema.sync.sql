@@ -18,7 +18,6 @@ CREATE TABLE member
     workspace_id VARCHAR(255) NOT NULL, -- Reference to workspace this member belongs to
     name         VARCHAR(255) NOT NULL, -- Display name of the member
     public_name  VARCHAR(255) NOT NULL,
-    email        VARCHAR(255) NOT NULL,
     role         VARCHAR(255) NOT NULL, -- Member's role in the workspace
     permissions  JSONB        NOT NULL,
     avatar_url   VARCHAR(511) NOT NULL,

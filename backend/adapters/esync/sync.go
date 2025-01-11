@@ -107,3 +107,44 @@ func (sy *SyncDB) SaveCustomer(
 	}
 	return inSync, nil
 }
+
+func (sy *SyncDB) SaveMember(
+	ctx context.Context, member models.MemberShape) (models.MemberInSync, error) {
+	var inSync models.MemberInSync
+	hub := sentry.GetHubFromContext(ctx)
+
+	stmt := `
+    INSERT INTO member (
+        member_id, workspace_id,
+        name, public_name, role, permissions, avatar_url,
+        created_at, updated_at,
+        version_id, synced_at
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    ON CONFLICT (member_id) DO UPDATE SET
+	workspace_id = EXCLUDED.workspace_id,
+	name = EXCLUDED.name,
+	public_name = EXCLUDED.public_name,
+	role = EXCLUDED.role,
+	permissions = EXCLUDED.permissions,
+	avatar_url = EXCLUDED.avatar_url,
+	created_at = EXCLUDED.created_at,
+	updated_at = EXCLUDED.updated_at,
+	version_id = EXCLUDED.version_id,
+	synced_at = EXCLUDED.synced_at
+	RETURNING member_id, synced_at, version_id`
+
+	err := sy.db.QueryRow(
+		ctx, stmt,
+		member.MemberID, member.WorkspaceID,
+		member.Name, member.PublicName, member.Role, member.Permissions, member.AvatarURL,
+		member.CreatedAt, member.UpdatedAt,
+		member.VersionID, member.SyncedAt,
+	).Scan(&inSync.MemberID, &inSync.SyncedAt, &inSync.VersionID)
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to insert query", slog.Any("err", err))
+		return models.MemberInSync{}, err
+	}
+	return inSync, nil
+}

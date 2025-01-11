@@ -2,6 +2,8 @@ package models
 
 import (
 	"github.com/rs/xid"
+	"github.com/zyghq/zyg"
+	"strings"
 	"time"
 )
 
@@ -39,6 +41,16 @@ func (m Member) CreateNewSystemMember(workspaceId string) Member {
 		CreatedAt:   now, // in same time space
 		UpdatedAt:   now, // in same time space
 	}
+}
+
+func (m Member) AvatarUrl() string {
+	url := zyg.GetAvatarBaseURL()
+	// url may or may not have a trailing slash
+	// add a trailing slash if it doesn't have one
+	if !strings.HasSuffix(url, "/") {
+		url = url + "/"
+	}
+	return url + m.MemberId
 }
 
 type MemberRole struct{}
