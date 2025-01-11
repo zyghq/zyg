@@ -231,7 +231,86 @@ func runSyncWorkspace(cmd *cobra.Command, args []string) error {
 }
 
 func runSyncWorkspaceCustomers(cmd *cobra.Command, args []string) error {
-	return fmt.Errorf("not implemented yet")
+	ctx := cmd.Context()
+	log.Info().Msgf("Starting sync customers WorkspaceID: %s...", workspaceID)
+
+	// Initialize Sentry
+	if err := initSentry(); err != nil {
+		return fmt.Errorf("failed to initialize sentry: %w", err)
+	}
+	// Initialize connections
+	conn, err := initConnections(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to initialize connections: %w", err)
+	}
+	defer cleanup(conn)
+
+	// Initialize services
+	app := initServices(conn)
+
+	log.Info().Msgf("Fetching workspace with ID: %s", workspaceID)
+	workspace, err := app.WorkspaceService.GetWorkspace(ctx, workspaceID)
+	if err != nil {
+		return fmt.Errorf("failed to get workspace %s: %w", workspaceID, err)
+	}
+
+	customers, err := app.WorkspaceService.GetCustomers(ctx, workspace.WorkspaceId)
+	if err != nil {
+		return fmt.Errorf("failed to get customers for workspaceID %s: %w", workspaceID, err)
+	}
+	shapes := make([]models.CustomerShape, 0, len(customers))
+	var recentSyncedShape *models.CustomerShape
+	var syncCount int
+
+	for _, customer := range customers {
+		var externalId *string
+		var email *string
+		var phone *string
+		if customer.ExternalId.Valid {
+			externalId = &customer.ExternalId.String
+		}
+		if customer.Email.Valid {
+			email = &customer.Email.String
+		}
+		if customer.Phone.Valid {
+			phone = &customer.Phone.String
+		}
+		u, _ := uuid.NewUUID()
+		shape := models.CustomerShape{
+			CustomerID:      customer.CustomerId,
+			WorkspaceID:     customer.WorkspaceId,
+			ExternalID:      externalId,
+			Email:           email,
+			Phone:           phone,
+			Name:            customer.Name,
+			Role:            customer.Role,
+			AvatarURL:       customer.AvatarUrl(),
+			IsEmailVerified: customer.IsEmailVerified,
+			CreatedAt:       customer.CreatedAt,
+			UpdatedAt:       customer.UpdatedAt,
+			SyncedAt:        time.Now().UTC(),
+			VersionID:       u.String(),
+		}
+		shapes = append(shapes, shape)
+	}
+
+	for _, shape := range shapes {
+		log.Info().Msgf("Syncing customer with ID: %s", shape.CustomerID)
+		synced, err := app.SyncService.SyncCustomer(ctx, shape)
+		if err != nil {
+			return fmt.Errorf("failed to sync customer %s: %w", shape.CustomerID, err)
+		}
+		log.Info().Msgf(
+			"Successfully synced customerID: %s, versionID: %s", synced.CustomerID, synced.VersionID)
+		recentSyncedShape = &shape
+		syncCount++
+	}
+
+	log.Info().Msgf("Synced total %d of %d customers", syncCount, len(shapes))
+	if recentSyncedShape != nil {
+		log.Info().Msgf("Last synced customer: %s", recentSyncedShape.CustomerID)
+	}
+	return nil
 }
 
 func runSyncWorkspaceCustomer(cmd *cobra.Command, args []string) error {

@@ -80,6 +80,7 @@ type MemberRepositorer interface {
 type CustomerRepositorer interface {
 	LookupWorkspaceCustomerById(
 		ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error)
+	LookupWorkspaceCustomers(ctx context.Context, workspaceId string) ([]models.Customer, error)
 	LookupWorkspaceCustomerByEmail(
 		ctx context.Context, workspaceId string, email string, role *string) (models.Customer, error)
 	UpsertCustomerByExtId(

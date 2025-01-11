@@ -374,6 +374,15 @@ func (ws *WorkspaceService) GetCustomer(
 	return customer, nil
 }
 
+func (ws *WorkspaceService) GetCustomers(
+	ctx context.Context, workspaceId string) ([]models.Customer, error) {
+	customers, err := ws.customerRepo.LookupWorkspaceCustomers(ctx, workspaceId)
+	if err != nil {
+		return []models.Customer{}, ErrCustomer
+	}
+	return customers, nil
+}
+
 func (ws *WorkspaceService) DoesEmailConflict(
 	ctx context.Context, workspaceId string, email string) (bool, error) {
 	exists, err := ws.customerRepo.CheckEmailExists(ctx, workspaceId, email)
