@@ -445,7 +445,7 @@ func (s *ThreadService) SendThreadMailReply(
 		models.SetMessageTextBody(textBodyFmt),
 		models.SetMarkdownBody(markdownBody),
 	)
-	thread.SetNextOutboundSeq(member.AsMemberActor(), newMessage.PreviewText())
+	thread.SetNextOutboundSeq(newMessage.PreviewText())
 
 	pmEmailReq := email.NewPostmarkEmailReq(
 		replySubject, from, customer.Email.String,

@@ -328,7 +328,7 @@ func (th *Thread) ClearInboundMessage() {
 
 // setNewOutboundMessage adds the outbound message info to the Thread.
 // Outbound messages are messages from the Member.
-func (th *Thread) setNewOutboundMessage(member MemberActor, previewText string) {
+func (th *Thread) setNewOutboundMessage(previewText string) {
 	messageId := OutboundMessage{}.GenId()
 	seqId := xid.New().String()
 	now := time.Now().UTC()
@@ -342,7 +342,7 @@ func (th *Thread) setNewOutboundMessage(member MemberActor, previewText string) 
 	}
 }
 
-func (th *Thread) SetNextOutboundSeq(member MemberActor, previewText string) {
+func (th *Thread) SetNextOutboundSeq(previewText string) {
 	seqId := xid.New().String()
 	now := time.Now().UTC()
 	if th.OutboundMessage != nil {
@@ -350,7 +350,7 @@ func (th *Thread) SetNextOutboundSeq(member MemberActor, previewText string) {
 		th.OutboundMessage.LastSeqId = seqId
 		th.OutboundMessage.UpdatedAt = now
 	} else {
-		th.setNewOutboundMessage(member, previewText)
+		th.setNewOutboundMessage(previewText)
 	}
 }
 

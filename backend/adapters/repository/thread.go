@@ -1352,6 +1352,11 @@ func (th *ThreadDB) FetchThreadsByCustomerId(
 	return threads, nil
 }
 
+// FetchThreadsByWorkspaceId retrieves a list of threads for a given workspace ID with optional channel and role filters.
+// The method returns threads sorted by creation time in ascending order.
+// It queries associated entities such as customers, assigned members, inbound, and outbound details.
+// Returns a slice of Thread models and an error if the operation fails.
+// FIXEDXX
 func (th *ThreadDB) FetchThreadsByWorkspaceId(
 	ctx context.Context, workspaceId string, channel *string, role *string) ([]models.Thread, error) {
 	var thread models.Thread
@@ -1367,8 +1372,6 @@ func (th *ThreadDB) FetchThreadsByWorkspaceId(
 	q("INNER JOIN member scm ON th.status_changed_by_id = scm.member_id")
 	q("LEFT OUTER JOIN inbound_message inb ON th.inbound_message_id = inb.message_id")
 	q("LEFT OUTER JOIN outbound_message oub ON th.outbound_message_id = oub.message_id")
-	q("LEFT OUTER JOIN customer inbc ON inb.customer_id = inbc.customer_id")
-	q("LEFT OUTER JOIN member oubm ON oub.member_id = oubm.member_id")
 	q("INNER JOIN member mc ON th.created_by_id = mc.member_id")
 	q("INNER JOIN member mu ON th.updated_by_id = mu.member_id")
 
@@ -1404,16 +1407,12 @@ func (th *ThreadDB) FetchThreadsByWorkspaceId(
 		assignedMemberName  sql.NullString
 		assignedAt          sql.NullTime
 		inboundMessageId    sql.NullString
-		inboundCustomerId   sql.NullString
-		inboundCustomerName sql.NullString
 		inboundPreviewText  sql.NullString
 		inboundFirstSeqId   sql.NullString
 		inboundLastSeqId    sql.NullString
 		inboundCreatedAt    sql.NullTime
 		inboundUpdatedAt    sql.NullTime
 		outboundMessageId   sql.NullString
-		outboundMemberId    sql.NullString
-		outboundMemberName  sql.NullString
 		outboundPreviewText sql.NullString
 		outboundFirstSeqId  sql.NullString
 		outboundLastSeqId   sql.NullString
@@ -1434,10 +1433,10 @@ func (th *ThreadDB) FetchThreadsByWorkspaceId(
 		&thread.ThreadStatus.StatusChangedBy.MemberId, &thread.ThreadStatus.StatusChangedBy.Name,
 		&thread.ThreadStatus.Stage,
 		&thread.Replied, &thread.Priority, &thread.Channel,
-		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
+		&inboundMessageId,
 		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
 		&inboundCreatedAt, &inboundUpdatedAt,
-		&outboundMessageId, &outboundMemberId, &outboundMemberName,
+		&outboundMessageId,
 		&outboundPreviewText, &outboundFirstSeqId, &outboundLastSeqId,
 		&outboundCreatedAt, &outboundUpdatedAt,
 		&thread.CreatedBy.MemberId, &thread.CreatedBy.Name,
@@ -1458,13 +1457,8 @@ func (th *ThreadDB) FetchThreadsByWorkspaceId(
 		// Sets the inbound message an if valid inbound message exists,
 		// otherwise clears the inbound message.
 		if inboundMessageId.Valid {
-			customer := models.CustomerActor{
-				CustomerId: inboundCustomerId.String,
-				Name:       inboundCustomerName.String,
-			}
 			thread.InboundMessage = &models.InboundMessage{
 				MessageId:   inboundMessageId.String,
-				Customer:    customer,
 				PreviewText: inboundPreviewText.String,
 				FirstSeqId:  inboundFirstSeqId.String,
 				LastSeqId:   inboundLastSeqId.String,
@@ -1477,13 +1471,8 @@ func (th *ThreadDB) FetchThreadsByWorkspaceId(
 		// Sets the outbound message if a valid outbound message exists,
 		// otherwise clears the outbound message.
 		if outboundMessageId.Valid {
-			member := models.MemberActor{
-				MemberId: outboundMemberId.String,
-				Name:     outboundMemberName.String,
-			}
 			thread.OutboundMessage = &models.OutboundMessage{
 				MessageId:   outboundMessageId.String,
-				Member:      member,
 				PreviewText: outboundPreviewText.String,
 				FirstSeqId:  outboundFirstSeqId.String,
 				LastSeqId:   outboundLastSeqId.String,
@@ -1496,7 +1485,6 @@ func (th *ThreadDB) FetchThreadsByWorkspaceId(
 		threads = append(threads, thread)
 		return nil
 	})
-
 	if err != nil {
 		slog.Error("failed to query", slog.Any("err", err))
 		return []models.Thread{}, ErrQuery
@@ -1504,6 +1492,10 @@ func (th *ThreadDB) FetchThreadsByWorkspaceId(
 	return threads, nil
 }
 
+// FetchThreadsByAssignedMemberId retrieves a list of threads assigned to a specific member,
+// with optional filters for channel and role.
+// It returns the threads ordered by their creation date in ascending order.
+// FIXEDXX
 func (th *ThreadDB) FetchThreadsByAssignedMemberId(
 	ctx context.Context, memberId string, channel *string, role *string) ([]models.Thread, error) {
 	var thread models.Thread
@@ -1519,8 +1511,6 @@ func (th *ThreadDB) FetchThreadsByAssignedMemberId(
 	q("INNER JOIN member scm ON th.status_changed_by_id = scm.member_id")
 	q("LEFT OUTER JOIN inbound_message inb ON th.inbound_message_id = inb.message_id")
 	q("LEFT OUTER JOIN outbound_message oub ON th.outbound_message_id = oub.message_id")
-	q("LEFT OUTER JOIN customer inbc ON inb.customer_id = inbc.customer_id")
-	q("LEFT OUTER JOIN member oubm ON oub.member_id = oubm.member_id")
 	q("INNER JOIN member mc ON th.created_by_id = mc.member_id")
 	q("INNER JOIN member mu ON th.updated_by_id = mu.member_id")
 
@@ -1556,16 +1546,12 @@ func (th *ThreadDB) FetchThreadsByAssignedMemberId(
 		assignedMemberName  sql.NullString
 		assignedAt          sql.NullTime
 		inboundMessageId    sql.NullString
-		inboundCustomerId   sql.NullString
-		inboundCustomerName sql.NullString
 		inboundPreviewText  sql.NullString
 		inboundFirstSeqId   sql.NullString
 		inboundLastSeqId    sql.NullString
 		inboundCreatedAt    sql.NullTime
 		inboundUpdatedAt    sql.NullTime
 		outboundMessageId   sql.NullString
-		outboundMemberId    sql.NullString
-		outboundMemberName  sql.NullString
 		outboundPreviewText sql.NullString
 		outboundFirstSeqId  sql.NullString
 		outboundLastSeqId   sql.NullString
@@ -1586,10 +1572,10 @@ func (th *ThreadDB) FetchThreadsByAssignedMemberId(
 		&thread.ThreadStatus.StatusChangedBy.MemberId, &thread.ThreadStatus.StatusChangedBy.Name,
 		&thread.ThreadStatus.Stage,
 		&thread.Replied, &thread.Priority, &thread.Channel,
-		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
+		&inboundMessageId,
 		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
 		&inboundCreatedAt, &inboundUpdatedAt,
-		&outboundMessageId, &outboundMemberId, &outboundMemberName,
+		&outboundMessageId,
 		&outboundPreviewText, &outboundFirstSeqId, &outboundLastSeqId,
 		&outboundCreatedAt, &outboundUpdatedAt,
 		&thread.CreatedBy.MemberId, &thread.CreatedBy.Name,
@@ -1610,13 +1596,8 @@ func (th *ThreadDB) FetchThreadsByAssignedMemberId(
 		// Sets the inbound message an if valid inbound message exists,
 		// otherwise clears the inbound message.
 		if inboundMessageId.Valid {
-			customer := models.CustomerActor{
-				CustomerId: inboundCustomerId.String,
-				Name:       inboundCustomerName.String,
-			}
 			thread.InboundMessage = &models.InboundMessage{
 				MessageId:   inboundMessageId.String,
-				Customer:    customer,
 				PreviewText: inboundPreviewText.String,
 				FirstSeqId:  inboundFirstSeqId.String,
 				LastSeqId:   inboundLastSeqId.String,
@@ -1629,14 +1610,8 @@ func (th *ThreadDB) FetchThreadsByAssignedMemberId(
 		// Sets the outbound message if a valid outbound message exists,
 		// otherwise clears the outbound message.
 		if outboundMessageId.Valid {
-			member := models.MemberActor{
-				MemberId: outboundMemberId.String,
-				Name:     outboundMemberName.String,
-			}
-
 			thread.OutboundMessage = &models.OutboundMessage{
 				MessageId:   outboundMessageId.String,
-				Member:      member,
 				PreviewText: outboundPreviewText.String,
 				FirstSeqId:  outboundFirstSeqId.String,
 				LastSeqId:   outboundLastSeqId.String,
@@ -1649,7 +1624,6 @@ func (th *ThreadDB) FetchThreadsByAssignedMemberId(
 		threads = append(threads, thread)
 		return nil
 	})
-
 	if err != nil {
 		slog.Error("failed to query", slog.Any("error", err))
 		return []models.Thread{}, ErrQuery
@@ -1657,6 +1631,9 @@ func (th *ThreadDB) FetchThreadsByAssignedMemberId(
 	return threads, nil
 }
 
+// FetchThreadsByMemberUnassigned retrieves unassigned threads for a specified workspace,
+// optionally filtered by channel and role, and sorted by creation date in ascending order.
+// FIXEDXX
 func (th *ThreadDB) FetchThreadsByMemberUnassigned(
 	ctx context.Context, workspaceId string, channel *string, role *string) ([]models.Thread, error) {
 	var thread models.Thread
@@ -1672,8 +1649,6 @@ func (th *ThreadDB) FetchThreadsByMemberUnassigned(
 	q("INNER JOIN member scm ON th.status_changed_by_id = scm.member_id")
 	q("LEFT OUTER JOIN inbound_message inb ON th.inbound_message_id = inb.message_id")
 	q("LEFT OUTER JOIN outbound_message oub ON th.outbound_message_id = oub.message_id")
-	q("LEFT OUTER JOIN customer inbc ON inb.customer_id = inbc.customer_id")
-	q("LEFT OUTER JOIN member oubm ON oub.member_id = oubm.member_id")
 	q("INNER JOIN member mc ON th.created_by_id = mc.member_id")
 	q("INNER JOIN member mu ON th.updated_by_id = mu.member_id")
 
@@ -1710,16 +1685,12 @@ func (th *ThreadDB) FetchThreadsByMemberUnassigned(
 		assignedMemberName  sql.NullString
 		assignedAt          sql.NullTime
 		inboundMessageId    sql.NullString
-		inboundCustomerId   sql.NullString
-		inboundCustomerName sql.NullString
 		inboundPreviewText  sql.NullString
 		inboundFirstSeqId   sql.NullString
 		inboundLastSeqId    sql.NullString
 		inboundCreatedAt    sql.NullTime
 		inboundUpdatedAt    sql.NullTime
 		outboundMessageId   sql.NullString
-		outboundMemberId    sql.NullString
-		outboundMemberName  sql.NullString
 		outboundPreviewText sql.NullString
 		outboundFirstSeqId  sql.NullString
 		outboundLastSeqId   sql.NullString
@@ -1740,10 +1711,10 @@ func (th *ThreadDB) FetchThreadsByMemberUnassigned(
 		&thread.ThreadStatus.StatusChangedBy.MemberId, &thread.ThreadStatus.StatusChangedBy.Name,
 		&thread.ThreadStatus.Stage,
 		&thread.Replied, &thread.Priority, &thread.Channel,
-		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
+		&inboundMessageId,
 		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
 		&inboundCreatedAt, &inboundUpdatedAt,
-		&outboundMessageId, &outboundMemberId, &outboundMemberName,
+		&outboundMessageId,
 		&outboundPreviewText, &outboundFirstSeqId, &outboundLastSeqId,
 		&outboundCreatedAt, &outboundUpdatedAt,
 		&thread.CreatedBy.MemberId, &thread.CreatedBy.Name,
@@ -1764,13 +1735,8 @@ func (th *ThreadDB) FetchThreadsByMemberUnassigned(
 		// Sets the inbound message an if valid inbound message exists,
 		// otherwise clears the inbound message.
 		if inboundMessageId.Valid {
-			customer := models.CustomerActor{
-				CustomerId: inboundCustomerId.String,
-				Name:       inboundCustomerName.String,
-			}
 			thread.InboundMessage = &models.InboundMessage{
 				MessageId:   inboundMessageId.String,
-				Customer:    customer,
 				PreviewText: inboundPreviewText.String,
 				FirstSeqId:  inboundFirstSeqId.String,
 				LastSeqId:   inboundLastSeqId.String,
@@ -1783,13 +1749,8 @@ func (th *ThreadDB) FetchThreadsByMemberUnassigned(
 		// Sets the outbound message if a valid outbound message exists,
 		// otherwise clears the outbound message.
 		if outboundMessageId.Valid {
-			member := models.MemberActor{
-				MemberId: outboundMemberId.String,
-				Name:     outboundMemberName.String,
-			}
 			thread.OutboundMessage = &models.OutboundMessage{
 				MessageId:   outboundMessageId.String,
-				Member:      member,
 				PreviewText: outboundPreviewText.String,
 				FirstSeqId:  outboundFirstSeqId.String,
 				LastSeqId:   outboundLastSeqId.String,
@@ -1810,6 +1771,10 @@ func (th *ThreadDB) FetchThreadsByMemberUnassigned(
 	return threads, nil
 }
 
+// FetchThreadsByLabelId retrieves threads associated with a specific label ID, optionally filtered by channel and role.
+// Context is used for request-scoped cancellation and deadlines.
+// Returns a slice of Thread models and an error if the database query or data processing fails.
+// FIXEDXX
 func (th *ThreadDB) FetchThreadsByLabelId(
 	ctx context.Context, labelId string, channel *string, role *string) ([]models.Thread, error) {
 	var thread models.Thread
@@ -1825,8 +1790,6 @@ func (th *ThreadDB) FetchThreadsByLabelId(
 	q("INNER JOIN member scm ON th.status_changed_by_id = scm.member_id")
 	q("LEFT OUTER JOIN inbound_message inb ON th.inbound_message_id = inb.message_id")
 	q("LEFT OUTER JOIN outbound_message oub ON th.outbound_message_id = oub.message_id")
-	q("LEFT OUTER JOIN customer inbc ON inb.customer_id = inbc.customer_id")
-	q("LEFT OUTER JOIN member oubm ON oub.member_id = oubm.member_id")
 	q("INNER JOIN member mc ON th.created_by_id = mc.member_id")
 	q("INNER JOIN member mu ON th.updated_by_id = mu.member_id")
 	q("INNER JOIN thread_label tl ON th.thread_id = tl.thread_id")
@@ -1863,16 +1826,12 @@ func (th *ThreadDB) FetchThreadsByLabelId(
 		assignedMemberName  sql.NullString
 		assignedAt          sql.NullTime
 		inboundMessageId    sql.NullString
-		inboundCustomerId   sql.NullString
-		inboundCustomerName sql.NullString
 		inboundPreviewText  sql.NullString
 		inboundFirstSeqId   sql.NullString
 		inboundLastSeqId    sql.NullString
 		inboundCreatedAt    sql.NullTime
 		inboundUpdatedAt    sql.NullTime
 		outboundMessageId   sql.NullString
-		outboundMemberId    sql.NullString
-		outboundMemberName  sql.NullString
 		outboundPreviewText sql.NullString
 		outboundFirstSeqId  sql.NullString
 		outboundLastSeqId   sql.NullString
@@ -1893,10 +1852,10 @@ func (th *ThreadDB) FetchThreadsByLabelId(
 		&thread.ThreadStatus.StatusChangedBy.MemberId, &thread.ThreadStatus.StatusChangedBy.Name,
 		&thread.ThreadStatus.Stage,
 		&thread.Replied, &thread.Priority, &thread.Channel,
-		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
+		&inboundMessageId,
 		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
 		&inboundCreatedAt, &inboundUpdatedAt,
-		&outboundMessageId, &outboundMemberId, &outboundMemberName,
+		&outboundMessageId,
 		&outboundPreviewText, &outboundFirstSeqId, &outboundLastSeqId,
 		&outboundCreatedAt, &outboundUpdatedAt,
 		&thread.CreatedBy.MemberId, &thread.CreatedBy.Name,
@@ -1917,13 +1876,8 @@ func (th *ThreadDB) FetchThreadsByLabelId(
 		// Sets the inbound message an if valid inbound message exists,
 		// otherwise clears the inbound message.
 		if inboundMessageId.Valid {
-			customer := models.CustomerActor{
-				CustomerId: inboundCustomerId.String,
-				Name:       inboundCustomerName.String,
-			}
 			thread.InboundMessage = &models.InboundMessage{
 				MessageId:   inboundMessageId.String,
-				Customer:    customer,
 				PreviewText: inboundPreviewText.String,
 				FirstSeqId:  inboundFirstSeqId.String,
 				LastSeqId:   inboundLastSeqId.String,
@@ -1936,13 +1890,8 @@ func (th *ThreadDB) FetchThreadsByLabelId(
 		// Sets the outbound message if a valid outbound message exists,
 		// otherwise clears the outbound message.
 		if outboundMessageId.Valid {
-			member := models.MemberActor{
-				MemberId: outboundMemberId.String,
-				Name:     outboundMemberName.String,
-			}
 			thread.OutboundMessage = &models.OutboundMessage{
 				MessageId:   outboundMessageId.String,
-				Member:      member,
 				PreviewText: outboundPreviewText.String,
 				FirstSeqId:  outboundFirstSeqId.String,
 				LastSeqId:   outboundLastSeqId.String,
@@ -2100,9 +2049,12 @@ func (th *ThreadDB) FetchAttachedLabelsByThreadId(
 	return labels, nil
 }
 
+// AppendInboundThreadMessage appends inbound message to a thread, within a transaction.
+// It ensures upserting the inbound thread message, linking it to the thread, and persisting the message.
+// Returns the newly created or updated message along with any associated error encountered during execution.
+// FIXEDXX
 func (th *ThreadDB) AppendInboundThreadMessage(
-	ctx context.Context, inbound models.ThreadMessage,
-) (models.Message, error) {
+	ctx context.Context, inbound models.ThreadMessage) (models.Message, error) {
 	tx, err := th.db.Begin(ctx)
 	if err != nil {
 		slog.Error("failed to begin transaction", slog.Any("err", err))
@@ -2132,14 +2084,14 @@ func (th *ThreadDB) AppendInboundThreadMessage(
 	var insertB builq.Builder
 	cols := inboundMessageCols()
 	insertParams := []any{
-		inboundMessage.MessageId, inboundMessage.Customer.CustomerId,
+		inboundMessage.MessageId,
 		inboundMessage.PreviewText, inboundMessage.FirstSeqId, inboundMessage.LastSeqId,
 		inboundMessage.CreatedAt, inboundMessage.UpdatedAt,
 	}
 
 	// Build the upsert query to insert thread inbound message
 	insertB.Addf("INSERT INTO inbound_message (%s)", cols)
-	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$)", insertParams...)
+	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$)", insertParams...)
 	insertB.Addf("ON CONFLICT (message_id)")
 	insertB.Addf("DO UPDATE")
 	insertB.Addf("SET")
@@ -2160,7 +2112,6 @@ func (th *ThreadDB) AppendInboundThreadMessage(
 	q("WITH ups AS (%s)", insertQuery)
 	q("SELECT %s, im.is_created", joinedCols)
 	q("FROM ups im")
-	q("INNER JOIN customer c ON im.customer_id = c.customer_id")
 
 	stmt, _, err := q.Build()
 	if err != nil {
@@ -2176,7 +2127,6 @@ func (th *ThreadDB) AppendInboundThreadMessage(
 	var isCreated bool
 	err = tx.QueryRow(ctx, stmt, insertParams...).Scan(
 		&inboundMessage.MessageId,
-		&inboundMessage.Customer.CustomerId, &inboundMessage.Customer.Name,
 		&inboundMessage.PreviewText,
 		&inboundMessage.FirstSeqId, &inboundMessage.LastSeqId,
 		&inboundMessage.CreatedAt, &inboundMessage.UpdatedAt,
@@ -2296,9 +2246,9 @@ func (th *ThreadDB) AppendInboundThreadMessage(
 }
 
 // AppendOutboundThreadMessage inserts a member chat into the database.
+// FIXEDXX
 func (th *ThreadDB) AppendOutboundThreadMessage(
-	ctx context.Context, outbound models.ThreadMessage,
-) (models.Message, error) {
+	ctx context.Context, outbound models.ThreadMessage) (models.Message, error) {
 	tx, err := th.db.Begin(ctx)
 	if err != nil {
 		slog.Error("failed to begin transaction", slog.Any("err", err))
@@ -2328,14 +2278,14 @@ func (th *ThreadDB) AppendOutboundThreadMessage(
 	var insertB builq.Builder
 	cols := outboundMessageCols()
 	insertParams := []any{
-		outboundMessage.MessageId, outboundMessage.Member.MemberId,
+		outboundMessage.MessageId,
 		outboundMessage.PreviewText, outboundMessage.FirstSeqId, outboundMessage.LastSeqId,
 		outboundMessage.CreatedAt, outboundMessage.UpdatedAt,
 	}
 
 	// Build the upsert query to insert thread outbound message
 	insertB.Addf("INSERT INTO outbound_message (%s)", cols)
-	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$)", insertParams...)
+	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$)", insertParams...)
 	insertB.Addf("ON CONFLICT (message_id)")
 	insertB.Addf("DO UPDATE")
 	insertB.Addf("SET")
@@ -2372,7 +2322,6 @@ func (th *ThreadDB) AppendOutboundThreadMessage(
 	var isCreated bool
 	err = tx.QueryRow(ctx, stmt, insertParams...).Scan(
 		&outboundMessage.MessageId,
-		&outboundMessage.Member.MemberId, &outboundMessage.Member.Name,
 		&outboundMessage.PreviewText,
 		&outboundMessage.FirstSeqId, &outboundMessage.LastSeqId,
 		&outboundMessage.CreatedAt, &outboundMessage.UpdatedAt,
@@ -2778,6 +2727,10 @@ func (th *ThreadDB) ComputeLabelMetricsByWorkspaceId(
 	return metrics, nil
 }
 
+// FindThreadByPostmarkReplyMessageId retrieves a thread based on workspace ID and Postmark reply message ID.
+// It executes a database query with joins to fetch detailed thread information and associated relationships.
+// Returns the matching thread and an error if any issues occur during the query process.
+// FIXEDXX
 func (th *ThreadDB) FindThreadByPostmarkReplyMessageId(
 	ctx context.Context, workspaceId string, mailMessageId string) (models.Thread, error) {
 	var thread models.Thread
@@ -2806,8 +2759,6 @@ func (th *ThreadDB) FindThreadByPostmarkReplyMessageId(
 	q("INNER JOIN member scm ON th.status_changed_by_id = scm.member_id")
 	q("LEFT OUTER JOIN inbound_message inb ON th.inbound_message_id = inb.message_id")
 	q("LEFT OUTER JOIN outbound_message oub ON th.outbound_message_id = oub.message_id")
-	q("LEFT OUTER JOIN customer inbc ON inb.customer_id = inbc.customer_id")
-	q("LEFT OUTER JOIN member oubm ON oub.member_id = oubm.member_id")
 	q("INNER JOIN member mc ON th.created_by_id = mc.member_id")
 	q("INNER JOIN member mu ON th.updated_by_id = mu.member_id")
 
@@ -2829,16 +2780,12 @@ func (th *ThreadDB) FindThreadByPostmarkReplyMessageId(
 		assignedMemberName  sql.NullString
 		assignedAt          sql.NullTime
 		inboundMessageId    sql.NullString
-		inboundCustomerId   sql.NullString
-		inboundCustomerName sql.NullString
 		inboundPreviewText  sql.NullString
 		inboundFirstSeqId   sql.NullString
 		inboundLastSeqId    sql.NullString
 		inboundCreatedAt    sql.NullTime
 		inboundUpdatedAt    sql.NullTime
 		outboundMessageId   sql.NullString
-		outboundMemberId    sql.NullString
-		outboundMemberName  sql.NullString
 		outboundPreviewText sql.NullString
 		outboundFirstSeqId  sql.NullString
 		outboundLastSeqId   sql.NullString
@@ -2855,10 +2802,10 @@ func (th *ThreadDB) FindThreadByPostmarkReplyMessageId(
 		&thread.ThreadStatus.StatusChangedBy.MemberId, &thread.ThreadStatus.StatusChangedBy.Name,
 		&thread.ThreadStatus.Stage,
 		&thread.Replied, &thread.Priority, &thread.Channel,
-		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
+		&inboundMessageId,
 		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
 		&inboundCreatedAt, &inboundUpdatedAt,
-		&outboundMessageId, &outboundMemberId, &outboundMemberName,
+		&outboundMessageId,
 		&outboundPreviewText, &outboundFirstSeqId, &outboundLastSeqId,
 		&outboundCreatedAt, &outboundUpdatedAt,
 		&thread.CreatedBy.MemberId, &thread.CreatedBy.Name,
@@ -2889,13 +2836,8 @@ func (th *ThreadDB) FindThreadByPostmarkReplyMessageId(
 	// Sets the inbound message if a valid inbound message exists,
 	// otherwise clears the inbound message.
 	if inboundMessageId.Valid {
-		customer := models.CustomerActor{
-			CustomerId: inboundCustomerId.String,
-			Name:       inboundCustomerName.String,
-		}
 		thread.InboundMessage = &models.InboundMessage{
 			MessageId:   inboundMessageId.String,
-			Customer:    customer,
 			PreviewText: inboundPreviewText.String,
 			FirstSeqId:  inboundFirstSeqId.String,
 			LastSeqId:   inboundLastSeqId.String,
@@ -2909,13 +2851,8 @@ func (th *ThreadDB) FindThreadByPostmarkReplyMessageId(
 	// Sets the outbound message if a valid outbound message exists,
 	// otherwise clears the outbound message.
 	if outboundMessageId.Valid {
-		member := models.MemberActor{
-			MemberId: outboundMemberId.String,
-			Name:     outboundMemberName.String,
-		}
 		thread.OutboundMessage = &models.OutboundMessage{
 			MessageId:   outboundMessageId.String,
-			Member:      member,
 			PreviewText: outboundPreviewText.String,
 			FirstSeqId:  outboundFirstSeqId.String,
 			LastSeqId:   outboundLastSeqId.String,
@@ -2928,6 +2865,10 @@ func (th *ThreadDB) FindThreadByPostmarkReplyMessageId(
 	return thread, nil
 }
 
+// AppendPostmarkInboundThreadMessage appends a Postmark inbound message to thread.
+// Executes within a transactional context and manages thread linkage, message insertion, and Postmark log.
+// Returns the inserted message or an error if the process fails.
+// FIXEDXX
 func (th *ThreadDB) AppendPostmarkInboundThreadMessage(
 	ctx context.Context, threadId string, inboundEvent *models.InboundMessage,
 	postmarkMessageLog *models.PostmarkMessageLog, message *models.Message) (*models.Message, error) {
@@ -2954,14 +2895,14 @@ func (th *ThreadDB) AppendPostmarkInboundThreadMessage(
 	var insertB builq.Builder
 	cols := inboundMessageCols()
 	insertParams := []any{
-		inboundEvent.MessageId, inboundEvent.Customer.CustomerId,
+		inboundEvent.MessageId,
 		inboundEvent.PreviewText, inboundEvent.FirstSeqId, inboundEvent.LastSeqId,
 		inboundEvent.CreatedAt, inboundEvent.UpdatedAt,
 	}
 
 	// Build the upsert query to insert thread inbound message
 	insertB.Addf("INSERT INTO inbound_message (%s)", cols)
-	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$)", insertParams...)
+	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$)", insertParams...)
 	insertB.Addf("ON CONFLICT (message_id)")
 	insertB.Addf("DO UPDATE")
 	insertB.Addf("SET")
@@ -2982,7 +2923,6 @@ func (th *ThreadDB) AppendPostmarkInboundThreadMessage(
 	q("WITH ups AS (%s)", insertQuery)
 	q("SELECT %s, im.is_created", joinedCols)
 	q("FROM ups im")
-	q("INNER JOIN customer c ON im.customer_id = c.customer_id")
 
 	stmt, _, err := q.Build()
 	if err != nil {
@@ -2998,7 +2938,6 @@ func (th *ThreadDB) AppendPostmarkInboundThreadMessage(
 	var isCreated bool
 	err = tx.QueryRow(ctx, stmt, insertParams...).Scan(
 		&inboundEvent.MessageId,
-		&inboundEvent.Customer.CustomerId, &inboundEvent.Customer.Name,
 		&inboundEvent.PreviewText,
 		&inboundEvent.FirstSeqId, &inboundEvent.LastSeqId,
 		&inboundEvent.CreatedAt, &inboundEvent.UpdatedAt,
