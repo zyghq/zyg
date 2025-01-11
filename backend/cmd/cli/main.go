@@ -235,7 +235,72 @@ func runSyncWorkspaceCustomers(cmd *cobra.Command, args []string) error {
 }
 
 func runSyncWorkspaceCustomer(cmd *cobra.Command, args []string) error {
-	return fmt.Errorf("not implemented yet")
+	ctx := cmd.Context()
+	log.Info().Msgf("Starting sync customer WorkspaceID: %s, CustomerID: %s...", workspaceID, customerID)
+
+	// Initialize Sentry
+	if err := initSentry(); err != nil {
+		return fmt.Errorf("failed to initialize sentry: %w", err)
+	}
+	// Initialize connections
+	conn, err := initConnections(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to initialize connections: %w", err)
+	}
+	defer cleanup(conn)
+
+	// Initialize services
+	app := initServices(conn)
+
+	log.Info().Msgf("Fetching workspace with ID: %s", workspaceID)
+	workspace, err := app.WorkspaceService.GetWorkspace(ctx, workspaceID)
+	if err != nil {
+		return fmt.Errorf("failed to get workspace %s: %w", workspaceID, err)
+	}
+	customer, err := app.WorkspaceService.GetCustomer(ctx, workspace.WorkspaceId, customerID, nil)
+	if err != nil {
+		return fmt.Errorf("failed to get customer %s: %w", customerID, err)
+	}
+
+	var externalId *string
+	var email *string
+	var phone *string
+
+	if customer.ExternalId.Valid {
+		externalId = &customer.ExternalId.String
+	}
+	if customer.Email.Valid {
+		email = &customer.Email.String
+	}
+	if customer.Phone.Valid {
+		phone = &customer.Phone.String
+	}
+
+	u, _ := uuid.NewUUID()
+	shape := models.CustomerShape{
+		CustomerID:      customer.CustomerId,
+		WorkspaceID:     customer.WorkspaceId,
+		ExternalID:      externalId,
+		Email:           email,
+		Phone:           phone,
+		Name:            customer.Name,
+		Role:            customer.Role,
+		AvatarURL:       customer.AvatarUrl(),
+		IsEmailVerified: customer.IsEmailVerified,
+		CreatedAt:       customer.CreatedAt,
+		UpdatedAt:       customer.UpdatedAt,
+		SyncedAt:        time.Now().UTC(),
+		VersionID:       u.String(),
+	}
+	log.Info().Msgf("Syncing customer with ID: %s", customerID)
+	synced, err := app.SyncService.SyncCustomer(ctx, shape)
+	if err != nil {
+		return fmt.Errorf("failed to sync customer %s: %w", customerID, err)
+	}
+	log.Info().Msgf(
+		"Successfully synced customerID: %s, versionID: %s", synced.CustomerID, synced.VersionID)
+	log.Info().Msg("Customer sync command completed successfully.")
+	return nil
 }
 
 var rootCmd = &cobra.Command{
@@ -278,17 +343,19 @@ func init() {
 	syncCmd.AddCommand(syncWorkspaceCmd)
 
 	syncWorkspaceCmd.AddCommand(workspaceSubCmd)
+	syncWorkspaceCmd.AddCommand(customerSubCmd)
 	syncWorkspaceCmd.AddCommand(customersSubCmd)
 
-	// Add the --id flag
-	syncWorkspaceCmd.PersistentFlags().StringVar(&workspaceID, "id", "", "Workspace ID (required)")
-	if err := syncWorkspaceCmd.MarkPersistentFlagRequired("id"); err != nil {
-		log.Fatal().Err(err).Msg("failed to mark id flag as required")
+	// Add the workspaceID flag
+	syncWorkspaceCmd.PersistentFlags().StringVar(
+		&workspaceID, "workspaceID", "", "Workspace ID (required)")
+	if err := syncWorkspaceCmd.MarkPersistentFlagRequired("workspaceID"); err != nil {
+		log.Fatal().Err(err).Msg("failed to mark workspace id flag as required")
 	}
 
-	// Add the customer --id flag
-	customerSubCmd.Flags().StringVar(&customerID, "id", "", "Customer ID (required)")
-	if err := customerSubCmd.MarkFlagRequired("id"); err != nil {
+	// Add the customerID flag
+	customerSubCmd.Flags().StringVar(&customerID, "customerID", "", "Customer ID (required)")
+	if err := customerSubCmd.MarkFlagRequired("customerID"); err != nil {
 		log.Fatal().Err(err).Msg("failed to mark customer id flag as required")
 	}
 }
