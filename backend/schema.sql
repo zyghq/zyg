@@ -225,29 +225,25 @@ CREATE TABLE postmark_mail_server_setting
 CREATE TABLE inbound_message
 (
     message_id   VARCHAR(255) NOT NULL,
-    customer_id  VARCHAR(255) NOT NULL,
     first_seq_id VARCHAR(255) NOT NULL,
     last_seq_id  VARCHAR(255) NOT NULL,
     preview_text TEXT         NOT NULL,
     created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT inbound_message_message_id_pkey PRIMARY KEY (message_id),
-    CONSTRAINT inbound_message_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id)
+    CONSTRAINT inbound_message_message_id_pkey PRIMARY KEY (message_id)
 );
 
 CREATE TABLE outbound_message
 (
     message_id   VARCHAR(255) NOT NULL,
-    member_id    VARCHAR(255) NOT NULL,
     first_seq_id VARCHAR(255) NOT NULL,
     last_seq_id  VARCHAR(255) NOT NULL,
     preview_text TEXT         NOT NULL,
     created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT outbound_message_message_id_pkey PRIMARY KEY (message_id),
-    CONSTRAINT outbound_message_member_id_fkey FOREIGN KEY (member_id) REFERENCES member (member_id)
+    CONSTRAINT outbound_message_message_id_pkey PRIMARY KEY (message_id)
 );
 
 -- Represents a thread which is a conversation between a customer and members

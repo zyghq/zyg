@@ -240,28 +240,24 @@ func (m MemberActorResp) MarshalJSON() ([]byte, error) {
 }
 
 type ThreadResp struct {
-	ThreadId          string
-	Customer          CustomerActorResp
-	Title             string
-	Description       string
-	Status            string
-	StatusChangedAt   time.Time
-	Stage             string
-	Replied           bool
-	Priority          string
-	Channel           string
-	PreviewText       string
-	Assignee          *MemberActorResp
-	InboundFirstSeqId *string
-	InboundLastSeqId  *string
-	// Deprecated
-	InboundCustomer    *CustomerActorResp
+	ThreadId           string
+	Customer           CustomerActorResp
+	Title              string
+	Description        string
+	Status             string
+	StatusChangedAt    time.Time
+	Stage              string
+	Replied            bool
+	Priority           string
+	Channel            string
+	PreviewText        string
+	Assignee           *MemberActorResp
+	InboundFirstSeqId  *string
+	InboundLastSeqId   *string
 	OutboundFirstSeqId *string
 	OutboundLastSeqId  *string
-	// Deprecated
-	OutboundMember *MemberActorResp
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 }
 
 func (th ThreadResp) MarshalJSON() ([]byte, error) {

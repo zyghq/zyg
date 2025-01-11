@@ -58,12 +58,10 @@ export type Thread = {
   createdAt: string;
   customerId: string;
   description: string;
-  inboundCustomerId: null | string;
   inboundFirstSeqId: null | string;
   inboundLastSeqId: null | string;
   outboundFirstSeqId: null | string;
   outboundLastSeqId: null | string;
-  outboundMemberId: null | string;
   previewText: string;
   priority: string;
   replied: boolean;
@@ -82,19 +80,15 @@ export function threadTransformer() {
       const {
         assignee,
         customer,
-        inboundCustomer,
         inboundFirstSeqId,
         inboundLastSeqId,
         outboundFirstSeqId,
         outboundLastSeqId,
-        outboundMember,
         threadId,
         ...rest
       } = thread;
       const customerId = customer.customerId;
       const assigneeId = assignee?.memberId || null;
-      const inboundCustomerId = inboundCustomer?.customerId || null;
-      const outboundMemberId = outboundMember?.memberId || null;
       return [
         threadId,
         {
@@ -102,12 +96,10 @@ export function threadTransformer() {
           ...rest,
           assigneeId: assigneeId,
           customerId: customerId,
-          inboundCustomerId: inboundCustomerId || null,
           inboundFirstSeqId: inboundFirstSeqId || null,
           inboundLastSeqId: inboundLastSeqId || null,
           outboundFirstSeqId: outboundFirstSeqId || null,
           outboundLastSeqId: outboundLastSeqId || null,
-          outboundMemberId: outboundMemberId || null,
         },
       ];
     },

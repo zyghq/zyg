@@ -93,24 +93,10 @@ export const threadResponseSchema = z.object({
     name: z.string(), // TODO: add support for avatarUrl
   }),
   description: z.string(),
-  inboundCustomer: z
-    .object({
-      customerId: z.string(),
-      name: z.string(),
-    })
-    .nullable()
-    .default(null),
   inboundFirstSeqId: z.string().nullable().default(null),
   inboundLastSeqId: z.string().nullable().default(null),
   outboundFirstSeqId: z.string().nullable().default(null),
   outboundLastSeqId: z.string().nullable().default(null),
-  outboundMember: z
-    .object({
-      memberId: z.string(),
-      name: z.string(),
-    })
-    .nullable()
-    .default(null),
   previewText: z.string(),
   priority: z.string(),
   replied: z.boolean(),
