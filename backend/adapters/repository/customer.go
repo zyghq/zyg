@@ -98,51 +98,6 @@ func (c *CustomerDB) LookupWorkspaceCustomerById(
 	return customer, nil
 }
 
-// LookupWorkspaceCustomers returns the workspace customer by ID with optional role.
-func (c *CustomerDB) LookupWorkspaceCustomers(ctx context.Context, workspaceId string) ([]models.Customer, error) {
-	var customer models.Customer
-	customers := make([]models.Customer, 0, 100)
-
-	cols := customerCols()
-	q := builq.New()
-	params := []any{workspaceId}
-
-	q("SELECT %s FROM %s", cols, "customer")
-	q("WHERE workspace_id = %$", workspaceId)
-	q("ORDER BY created_at ASC")
-	q("LIMIT 100")
-
-	stmt, _, err := q.Build()
-	if err != nil {
-		slog.Error("failed to build query", slog.Any("err", err))
-		return []models.Customer{}, ErrQuery
-	}
-
-	if zyg.DBQueryDebug() {
-		debug := q.DebugBuild()
-		debugQuery(debug)
-	}
-
-	rows, _ := c.db.Query(ctx, stmt, params...)
-
-	defer rows.Close()
-
-	_, err = pgx.ForEachRow(rows, []any{
-		&customer.CustomerId, &customer.WorkspaceId, &customer.ExternalId,
-		&customer.Email, &customer.Phone, &customer.Name, &customer.IsEmailVerified, &customer.Role,
-		&customer.CreatedAt, &customer.UpdatedAt,
-	}, func() error {
-		customers = append(customers, customer)
-		return nil
-	})
-
-	if err != nil {
-		slog.Error("failed to query", slog.Any("err", err))
-		return []models.Customer{}, ErrQuery
-	}
-	return customers, nil
-}
-
 // LookupWorkspaceCustomerByEmail returns the workspace customer by email with optional role
 func (c *CustomerDB) LookupWorkspaceCustomerByEmail(
 	ctx context.Context, workspaceId string, email string, role *string) (models.Customer, error) {

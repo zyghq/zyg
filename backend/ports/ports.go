@@ -92,7 +92,6 @@ type WorkspaceServicer interface {
 		ctx context.Context, widgetId string) (models.Widget, error)
 	GetCustomer(
 		ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error)
-	GetCustomers(ctx context.Context, workspaceId string) ([]models.Customer, error)
 	GetCustomerByEmail(
 		ctx context.Context, workspaceId string, email string) (models.Customer, error)
 	DoesEmailConflict(

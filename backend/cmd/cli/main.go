@@ -255,7 +255,7 @@ func runSyncWorkspaceCustomers(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to get workspace %s: %w", workspaceID, err)
 	}
 
-	customers, err := app.WorkspaceService.GetCustomers(ctx, workspace.WorkspaceId)
+	customers, err := app.WorkspaceService.ListCustomers(ctx, workspace.WorkspaceId)
 	if err != nil {
 		return fmt.Errorf("failed to get customers for workspaceID %s: %w", workspaceID, err)
 	}
@@ -310,6 +310,76 @@ func runSyncWorkspaceCustomers(cmd *cobra.Command, _ []string) error {
 	log.Info().Msgf("Synced total %d of %d customers", syncCount, len(shapes))
 	if recentSyncedShape != nil {
 		log.Info().Msgf("Last synced customer: %s", recentSyncedShape.CustomerID)
+	}
+	return nil
+}
+
+func runSyncWorkspaceMembers(cmd *cobra.Command, _ []string) error {
+	ctx := cmd.Context()
+	log.Info().Msgf("Starting sync members WorkspaceID: %s...", workspaceID)
+
+	// Initialize Sentry
+	if err := initSentry(); err != nil {
+		return fmt.Errorf("failed to initialize sentry: %w", err)
+	}
+	// Initialize connections
+	conn, err := initConnections(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to initialize connections: %w", err)
+	}
+	defer cleanup(conn)
+
+	// Initialize services
+	app := initServices(conn)
+
+	log.Info().Msgf("Fetching workspace with ID: %s", workspaceID)
+	workspace, err := app.WorkspaceService.GetWorkspace(ctx, workspaceID)
+	if err != nil {
+		return fmt.Errorf("failed to get workspace %s: %w", workspaceID, err)
+	}
+
+	members, err := app.WorkspaceService.ListMembers(ctx, workspace.WorkspaceId)
+	if err != nil {
+		return fmt.Errorf("failed to get members for workspaceID %s: %w", workspaceID, err)
+	}
+	shapes := make([]models.MemberShape, 0, len(members))
+	var recentSyncedShape *models.MemberShape
+	var syncCount int
+
+	for _, member := range members {
+		u, _ := uuid.NewUUID()
+		permissions := make(map[string]interface{})
+		shape := models.MemberShape{
+			MemberID:    member.MemberId,
+			WorkspaceID: member.WorkspaceId,
+			Name:        member.Name,
+			PublicName:  member.Name,
+			Role:        member.Role,
+			Permissions: permissions,
+			AvatarURL:   member.AvatarUrl(),
+			CreatedAt:   member.CreatedAt,
+			UpdatedAt:   member.UpdatedAt,
+			SyncedAt:    time.Now().UTC(),
+			VersionID:   u.String(),
+		}
+		shapes = append(shapes, shape)
+	}
+
+	for _, shape := range shapes {
+		log.Info().Msgf("Syncing member with ID: %s", shape.MemberID)
+		synced, err := app.SyncService.SyncMember(ctx, shape)
+		if err != nil {
+			return fmt.Errorf("failed to sync customer %s: %w", shape.MemberID, err)
+		}
+		log.Info().Msgf(
+			"Successfully synced memberID: %s, versionID: %s", synced.MemberID, synced.VersionID)
+		recentSyncedShape = &shape
+		syncCount++
+	}
+
+	log.Info().Msgf("Synced total %d of %d customers", syncCount, len(shapes))
+	if recentSyncedShape != nil {
+		log.Info().Msgf("Last synced member: %s", recentSyncedShape.MemberID)
 	}
 	return nil
 }
@@ -413,7 +483,6 @@ func runSyncWorkspaceMember(cmd *cobra.Command, _ []string) error {
 
 	u, _ := uuid.NewUUID()
 	permissions := make(map[string]interface{})
-
 	shape := models.MemberShape{
 		MemberID:    member.MemberId,
 		WorkspaceID: member.WorkspaceId,
@@ -468,6 +537,12 @@ var customersSubCmd = &cobra.Command{
 	RunE:  runSyncWorkspaceCustomers,
 }
 
+var membersSubCmd = &cobra.Command{
+	Use:   "members",
+	Short: "Sync workspace members",
+	RunE:  runSyncWorkspaceMembers,
+}
+
 var customerSubCmd = &cobra.Command{
 	Use:   "customer",
 	Short: "Sync specific customer",
@@ -485,10 +560,12 @@ func init() {
 	syncCmd.AddCommand(syncWorkspaceCmd)
 
 	syncWorkspaceCmd.AddCommand(workspaceSubCmd)
+
 	syncWorkspaceCmd.AddCommand(customerSubCmd)
 	syncWorkspaceCmd.AddCommand(customersSubCmd)
 
 	syncWorkspaceCmd.AddCommand(memberSubCmd)
+	syncWorkspaceCmd.AddCommand(membersSubCmd)
 
 	// Add the workspaceID flag
 	syncWorkspaceCmd.PersistentFlags().StringVar(
