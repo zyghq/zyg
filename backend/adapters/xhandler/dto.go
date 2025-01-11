@@ -144,34 +144,30 @@ type ThreadResp struct {
 	Assignee           *MemberActorResp
 	InboundFirstSeqId  *string
 	InboundLastSeqId   *string
-	InboundCustomer    *CustomerActorResp
 	OutboundFirstSeqId *string
 	OutboundLastSeqId  *string
-	OutboundMember     *MemberActorResp
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
 }
 
 func (th ThreadResp) MarshalJSON() ([]byte, error) {
 	aux := &struct {
-		ThreadId           string             `json:"threadId"`
-		Customer           CustomerActorResp  `json:"customer"`
-		Title              string             `json:"title"`
-		Description        string             `json:"description"`
-		Status             string             `json:"status"`
-		Replied            bool               `json:"replied"`
-		Priority           string             `json:"priority"`
-		Channel            string             `json:"channel"`
-		PreviewText        string             `json:"previewText"`
-		Assignee           *MemberActorResp   `json:"assignee,omitempty"`
-		InboundFirstSeqId  *string            `json:"inboundFirstSeqId,omitempty"`
-		InboundLastSeqId   *string            `json:"inboundLastSeqId,omitempty"`
-		InboundCustomer    *CustomerActorResp `json:"inboundCustomer,omitempty"`
-		OutboundFirstSeqId *string            `json:"outboundFirstSeqId,omitempty"`
-		OutboundLastSeqId  *string            `json:"outboundLastSeqId,omitempty"`
-		OutboundMember     *MemberActorResp   `json:"outboundMember,omitempty"`
-		CreatedAt          string             `json:"createdAt"`
-		UpdatedAt          string             `json:"updatedAt"`
+		ThreadId           string            `json:"threadId"`
+		Customer           CustomerActorResp `json:"customer"`
+		Title              string            `json:"title"`
+		Description        string            `json:"description"`
+		Status             string            `json:"status"`
+		Replied            bool              `json:"replied"`
+		Priority           string            `json:"priority"`
+		Channel            string            `json:"channel"`
+		PreviewText        string            `json:"previewText"`
+		Assignee           *MemberActorResp  `json:"assignee,omitempty"`
+		InboundFirstSeqId  *string           `json:"inboundFirstSeqId,omitempty"`
+		InboundLastSeqId   *string           `json:"inboundLastSeqId,omitempty"`
+		OutboundFirstSeqId *string           `json:"outboundFirstSeqId,omitempty"`
+		OutboundLastSeqId  *string           `json:"outboundLastSeqId,omitempty"`
+		CreatedAt          string            `json:"createdAt"`
+		UpdatedAt          string            `json:"updatedAt"`
 	}{
 		ThreadId:           th.ThreadId,
 		Customer:           th.Customer,
@@ -185,10 +181,8 @@ func (th ThreadResp) MarshalJSON() ([]byte, error) {
 		Assignee:           th.Assignee,
 		InboundFirstSeqId:  th.InboundFirstSeqId,
 		InboundLastSeqId:   th.InboundLastSeqId,
-		InboundCustomer:    th.InboundCustomer,
 		OutboundFirstSeqId: th.OutboundFirstSeqId,
 		OutboundLastSeqId:  th.OutboundLastSeqId,
-		OutboundMember:     th.OutboundMember,
 		CreatedAt:          th.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:          th.UpdatedAt.Format(time.RFC3339),
 	}
@@ -196,8 +190,7 @@ func (th ThreadResp) MarshalJSON() ([]byte, error) {
 }
 
 func (th ThreadResp) NewResponse(thread *models.Thread) ThreadResp {
-	var threadAssignee, outboundMember *MemberActorResp
-	var inboundCustomer *CustomerActorResp
+	var threadAssignee *MemberActorResp
 	var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string
 
 	customer := CustomerActorResp{
@@ -213,21 +206,11 @@ func (th ThreadResp) NewResponse(thread *models.Thread) ThreadResp {
 	}
 
 	if thread.InboundMessage != nil {
-		customer := thread.Customer
-		inboundCustomer = &CustomerActorResp{
-			CustomerId: customer.CustomerId,
-			Name:       customer.Name,
-		}
 		inboundFirstSeqId = &thread.InboundMessage.FirstSeqId
 		inboundLastSeqId = &thread.InboundMessage.LastSeqId
 	}
 
 	if thread.OutboundMessage != nil {
-		member := thread.OutboundMessage.Member
-		outboundMember = &MemberActorResp{
-			MemberId: member.MemberId,
-			Name:     member.Name,
-		}
 		outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
 		outboundLastSeqId = &thread.OutboundMessage.LastSeqId
 
@@ -246,10 +229,8 @@ func (th ThreadResp) NewResponse(thread *models.Thread) ThreadResp {
 		Assignee:           threadAssignee,
 		InboundFirstSeqId:  inboundFirstSeqId,
 		InboundLastSeqId:   inboundLastSeqId,
-		InboundCustomer:    inboundCustomer,
 		OutboundFirstSeqId: outboundFirstSeqId,
 		OutboundLastSeqId:  outboundLastSeqId,
-		OutboundMember:     outboundMember,
 		CreatedAt:          thread.CreatedAt,
 		UpdatedAt:          thread.UpdatedAt,
 	}
@@ -263,10 +244,9 @@ type MessageResp struct {
 	HTMLBody     string
 	Customer     *CustomerActorResp
 	Member       *MemberActorResp
-	// Deprecated
-	Channel   string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Channel      string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 func (m MessageResp) MarshalJSON() ([]byte, error) {
@@ -319,10 +299,8 @@ type ThreadChatResp struct {
 	Assignee           *MemberActorResp
 	InboundFirstSeqId  *string
 	InboundLastSeqId   *string
-	InboundCustomer    *CustomerActorResp
 	OutboundFirstSeqId *string
 	OutboundLastSeqId  *string
-	OutboundMember     *MemberActorResp
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
 	Message            MessageResp `json:"message"`
@@ -330,25 +308,23 @@ type ThreadChatResp struct {
 
 func (t ThreadChatResp) MarshalJSON() ([]byte, error) {
 	aux := &struct {
-		ThreadId           string             `json:"threadId"`
-		Customer           CustomerActorResp  `json:"customer"`
-		Title              string             `json:"title"`
-		Description        string             `json:"description"`
-		Status             string             `json:"status"`
-		Replied            bool               `json:"replied"`
-		Priority           string             `json:"priority"`
-		Channel            string             `json:"channel"`
-		PreviewText        string             `json:"previewText"`
-		Assignee           *MemberActorResp   `json:"assignee,omitempty"`
-		InboundFirstSeqId  *string            `json:"inboundFirstSeqId,omitempty"`
-		InboundLastSeqId   *string            `json:"inboundLastSeqId,omitempty"`
-		InboundCustomer    *CustomerActorResp `json:"inboundCustomer,omitempty"`
-		OutboundFirstSeqId *string            `json:"outboundFirstSeqId,omitempty"`
-		OutboundLastSeqId  *string            `json:"outboundLastSeqId,omitempty"`
-		OutboundMember     *MemberActorResp   `json:"outboundMember,omitempty"`
-		CreatedAt          string             `json:"createdAt"`
-		UpdatedAt          string             `json:"updatedAt"`
-		Message            MessageResp        `json:"message"`
+		ThreadId           string            `json:"threadId"`
+		Customer           CustomerActorResp `json:"customer"`
+		Title              string            `json:"title"`
+		Description        string            `json:"description"`
+		Status             string            `json:"status"`
+		Replied            bool              `json:"replied"`
+		Priority           string            `json:"priority"`
+		Channel            string            `json:"channel"`
+		PreviewText        string            `json:"previewText"`
+		Assignee           *MemberActorResp  `json:"assignee,omitempty"`
+		InboundFirstSeqId  *string           `json:"inboundFirstSeqId,omitempty"`
+		InboundLastSeqId   *string           `json:"inboundLastSeqId,omitempty"`
+		OutboundFirstSeqId *string           `json:"outboundFirstSeqId,omitempty"`
+		OutboundLastSeqId  *string           `json:"outboundLastSeqId,omitempty"`
+		CreatedAt          string            `json:"createdAt"`
+		UpdatedAt          string            `json:"updatedAt"`
+		Message            MessageResp       `json:"message"`
 	}{
 		ThreadId:           t.ThreadId,
 		Customer:           t.Customer,
@@ -362,10 +338,8 @@ func (t ThreadChatResp) MarshalJSON() ([]byte, error) {
 		Assignee:           t.Assignee,
 		InboundFirstSeqId:  t.InboundFirstSeqId,
 		InboundLastSeqId:   t.InboundLastSeqId,
-		InboundCustomer:    t.InboundCustomer,
 		OutboundFirstSeqId: t.OutboundFirstSeqId,
 		OutboundLastSeqId:  t.OutboundLastSeqId,
-		OutboundMember:     t.OutboundMember,
 		CreatedAt:          t.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:          t.UpdatedAt.Format(time.RFC3339),
 		Message:            t.Message,
@@ -374,8 +348,8 @@ func (t ThreadChatResp) MarshalJSON() ([]byte, error) {
 }
 
 func (t ThreadChatResp) NewResponse(thread *models.Thread, message *models.Message) ThreadChatResp {
-	var threadAssignee, outboundMember, messageMember *MemberActorResp
-	var inboundCustomer, messageCustomer *CustomerActorResp
+	var threadAssignee, messageMember *MemberActorResp
+	var messageCustomer *CustomerActorResp
 	var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string
 
 	if message.Customer != nil {
@@ -416,20 +390,10 @@ func (t ThreadChatResp) NewResponse(thread *models.Thread, message *models.Messa
 	}
 
 	if thread.InboundMessage != nil {
-		customer := thread.InboundMessage.Customer
-		inboundCustomer = &CustomerActorResp{
-			CustomerId: customer.CustomerId,
-			Name:       customer.Name,
-		}
 		inboundFirstSeqId = &thread.InboundMessage.FirstSeqId
 		inboundLastSeqId = &thread.InboundMessage.LastSeqId
 	}
 	if thread.OutboundMessage != nil {
-		member := thread.OutboundMessage.Member
-		outboundMember = &MemberActorResp{
-			MemberId: member.MemberId,
-			Name:     member.Name,
-		}
 		outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
 		outboundLastSeqId = &thread.OutboundMessage.LastSeqId
 
@@ -448,10 +412,8 @@ func (t ThreadChatResp) NewResponse(thread *models.Thread, message *models.Messa
 		Assignee:           threadAssignee,
 		InboundFirstSeqId:  inboundFirstSeqId,
 		InboundLastSeqId:   inboundLastSeqId,
-		InboundCustomer:    inboundCustomer,
 		OutboundFirstSeqId: outboundFirstSeqId,
 		OutboundLastSeqId:  outboundLastSeqId,
-		OutboundMember:     outboundMember,
 		CreatedAt:          thread.CreatedAt,
 		UpdatedAt:          thread.UpdatedAt,
 		Message:            messageResp,

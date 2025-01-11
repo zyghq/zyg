@@ -175,9 +175,7 @@ func (c ThreadChannel) Email() string {
 // TODO: remove customer
 // TODO: use eventId instead of MessageId
 type InboundMessage struct {
-	MessageId string
-	// Deprecated
-	Customer    CustomerActor
+	MessageId   string
 	PreviewText string
 	FirstSeqId  string
 	LastSeqId   string
@@ -192,9 +190,7 @@ func (im InboundMessage) GenId() string {
 // OutboundMessage tracks the outbound message sent by the Member.
 // Common across channels.
 type OutboundMessage struct {
-	MessageId string
-	// Deprecated
-	Member      MemberActor
+	MessageId   string
 	PreviewText string
 	FirstSeqId  string
 	LastSeqId   string
@@ -304,7 +300,6 @@ func (th *Thread) setNewInboundMessage(previewText string) {
 	now := time.Now().UTC()
 	th.InboundMessage = &InboundMessage{
 		MessageId:   messageId,
-		Customer:    th.Customer,
 		PreviewText: previewText,
 		FirstSeqId:  seqId,
 		LastSeqId:   seqId, // starts with first seq.
@@ -339,7 +334,6 @@ func (th *Thread) setNewOutboundMessage(member MemberActor, previewText string) 
 	now := time.Now().UTC()
 	th.OutboundMessage = &OutboundMessage{
 		MessageId:   messageId,
-		Member:      member,
 		PreviewText: previewText,
 		FirstSeqId:  seqId,
 		LastSeqId:   seqId, // starts with first seq.

@@ -63,16 +63,12 @@ func threadJoinedCols() builq.Columns {
 		"th.priority",
 		"th.channel",
 		"inb.message_id",
-		"inbc.customer_id",
-		"inbc.name",
 		"inb.preview_text",
 		"inb.first_seq_id",
 		"inb.last_seq_id",
 		"inb.created_at",
 		"inb.updated_at",
 		"oub.message_id",
-		"oubm.member_id",
-		"oubm.name",
 		"oub.preview_text",
 		"oub.first_seq_id",
 		"oub.last_seq_id",
@@ -91,7 +87,7 @@ func threadJoinedCols() builq.Columns {
 // The order of the columns matters when returning the results.
 func inboundMessageCols() builq.Columns {
 	return builq.Columns{
-		"message_id", "customer_id",
+		"message_id",
 		"preview_text",
 		"first_seq_id", "last_seq_id",
 		"created_at", "updated_at",
@@ -102,7 +98,7 @@ func inboundMessageCols() builq.Columns {
 // The order of the columns matters when returning the results.
 func outboundMessageCols() builq.Columns {
 	return builq.Columns{
-		"message_id", "member_id",
+		"message_id",
 		"preview_text",
 		"first_seq_id", "last_seq_id",
 		"created_at", "updated_at",
@@ -114,8 +110,6 @@ func outboundMessageCols() builq.Columns {
 func inboundMessageJoinedCols() builq.Columns {
 	cols := builq.Columns{
 		"im.message_id",
-		"c.customer_id",
-		"c.name",
 		"im.preview_text",
 		"im.first_seq_id",
 		"im.last_seq_id",
@@ -130,8 +124,6 @@ func inboundMessageJoinedCols() builq.Columns {
 func outboundMessageJoinedCols() builq.Columns {
 	cols := builq.Columns{
 		"om.message_id",
-		"m.member_id",
-		"m.name",
 		"om.preview_text",
 		"om.first_seq_id",
 		"om.last_seq_id",
@@ -172,19 +164,6 @@ func threadMessageJoinedCols() builq.Columns {
 		"msg.updated_at",
 	}
 }
-
-// Deprecated
-//func postmarkInboundMessageCols() builq.Columns {
-//	return builq.Columns{
-//		"message_id", // PK
-//		"payload",
-//		"postmark_message_id",
-//		"mail_message_id",
-//		"reply_mail_message_id",
-//		"created_at",
-//		"updated_at",
-//	}
-//}
 
 func postmarkMessageLogCols() builq.Columns {
 	return builq.Columns{
@@ -228,6 +207,7 @@ func messageAttachmentCols() builq.Columns {
 // Finally, insert the chat with in persisted thread ID.
 //
 // The IDs are already generated within the time space.
+// FIXEDXX
 func (th *ThreadDB) InsertInboundThreadMessage(
 	ctx context.Context, inbound models.ThreadMessage) (models.Thread, models.Message, error) {
 	// start transaction
@@ -264,47 +244,33 @@ func (th *ThreadDB) InsertInboundThreadMessage(
 	// Do insert an inbound message first before inserting thread.
 	// Thread will reference the inbound message ID.
 	var insertB builq.Builder
-	messageCols := inboundMessageCols()
+	cols := inboundMessageCols()
 	insertParams := []any{
-		inboundMessage.MessageId, inboundMessage.Customer.CustomerId,
+		inboundMessage.MessageId,
 		inboundMessage.PreviewText,
 		inboundMessage.FirstSeqId, inboundMessage.LastSeqId,
 		inboundMessage.CreatedAt, inboundMessage.UpdatedAt,
 	}
 
 	// Build the insert query.
-	insertB.Addf("INSERT INTO inbound_message (%s)", messageCols)
-	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$)", insertParams...)
-	insertB.Addf("RETURNING %s", messageCols)
+	insertB.Addf("INSERT INTO inbound_message (%s)", cols)
+	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$)", insertParams...)
+	insertB.Addf("RETURNING %s", cols)
 
-	insertQuery, _, err := insertB.Build()
+	stmt, _, err := insertB.Build()
 	if err != nil {
 		slog.Error("failed to build insert query", slog.Any("err", err))
 		return models.Thread{}, models.Message{}, ErrQuery
 	}
 
-	// Build the select query required after insert.
-	q := builq.New()
-	messageJoinedCols := inboundMessageJoinedCols()
-
-	q("WITH ins AS (%s)", insertQuery)
-	q("SELECT %s FROM %s", messageJoinedCols, "ins im") // inserted table, with alias im
-	q("INNER JOIN customer c ON im.customer_id = c.customer_id")
-
-	stmt, _, err := q.Build()
-	if err != nil {
-		slog.Error("failed to build query", slog.Any("err", err))
-		return models.Thread{}, models.Message{}, ErrQuery
-	}
-
 	if zyg.DBQueryDebug() {
-		debug := q.DebugBuild()
+		debug := insertB.DebugBuild()
 		debugQuery(debug)
 	}
 
 	// Make the insert query.
 	err = tx.QueryRow(ctx, stmt, insertParams...).Scan(
-		&inboundMessage.MessageId, &inboundMessage.Customer.CustomerId, &inboundMessage.Customer.Name,
+		&inboundMessage.MessageId,
 		&inboundMessage.PreviewText, &inboundMessage.FirstSeqId, &inboundMessage.LastSeqId,
 		&inboundMessage.CreatedAt, &inboundMessage.UpdatedAt,
 	)
@@ -323,16 +289,12 @@ func (th *ThreadDB) InsertInboundThreadMessage(
 		assignedMemberName  sql.NullString
 		assignedAt          sql.NullTime
 		inboundMessageId    sql.NullString
-		inboundCustomerId   sql.NullString
-		inboundCustomerName sql.NullString
 		inboundPreviewText  sql.NullString
 		inboundFirstSeqId   sql.NullString
 		inboundLastSeqId    sql.NullString
 		inboundCreatedAt    sql.NullTime
 		inboundUpdatedAt    sql.NullTime
 		outboundMessageId   sql.NullString
-		outboundMemberId    sql.NullString
-		outboundMemberName  sql.NullString
 		outboundPreviewText sql.NullString
 		outboundFirstSeqId  sql.NullString
 		outboundLastSeqId   sql.NullString
@@ -353,7 +315,7 @@ func (th *ThreadDB) InsertInboundThreadMessage(
 
 	// Persist the thread with referenced inbound message ID.
 	insertB = builq.Builder{}
-	messageCols = threadCols()
+	cols = threadCols()
 	insertParams = []any{
 		thread.ThreadId, thread.WorkspaceId, thread.Customer.CustomerId,
 		assignedMemberId, assignedAt,
@@ -370,32 +332,30 @@ func (th *ThreadDB) InsertInboundThreadMessage(
 		thread.UpdatedAt,
 	}
 
-	insertB.Addf("INSERT INTO thread (%s)", messageCols)
+	insertB.Addf("INSERT INTO thread (%s)", cols)
 	insertB.Addf(
 		"VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$)",
 		insertParams...,
 	)
-	insertB.Addf("RETURNING %s", messageCols)
+	insertB.Addf("RETURNING %s", cols)
 
-	insertQuery, _, err = insertB.Build()
+	insertQuery, _, err := insertB.Build()
 	if err != nil {
 		slog.Error("failed to build insert query", slog.Any("err", err))
 		return models.Thread{}, models.Message{}, ErrQuery
 	}
 
 	// Build the select query required after insert.
-	q = builq.New()
-	messageJoinedCols = threadJoinedCols()
+	q := builq.New()
+	cols = threadJoinedCols()
 
 	q("WITH ins AS (%s)", insertQuery)
-	q("SELECT %s FROM %s", messageJoinedCols, "ins th")
+	q("SELECT %s FROM %s", cols, "ins th")
 	q("INNER JOIN customer c ON th.customer_id = c.customer_id")
 	q("LEFT OUTER JOIN member am ON th.assignee_id = am.member_id")
 	q("INNER JOIN member scm ON th.status_changed_by_id = scm.member_id")
 	q("LEFT OUTER JOIN inbound_message inb ON th.inbound_message_id = inb.message_id")
 	q("LEFT OUTER JOIN outbound_message oub ON th.outbound_message_id = oub.message_id")
-	q("LEFT OUTER JOIN customer inbc ON inb.customer_id = inbc.customer_id")
-	q("LEFT OUTER JOIN member oubm ON oub.member_id = oubm.member_id")
 	q("INNER JOIN member mc ON th.created_by_id = mc.member_id")
 	q("INNER JOIN member mu ON th.updated_by_id = mu.member_id")
 
@@ -419,10 +379,10 @@ func (th *ThreadDB) InsertInboundThreadMessage(
 		&thread.ThreadStatus.StatusChangedBy.MemberId, &thread.ThreadStatus.StatusChangedBy.Name,
 		&thread.ThreadStatus.Stage,
 		&thread.Replied, &thread.Priority, &thread.Channel,
-		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
+		&inboundMessageId,
 		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
 		&inboundCreatedAt, &inboundUpdatedAt,
-		&outboundMessageId, &outboundMemberId, &outboundMemberName,
+		&outboundMessageId,
 		&outboundPreviewText, &outboundFirstSeqId, &outboundLastSeqId,
 		&outboundCreatedAt, &outboundUpdatedAt,
 		&thread.CreatedBy.MemberId, &thread.CreatedBy.Name,
@@ -453,13 +413,8 @@ func (th *ThreadDB) InsertInboundThreadMessage(
 	// Sets the inbound message if a valid inbound message exists,
 	// otherwise clears the inbound message.
 	if inboundMessageId.Valid {
-		customer := models.CustomerActor{
-			CustomerId: inboundCustomerId.String,
-			Name:       inboundCustomerName.String,
-		}
 		thread.InboundMessage = &models.InboundMessage{
 			MessageId:   inboundMessageId.String,
-			Customer:    customer,
 			PreviewText: inboundPreviewText.String,
 			FirstSeqId:  inboundFirstSeqId.String,
 			LastSeqId:   inboundLastSeqId.String,
@@ -473,13 +428,8 @@ func (th *ThreadDB) InsertInboundThreadMessage(
 	// Sets the outbound message if a valid outbound message exists,
 	// otherwise clears the outbound message.
 	if outboundMessageId.Valid {
-		member := models.MemberActor{
-			MemberId: outboundMemberId.String,
-			Name:     outboundMemberName.String,
-		}
 		thread.OutboundMessage = &models.OutboundMessage{
 			MessageId:   outboundMessageId.String,
-			Member:      member,
 			PreviewText: outboundPreviewText.String,
 			FirstSeqId:  outboundFirstSeqId.String,
 			LastSeqId:   outboundLastSeqId.String,
@@ -502,15 +452,15 @@ func (th *ThreadDB) InsertInboundThreadMessage(
 
 	// Persist the message with referenced thread ID
 	insertB = builq.Builder{}
-	messageCols = threadMessageCols()
+	cols = threadMessageCols()
 	insertParams = []any{
 		message.MessageId, message.ThreadId, message.TextBody, message.MarkdownBody, message.HTMLBody,
 		customerId, memberId, message.Channel, message.CreatedAt, message.UpdatedAt,
 	}
 
-	insertB.Addf("INSERT INTO message (%s)", messageCols)
+	insertB.Addf("INSERT INTO message (%s)", cols)
 	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$, %$)", insertParams...)
-	insertB.Addf("RETURNING %s", messageCols)
+	insertB.Addf("RETURNING %s", cols)
 
 	insertQuery, _, err = insertB.Build()
 	if err != nil {
@@ -520,10 +470,10 @@ func (th *ThreadDB) InsertInboundThreadMessage(
 
 	// Build the select query required after insert
 	q = builq.New()
-	messageJoinedCols = threadMessageJoinedCols()
+	cols = threadMessageJoinedCols()
 
 	q("WITH ins AS (%s)", insertQuery)
-	q("SELECT %s FROM %s", messageJoinedCols, "ins msg")
+	q("SELECT %s FROM %s", cols, "ins msg")
 	q("LEFT OUTER JOIN customer c ON msg.customer_id = c.customer_id")
 	q("LEFT OUTER JOIN member m ON msg.member_id = m.member_id")
 
@@ -575,6 +525,8 @@ func (th *ThreadDB) InsertInboundThreadMessage(
 	return *thread, *message, nil
 }
 
+// InsertInboundThreadTx - inserts inbound thread within transaction.
+// FIXEDXX
 func InsertInboundThreadTx(
 	ctx context.Context, tx pgx.Tx, thread *models.Thread) (*models.Thread, error) {
 	// Make sure InboundMessage exists for inbound Thread.
@@ -588,18 +540,18 @@ func InsertInboundThreadTx(
 	// Do insert an inbound message first before inserting thread.
 	// Thread will reference the inbound message ID.
 	var insertB builq.Builder
-	insertCols := inboundMessageCols()
+	cols := inboundMessageCols()
 	insertParams := []any{
-		inboundMessage.MessageId, inboundMessage.Customer.CustomerId,
+		inboundMessage.MessageId,
 		inboundMessage.PreviewText,
 		inboundMessage.FirstSeqId, inboundMessage.LastSeqId,
 		inboundMessage.CreatedAt, inboundMessage.UpdatedAt,
 	}
 
 	// Build the insert query.
-	insertB.Addf("INSERT INTO inbound_message (%s)", insertCols)
+	insertB.Addf("INSERT INTO inbound_message (%s)", cols)
 	insertB.Addf("VALUES (%$, %$, %$, %$, %$, %$, %$)", insertParams...)
-	insertB.Addf("RETURNING %s", insertCols)
+	insertB.Addf("RETURNING %s", cols)
 
 	insertQuery, _, err := insertB.Build()
 	if err != nil {
@@ -608,30 +560,31 @@ func InsertInboundThreadTx(
 	}
 
 	// Build the select query required after insert.
-	q := builq.New()
-	joinedCols := inboundMessageJoinedCols()
+	//q := builq.New()
+	//joinedCols := inboundMessageJoinedCols()
+	//
+	//q("WITH ins AS (%s)", insertQuery)
+	//q("SELECT %s FROM %s", joinedCols, "ins im") // inserted table, with alias im
+	//q("INNER JOIN customer c ON im.customer_id = c.customer_id")
+	//
 
-	q("WITH ins AS (%s)", insertQuery)
-	q("SELECT %s FROM %s", joinedCols, "ins im") // inserted table, with alias im
-	q("INNER JOIN customer c ON im.customer_id = c.customer_id")
-
-	stmt, _, err := q.Build()
+	stmt, _, err := insertB.Build()
 	if err != nil {
 		slog.Error("failed to build query", slog.Any("err", err))
 		return thread, ErrQuery
 	}
 
 	if zyg.DBQueryDebug() {
-		debug := q.DebugBuild()
+		debug := insertB.DebugBuild()
 		debugQuery(debug)
 	}
 
 	// Make the insert query.
-	err = tx.QueryRow(ctx, stmt, inboundMessage.MessageId, inboundMessage.Customer.CustomerId,
+	err = tx.QueryRow(ctx, stmt, inboundMessage.MessageId,
 		inboundMessage.PreviewText,
 		inboundMessage.FirstSeqId, inboundMessage.LastSeqId,
 		inboundMessage.CreatedAt, inboundMessage.UpdatedAt).Scan(
-		&inboundMessage.MessageId, &inboundMessage.Customer.CustomerId, &inboundMessage.Customer.Name,
+		&inboundMessage.MessageId,
 		&inboundMessage.PreviewText, &inboundMessage.FirstSeqId, &inboundMessage.LastSeqId,
 		&inboundMessage.CreatedAt, &inboundMessage.UpdatedAt,
 	)
@@ -650,16 +603,12 @@ func InsertInboundThreadTx(
 		assignedMemberName  sql.NullString
 		assignedAt          sql.NullTime
 		inboundMessageId    sql.NullString
-		inboundCustomerId   sql.NullString
-		inboundCustomerName sql.NullString
 		inboundPreviewText  sql.NullString
 		inboundFirstSeqId   sql.NullString
 		inboundLastSeqId    sql.NullString
 		inboundCreatedAt    sql.NullTime
 		inboundUpdatedAt    sql.NullTime
 		outboundMessageId   sql.NullString
-		outboundMemberId    sql.NullString
-		outboundMemberName  sql.NullString
 		outboundPreviewText sql.NullString
 		outboundFirstSeqId  sql.NullString
 		outboundLastSeqId   sql.NullString
@@ -680,7 +629,7 @@ func InsertInboundThreadTx(
 
 	// Persist the thread with referenced inbound message ID.
 	insertB = builq.Builder{}
-	insertCols = threadCols()
+	cols = threadCols()
 	insertParams = []any{
 		thread.ThreadId, thread.WorkspaceId, thread.Customer.CustomerId,
 		assignedMemberId, assignedAt,
@@ -697,12 +646,12 @@ func InsertInboundThreadTx(
 		thread.UpdatedAt,
 	}
 
-	insertB.Addf("INSERT INTO thread (%s)", insertCols)
+	insertB.Addf("INSERT INTO thread (%s)", cols)
 	insertB.Addf(
 		"VALUES (%$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$, %$)",
 		insertParams...,
 	)
-	insertB.Addf("RETURNING %s", insertCols)
+	insertB.Addf("RETURNING %s", cols)
 
 	insertQuery, _, err = insertB.Build()
 	if err != nil {
@@ -711,18 +660,16 @@ func InsertInboundThreadTx(
 	}
 
 	// Build the select query required after insert.
-	q = builq.New()
-	joinedCols = threadJoinedCols()
+	q := builq.New()
+	cols = threadJoinedCols()
 
 	q("WITH ins AS (%s)", insertQuery)
-	q("SELECT %s FROM %s", joinedCols, "ins th")
+	q("SELECT %s FROM %s", cols, "ins th")
 	q("INNER JOIN customer c ON th.customer_id = c.customer_id")
 	q("LEFT OUTER JOIN member am ON th.assignee_id = am.member_id")
 	q("INNER JOIN member scm ON th.status_changed_by_id = scm.member_id")
 	q("LEFT OUTER JOIN inbound_message inb ON th.inbound_message_id = inb.message_id")
 	q("LEFT OUTER JOIN outbound_message oub ON th.outbound_message_id = oub.message_id")
-	q("LEFT OUTER JOIN customer inbc ON inb.customer_id = inbc.customer_id")
-	q("LEFT OUTER JOIN member oubm ON oub.member_id = oubm.member_id")
 	q("INNER JOIN member mc ON th.created_by_id = mc.member_id")
 	q("INNER JOIN member mu ON th.updated_by_id = mu.member_id")
 
@@ -746,10 +693,10 @@ func InsertInboundThreadTx(
 		&thread.ThreadStatus.StatusChangedBy.MemberId, &thread.ThreadStatus.StatusChangedBy.Name,
 		&thread.ThreadStatus.Stage,
 		&thread.Replied, &thread.Priority, &thread.Channel,
-		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
+		&inboundMessageId,
 		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
 		&inboundCreatedAt, &inboundUpdatedAt,
-		&outboundMessageId, &outboundMemberId, &outboundMemberName,
+		&outboundMessageId,
 		&outboundPreviewText, &outboundFirstSeqId, &outboundLastSeqId,
 		&outboundCreatedAt, &outboundUpdatedAt,
 		&thread.CreatedBy.MemberId, &thread.CreatedBy.Name,
@@ -781,13 +728,8 @@ func InsertInboundThreadTx(
 	// Sets the inbound message if a valid inbound message exists,
 	// otherwise clears the inbound message.
 	if inboundMessageId.Valid {
-		customer := models.CustomerActor{
-			CustomerId: inboundCustomerId.String,
-			Name:       inboundCustomerName.String,
-		}
 		thread.InboundMessage = &models.InboundMessage{
 			MessageId:   inboundMessageId.String,
-			Customer:    customer,
 			PreviewText: inboundPreviewText.String,
 			FirstSeqId:  inboundFirstSeqId.String,
 			LastSeqId:   inboundLastSeqId.String,
@@ -801,13 +743,8 @@ func InsertInboundThreadTx(
 	// Sets the outbound message if a valid outbound message exists,
 	// otherwise clears the outbound message.
 	if outboundMessageId.Valid {
-		member := models.MemberActor{
-			MemberId: outboundMemberId.String,
-			Name:     outboundMemberName.String,
-		}
 		thread.OutboundMessage = &models.OutboundMessage{
 			MessageId:   outboundMessageId.String,
-			Member:      member,
 			PreviewText: outboundPreviewText.String,
 			FirstSeqId:  outboundFirstSeqId.String,
 			LastSeqId:   outboundLastSeqId.String,
@@ -996,6 +933,8 @@ func (th *ThreadDB) InsertPostmarkInboundThreadMessage(
 	return thread, message, nil
 }
 
+// ModifyThreadById modifies thread for selective fields
+// FIXEDXX
 func (th *ThreadDB) ModifyThreadById(
 	ctx context.Context, thread models.Thread, fields []string) (models.Thread, error) {
 	upsertQ := builq.New()
@@ -1051,8 +990,6 @@ func (th *ThreadDB) ModifyThreadById(
 	q("INNER JOIN member scm ON th.status_changed_by_id = scm.member_id")
 	q("LEFT OUTER JOIN inbound_message inb ON th.inbound_message_id = inb.message_id")
 	q("LEFT OUTER JOIN outbound_message oub ON th.outbound_message_id = oub.message_id")
-	q("LEFT OUTER JOIN customer inbc ON inb.customer_id = inbc.customer_id")
-	q("LEFT OUTER JOIN member oubm ON oub.member_id = oubm.member_id")
 	q("INNER JOIN member mc ON th.created_by_id = mc.member_id")
 	q("INNER JOIN member mu ON th.updated_by_id = mu.member_id")
 
@@ -1071,16 +1008,12 @@ func (th *ThreadDB) ModifyThreadById(
 		assignedMemberName  sql.NullString
 		assignedAt          sql.NullTime
 		inboundMessageId    sql.NullString
-		inboundCustomerId   sql.NullString
-		inboundCustomerName sql.NullString
 		inboundPreviewText  sql.NullString
 		inboundFirstSeqId   sql.NullString
 		inboundLastSeqId    sql.NullString
 		inboundCreatedAt    sql.NullTime
 		inboundUpdatedAt    sql.NullTime
 		outboundMessageId   sql.NullString
-		outboundMemberId    sql.NullString
-		outboundMemberName  sql.NullString
 		outboundPreviewText sql.NullString
 		outboundFirstSeqId  sql.NullString
 		outboundLastSeqId   sql.NullString
@@ -1097,10 +1030,10 @@ func (th *ThreadDB) ModifyThreadById(
 		&thread.ThreadStatus.StatusChangedBy.MemberId, &thread.ThreadStatus.StatusChangedBy.Name,
 		&thread.ThreadStatus.Stage,
 		&thread.Replied, &thread.Priority, &thread.Channel,
-		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
+		&inboundMessageId,
 		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
 		&inboundCreatedAt, &inboundUpdatedAt,
-		&outboundMessageId, &outboundMemberId, &outboundMemberName,
+		&outboundMessageId,
 		&outboundPreviewText, &outboundFirstSeqId, &outboundLastSeqId,
 		&outboundCreatedAt, &outboundUpdatedAt,
 		&thread.CreatedBy.MemberId, &thread.CreatedBy.Name,
@@ -1132,13 +1065,8 @@ func (th *ThreadDB) ModifyThreadById(
 	// Sets the inbound message if a valid inbound message exists,
 	// otherwise clears the inbound message.
 	if inboundMessageId.Valid {
-		customer := models.CustomerActor{
-			CustomerId: inboundCustomerId.String,
-			Name:       inboundCustomerName.String,
-		}
 		thread.InboundMessage = &models.InboundMessage{
 			MessageId:   inboundMessageId.String,
-			Customer:    customer,
 			PreviewText: inboundPreviewText.String,
 			FirstSeqId:  inboundFirstSeqId.String,
 			LastSeqId:   inboundLastSeqId.String,
@@ -1152,13 +1080,8 @@ func (th *ThreadDB) ModifyThreadById(
 	// Sets the outbound message if a valid outbound message exists,
 	// otherwise clears the outbound message.
 	if outboundMessageId.Valid {
-		member := models.MemberActor{
-			MemberId: outboundMemberId.String,
-			Name:     outboundMemberName.String,
-		}
 		thread.OutboundMessage = &models.OutboundMessage{
 			MessageId:   outboundMessageId.String,
-			Member:      member,
 			PreviewText: outboundPreviewText.String,
 			FirstSeqId:  outboundFirstSeqId.String,
 			LastSeqId:   outboundLastSeqId.String,
@@ -1171,6 +1094,8 @@ func (th *ThreadDB) ModifyThreadById(
 	return thread, nil
 }
 
+// LookupByWorkspaceThreadId looks up thread in workspace for provided thread ID.
+// FIXEDXX
 func (th *ThreadDB) LookupByWorkspaceThreadId(
 	ctx context.Context, workspaceId string, threadId string, channel *string) (models.Thread, error) {
 	var thread models.Thread
@@ -1184,8 +1109,6 @@ func (th *ThreadDB) LookupByWorkspaceThreadId(
 	q("INNER JOIN member scm ON th.status_changed_by_id = scm.member_id")
 	q("LEFT OUTER JOIN inbound_message inb ON th.inbound_message_id = inb.message_id")
 	q("LEFT OUTER JOIN outbound_message oub ON th.outbound_message_id = oub.message_id")
-	q("LEFT OUTER JOIN customer inbc ON inb.customer_id = inbc.customer_id")
-	q("LEFT OUTER JOIN member oubm ON oub.member_id = oubm.member_id")
 	q("INNER JOIN member mc ON th.created_by_id = mc.member_id")
 	q("INNER JOIN member mu ON th.updated_by_id = mu.member_id")
 
@@ -1211,16 +1134,12 @@ func (th *ThreadDB) LookupByWorkspaceThreadId(
 		assignedMemberName  sql.NullString
 		assignedAt          sql.NullTime
 		inboundMessageId    sql.NullString
-		inboundCustomerId   sql.NullString
-		inboundCustomerName sql.NullString
 		inboundPreviewText  sql.NullString
 		inboundFirstSeqId   sql.NullString
 		inboundLastSeqId    sql.NullString
 		inboundCreatedAt    sql.NullTime
 		inboundUpdatedAt    sql.NullTime
 		outboundMessageId   sql.NullString
-		outboundMemberId    sql.NullString
-		outboundMemberName  sql.NullString
 		outboundPreviewText sql.NullString
 		outboundFirstSeqId  sql.NullString
 		outboundLastSeqId   sql.NullString
@@ -1237,10 +1156,10 @@ func (th *ThreadDB) LookupByWorkspaceThreadId(
 		&thread.ThreadStatus.StatusChangedBy.MemberId, &thread.ThreadStatus.StatusChangedBy.Name,
 		&thread.ThreadStatus.Stage,
 		&thread.Replied, &thread.Priority, &thread.Channel,
-		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
+		&inboundMessageId,
 		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
 		&inboundCreatedAt, &inboundUpdatedAt,
-		&outboundMessageId, &outboundMemberId, &outboundMemberName,
+		&outboundMessageId,
 		&outboundPreviewText, &outboundFirstSeqId, &outboundLastSeqId,
 		&outboundCreatedAt, &outboundUpdatedAt,
 		&thread.CreatedBy.MemberId, &thread.CreatedBy.Name,
@@ -1272,13 +1191,8 @@ func (th *ThreadDB) LookupByWorkspaceThreadId(
 	// Sets the inbound message if a valid inbound message exists,
 	// otherwise clears the inbound message.
 	if inboundMessageId.Valid {
-		customer := models.CustomerActor{
-			CustomerId: inboundCustomerId.String,
-			Name:       inboundCustomerName.String,
-		}
 		thread.InboundMessage = &models.InboundMessage{
 			MessageId:   inboundMessageId.String,
-			Customer:    customer,
 			PreviewText: inboundPreviewText.String,
 			FirstSeqId:  inboundFirstSeqId.String,
 			LastSeqId:   inboundLastSeqId.String,
@@ -1292,13 +1206,8 @@ func (th *ThreadDB) LookupByWorkspaceThreadId(
 	// Sets the outbound message if a valid outbound message exists,
 	// otherwise clears the outbound message.
 	if outboundMessageId.Valid {
-		member := models.MemberActor{
-			MemberId: outboundMemberId.String,
-			Name:     outboundMemberName.String,
-		}
 		thread.OutboundMessage = &models.OutboundMessage{
 			MessageId:   outboundMessageId.String,
-			Member:      member,
 			PreviewText: outboundPreviewText.String,
 			FirstSeqId:  outboundFirstSeqId.String,
 			LastSeqId:   outboundLastSeqId.String,
@@ -1311,6 +1220,8 @@ func (th *ThreadDB) LookupByWorkspaceThreadId(
 	return thread, nil
 }
 
+// FetchThreadsByCustomerId fetches threads by customer ID
+// FIXEDXX
 func (th *ThreadDB) FetchThreadsByCustomerId(
 	ctx context.Context, customerId string, channel *string) ([]models.Thread, error) {
 	var thread models.Thread
@@ -1326,8 +1237,6 @@ func (th *ThreadDB) FetchThreadsByCustomerId(
 	q("INNER JOIN member scm ON th.status_changed_by_id = scm.member_id")
 	q("LEFT OUTER JOIN inbound_message inb ON th.inbound_message_id = inb.message_id")
 	q("LEFT OUTER JOIN outbound_message oub ON th.outbound_message_id = oub.message_id")
-	q("LEFT OUTER JOIN customer inbc ON inb.customer_id = inbc.customer_id")
-	q("LEFT OUTER JOIN member oubm ON oub.member_id = oubm.member_id")
 	q("INNER JOIN member mc ON th.created_by_id = mc.member_id")
 	q("INNER JOIN member mu ON th.updated_by_id = mu.member_id")
 
@@ -1357,16 +1266,12 @@ func (th *ThreadDB) FetchThreadsByCustomerId(
 		assignedMemberName  sql.NullString
 		assignedAt          sql.NullTime
 		inboundMessageId    sql.NullString
-		inboundCustomerId   sql.NullString
-		inboundCustomerName sql.NullString
 		inboundPreviewText  sql.NullString
 		inboundFirstSeqId   sql.NullString
 		inboundLastSeqId    sql.NullString
 		inboundCreatedAt    sql.NullTime
 		inboundUpdatedAt    sql.NullTime
 		outboundMessageId   sql.NullString
-		outboundMemberId    sql.NullString
-		outboundMemberName  sql.NullString
 		outboundPreviewText sql.NullString
 		outboundFirstSeqId  sql.NullString
 		outboundLastSeqId   sql.NullString
@@ -1387,10 +1292,10 @@ func (th *ThreadDB) FetchThreadsByCustomerId(
 		&thread.ThreadStatus.StatusChangedBy.MemberId, &thread.ThreadStatus.StatusChangedBy.Name,
 		&thread.ThreadStatus.Stage,
 		&thread.Replied, &thread.Priority, &thread.Channel,
-		&inboundMessageId, &inboundCustomerId, &inboundCustomerName,
+		&inboundMessageId,
 		&inboundPreviewText, &inboundFirstSeqId, &inboundLastSeqId,
 		&inboundCreatedAt, &inboundUpdatedAt,
-		&outboundMessageId, &outboundMemberId, &outboundMemberName,
+		&outboundMessageId,
 		&outboundPreviewText, &outboundFirstSeqId, &outboundLastSeqId,
 		&outboundCreatedAt, &outboundUpdatedAt,
 		&thread.CreatedBy.MemberId, &thread.CreatedBy.Name,
@@ -1411,13 +1316,8 @@ func (th *ThreadDB) FetchThreadsByCustomerId(
 		// Sets the inbound message an if valid inbound message exists,
 		// otherwise clears the inbound message.
 		if inboundMessageId.Valid {
-			customer := models.CustomerActor{
-				CustomerId: inboundCustomerId.String,
-				Name:       inboundCustomerName.String,
-			}
 			thread.InboundMessage = &models.InboundMessage{
 				MessageId:   inboundMessageId.String,
-				Customer:    customer,
 				PreviewText: inboundPreviewText.String,
 				FirstSeqId:  inboundFirstSeqId.String,
 				LastSeqId:   inboundLastSeqId.String,
@@ -1430,13 +1330,8 @@ func (th *ThreadDB) FetchThreadsByCustomerId(
 		// Sets the outbound message if a valid outbound message exists,
 		// otherwise clears the outbound message.
 		if outboundMessageId.Valid {
-			member := models.MemberActor{
-				MemberId: outboundMemberId.String,
-				Name:     outboundMemberName.String,
-			}
 			thread.OutboundMessage = &models.OutboundMessage{
 				MessageId:   outboundMessageId.String,
-				Member:      member,
 				PreviewText: outboundPreviewText.String,
 				FirstSeqId:  outboundFirstSeqId.String,
 				LastSeqId:   outboundLastSeqId.String,

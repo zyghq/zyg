@@ -25,7 +25,7 @@ func NewSyncHandler(ws ports.WorkspaceServicer, ths ports.ThreadServicer) *SyncH
 }
 
 func (h *SyncHandler) syncThreadsWithDoneV1(
-	w http.ResponseWriter, r *http.Request, member *models.Member) {
+	w http.ResponseWriter, r *http.Request, _ *models.Member) {
 	ctx := r.Context()
 	hub := sentry.GetHubFromContext(ctx)
 
