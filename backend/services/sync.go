@@ -49,3 +49,13 @@ func (sy *SyncService) SyncMember(
 	}
 	return inSync, nil
 }
+
+func (sy *SyncService) SyncThread(ctx context.Context, thread models.ThreadShape) (models.ThreadInSync, error) {
+	hub := sentry.GetHubFromContext(ctx)
+	inSync, err := sy.syncDB.SaveThread(ctx, thread)
+	if err != nil {
+		hub.CaptureException(err)
+		return models.ThreadInSync{}, err
+	}
+	return inSync, nil
+}

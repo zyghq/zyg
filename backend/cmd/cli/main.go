@@ -25,6 +25,7 @@ import (
 var workspaceID string
 var customerID string
 var memberID string
+var threadID string
 
 // AppServices holds all the application services
 type AppServices struct {
@@ -379,7 +380,7 @@ func runSyncWorkspaceMembers(cmd *cobra.Command, _ []string) error {
 
 	log.Info().Msgf("Synced total %d of %d customers", syncCount, len(shapes))
 	if recentSyncedShape != nil {
-		log.Info().Msgf("Last synced member: %s", recentSyncedShape.MemberID)
+		log.Info().Msgf("Last synced memberID: %s", recentSyncedShape.MemberID)
 	}
 	return nil
 }
@@ -500,11 +501,269 @@ func runSyncWorkspaceMember(cmd *cobra.Command, _ []string) error {
 	log.Info().Msgf("Syncing member with ID: %s", memberID)
 	synced, err := app.SyncService.SyncMember(ctx, shape)
 	if err != nil {
-		return fmt.Errorf("failed to sync member %s: %w", customerID, err)
+		return fmt.Errorf("failed to sync member %s: %w", memberID, err)
 	}
 	log.Info().Msgf(
 		"Successfully synced memberID: %s, versionID: %s", synced.MemberID, synced.VersionID)
 	log.Info().Msg("Member sync command completed successfully.")
+	return nil
+}
+
+func runSyncWorkspaceThread(cmd *cobra.Command, _ []string) error {
+	ctx := cmd.Context()
+	log.Info().Msgf("Starting sync thread WorkspaceID: %s, threadID %s...", workspaceID, threadID)
+
+	// Initialize Sentry
+	if err := initSentry(); err != nil {
+		return fmt.Errorf("failed to initialize sentry: %w", err)
+	}
+	// Initialize connections
+	conn, err := initConnections(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to initialize connections: %w", err)
+	}
+	defer cleanup(conn)
+
+	// Initialize services
+	app := initServices(conn)
+
+	log.Info().Msgf("Fetching workspace with ID: %s", workspaceID)
+	workspace, err := app.WorkspaceService.GetWorkspace(ctx, workspaceID)
+	if err != nil {
+		return fmt.Errorf("failed to get workspace %s: %w", workspaceID, err)
+	}
+
+	thread, err := app.ThreadService.GetWorkspaceThread(ctx, workspace.WorkspaceId, threadID, nil)
+	if err != nil {
+		return fmt.Errorf("failed to get thread %s: %w", threadID, err)
+	}
+
+	labels, err := app.ThreadService.ListThreadLabels(ctx, thread.ThreadId)
+	if err != nil {
+		return fmt.Errorf("failed to get labels for threadID %s: %w", threadID, err)
+	}
+
+	type ThreadLabel struct {
+		LabelId   string    `json:"labelId"`
+		Name      string    `json:"labelName"`
+		CreatedAt time.Time `json:"createdAt"`
+		UpdatedAt time.Time `json:"updatedAt"`
+	}
+
+	threadLabels := make([]ThreadLabel, 0, len(labels))
+	for _, label := range labels {
+		threadLabels = append(threadLabels, ThreadLabel{
+			LabelId:   label.LabelId,
+			Name:      label.Name,
+			CreatedAt: label.CreatedAt,
+			UpdatedAt: label.UpdatedAt,
+		})
+	}
+
+	labelsMap := make(map[string]interface{})
+	for _, label := range threadLabels {
+		labelsMap[label.LabelId] = map[string]interface{}{
+			"labelId":   label.LabelId,
+			"labelName": label.Name,
+			"createdAt": label.CreatedAt,
+			"updatedAt": label.UpdatedAt,
+		}
+	}
+
+	var (
+		assigneeId, inboundSeqId, outboundSeqId *string
+	)
+
+	var assignedAt *time.Time
+	var previewText string
+
+	if thread.AssignedMember != nil {
+		assigneeId = &thread.AssignedMember.MemberId
+		assignedAt = &thread.AssignedMember.AssignedAt
+	}
+	if thread.InboundMessage != nil {
+		inboundSeqId = &thread.InboundMessage.LastSeqId
+	}
+	if thread.OutboundMessage != nil {
+		outboundSeqId = &thread.OutboundMessage.LastSeqId
+	}
+	if thread.InboundMessage != nil {
+		previewText = thread.InboundMessage.PreviewText
+	} else if thread.OutboundMessage != nil {
+		previewText = thread.OutboundMessage.PreviewText
+	}
+
+	u, _ := uuid.NewUUID()
+	shape := models.ThreadShape{
+		ThreadID:          thread.ThreadId,
+		WorkspaceID:       thread.WorkspaceId,
+		CustomerID:        thread.Customer.CustomerId,
+		AssigneeID:        assigneeId,
+		AssignedAt:        assignedAt,
+		Title:             thread.Title,
+		Description:       thread.Description,
+		PreviewText:       previewText,
+		Status:            thread.ThreadStatus.Status,
+		StatusChangedAt:   thread.ThreadStatus.StatusChangedAt,
+		StatusChangedByID: thread.ThreadStatus.StatusChangedBy.MemberId,
+		Stage:             thread.ThreadStatus.Stage,
+		Replied:           thread.Replied,
+		Priority:          thread.Priority,
+		Channel:           thread.Channel,
+		CreatedByID:       thread.CreatedBy.MemberId,
+		UpdatedByID:       thread.UpdatedBy.MemberId,
+		Labels:            labelsMap,
+		InboundSeqID:      inboundSeqId,
+		OutboundSeqID:     outboundSeqId,
+		CreatedAt:         thread.CreatedAt,
+		UpdatedAt:         thread.UpdatedAt,
+		SyncedAt:          time.Now().UTC(),
+		VersionID:         u.String(),
+	}
+
+	fmt.Println(shape.Labels)
+
+	log.Info().Msgf("Syncing thread with ID: %s", threadID)
+	synced, err := app.SyncService.SyncThread(ctx, shape)
+	if err != nil {
+		return fmt.Errorf("failed to sync thread %s: %w", threadID, err)
+	}
+	log.Info().Msgf(
+		"Successfully synced threadID: %s, versionID: %s", synced.ThreadID, synced.VersionID)
+	log.Info().Msg("Thread sync command completed successfully.")
+	return nil
+}
+
+func runSyncWorkspaceThreads(cmd *cobra.Command, _ []string) error {
+	ctx := cmd.Context()
+	log.Info().Msgf("Starting sync thread WorkspaceID: %s, threadID %s...", workspaceID, threadID)
+
+	// Initialize Sentry
+	if err := initSentry(); err != nil {
+		return fmt.Errorf("failed to initialize sentry: %w", err)
+	}
+	// Initialize connections
+	conn, err := initConnections(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to initialize connections: %w", err)
+	}
+	defer cleanup(conn)
+
+	// Initialize services
+	app := initServices(conn)
+
+	log.Info().Msgf("Fetching workspace with ID: %s", workspaceID)
+	workspace, err := app.WorkspaceService.GetWorkspace(ctx, workspaceID)
+	if err != nil {
+		return fmt.Errorf("failed to get workspace %s: %w", workspaceID, err)
+	}
+
+	threads, err := app.ThreadService.ListWorkspaceThreads(ctx, workspace.WorkspaceId)
+	if err != nil {
+		return fmt.Errorf("failed to get threads for workspaceID %s: %w", workspaceID, err)
+	}
+
+	type ThreadLabel struct {
+		LabelId   string    `json:"labelId"`
+		Name      string    `json:"labelName"`
+		CreatedAt time.Time `json:"createdAt"`
+		UpdatedAt time.Time `json:"updatedAt"`
+	}
+
+	var recentSyncedThread *models.ThreadShape
+	var syncCount int
+
+	for _, thread := range threads {
+		labels, err := app.ThreadService.ListThreadLabels(ctx, thread.ThreadId)
+		if err != nil {
+			return fmt.Errorf("failed to get labels for threadID %s: %w", threadID, err)
+		}
+
+		threadLabels := make([]ThreadLabel, 0, len(labels))
+		for _, label := range labels {
+			threadLabels = append(threadLabels, ThreadLabel{
+				LabelId:   label.LabelId,
+				Name:      label.Name,
+				CreatedAt: label.CreatedAt,
+				UpdatedAt: label.UpdatedAt,
+			})
+		}
+
+		labelsMap := make(map[string]interface{})
+		for _, label := range threadLabels {
+			labelsMap[label.LabelId] = map[string]interface{}{
+				"labelId":   label.LabelId,
+				"labelName": label.Name,
+				"createdAt": label.CreatedAt,
+				"updatedAt": label.UpdatedAt,
+			}
+		}
+
+		var (
+			assigneeId, inboundSeqId, outboundSeqId *string
+		)
+
+		var assignedAt *time.Time
+		var previewText string
+
+		if thread.AssignedMember != nil {
+			assigneeId = &thread.AssignedMember.MemberId
+			assignedAt = &thread.AssignedMember.AssignedAt
+		}
+		if thread.InboundMessage != nil {
+			inboundSeqId = &thread.InboundMessage.LastSeqId
+		}
+		if thread.OutboundMessage != nil {
+			outboundSeqId = &thread.OutboundMessage.LastSeqId
+		}
+		if thread.InboundMessage != nil {
+			previewText = thread.InboundMessage.PreviewText
+		} else if thread.OutboundMessage != nil {
+			previewText = thread.OutboundMessage.PreviewText
+		}
+
+		u, _ := uuid.NewUUID()
+		shape := models.ThreadShape{
+			ThreadID:          thread.ThreadId,
+			WorkspaceID:       thread.WorkspaceId,
+			CustomerID:        thread.Customer.CustomerId,
+			AssigneeID:        assigneeId,
+			AssignedAt:        assignedAt,
+			Title:             thread.Title,
+			Description:       thread.Description,
+			PreviewText:       previewText,
+			Status:            thread.ThreadStatus.Status,
+			StatusChangedAt:   thread.ThreadStatus.StatusChangedAt,
+			StatusChangedByID: thread.ThreadStatus.StatusChangedBy.MemberId,
+			Stage:             thread.ThreadStatus.Stage,
+			Replied:           thread.Replied,
+			Priority:          thread.Priority,
+			Channel:           thread.Channel,
+			CreatedByID:       thread.CreatedBy.MemberId,
+			UpdatedByID:       thread.UpdatedBy.MemberId,
+			Labels:            labelsMap,
+			InboundSeqID:      inboundSeqId,
+			OutboundSeqID:     outboundSeqId,
+			CreatedAt:         thread.CreatedAt,
+			UpdatedAt:         thread.UpdatedAt,
+			SyncedAt:          time.Now().UTC(),
+			VersionID:         u.String(),
+		}
+
+		log.Info().Msgf("Syncing thread with ID: %s", threadID)
+		synced, err := app.SyncService.SyncThread(ctx, shape)
+		if err != nil {
+			return fmt.Errorf("failed to sync thread %s: %w", threadID, err)
+		}
+		log.Info().Msgf(
+			"Successfully synced threadID: %s, versionID: %s", synced.ThreadID, synced.VersionID)
+		recentSyncedThread = &shape
+		syncCount++
+	}
+	log.Info().Msgf("Synced total %d of %d threads", syncCount, len(threads))
+	if recentSyncedThread != nil {
+		log.Info().Msgf("Last synced threadID: %s", recentSyncedThread.ThreadID)
+	}
 	return nil
 }
 
@@ -555,6 +814,18 @@ var memberSubCmd = &cobra.Command{
 	RunE:  runSyncWorkspaceMember,
 }
 
+var threadSubCmd = &cobra.Command{
+	Use:   "thread",
+	Short: "Sync specific thread",
+	RunE:  runSyncWorkspaceThread,
+}
+
+var threadsSubCmd = &cobra.Command{
+	Use:   "threads",
+	Short: "Sync workspace threads",
+	RunE:  runSyncWorkspaceThreads,
+}
+
 func init() {
 	rootCmd.AddCommand(syncCmd)
 	syncCmd.AddCommand(syncWorkspaceCmd)
@@ -566,6 +837,9 @@ func init() {
 
 	syncWorkspaceCmd.AddCommand(memberSubCmd)
 	syncWorkspaceCmd.AddCommand(membersSubCmd)
+
+	syncWorkspaceCmd.AddCommand(threadSubCmd)
+	syncWorkspaceCmd.AddCommand(threadsSubCmd)
 
 	// Add the workspaceID flag
 	syncWorkspaceCmd.PersistentFlags().StringVar(
@@ -583,6 +857,11 @@ func init() {
 	memberSubCmd.Flags().StringVar(&memberID, "memberID", "", "Member ID (required)")
 	if err := memberSubCmd.MarkFlagRequired("memberID"); err != nil {
 		log.Fatal().Err(err).Msg("failed to mark member id flag as required")
+	}
+
+	threadSubCmd.Flags().StringVar(&threadID, "threadID", "", "Thread ID (required)")
+	if err := threadSubCmd.MarkFlagRequired("threadID"); err != nil {
+		log.Fatal().Err(err).Msg("failed to mark thread id flag as required")
 	}
 }
 

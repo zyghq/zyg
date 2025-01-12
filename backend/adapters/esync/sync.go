@@ -148,3 +148,80 @@ func (sy *SyncDB) SaveMember(
 	}
 	return inSync, nil
 }
+
+func (sy *SyncDB) SaveThread(
+	ctx context.Context, thread models.ThreadShape) (models.ThreadInSync, error) {
+	var inSync models.ThreadInSync
+	hub := sentry.GetHubFromContext(ctx)
+
+	stmt := `
+    INSERT INTO thread (
+        thread_id, workspace_id, customer_id,
+        assignee_id, assigned_at,
+        title, description, preview_text,
+        status, status_changed_at, status_changed_by_id,
+        stage, replied, priority, channel,
+        created_by_id, updated_by_id,
+        labels,
+        inbound_seq_id, outbound_seq_id,
+        created_at, updated_at,
+        version_id, synced_at
+    )
+    VALUES (
+        $1, $2, $3,
+        $4, $5,
+        $6, $7, $8,
+        $9, $10, $11,
+        $12, $13, $14, $15,
+        $16, $17,
+        $18,
+        $19, $20,
+        $21, $22,
+        $23, $24
+    )
+    ON CONFLICT (thread_id) DO UPDATE SET
+        workspace_id = EXCLUDED.workspace_id,
+        customer_id = EXCLUDED.customer_id,
+        assignee_id = EXCLUDED.assignee_id,
+        assigned_at = EXCLUDED.assigned_at,
+        title = EXCLUDED.title,
+        description = EXCLUDED.description,
+        preview_text = EXCLUDED.preview_text,
+        status = EXCLUDED.status,
+        status_changed_at = EXCLUDED.status_changed_at,
+        status_changed_by_id = EXCLUDED.status_changed_by_id,
+        stage = EXCLUDED.stage,
+        replied = EXCLUDED.replied,
+        priority = EXCLUDED.priority,
+        channel = EXCLUDED.channel,
+        created_by_id = EXCLUDED.created_by_id,
+        updated_by_id = EXCLUDED.updated_by_id,
+        labels = EXCLUDED.labels,
+        inbound_seq_id = EXCLUDED.inbound_seq_id,
+        outbound_seq_id = EXCLUDED.outbound_seq_id,
+        created_at = EXCLUDED.created_at,
+        updated_at = EXCLUDED.updated_at,
+        version_id = EXCLUDED.version_id,
+        synced_at = EXCLUDED.synced_at
+    RETURNING thread_id, synced_at, version_id`
+
+	err := sy.db.QueryRow(
+		ctx, stmt,
+		thread.ThreadID, thread.WorkspaceID, thread.CustomerID,
+		thread.AssigneeID, thread.AssignedAt,
+		thread.Title, thread.Description, thread.PreviewText,
+		thread.Status, thread.StatusChangedAt, thread.StatusChangedByID,
+		thread.Stage, thread.Replied, thread.Priority, thread.Channel,
+		thread.CreatedByID, thread.UpdatedByID,
+		thread.Labels,
+		thread.InboundSeqID, thread.OutboundSeqID,
+		thread.CreatedAt, thread.UpdatedAt,
+		thread.VersionID, thread.SyncedAt,
+	).Scan(&inSync.ThreadID, &inSync.SyncedAt, &inSync.VersionID)
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to insert thread", slog.Any("err", err))
+		return models.ThreadInSync{}, err
+	}
+	return inSync, nil
+}

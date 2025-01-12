@@ -59,3 +59,36 @@ type MemberInSync struct {
 	SyncedAt  time.Time `json:"syncedAt"`
 	VersionID string    `json:"versionId"`
 }
+
+type ThreadShape struct {
+	ThreadID          string                 `json:"threadId"`
+	WorkspaceID       string                 `json:"workspaceId"`
+	CustomerID        string                 `json:"customerId"`
+	AssigneeID        *string                `json:"assigneeId"`
+	AssignedAt        *time.Time             `json:"assignedAt"`
+	Title             string                 `json:"title"`
+	Description       string                 `json:"description"`
+	PreviewText       string                 `json:"previewText"`
+	Status            string                 `json:"status"`
+	StatusChangedAt   time.Time              `json:"statusChangedAt"`
+	StatusChangedByID string                 `json:"statusChangedById"`
+	Stage             string                 `json:"stage"`
+	Replied           bool                   `json:"replied"`
+	Priority          string                 `json:"priority"`
+	Channel           string                 `json:"channel"`
+	CreatedByID       string                 `json:"createdById"`
+	UpdatedByID       string                 `json:"updatedById"`
+	Labels            map[string]interface{} `json:"labels"`
+	InboundSeqID      *string                `json:"inboundSeqId"`
+	OutboundSeqID     *string                `json:"outboundSeqId"`
+	CreatedAt         time.Time              `json:"createdAt"`
+	UpdatedAt         time.Time              `json:"updatedAt"`
+	VersionID         string                 `json:"versionId"`
+	SyncedAt          time.Time              `json:"syncedAt"`
+}
+
+type ThreadInSync struct {
+	ThreadID  string    `json:"threadId"`
+	SyncedAt  time.Time `json:"syncedAt"`
+	VersionID string    `json:"versionId"`
+}
