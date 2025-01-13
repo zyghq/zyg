@@ -1,3 +1,4 @@
+import { MemberShape, WorkspaceShape } from "@/db/shapes";
 import _ from "lodash";
 import { immer } from "zustand/middleware/immer";
 import { createStore } from "zustand/vanilla";
@@ -16,12 +17,16 @@ import {
   AuthMember,
   Customer,
   Label,
-  Member,
   Pat,
   Thread,
-  Workspace,
   WorkspaceMetrics,
 } from "./models";
+
+export type LabelMap = Dictionary<string, Label>;
+
+export type MemberShapeMap = Dictionary<string, MemberShape>;
+
+export type PatMap = Dictionary<string, Pat>;
 
 export type CustomerMap = Dictionary<string, Customer>;
 
@@ -36,18 +41,22 @@ export interface IWorkspaceEntities {
   customers: CustomerMap | null;
   labels: LabelMap | null;
   member: AuthMember | null;
-  members: MemberMap | null;
+  members: MemberShapeMap | null;
   metrics: WorkspaceMetrics;
   pats: null | PatMap;
   threads: null | ThreadMap;
-  workspace: null | Workspace;
+  workspace: WorkspaceShape;
 }
 
-export type LabelMap = Dictionary<string, Label>;
-
-export type MemberMap = Dictionary<string, Member>;
-
-export type PatMap = Dictionary<string, Pat>;
+// Represents API bootstrapped entities.
+export interface IWorkspaceEntitiesBootstrap {
+  customers: CustomerMap | null;
+  labels: LabelMap | null;
+  member: AuthMember | null;
+  metrics: WorkspaceMetrics;
+  pats: null | PatMap;
+  threads: null | ThreadMap;
+}
 
 export type SortBy =
   | "created-asc"
@@ -74,7 +83,13 @@ type StatusType = "done" | "todo";
 
 // add more entities as supported by store
 // e.g: Workspace | User | etc.
-type WorkspaceEntities = Customer | Label | Member | Pat | Thread | Workspace;
+type WorkspaceEntities =
+  | Customer
+  | Label
+  | MemberShape
+  | Pat
+  | Thread
+  | WorkspaceShape;
 
 export const defaultSortKey = "created-asc";
 
@@ -177,7 +192,7 @@ interface IWorkspaceStoreActions {
 
   viewMemberName(state: WorkspaceStoreState, memberId: string): string;
 
-  viewMembers(state: WorkspaceStoreState): Member[];
+  viewMembers(state: WorkspaceStoreState): MemberShape[];
 
   viewMyThreads(
     state: WorkspaceStoreState,
@@ -310,9 +325,7 @@ function sortThreads(threads: Thread[], sortBy: SortBy): Thread[] {
 
 // (sanchitrk) for reference on using zustand, check this great article:
 // https://tkdodo.eu/blog/working-with-zustand
-//
-// @sanchitrk: shall we rename it to `buildWorkspaceStore` ?
-export const buildStore = (
+export const buildWorkspaceStore = (
   initialState: IWorkspaceEntities & IWorkspaceValueObjects,
 ) => {
   return createStore<WorkspaceStoreState>()(

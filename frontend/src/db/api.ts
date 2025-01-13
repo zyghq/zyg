@@ -6,11 +6,9 @@ import {
   Customer,
   customerTransformer,
   labelTransformer,
-  memberTransformer,
   Pat,
   patTransformer,
   threadTransformer,
-  Workspace,
 } from "./models";
 import {
   accountResponseSchema,
@@ -20,8 +18,6 @@ import {
   customerResponseSchema,
   LabelResponse,
   labelResponseSchema,
-  MemberResponse,
-  memberResponseSchema,
   MessageAttachmentResponse,
   messageAttachmentResponseSchema,
   patResponseSchema,
@@ -35,20 +31,19 @@ import {
   threadResponseSchema,
   WorkspaceMetricsResponse,
   workspaceMetricsResponseSchema,
-  workspaceResponseSchema,
 } from "./schema";
 import {
   CustomerMap,
-  IWorkspaceEntities,
+  IWorkspaceEntitiesBootstrap,
   IWorkspaceValueObjects,
   LabelMap,
-  MemberMap,
   PatMap,
   ThreadMap,
 } from "./store";
 
 // Returns the default state of the workspace store.
-function initialWorkspaceData(): IWorkspaceEntities & IWorkspaceValueObjects {
+function initialWorkspaceData(): IWorkspaceEntitiesBootstrap &
+  IWorkspaceValueObjects {
   return {
     customers: null,
     error: null,
@@ -56,7 +51,6 @@ function initialWorkspaceData(): IWorkspaceEntities & IWorkspaceValueObjects {
     isPending: true,
     labels: null,
     member: null,
-    members: null,
     metrics: {
       active: 0,
       assignedToMe: 0,
@@ -73,61 +67,60 @@ function initialWorkspaceData(): IWorkspaceEntities & IWorkspaceValueObjects {
     threadAppliedFilters: null,
     threads: null,
     threadSortKey: null,
-    workspace: null,
   };
 }
 
-export async function getWorkspace(
-  token: string,
-  workspaceId: string,
-): Promise<{ data: null | Workspace; error: Error | null }> {
-  try {
-    // make a request
-    const response = await fetch(
-      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        method: "GET",
-      },
-    );
-
-    if (!response.ok) {
-      const { status, statusText } = response;
-      return {
-        data: null,
-        error: new Error(
-          `error fetching workspace details: ${status} ${statusText}`,
-        ),
-      };
-    }
-
-    try {
-      const data = await response.json();
-      console.log(data);
-      const workspace = workspaceResponseSchema.parse({ ...data });
-      return { data: workspace, error: null };
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        console.error(err.message);
-      } else console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing workspace schema"),
-      };
-    }
-  } catch (error) {
-    console.error(error);
-    return {
-      data: null,
-      error: new Error(
-        "error fetching workspace details - something went wrong",
-      ),
-    };
-  }
-}
+// export async function getWorkspace(
+//   token: string,
+//   workspaceId: string,
+// ): Promise<{ data: null | Workspace; error: Error | null }> {
+//   try {
+//     // make a request
+//     const response = await fetch(
+//       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/`,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//           "Content-Type": "application/json",
+//         },
+//         method: "GET",
+//       },
+//     );
+//
+//     if (!response.ok) {
+//       const { status, statusText } = response;
+//       return {
+//         data: null,
+//         error: new Error(
+//           `error fetching workspace details: ${status} ${statusText}`,
+//         ),
+//       };
+//     }
+//
+//     try {
+//       const data = await response.json();
+//       console.log(data);
+//       const workspace = workspaceResponseSchema.parse({ ...data });
+//       return { data: workspace, error: null };
+//     } catch (err) {
+//       if (err instanceof z.ZodError) {
+//         console.error(err.message);
+//       } else console.error(err);
+//       return {
+//         data: null,
+//         error: new Error("error parsing workspace schema"),
+//       };
+//     }
+//   } catch (error) {
+//     console.error(error);
+//     return {
+//       data: null,
+//       error: new Error(
+//         "error fetching workspace details - something went wrong",
+//       ),
+//     };
+//   }
+// }
 
 export async function getWorkspaceMember(
   token: string,
@@ -464,15 +457,15 @@ function makeCustomersStoreable(customers: Customer[]): CustomerMap {
   return mapped;
 }
 
-function makeMembersStoreable(members: MemberResponse[]): MemberMap {
-  const mapped: MemberMap = {};
-  const transfomer = memberTransformer();
-  for (const member of members) {
-    const [memberId, normalized] = transfomer.normalize(member);
-    mapped[memberId] = normalized;
-  }
-  return mapped;
-}
+// function makeMembersStoreable(members: MemberResponse[]): MemberMap {
+//   const mapped: MemberMap = {};
+//   const transfomer = memberTransformer();
+//   for (const member of members) {
+//     const [memberId, normalized] = transfomer.normalize(member);
+//     mapped[memberId] = normalized;
+//   }
+//   return mapped;
+// }
 
 function makePatsStoreable(pats: Pat[]): PatMap {
   const mapped: PatMap = {};
@@ -596,7 +589,7 @@ export async function createWorkspace(
   token: string,
   body: { name: string },
 ): Promise<{
-  data: { workspaceId: string; workspaceName: string } | null;
+  data: null | { workspaceId: string; workspaceName: string };
   error: Error | null;
 }> {
   try {
@@ -639,7 +632,7 @@ export async function updateWorkspace(
   workspaceId: string,
   body: { name: string },
 ): Promise<{
-  data: { workspaceId: string; workspaceName: string } | null;
+  data: null | { workspaceId: string; workspaceName: string };
   error: Error | null;
 }> {
   try {
@@ -678,60 +671,60 @@ export async function updateWorkspace(
   }
 }
 
-export async function getWorkspaceMembers(
-  token: string,
-  workspaceId: string,
-): Promise<{
-  data: MemberResponse[] | null;
-  error: Error | null;
-}> {
-  try {
-    const response = await fetch(
-      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/members/`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        method: "GET",
-      },
-    );
-
-    if (!response.ok) {
-      const { status, statusText } = response;
-      return {
-        data: null,
-        error: new Error(
-          `error fetching workspace members: ${status} ${statusText}`,
-        ),
-      };
-    }
-
-    try {
-      const data = await response.json();
-      console.log(data);
-      const members = data.map((item: any) => {
-        return memberResponseSchema.parse({ ...item });
-      });
-      return { data: members, error: null };
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        console.error(err.message);
-      } else console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing workspace members schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error(
-        "error fetching workspace members - something went wrong",
-      ),
-    };
-  }
-}
+// export async function getWorkspaceMembers(
+//   token: string,
+//   workspaceId: string,
+// ): Promise<{
+//   data: MemberResponse[] | null;
+//   error: Error | null;
+// }> {
+//   try {
+//     const response = await fetch(
+//       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/members/`,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//         },
+//         method: "GET",
+//       },
+//     );
+//
+//     if (!response.ok) {
+//       const { status, statusText } = response;
+//       return {
+//         data: null,
+//         error: new Error(
+//           `error fetching workspace members: ${status} ${statusText}`,
+//         ),
+//       };
+//     }
+//
+//     try {
+//       const data = await response.json();
+//       console.log(data);
+//       const members = data.map((item: any) => {
+//         return memberResponseSchema.parse({ ...item });
+//       });
+//       return { data: members, error: null };
+//     } catch (err) {
+//       if (err instanceof z.ZodError) {
+//         console.error(err.message);
+//       } else console.error(err);
+//       return {
+//         data: null,
+//         error: new Error("error parsing workspace members schema"),
+//       };
+//     }
+//   } catch (err) {
+//     console.error(err);
+//     return {
+//       data: null,
+//       error: new Error(
+//         "error fetching workspace members - something went wrong",
+//       ),
+//     };
+//   }
+// }
 
 export async function deletePat(
   token: string,
@@ -773,55 +766,53 @@ export async function deletePat(
 export async function bootstrapWorkspace(
   token: string,
   workspaceId: string,
-): Promise<IWorkspaceEntities & IWorkspaceValueObjects> {
+): Promise<IWorkspaceEntitiesBootstrap & IWorkspaceValueObjects> {
   const data = initialWorkspaceData();
 
-  const getWorkspaceP = getWorkspace(token, workspaceId);
+  // const getWorkspaceP = getWorkspace(token, workspaceId);
   const getWorkspaceMemberP = getWorkspaceMember(token, workspaceId);
   const getWorkspaceCustomersP = getWorkspaceCustomers(token, workspaceId);
   const getWorkspaceMetricsP = getWorkspaceMetrics(token, workspaceId);
   const getWorkspaceThreadsP = getWorkspaceThreads(token, workspaceId);
   const getWorkspaceLabelsP = getWorkspaceLabels(token, workspaceId);
-  const getWorkspaceMembersP = getWorkspaceMembers(token, workspaceId);
+  // const getWorkspaceMembersP = getWorkspaceMembers(token, workspaceId);
   const getAccountPatsP = getPats(token);
 
   const [
-    workspaceData,
+    // workspaceData,
     memberData,
     customerData,
     metricsData,
     threadsData,
     labelsData,
-    membersData,
+    // membersData,
     patsData,
   ] = await Promise.all([
-    getWorkspaceP,
+    // getWorkspaceP,
     getWorkspaceMemberP,
     getWorkspaceCustomersP,
     getWorkspaceMetricsP,
     getWorkspaceThreadsP,
     getWorkspaceLabelsP,
-    getWorkspaceMembersP,
+    // getWorkspaceMembersP,
     getAccountPatsP,
   ]);
 
-  const { data: workspace, error: errWorkspace } = workspaceData;
+  // const { data: workspace, error: errWorkspace } = workspaceData;
   const { data: member, error: errMember } = memberData;
   const { data: customers, error: errCustomer } = customerData;
   const { data: metrics, error: errMetrics } = metricsData;
   const { data: threads, error: errThreads } = threadsData;
   const { data: labels, error: errLabels } = labelsData;
-  const { data: members, error: errMembers } = membersData;
   const { data: pats, error: errPats } = patsData;
 
   const hasErr =
-    errWorkspace ||
+    // errWorkspace ||
     errMember ||
     errCustomer ||
     errMetrics ||
     errThreads ||
     errLabels ||
-    errMembers ||
     errPats;
 
   if (hasErr) {
@@ -830,11 +821,11 @@ export async function bootstrapWorkspace(
     return data;
   }
 
-  if (workspace) {
-    data.workspace = workspace;
-    data.hasData = true;
-    data.isPending = false;
-  }
+  // if (workspace) {
+  //   data.workspace = workspace;
+  //   data.hasData = true;
+  //   data.isPending = false;
+  // }
 
   if (member) {
     data.member = member;
@@ -850,10 +841,10 @@ export async function bootstrapWorkspace(
     data.metrics = count;
   }
 
-  if (members && members.length > 0) {
-    const membersMap = makeMembersStoreable(members);
-    data.members = membersMap;
-  }
+  // if (members && members.length > 0) {
+  //   const membersMap = makeMembersStoreable(members);
+  //   data.members = membersMap;
+  // }
 
   if (threads && threads.length > 0) {
     const threadsMap = makeThreadsStoreable(threads);
@@ -1676,3 +1667,49 @@ export async function verifyDNS(
     };
   }
 }
+
+
+// export async function syncWorkspaceShape(
+//   token: string,
+//   workspaceId: string,
+// ): Promise<{
+//   data: null | PostmarkMailServerSetting;
+//   error: Error | null;
+// }> {
+//   try {
+//     const response = await fetch(
+//       `${import.meta.env.VITE_ZYG_URL}/v1/sync/workspaces/${workspaceId}/shapes/parts/workspace/`,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//           "Content-Type": "application/json",
+//         },
+//         method: "GET",
+//       },
+//     );
+//     if (!response.ok) {
+//       const { status, statusText } = response;
+//       const error = new Error(
+//         `error adding domain with status: ${status} and statusText: ${statusText}`,
+//       );
+//       return { data: null, error };
+//     }
+//     try {
+//       const data = await response.json();
+//       const setting = postmarkMailServerSettingSchema.parse({ ...data });
+//       return { data: setting, error: null };
+//     } catch (err) {
+//       console.error(err);
+//       return {
+//         data: null,
+//         error: new Error("error parsing email setting schema"),
+//       };
+//     }
+//   } catch (err) {
+//     console.error(err);
+//     return {
+//       data: null,
+//       error: new Error("error adding domain - something went wrong"),
+//     };
+//   }
+// }

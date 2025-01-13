@@ -1,4 +1,4 @@
-import { buildAccountStore, buildStore } from "@/db/store";
+import { buildAccountStore, buildWorkspaceStore } from "@/db/store";
 import React from "react";
 import { StoreApi } from "zustand";
 
@@ -23,7 +23,7 @@ const createZustandContext = <TInitial, TStore extends StoreApi<any>>(
   };
 };
 
-const workspaceStore = createZustandContext(buildStore);
+const workspaceStore = createZustandContext(buildWorkspaceStore);
 export const WorkspaceStoreContext = workspaceStore.Context;
 export const WorkspaceStoreProvider = workspaceStore.Provider;
 

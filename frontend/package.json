@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@electric-sql/client": "1.0.0-beta.2",
+    "@electric-sql/react": "1.0.0-beta.2",
     "@fontsource-variable/space-grotesk": "^5.1.1",
     "@fontsource/ibm-plex-mono": "^5.1.1",
     "@fontsource/inter": "^5.1.1",

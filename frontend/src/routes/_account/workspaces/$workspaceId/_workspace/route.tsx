@@ -1,7 +1,10 @@
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { WorkspaceSidebar } from "@/components/workspace/sidebar";
+import { memberRowToShape, membersToMap } from "@/db/shapes";
 import { WorkspaceStoreState } from "@/db/store";
+import { MemberRow, syncWorkspaceMemberShape} from "@/db/sync";
 import { useAccountStore, useWorkspaceStore } from "@/providers";
+import { useShape } from "@electric-sql/react"
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useStore } from "zustand";
 
@@ -12,6 +15,9 @@ export const Route = createFileRoute(
 });
 
 function WorkspaceLayout() {
+ const { data: memberRows } = useStore<>()
+
+
   const accountStore = useAccountStore();
   const workspaceStore = useWorkspaceStore();
 

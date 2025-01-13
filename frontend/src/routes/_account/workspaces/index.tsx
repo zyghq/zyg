@@ -1,6 +1,5 @@
 import { Icons } from "@/components/icons";
-import { Button } from "@/components/ui/button";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { defaultSortKey } from "@/db/store";
@@ -12,6 +11,7 @@ import {
   redirect,
   useRouterState,
 } from "@tanstack/react-router";
+import { MoveUpRightIcon } from "lucide-react";
 
 type Workspace = {
   accountId: string;
@@ -21,112 +21,122 @@ type Workspace = {
   workspaceId: string;
 };
 
-async function fetchWorkspaces(token: string) {
-  try {
-    const response = await fetch(
-      `${import.meta.env.VITE_ZYG_URL}/workspaces/`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        method: "GET",
-      },
-    );
-    // handle 4xx-5xx errors
-    if (!response.ok) {
-      const { status, statusText } = response;
-      throw new Error(`error fetching workspaces: ${status} ${statusText}`);
-    }
+const fetchWorkspaces = async (token: string): Promise<Workspace[]> => {
+  const response = await fetch(`${import.meta.env.VITE_ZYG_URL}/workspaces/`, {
+    headers: { Authorization: `Bearer ${token}` },
+    method: "GET",
+  });
 
-    // Ok
-    return await response.json();
-  } catch (err) {
-    console.error(err);
-    throw new Error("error fetching workspaces");
+  if (!response.ok) {
+    throw new Error(
+      `Error fetching workspaces: ${response.status} ${response.statusText}`,
+    );
   }
-}
+
+  return response.json();
+};
 
 const workspacesQueryOptions = (token: string) =>
   queryOptions({
     enabled: !!token,
-    queryFn: async () => {
-      return await fetchWorkspaces(token);
-    },
+    queryFn: () => fetchWorkspaces(token),
     queryKey: ["workspaces", token],
   });
 
-// TODO: do error handling
-// https://tanstack.com/router/latest/docs/framework/react/guide/external-data-loading#error-handling-with-tanstack-query
 export const Route = createFileRoute("/_account/workspaces/")({
   component: Workspaces,
   loader: async ({ context: { queryClient, supabaseClient } }) => {
     const { data, error } = await supabaseClient.auth.getSession();
     if (error || !data?.session) throw redirect({ to: "/signin" });
-    const token = data.session.access_token as string;
+    const token = data.session.access_token;
     return queryClient.ensureQueryData(workspacesQueryOptions(token));
   },
 });
 
-function Workspaces() {
+function Header() {
+  return (
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex h-14 items-center justify-between px-8">
+        <div className="flex items-center">
+          <Icons.logo className="mr-2 h-5 w-5" />
+          <span className="font-semibold">Zyg.</span>
+        </div>
+        <Link
+          className={buttonVariants({ size: "icon", variant: "outline" })}
+          preload={false}
+          to="/signout"
+        >
+          <ExitIcon />
+        </Link>
+      </div>
+    </header>
+  );
+}
+
+function WorkspaceCard({ workspace }: { workspace: Workspace }) {
   const isLoading = useRouterState({ select: (s) => s.isLoading });
-  const workspaces: Workspace[] = Route.useLoaderData();
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-background">
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 max-w-screen-2xl items-center">
-          <div className="flex flex-1 items-end">
-            <Icons.logo className="my-auto mr-2 h-5 w-5" />
-            <span className="font-semibold">Zyg.</span>
-          </div>
-          <div className="flex justify-between space-x-2 md:justify-end">
-            <Link
-              className={buttonVariants({ size: "icon", variant: "outline" })}
-              preload={false}
-              to="/signout"
-            >
-              <ExitIcon />
-            </Link>
+    <Card className="shadow-none" key={workspace.workspaceId}>
+      <CardHeader>
+        <CardTitle className={"font-serif"}>{workspace.name}</CardTitle>
+      </CardHeader>
+      <CardFooter className="justify-end">
+        <Button asChild disabled={isLoading} size="icon" variant="outline">
+          <Link
+            params={{ workspaceId: workspace.workspaceId }}
+            search={{ sort: defaultSortKey }}
+            to={"/workspaces/$workspaceId/threads/todo"}
+          >
+            <MoveUpRightIcon className="mr-1 h-4 w-4" />
+          </Link>
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
+
+function Workspaces() {
+  const isLoading = useRouterState({ select: (s) => s.isLoading });
+  const workspaces = Route.useLoaderData();
+
+  return (
+    <div className="flex min-h-screen flex-col bg-background">
+      <Header />
+      <main className="flex-1 overflow-y-auto">
+        <div className="container mx-auto flex min-h-[calc(100vh-3.5rem)] flex-col items-center justify-center px-4 py-8">
+          <div className="w-full max-w-2xl space-y-6">
+            <h1 className="font-serif text-3xl font-bold">
+              Create a Workspace
+            </h1>
+            <p className="text-muted-foreground">
+              Use workspaces to organize your projects and teams, or separate
+              your live and test environments.
+              <br /> Your customers and team members are specific to a
+              workspace.
+            </p>
+            <div className="flex">
+              <Button asChild disabled={isLoading} variant="default">
+                <Link to={"/workspaces/add"}>Create Workspace</Link>
+              </Button>
+            </div>
+            {workspaces && workspaces.length > 0 && (
+              <>
+                <Separator className="my-6" />
+                <div className="text-xl font-semibold font-serif">Open a Workspace</div>
+                <div className="space-y-4">
+                  {workspaces.map((workspace) => (
+                    <WorkspaceCard
+                      key={workspace.workspaceId}
+                      workspace={workspace}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
-      </header>
-      <div className="container py-4">
-        <h1 className="mb-1 text-3xl font-bold">Create a Workspace</h1>
-        <p className="mb-4 text-foreground">
-          Use workspaces to organize your projects and teams, or separate your
-          live and test environments.
-          <br /> Customers and team members are specific to a workspace.
-        </p>
-        <Button asChild disabled={isLoading} variant="default">
-          <Link to={"/workspaces/add"}>Create Workspace</Link>
-        </Button>
-        {workspaces && workspaces.length > 0 && (
-          <>
-            <Separator className="my-4 md:w-1/3" />
-            <div className="text-lg font-semibold">Open a Workspace</div>
-            <div className="mt-4 space-y-2 md:w-3/5 lg:w-2/5">
-              {workspaces.map((workspace) => (
-                <Card key={workspace.workspaceId}>
-                  <CardHeader>
-                    <CardTitle>{workspace.name}</CardTitle>
-                  </CardHeader>
-                  <CardFooter className="justify-end">
-                    <Button asChild>
-                      <Link
-                        params={{ workspaceId: workspace.workspaceId }}
-                        search={{ sort: defaultSortKey }}
-                        to={"/workspaces/$workspaceId/threads/todo"}
-                      >
-                        Open
-                      </Link>
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+      </main>
     </div>
   );
 }

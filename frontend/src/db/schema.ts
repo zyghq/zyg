@@ -9,12 +9,12 @@ export const accountResponseSchema = z.object({
   updatedAt: z.string(),
 });
 
-export const workspaceResponseSchema = z.object({
-  createdAt: z.string(),
-  name: z.string(),
-  updatedAt: z.string(),
-  workspaceId: z.string(),
-});
+// export const workspaceResponseSchema = z.object({
+//   createdAt: z.string(),
+//   name: z.string(),
+//   updatedAt: z.string(),
+//   workspaceId: z.string(),
+// });
 
 export const authMemberResponseSchema = z.object({
   createdAt: z.string(),
@@ -34,13 +34,13 @@ export const patResponseSchema = z.object({
   updatedAt: z.string(),
 });
 
-export const memberResponseSchema = z.object({
-  createdAt: z.string(),
-  memberId: z.string(),
-  name: z.string(),
-  role: z.string(),
-  updatedAt: z.string(),
-});
+// export const memberResponseSchema = z.object({
+//   createdAt: z.string(),
+//   memberId: z.string(),
+//   name: z.string(),
+//   role: z.string(),
+//   updatedAt: z.string(),
+// });
 
 export const threadLabelMetricsSchema = z.object({
   count: z.number().default(0),
@@ -179,7 +179,7 @@ export type ThreadMessageResponse = z.infer<typeof threadMessageResponseSchema>;
 export type LabelResponse = z.infer<typeof labelResponseSchema>;
 export type ThreadLabelResponse = z.infer<typeof threadLabelResponseSchema>;
 
-export type MemberResponse = z.infer<typeof memberResponseSchema>;
+// export type MemberResponse = z.infer<typeof memberResponseSchema>;
 
 export type WorkspaceMetricsResponse = z.infer<
   typeof workspaceMetricsResponseSchema
