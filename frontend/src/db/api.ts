@@ -4,17 +4,13 @@ import {
   AuthMember,
   Customer,
   CustomerEventResponse,
-  customerTransformer,
   LabelResponse,
-  labelTransformer,
   MessageAttachmentResponse,
   Pat,
-  patTransformer,
   PostmarkMailServerSetting,
   ThreadLabelResponse,
   ThreadMessageResponse,
   ThreadResponse,
-  threadTransformer,
   Workspace,
   WorkspaceMetricsResponse,
 } from "@/db/models";
@@ -33,49 +29,11 @@ import {
   workspaceMetricsSchema,
   workspaceSchema,
 } from "@/db/schema";
-import {
-  CustomerMap,
-  IWorkspaceEntitiesBootstrap,
-  IWorkspaceValueObjects,
-  LabelMap,
-  PatMap,
-  ThreadMap,
-} from "@/db/store";
 import { z } from "zod";
 
 interface ApiResponse<T> {
   data: null | T;
   error: Error | null;
-}
-
-// Returns the default state of the workspace store.
-function initialWorkspaceData(): IWorkspaceEntitiesBootstrap &
-  IWorkspaceValueObjects {
-  return {
-    customers: null,
-    error: null,
-    hasData: false,
-    isPending: true,
-    labels: null,
-    member: null,
-    metrics: {
-      active: 0,
-      assignedToMe: 0,
-      hold: 0,
-      labels: [],
-      needsFirstResponse: 0,
-      needsNextResponse: 0,
-      otherAssigned: 0,
-      snoozed: 0,
-      unassigned: 0,
-      waitingOnCustomer: 0,
-    },
-    pats: null,
-    threadAppliedFilters: null,
-    threads: null,
-    threadSortKey: null,
-    workspace: null,
-  };
 }
 
 /**
@@ -440,13 +398,6 @@ export async function createPat(
     return { data: null, error: new Error(errorMessage) };
   }
 }
-
-
-
-
-
-
-
 
 /**
  * Gets an existing ZYG account or creates a new one.

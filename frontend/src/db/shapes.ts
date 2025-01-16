@@ -1,15 +1,7 @@
 import { MemberShapeMap} from "@/db/store";
-import { MemberRow, WorkspaceRow } from "@/db/sync";
+import { MemberRow } from "@/db/sync";
 
-export type WorkspaceShape = {
-  createdAt: string;
-  name: string;
-  publicName: string;
-  syncedAt: string;
-  updatedAt: string;
-  versionId: string;
-  workspaceId: string;
-};
+
 
 export type MemberShape = {
   avatarUrl: string;
@@ -25,17 +17,7 @@ export type MemberShape = {
   workspaceId: string;
 };
 
-export function workspaceRowToShape(row: WorkspaceRow): WorkspaceShape {
-  return {
-    createdAt: row.created_at,
-    name: row.name,
-    publicName: row.public_name,
-    syncedAt: row.synced_at,
-    updatedAt: row.updated_at,
-    versionId: row.version_id,
-    workspaceId: row.workspace_id,
-  };
-}
+
 
 export function memberRowToShape(row: MemberRow): MemberShape {
   return {

@@ -140,12 +140,6 @@ export function threadsToMap(
   );
 }
 
-
-
-
-
-
-
 export function labelsToMap(labels: LabelResponse[]): Record<string, Label> {
   return labels.reduce(
     (acc, label) => {
@@ -165,22 +159,17 @@ export function labelsToMap(labels: LabelResponse[]): Record<string, Label> {
   );
 }
 
-export function customersToMap(
-  customers: CustomerResponse[],
-): CustomerMap {
-  return customers.reduce(
-    (acc, customer) => {
-      const { customerId, ...rest } = customer;
+export function customersToMap(customers: CustomerResponse[]): CustomerMap {
+  return customers.reduce((acc, customer) => {
+    const { customerId, ...rest } = customer;
 
-      acc[customerId] = {
-        customerId,
-        ...rest,
-      };
+    acc[customerId] = {
+      customerId,
+      ...rest,
+    };
 
-      return acc;
-    },
-    {} as CustomerMap,
-  );
+    return acc;
+  }, {} as CustomerMap);
 }
 
 export function patsToMap(pats: PatResponse[]): Record<string, Pat> {

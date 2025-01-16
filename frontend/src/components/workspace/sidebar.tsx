@@ -69,7 +69,6 @@ export function WorkspaceSidebar({
   workspaceName,
   ...props
 }: WorkspaceSidebarProps) {
-  console.log("************** metrics in WorkspaceSidebar ****************", metrics)
   return (
     <Sidebar {...props}>
       <SidebarHeader>

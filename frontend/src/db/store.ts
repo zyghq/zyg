@@ -41,27 +41,11 @@ export type CustomerMap = Dictionary<string, Customer>;
 
 export type ThreadMap = Dictionary<string, Thread>;
 
-// Represents the in-sync entities by the sync engine.
-export interface InSyncWorkspaceEntities {
-  members: MemberShapeMap;
-}
-
-// Represents bootstrapped API entities.
-export interface IWorkspaceEntitiesBootstrap {
-  customers: CustomerMap | null;
-  labels: LabelMap | null;
-  member: AuthMember | null;
-  metrics: WorkspaceMetrics;
-  pats: null | PatMap;
-  threads: null | ThreadMap;
-  workspace: null | Workspace;
-}
-
 // Represents the store entities.
 export interface IWorkspaceEntities {
   customers: CustomerMap | null;
   labels: LabelMap | null;
-  member: AuthMember
+  member: AuthMember;
   members: MemberShapeMap | null;
   metrics: WorkspaceMetrics;
   pats: null | PatMap;
