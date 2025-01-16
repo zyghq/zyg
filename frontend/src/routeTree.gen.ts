@@ -19,7 +19,7 @@ import { Route as authSigninImport } from './routes/(auth)/signin'
 import { Route as authRecoverImport } from './routes/(auth)/recover'
 import { Route as AccountWorkspacesIndexImport } from './routes/_account/workspaces/index'
 import { Route as AccountWorkspacesAddImport } from './routes/_account/workspaces/add'
-import { Route as AccountWorkspacesWorkspaceIdImport } from './routes/_account/workspaces/$workspaceId'
+import { Route as AccountWorkspacesWorkspaceIdRouteImport } from './routes/_account/workspaces/$workspaceId/route'
 import { Route as AccountWorkspacesWorkspaceIdSettingsRouteImport } from './routes/_account/workspaces/$workspaceId/settings/route'
 import { Route as AccountWorkspacesWorkspaceIdWorkspaceRouteImport } from './routes/_account/workspaces/$workspaceId/_workspace/route'
 import { Route as AccountWorkspacesWorkspaceIdSetupIndexImport } from './routes/_account/workspaces/$workspaceId/setup/index'
@@ -103,8 +103,8 @@ const AccountWorkspacesAddRoute = AccountWorkspacesAddImport.update({
   getParentRoute: () => AccountRouteRoute,
 } as any)
 
-const AccountWorkspacesWorkspaceIdRoute =
-  AccountWorkspacesWorkspaceIdImport.update({
+const AccountWorkspacesWorkspaceIdRouteRoute =
+  AccountWorkspacesWorkspaceIdRouteImport.update({
     id: '/workspaces/$workspaceId',
     path: '/workspaces/$workspaceId',
     getParentRoute: () => AccountRouteRoute,
@@ -114,20 +114,20 @@ const AccountWorkspacesWorkspaceIdSettingsRouteRoute =
   AccountWorkspacesWorkspaceIdSettingsRouteImport.update({
     id: '/settings',
     path: '/settings',
-    getParentRoute: () => AccountWorkspacesWorkspaceIdRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdRouteRoute,
   } as any)
 
 const AccountWorkspacesWorkspaceIdWorkspaceRouteRoute =
   AccountWorkspacesWorkspaceIdWorkspaceRouteImport.update({
     id: '/_workspace',
-    getParentRoute: () => AccountWorkspacesWorkspaceIdRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdRouteRoute,
   } as any)
 
 const AccountWorkspacesWorkspaceIdSetupIndexRoute =
   AccountWorkspacesWorkspaceIdSetupIndexImport.update({
     id: '/setup/',
     path: '/setup/',
-    getParentRoute: () => AccountWorkspacesWorkspaceIdRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdRouteRoute,
   } as any)
 
 const AccountWorkspacesWorkspaceIdSettingsIndexRoute =
@@ -148,7 +148,7 @@ const AccountWorkspacesWorkspaceIdThreadsThreadIdRoute =
   AccountWorkspacesWorkspaceIdThreadsThreadIdImport.update({
     id: '/threads/$threadId',
     path: '/threads/$threadId',
-    getParentRoute: () => AccountWorkspacesWorkspaceIdRoute,
+    getParentRoute: () => AccountWorkspacesWorkspaceIdRouteRoute,
   } as any)
 
 const AccountWorkspacesWorkspaceIdSettingsWebhooksRoute =
@@ -399,7 +399,7 @@ declare module '@tanstack/react-router' {
       id: '/_account/workspaces/$workspaceId'
       path: '/workspaces/$workspaceId'
       fullPath: '/workspaces/$workspaceId'
-      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdImport
+      preLoaderRoute: typeof AccountWorkspacesWorkspaceIdRouteImport
       parentRoute: typeof AccountRouteImport
     }
     '/_account/workspaces/add': {
@@ -421,14 +421,14 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/workspaces/$workspaceId'
       preLoaderRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceRouteImport
-      parentRoute: typeof AccountWorkspacesWorkspaceIdImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdRouteImport
     }
     '/_account/workspaces/$workspaceId/settings': {
       id: '/_account/workspaces/$workspaceId/settings'
       path: '/settings'
       fullPath: '/workspaces/$workspaceId/settings'
       preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteImport
-      parentRoute: typeof AccountWorkspacesWorkspaceIdImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdRouteImport
     }
     '/_account/workspaces/$workspaceId/_workspace/threads': {
       id: '/_account/workspaces/$workspaceId/_workspace/threads'
@@ -547,7 +547,7 @@ declare module '@tanstack/react-router' {
       path: '/threads/$threadId'
       fullPath: '/workspaces/$workspaceId/threads/$threadId'
       preLoaderRoute: typeof AccountWorkspacesWorkspaceIdThreadsThreadIdImport
-      parentRoute: typeof AccountWorkspacesWorkspaceIdImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdRouteImport
     }
     '/_account/workspaces/$workspaceId/_workspace/': {
       id: '/_account/workspaces/$workspaceId/_workspace/'
@@ -568,7 +568,7 @@ declare module '@tanstack/react-router' {
       path: '/setup'
       fullPath: '/workspaces/$workspaceId/setup'
       preLoaderRoute: typeof AccountWorkspacesWorkspaceIdSetupIndexImport
-      parentRoute: typeof AccountWorkspacesWorkspaceIdImport
+      parentRoute: typeof AccountWorkspacesWorkspaceIdRouteImport
     }
     '/_account/workspaces/$workspaceId/_workspace/threads/done': {
       id: '/_account/workspaces/$workspaceId/_workspace/threads/done'
@@ -775,14 +775,14 @@ const AccountWorkspacesWorkspaceIdSettingsRouteRouteWithChildren =
     AccountWorkspacesWorkspaceIdSettingsRouteRouteChildren,
   )
 
-interface AccountWorkspacesWorkspaceIdRouteChildren {
+interface AccountWorkspacesWorkspaceIdRouteRouteChildren {
   AccountWorkspacesWorkspaceIdWorkspaceRouteRoute: typeof AccountWorkspacesWorkspaceIdWorkspaceRouteRouteWithChildren
   AccountWorkspacesWorkspaceIdSettingsRouteRoute: typeof AccountWorkspacesWorkspaceIdSettingsRouteRouteWithChildren
   AccountWorkspacesWorkspaceIdThreadsThreadIdRoute: typeof AccountWorkspacesWorkspaceIdThreadsThreadIdRoute
   AccountWorkspacesWorkspaceIdSetupIndexRoute: typeof AccountWorkspacesWorkspaceIdSetupIndexRoute
 }
 
-const AccountWorkspacesWorkspaceIdRouteChildren: AccountWorkspacesWorkspaceIdRouteChildren =
+const AccountWorkspacesWorkspaceIdRouteRouteChildren: AccountWorkspacesWorkspaceIdRouteRouteChildren =
   {
     AccountWorkspacesWorkspaceIdWorkspaceRouteRoute:
       AccountWorkspacesWorkspaceIdWorkspaceRouteRouteWithChildren,
@@ -794,20 +794,20 @@ const AccountWorkspacesWorkspaceIdRouteChildren: AccountWorkspacesWorkspaceIdRou
       AccountWorkspacesWorkspaceIdSetupIndexRoute,
   }
 
-const AccountWorkspacesWorkspaceIdRouteWithChildren =
-  AccountWorkspacesWorkspaceIdRoute._addFileChildren(
-    AccountWorkspacesWorkspaceIdRouteChildren,
+const AccountWorkspacesWorkspaceIdRouteRouteWithChildren =
+  AccountWorkspacesWorkspaceIdRouteRoute._addFileChildren(
+    AccountWorkspacesWorkspaceIdRouteRouteChildren,
   )
 
 interface AccountRouteRouteChildren {
-  AccountWorkspacesWorkspaceIdRoute: typeof AccountWorkspacesWorkspaceIdRouteWithChildren
+  AccountWorkspacesWorkspaceIdRouteRoute: typeof AccountWorkspacesWorkspaceIdRouteRouteWithChildren
   AccountWorkspacesAddRoute: typeof AccountWorkspacesAddRoute
   AccountWorkspacesIndexRoute: typeof AccountWorkspacesIndexRoute
 }
 
 const AccountRouteRouteChildren: AccountRouteRouteChildren = {
-  AccountWorkspacesWorkspaceIdRoute:
-    AccountWorkspacesWorkspaceIdRouteWithChildren,
+  AccountWorkspacesWorkspaceIdRouteRoute:
+    AccountWorkspacesWorkspaceIdRouteRouteWithChildren,
   AccountWorkspacesAddRoute: AccountWorkspacesAddRoute,
   AccountWorkspacesIndexRoute: AccountWorkspacesIndexRoute,
 }
@@ -910,7 +910,7 @@ export interface FileRoutesById {
   '/(auth)/signin': typeof authSigninRoute
   '/(auth)/signout': typeof authSignoutRoute
   '/(auth)/signup': typeof authSignupRoute
-  '/_account/workspaces/$workspaceId': typeof AccountWorkspacesWorkspaceIdRouteWithChildren
+  '/_account/workspaces/$workspaceId': typeof AccountWorkspacesWorkspaceIdRouteRouteWithChildren
   '/_account/workspaces/add': typeof AccountWorkspacesAddRoute
   '/_account/workspaces/': typeof AccountWorkspacesIndexRoute
   '/_account/workspaces/$workspaceId/_workspace': typeof AccountWorkspacesWorkspaceIdWorkspaceRouteRouteWithChildren
@@ -1140,7 +1140,7 @@ export const routeTree = rootRoute
       "filePath": "(auth)/signup.tsx"
     },
     "/_account/workspaces/$workspaceId": {
-      "filePath": "_account/workspaces/$workspaceId.tsx",
+      "filePath": "_account/workspaces/$workspaceId/route.tsx",
       "parent": "/_account",
       "children": [
         "/_account/workspaces/$workspaceId/_workspace",

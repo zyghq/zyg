@@ -47,12 +47,13 @@ import {
   getFromLocalStorage,
   getInitials,
 } from "@/db/helpers";
-import { Label, Thread } from "@/db/models";
 import {
+  Label,
   MessageAttachmentResponse,
+  Thread,
   ThreadLabelResponse,
   ThreadMessageResponse,
-} from "@/db/schema";
+} from "@/db/models";
 import { WorkspaceStoreState } from "@/db/store";
 import { cn } from "@/lib/utils";
 import { useWorkspaceStore } from "@/providers";

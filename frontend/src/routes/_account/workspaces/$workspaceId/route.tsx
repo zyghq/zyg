@@ -80,6 +80,14 @@ async function getCustomersData(
   return null;
 }
 
+/**
+ * Retrieves metrics data for a specific workspace.
+ *
+ * @param {string} token - The authentication token used to access the workspace data.
+ * @param {string} workspaceId - The unique identifier of the workspace for which metrics are being retrieved.
+ * @return {Promise<WorkspaceMetrics>} A promise that resolves to the metrics data of the specified workspace.
+ * @throws {Error} Throws an error if the retrieval fails or the metrics data does not exist.
+ */
 async function getMetricsData(
   token: string,
   workspaceId: string,
@@ -91,6 +99,14 @@ async function getMetricsData(
   return count;
 }
 
+/**
+ * Fetches and processes thread data for a given workspace.
+ *
+ * @param {string} token - Authentication token used to access the workspace data.
+ * @param {string} workspaceId - Identifier of the workspace to retrieve thread data for.
+ * @return {Promise<null | ThreadMap>} A promise that resolves to a map of threads if data is available, or null if no data is found.
+ * @throws {Error} If an error occurs during the data retrieval process.
+ */
 async function getThreadsData(
   token: string,
   workspaceId: string,
@@ -103,6 +119,14 @@ async function getThreadsData(
   return null;
 }
 
+/**
+ * Retrieves label data for a specific workspace and converts it into a map structure.
+ *
+ * @param {string} token - The authentication token required for the API request.
+ * @param {string} workspaceId - The unique identifier for the targeted workspace.
+ * @return {Promise<LabelMap | null>} A promise that resolves to a mapped representation of labels if data is available, or null if no data is found.
+ * @throws {Error} Throws an error if the API request fails or returns an error.
+ */
 async function getLabelsData(
   token: string,
   workspaceId: string,
@@ -115,6 +139,13 @@ async function getLabelsData(
   return null;
 }
 
+/**
+ * Fetches and processes account PATs (Personal Access Tokens) data.
+ *
+ * @param {string} token - The authentication token used to fetch PATs data.
+ * @return {Promise<null | PatMap>} Resolves to a map of PATs if data is available, otherwise resolves to null.
+ * @throws {Error} Throws an error if fetching PATs data fails.
+ */
 async function getAccountPatsData(token: string): Promise<null | PatMap> {
   const { data, error } = await getPats(token);
   if (error) throw new Error(error.message);
@@ -184,7 +215,7 @@ const syncMembersQueryOptions = (token: string, workspaceId: string) =>
   });
 
 export const Route = createFileRoute("/_account/workspaces/$workspaceId")({
-  component: WorkspaceComponent,
+  component: CurrentWorkspace,
   // check if we need this, add some kind of stale timer.
   // https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#using-staletime-to-control-how-long-data-is-considered-fresh
   loader: async ({
@@ -204,10 +235,11 @@ export const Route = createFileRoute("/_account/workspaces/$workspaceId")({
       queryClient.ensureQueryData(patsQueryOptions(token)),
       queryClient.ensureQueryData(syncMembersQueryOptions(token, workspaceId)),
     ]);
+    return token;
   },
 });
 
-function WorkspaceComponent() {
+function CurrentWorkspace() {
   const { token } = Route.useRouteContext();
   const { workspaceId } = Route.useParams();
   const { data: workspace } = useSuspenseQuery(
