@@ -6,6 +6,7 @@ import { MemberRow, syncMembersShape } from "@/db/sync";
 import { useAccountStore, useWorkspaceStore } from "@/providers";
 import { useShape } from "@electric-sql/react";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
+import * as React from "react";
 import { useStore } from "zustand";
 
 export const Route = createFileRoute(
@@ -15,14 +16,19 @@ export const Route = createFileRoute(
 });
 
 function WorkspaceLayout() {
-  // const { token } = Route.useRouteContext();
-  // const { workspaceId: paramWorkspaceId } = Route.useParams();
-  // const { data: memberRows } = useShape<MemberRow>(
-  //   syncWorkspaceMemberShape({ token, workspaceId: paramWorkspaceId }),
-  // );
+  const { token } = Route.useRouteContext();
+  const { workspaceId: paramWorkspaceId } = Route.useParams();
+
+  const {
+    data: memberRows,
+    isError: isMembersError,
+    isLoading: isMembersLoading,
+    ...rest
+  } = useShape(syncMembersShape({ token, workspaceId: paramWorkspaceId })) as unknown as { data: MemberRow[]; isError: boolean; isLoading: boolean };
+
   // const members = membersToMap(memberRows.map(memberRowToShape));
-  //
-  // console.log("*************** memberRows", members);
+
+  console.log('**** rest ***', rest)
 
   const accountStore = useAccountStore();
   const workspaceStore = useWorkspaceStore();
@@ -44,7 +50,17 @@ function WorkspaceLayout() {
     state.viewThreadSortKey(state),
   );
 
-  // useStore(workspaceStore, (state: WorkspaceStoreState) => state.updateMembers(members))
+  const updateMembers = useStore(
+    workspaceStore,
+    (state) => state.updateMembers,
+  );
+
+  React.useEffect(() => {
+    if (isMembersError || isMembersLoading) return;
+    console.log("*************** useEffect: memberRows", memberRows);
+    // if (updateMembers) {
+    // }
+  }, [memberRows, updateMembers]);
 
   return (
     <SidebarProvider>
