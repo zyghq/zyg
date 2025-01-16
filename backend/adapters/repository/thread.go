@@ -207,7 +207,6 @@ func messageAttachmentCols() builq.Columns {
 // Finally, insert the chat with in persisted thread ID.
 //
 // The IDs are already generated within the time space.
-// FIXEDXX
 func (th *ThreadDB) InsertInboundThreadMessage(
 	ctx context.Context, inbound models.ThreadMessage) (models.Thread, models.Message, error) {
 	// start transaction
@@ -526,7 +525,6 @@ func (th *ThreadDB) InsertInboundThreadMessage(
 }
 
 // InsertInboundThreadTx - inserts inbound thread within transaction.
-// FIXEDXX
 func InsertInboundThreadTx(
 	ctx context.Context, tx pgx.Tx, thread *models.Thread) (*models.Thread, error) {
 	// Make sure InboundMessage exists for inbound Thread.
@@ -934,7 +932,6 @@ func (th *ThreadDB) InsertPostmarkInboundThreadMessage(
 }
 
 // ModifyThreadById modifies thread for selective fields
-// FIXEDXX
 func (th *ThreadDB) ModifyThreadById(
 	ctx context.Context, thread models.Thread, fields []string) (models.Thread, error) {
 	upsertQ := builq.New()
@@ -1095,7 +1092,6 @@ func (th *ThreadDB) ModifyThreadById(
 }
 
 // LookupByWorkspaceThreadId looks up thread in workspace for provided thread ID.
-// FIXEDXX
 func (th *ThreadDB) LookupByWorkspaceThreadId(
 	ctx context.Context, workspaceId string, threadId string, channel *string) (models.Thread, error) {
 	var thread models.Thread
@@ -1221,7 +1217,6 @@ func (th *ThreadDB) LookupByWorkspaceThreadId(
 }
 
 // FetchThreadsByCustomerId fetches threads by customer ID
-// FIXEDXX
 func (th *ThreadDB) FetchThreadsByCustomerId(
 	ctx context.Context, customerId string, channel *string) ([]models.Thread, error) {
 	var thread models.Thread
@@ -1356,7 +1351,6 @@ func (th *ThreadDB) FetchThreadsByCustomerId(
 // The method returns threads sorted by creation time in ascending order.
 // It queries associated entities such as customers, assigned members, inbound, and outbound details.
 // Returns a slice of Thread models and an error if the operation fails.
-// FIXEDXX
 func (th *ThreadDB) FetchThreadsByWorkspaceId(
 	ctx context.Context, workspaceId string, channel *string, role *string) ([]models.Thread, error) {
 	var thread models.Thread
@@ -1495,7 +1489,6 @@ func (th *ThreadDB) FetchThreadsByWorkspaceId(
 // FetchThreadsByAssignedMemberId retrieves a list of threads assigned to a specific member,
 // with optional filters for channel and role.
 // It returns the threads ordered by their creation date in ascending order.
-// FIXEDXX
 func (th *ThreadDB) FetchThreadsByAssignedMemberId(
 	ctx context.Context, memberId string, channel *string, role *string) ([]models.Thread, error) {
 	var thread models.Thread
@@ -1633,7 +1626,6 @@ func (th *ThreadDB) FetchThreadsByAssignedMemberId(
 
 // FetchThreadsByMemberUnassigned retrieves unassigned threads for a specified workspace,
 // optionally filtered by channel and role, and sorted by creation date in ascending order.
-// FIXEDXX
 func (th *ThreadDB) FetchThreadsByMemberUnassigned(
 	ctx context.Context, workspaceId string, channel *string, role *string) ([]models.Thread, error) {
 	var thread models.Thread
@@ -1774,7 +1766,6 @@ func (th *ThreadDB) FetchThreadsByMemberUnassigned(
 // FetchThreadsByLabelId retrieves threads associated with a specific label ID, optionally filtered by channel and role.
 // Context is used for request-scoped cancellation and deadlines.
 // Returns a slice of Thread models and an error if the database query or data processing fails.
-// FIXEDXX
 func (th *ThreadDB) FetchThreadsByLabelId(
 	ctx context.Context, labelId string, channel *string, role *string) ([]models.Thread, error) {
 	var thread models.Thread
@@ -2052,7 +2043,6 @@ func (th *ThreadDB) FetchAttachedLabelsByThreadId(
 // AppendInboundThreadMessage appends inbound message to a thread, within a transaction.
 // It ensures upserting the inbound thread message, linking it to the thread, and persisting the message.
 // Returns the newly created or updated message along with any associated error encountered during execution.
-// FIXEDXX
 func (th *ThreadDB) AppendInboundThreadMessage(
 	ctx context.Context, inbound models.ThreadMessage) (models.Message, error) {
 	tx, err := th.db.Begin(ctx)
@@ -2246,7 +2236,6 @@ func (th *ThreadDB) AppendInboundThreadMessage(
 }
 
 // AppendOutboundThreadMessage inserts a member chat into the database.
-// FIXEDXX
 func (th *ThreadDB) AppendOutboundThreadMessage(
 	ctx context.Context, outbound models.ThreadMessage) (models.Message, error) {
 	tx, err := th.db.Begin(ctx)
@@ -2730,7 +2719,6 @@ func (th *ThreadDB) ComputeLabelMetricsByWorkspaceId(
 // FindThreadByPostmarkReplyMessageId retrieves a thread based on workspace ID and Postmark reply message ID.
 // It executes a database query with joins to fetch detailed thread information and associated relationships.
 // Returns the matching thread and an error if any issues occur during the query process.
-// FIXEDXX
 func (th *ThreadDB) FindThreadByPostmarkReplyMessageId(
 	ctx context.Context, workspaceId string, mailMessageId string) (models.Thread, error) {
 	var thread models.Thread
@@ -2868,7 +2856,6 @@ func (th *ThreadDB) FindThreadByPostmarkReplyMessageId(
 // AppendPostmarkInboundThreadMessage appends a Postmark inbound message to thread.
 // Executes within a transactional context and manages thread linkage, message insertion, and Postmark log.
 // Returns the inserted message or an error if the process fails.
-// FIXEDXX
 func (th *ThreadDB) AppendPostmarkInboundThreadMessage(
 	ctx context.Context, threadId string, inboundEvent *models.InboundMessage,
 	postmarkMessageLog *models.PostmarkMessageLog, message *models.Message) (*models.Message, error) {

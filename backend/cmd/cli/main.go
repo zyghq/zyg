@@ -128,7 +128,7 @@ func initServices(conn *AppConnections) *AppServices {
 	workspaceStore := repository.NewWorkspaceDB(conn.DB)
 	memberStore := repository.NewMemberDB(conn.DB)
 	customerStore := repository.NewCustomerDB(conn.DB)
-	threadStore := repository.NewThreadDB(conn.DB, conn.Redis)
+	threadStore := repository.NewThreadDB(conn.DB)
 
 	// Initialize sync store
 	syncStore := esync.NewSyncDB(conn.SyncDB)

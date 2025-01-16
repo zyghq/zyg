@@ -2,9 +2,9 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { WorkspaceSidebar } from "@/components/workspace/sidebar";
 import { memberRowToShape, membersToMap } from "@/db/shapes";
 import { WorkspaceStoreState } from "@/db/store";
-import { MemberRow, syncWorkspaceMemberShape} from "@/db/sync";
+import { MemberRow, syncWorkspaceMemberShape } from "@/db/sync";
 import { useAccountStore, useWorkspaceStore } from "@/providers";
-import { useShape } from "@electric-sql/react"
+import { useShape } from "@electric-sql/react";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useStore } from "zustand";
 
@@ -15,8 +15,14 @@ export const Route = createFileRoute(
 });
 
 function WorkspaceLayout() {
- const { data: memberRows } = useStore<>()
-
+  // const { token } = Route.useRouteContext();
+  // const { workspaceId: paramWorkspaceId } = Route.useParams();
+  // const { data: memberRows } = useShape<MemberRow>(
+  //   syncWorkspaceMemberShape({ token, workspaceId: paramWorkspaceId }),
+  // );
+  // const members = membersToMap(memberRows.map(memberRowToShape));
+  //
+  // console.log("*************** memberRows", members);
 
   const accountStore = useAccountStore();
   const workspaceStore = useWorkspaceStore();
@@ -37,6 +43,9 @@ function WorkspaceLayout() {
   const sort = useStore(workspaceStore, (state) =>
     state.viewThreadSortKey(state),
   );
+
+  // useStore(workspaceStore, (state: WorkspaceStoreState) => state.updateMembers(members))
+
   return (
     <SidebarProvider>
       <WorkspaceSidebar

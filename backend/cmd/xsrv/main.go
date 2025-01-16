@@ -2,10 +2,8 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"flag"
 	"fmt"
-	"github.com/redis/go-redis/v9"
 	"log/slog"
 	"net/http"
 	"os"
@@ -53,42 +51,42 @@ func run(ctx context.Context) error {
 	slog.Info("database", slog.Any("db time", tm.Format(time.RFC1123)))
 
 	// Redis options
-	opts := &redis.Options{
-		Addr:     zyg.RedisAddr(),
-		Username: zyg.RedisUsername(),
-		Password: zyg.RedisPassword(),
-		DB:       0,
-	}
-
-	if zyg.RedisTLSEnabled() {
-		opts.TLSConfig = &tls.Config{
-			InsecureSkipVerify: true,
-		}
-	}
-
-	rdb := redis.NewClient(opts)
-
-	defer func(rdb *redis.Client) {
-		err := rdb.Close()
-		if err != nil {
-			slog.Error("failed to close redis client", slog.Any("err", err))
-		}
-	}(rdb)
+	//opts := &redis.Options{
+	//	Addr:     zyg.RedisAddr(),
+	//	Username: zyg.RedisUsername(),
+	//	Password: zyg.RedisPassword(),
+	//	DB:       0,
+	//}
+	//
+	//if zyg.RedisTLSEnabled() {
+	//	opts.TLSConfig = &tls.Config{
+	//		InsecureSkipVerify: true,
+	//	}
+	//}
+	//
+	//rdb := redis.NewClient(opts)
+	//
+	//defer func(rdb *redis.Client) {
+	//	err := rdb.Close()
+	//	if err != nil {
+	//		slog.Error("failed to close redis client", slog.Any("err", err))
+	//	}
+	//}(rdb)
 
 	// Perform basic diagnostic to check if the connection is working
 	// Expected result > ping: PONG
 	// If Redis is not running, error case is taken instead
-	status, err := rdb.Ping(ctx).Result()
-	if err != nil {
-		return fmt.Errorf("failed to ping redis got error: %v", err)
-	}
-	slog.Info("redis", slog.Any("status", status))
+	//status, err := rdb.Ping(ctx).Result()
+	//if err != nil {
+	//	return fmt.Errorf("failed to ping redis got error: %v", err)
+	//}
+	//slog.Info("redis", slog.Any("status", status))
 
 	// init respective stores
 	workspaceStore := repository.NewWorkspaceDB(db)
 	memberStore := repository.NewMemberDB(db)
 	customerStore := repository.NewCustomerDB(db)
-	threadStore := repository.NewThreadDB(db, rdb)
+	threadStore := repository.NewThreadDB(db)
 
 	// init respective services
 	authService := services.NewCustomerAuthService(customerStore)

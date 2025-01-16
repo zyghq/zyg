@@ -124,7 +124,7 @@ func RedisUsername() string {
 func RedisPassword() string {
 	value, ok := os.LookupEnv("REDIS_PASSWORD")
 	if !ok {
-		return ""
+		return "redispass"
 	}
 	return value
 }

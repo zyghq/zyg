@@ -2,7 +2,6 @@ package repository
 
 import (
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/redis/go-redis/v9"
 	"log/slog"
 )
 
@@ -23,8 +22,7 @@ type CustomerDB struct {
 }
 
 type ThreadDB struct {
-	db  *pgxpool.Pool
-	rdb *redis.Client
+	db *pgxpool.Pool
 }
 
 func NewAccountDB(db *pgxpool.Pool) *AccountDB {
@@ -51,10 +49,9 @@ func NewCustomerDB(db *pgxpool.Pool) *CustomerDB {
 	}
 }
 
-func NewThreadDB(db *pgxpool.Pool, rdb *redis.Client) *ThreadDB {
+func NewThreadDB(db *pgxpool.Pool) *ThreadDB {
 	return &ThreadDB{
-		db:  db,
-		rdb: rdb,
+		db: db,
 	}
 }
 

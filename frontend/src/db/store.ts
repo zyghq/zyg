@@ -1,8 +1,3 @@
-import { MemberShape, WorkspaceShape } from "@/db/shapes";
-import _ from "lodash";
-import { immer } from "zustand/middleware/immer";
-import { createStore } from "zustand/vanilla";
-
 import {
   HOLD,
   NEEDS_FIRST_RESPONSE,
@@ -10,8 +5,8 @@ import {
   RESOLVED,
   SPAM,
   WAITING_ON_CUSTOMER,
-} from "./constants";
-import { getFromLocalStorage, setInLocalStorage } from "./helpers";
+} from "@/db/constants";
+import { getFromLocalStorage, setInLocalStorage } from "@/db/helpers";
 import {
   Account,
   AuthMember,
@@ -19,8 +14,22 @@ import {
   Label,
   Pat,
   Thread,
+  Workspace,
   WorkspaceMetrics,
-} from "./models";
+} from "@/db/models";
+import { MemberShape } from "@/db/shapes";
+import _ from "lodash";
+import { immer } from "zustand/middleware/immer";
+import { createStore } from "zustand/vanilla";
+
+// Represents entities for KV dictionary values.
+// add more entities as supported by KV store
+// e.g: Workspace | User | etc.
+type EntitiesKV = Customer | Label | MemberShape | Pat | Thread | Workspace;
+
+export type Dictionary<K extends number | string, V extends EntitiesKV> = {
+  [key in K]: V;
+};
 
 export type LabelMap = Dictionary<string, Label>;
 
@@ -30,25 +39,14 @@ export type PatMap = Dictionary<string, Pat>;
 
 export type CustomerMap = Dictionary<string, Customer>;
 
-export type Dictionary<
-  K extends number | string,
-  V extends WorkspaceEntities,
-> = {
-  [key in K]: V;
-};
+export type ThreadMap = Dictionary<string, Thread>;
 
-export interface IWorkspaceEntities {
-  customers: CustomerMap | null;
-  labels: LabelMap | null;
-  member: AuthMember | null;
-  members: MemberShapeMap | null;
-  metrics: WorkspaceMetrics;
-  pats: null | PatMap;
-  threads: null | ThreadMap;
-  workspace: WorkspaceShape;
+// Represents the in-sync entities by the sync engine.
+export interface InSyncWorkspaceEntities {
+  members: MemberShapeMap;
 }
 
-// Represents API bootstrapped entities.
+// Represents bootstrapped API entities.
 export interface IWorkspaceEntitiesBootstrap {
   customers: CustomerMap | null;
   labels: LabelMap | null;
@@ -56,6 +54,19 @@ export interface IWorkspaceEntitiesBootstrap {
   metrics: WorkspaceMetrics;
   pats: null | PatMap;
   threads: null | ThreadMap;
+  workspace: null | Workspace;
+}
+
+// Represents the store entities.
+export interface IWorkspaceEntities {
+  customers: CustomerMap | null;
+  labels: LabelMap | null;
+  member: AuthMember
+  members: MemberShapeMap | null;
+  metrics: WorkspaceMetrics;
+  pats: null | PatMap;
+  threads: null | ThreadMap;
+  workspace: null | Workspace;
 }
 
 export type SortBy =
@@ -68,8 +79,6 @@ export type SortBy =
   | "status-changed-asc"
   | "status-changed-dsc";
 
-export type ThreadMap = Dictionary<string, Thread>;
-
 type Priority = "high" | "low" | "normal" | "urgent";
 type StageType =
   | "hold"
@@ -81,16 +90,6 @@ type StageType =
 
 type StatusType = "done" | "todo";
 
-// add more entities as supported by store
-// e.g: Workspace | User | etc.
-type WorkspaceEntities =
-  | Customer
-  | Label
-  | MemberShape
-  | Pat
-  | Thread
-  | WorkspaceShape;
-
 export const defaultSortKey = "created-asc";
 
 export type Assignee = {
@@ -99,6 +98,8 @@ export type Assignee = {
 };
 export type AssigneesFiltersType = string | string[] | undefined;
 
+// Represents workspace value objects.
+// Unlike entities which represent backend system data, value objects are application level.
 export interface IWorkspaceValueObjects {
   error: Error | null;
   hasData: boolean;
@@ -108,9 +109,6 @@ export interface IWorkspaceValueObjects {
 }
 
 export type PrioritiesFiltersType = Priority | Priority[] | undefined;
-
-// export type sortByType = "last-message-dsc" | "created-asc" | "created-dsc";
-// export const defaultSortKey = "last-message-dsc";
 
 export type StagesFiltersType = StageType | StageType[] | undefined;
 
@@ -124,6 +122,7 @@ export type ThreadAppliedFilters = {
   status: StatusType;
 };
 
+// Represents the full store state with entities and application state.
 export type WorkspaceStoreState = IWorkspaceEntities &
   IWorkspaceStoreActions &
   IWorkspaceValueObjects;
@@ -160,6 +159,8 @@ interface IWorkspaceStoreActions {
   setThreadSortKey(sortKey: SortBy): void;
 
   updateLabel(labelId: string, label: Label): void;
+
+  updateMembers(members: MemberShapeMap): void;
 
   updateThread(thread: Thread): void;
 
@@ -427,6 +428,15 @@ export const buildWorkspaceStore = (
             return state;
           }
         });
+      },
+      updateMembers: (members: MemberShapeMap) => {
+        set((state) => ({
+          ...state,
+          members: {
+            ...state.members,
+            ...members,
+          },
+        }));
       },
       updateThread: (thread) => {
         set((state) => {

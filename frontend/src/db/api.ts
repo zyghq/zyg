@@ -1,37 +1,38 @@
-import { z } from "zod";
-
+import { HTTPError } from "@/db/errors";
 import {
   Account,
   AuthMember,
   Customer,
+  CustomerEventResponse,
   customerTransformer,
+  LabelResponse,
   labelTransformer,
+  MessageAttachmentResponse,
   Pat,
   patTransformer,
-  threadTransformer,
-} from "./models";
-import {
-  accountResponseSchema,
-  authMemberResponseSchema,
-  CustomerEventResponse,
-  customerEventSchema,
-  customerResponseSchema,
-  LabelResponse,
-  labelResponseSchema,
-  MessageAttachmentResponse,
-  messageAttachmentResponseSchema,
-  patResponseSchema,
   PostmarkMailServerSetting,
-  postmarkMailServerSettingSchema,
   ThreadLabelResponse,
-  threadLabelResponseSchema,
   ThreadMessageResponse,
-  threadMessageResponseSchema,
   ThreadResponse,
-  threadResponseSchema,
+  threadTransformer,
+  Workspace,
   WorkspaceMetricsResponse,
-  workspaceMetricsResponseSchema,
-} from "./schema";
+} from "@/db/models";
+import {
+  accountSchema,
+  authMemberSchema,
+  customerEventSchema,
+  customerSchema,
+  labelSchema,
+  messageAttachmentSchema,
+  patSchema,
+  postmarkMailServerSettingSchema,
+  threadLabelSchema,
+  threadMessageSchema,
+  threadSchema,
+  workspaceMetricsSchema,
+  workspaceSchema,
+} from "@/db/schema";
 import {
   CustomerMap,
   IWorkspaceEntitiesBootstrap,
@@ -39,7 +40,13 @@ import {
   LabelMap,
   PatMap,
   ThreadMap,
-} from "./store";
+} from "@/db/store";
+import { z } from "zod";
+
+interface ApiResponse<T> {
+  data: null | T;
+  error: Error | null;
+}
 
 // Returns the default state of the workspace store.
 function initialWorkspaceData(): IWorkspaceEntitiesBootstrap &
@@ -67,67 +74,81 @@ function initialWorkspaceData(): IWorkspaceEntitiesBootstrap &
     threadAppliedFilters: null,
     threads: null,
     threadSortKey: null,
+    workspace: null,
   };
 }
 
-// export async function getWorkspace(
-//   token: string,
-//   workspaceId: string,
-// ): Promise<{ data: null | Workspace; error: Error | null }> {
-//   try {
-//     // make a request
-//     const response = await fetch(
-//       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/`,
-//       {
-//         headers: {
-//           Authorization: `Bearer ${token}`,
-//           "Content-Type": "application/json",
-//         },
-//         method: "GET",
-//       },
-//     );
-//
-//     if (!response.ok) {
-//       const { status, statusText } = response;
-//       return {
-//         data: null,
-//         error: new Error(
-//           `error fetching workspace details: ${status} ${statusText}`,
-//         ),
-//       };
-//     }
-//
-//     try {
-//       const data = await response.json();
-//       console.log(data);
-//       const workspace = workspaceResponseSchema.parse({ ...data });
-//       return { data: workspace, error: null };
-//     } catch (err) {
-//       if (err instanceof z.ZodError) {
-//         console.error(err.message);
-//       } else console.error(err);
-//       return {
-//         data: null,
-//         error: new Error("error parsing workspace schema"),
-//       };
-//     }
-//   } catch (error) {
-//     console.error(error);
-//     return {
-//       data: null,
-//       error: new Error(
-//         "error fetching workspace details - something went wrong",
-//       ),
-//     };
-//   }
-// }
+/**
+ * Retrieves the details of a specified workspace.
+ *
+ * @param {string} token - The authorization token required for accessing the workspace.
+ * @param {string} workspaceId - The unique identifier of the workspace to retrieve.
+ * @return {Promise<ApiResponse<Workspace>>} A promise that resolves with the workspace data or an error.
+ */
+export async function getWorkspace(
+  token: string,
+  workspaceId: string,
+): Promise<ApiResponse<Workspace>> {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        method: "GET",
+      },
+    );
 
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to fetch workspace details",
+        status: response.status,
+        statusText: response.statusText,
+      });
+    }
+
+    const data = await response.json();
+    const workspace = workspaceSchema.parse(data);
+    return {
+      data: workspace,
+      error: null,
+    };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid workspace schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to fetch workspace details";
+
+    console.error("[getWorkspace]", {
+      error,
+      timestamp: new Date().toISOString(),
+      workspaceId,
+    });
+
+    return {
+      data: null,
+      error: new Error(errorMessage),
+    };
+  }
+}
+
+/**
+ * Retrieves details of a workspace member.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID.
+ * @return {Promise<ApiResponse<AuthMember>>} A promise resolving with member data or an error.
+ */
 export async function getWorkspaceMember(
   token: string,
   workspaceId: string,
-): Promise<{ data: AuthMember | null; error: Error | null }> {
+): Promise<ApiResponse<AuthMember>> {
   try {
-    // make a request
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/members/me/`,
       {
@@ -139,44 +160,46 @@ export async function getWorkspaceMember(
     );
 
     if (!response.ok) {
-      const { status, statusText } = response;
-      return {
-        data: null,
-        error: new Error(
-          `error fetching workspace member details: ${status} ${statusText}`,
-        ),
-      };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message:
+          errorData?.message || "Failed to fetch workspace member details",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
 
-    try {
-      const data = await response.json();
-      console.log(data);
-      const member = authMemberResponseSchema.parse({ ...data });
-      return { data: member, error: null };
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        console.error(err.message);
-      } else console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing workspace membership schema"),
-      };
-    }
+    const data = await response.json();
+    const member = authMemberSchema.parse(data);
+    return { data: member, error: null };
   } catch (error) {
-    console.error(error);
-    return {
-      data: null,
-      error: new Error(
-        "error fetching workspace member details - something went wrong",
-      ),
-    };
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid member schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to fetch workspace member details";
+
+    console.error("[getWorkspaceMember]", {
+      error,
+      timestamp: new Date().toISOString(),
+      workspaceId,
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Retrieves workspace metrics.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID.
+ * @return {Promise<ApiResponse<WorkspaceMetricsResponse>>} A promise resolving with metrics data or an error.
+ */
 export async function getWorkspaceMetrics(
   token: string,
   workspaceId: string,
-): Promise<{ data: null | WorkspaceMetricsResponse; error: Error | null }> {
+): Promise<ApiResponse<WorkspaceMetricsResponse>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/metrics/`,
@@ -190,42 +213,52 @@ export async function getWorkspaceMetrics(
     );
 
     if (!response.ok) {
-      const { status, statusText } = response;
-      return {
-        data: null,
-        error: new Error(
-          `error fetching workspace metrics: ${status} ${statusText}`,
-        ),
-      };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to fetch workspace metrics",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
+
     const data = await response.json();
-    try {
-      const metrics = workspaceMetricsResponseSchema.parse({ ...data });
-      return { data: metrics, error: null };
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        console.error(err.message);
-      } else console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing workspace metrics schema"),
-      };
-    }
+    const metrics = workspaceMetricsSchema.parse(data);
+    return {
+      data: metrics,
+      error: null,
+    };
   } catch (error) {
-    console.error(error);
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid workspace metrics schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to fetch workspace metrics";
+
+    console.error("[getWorkspaceMetrics]", {
+      error,
+      timestamp: new Date().toISOString(),
+      workspaceId,
+    });
+
     return {
       data: null,
-      error: new Error(
-        "error fetching workspace metrics - something went wrong",
-      ),
+      error: new Error(errorMessage),
     };
   }
 }
 
+/**
+ * Retrieves workspace threads.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID.
+ * @return {Promise<ApiResponse<ThreadResponse[]>>} A promise resolving with threads data or an error.
+ */
 export async function getWorkspaceThreads(
   token: string,
   workspaceId: string,
-): Promise<{ data: null | ThreadResponse[]; error: Error | null }> {
+): Promise<ApiResponse<ThreadResponse[]>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/`,
@@ -239,55 +272,50 @@ export async function getWorkspaceThreads(
     );
 
     if (!response.ok) {
-      const { status, statusText } = response;
-      return {
-        data: null,
-        error: new Error(
-          `error fetching workspace threads: ${status} ${statusText}`,
-        ),
-      };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to fetch workspace threads",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
 
-    try {
-      const data = await response.json();
-      console.log(data);
-      const threads = data.map((item: any) => {
-        return threadResponseSchema.parse({ ...item });
-      });
-      return { data: threads, error: null };
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        console.error(err.message);
-      } else console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing workspace threads schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error(
-        "error fetching workspace threads - something went wrong",
-      ),
-    };
+    const data = await response.json();
+    const threads = data.map((item: any) => threadSchema.parse(item));
+    return { data: threads, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid workspace threads schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to fetch workspace threads";
+
+    console.error("[getWorkspaceThreads]", {
+      error,
+      timestamp: new Date().toISOString(),
+      workspaceId,
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Retrieves workspace labels.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID.
+ * @return {Promise<ApiResponse<LabelResponse[]>>} A promise resolving with label data or an error.
+ */
 export async function getWorkspaceLabels(
   token: string,
   workspaceId: string,
-): Promise<{
-  data: LabelResponse[] | null;
-  error: Error | null;
-}> {
+): Promise<ApiResponse<LabelResponse[]>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/labels/`,
       {
         headers: {
-          // "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         method: "GET",
@@ -295,47 +323,41 @@ export async function getWorkspaceLabels(
     );
 
     if (!response.ok) {
-      const { status, statusText } = response;
-      return {
-        data: null,
-        error: new Error(
-          `error fetching workspace labels: ${status} ${statusText}`,
-        ),
-      };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to fetch workspace labels",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
 
-    try {
-      const data = await response.json();
-      console.log(data);
-      // schema validate for each item
-      const labels = data.map((item: any) => {
-        return labelResponseSchema.parse({ ...item });
-      });
-      return { data: labels, error: null };
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        console.error(err.message);
-      } else console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing workspace labels schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error(
-        "error fetching workspace labels - something went wrong",
-      ),
-    };
+    const data = await response.json();
+    const labels = data.map((item: any) => labelSchema.parse(item));
+    return { data: labels, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid workspace labels schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to fetch workspace labels";
+
+    console.error("[getWorkspaceLabels]", {
+      error,
+      timestamp: new Date().toISOString(),
+      workspaceId,
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
-export async function getPats(token: string): Promise<{
-  data: null | Pat[];
-  error: Error | null;
-}> {
+/**
+ * Retrieves personal access tokens (PATs).
+ *
+ * @param {string} token - The authorization token.
+ * @return {Promise<ApiResponse<Pat[]>>} A promise resolving with PAT data or an error.
+ */
+export async function getPats(token: string): Promise<ApiResponse<Pat[]>> {
   try {
     const response = await fetch(`${import.meta.env.VITE_ZYG_URL}/pats/`, {
       headers: {
@@ -346,47 +368,41 @@ export async function getPats(token: string): Promise<{
     });
 
     if (!response.ok) {
-      const { status, statusText } = response;
-      return {
-        data: null,
-        error: new Error(
-          `error fetching account pats: ${status} ${statusText}`,
-        ),
-      };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to fetch account PATs",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
 
-    try {
-      const data = await response.json();
-      console.log(data);
-      const pats = data.map((item: any) => {
-        return patResponseSchema.parse({ ...item });
-      });
-      return { data: pats, error: null };
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        console.error(err.message);
-      } else console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing account pat schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error("error fetching account pats - something went wrong"),
-    };
+    const data = await response.json();
+    const pats = data.map((item: any) => patSchema.parse(item));
+    return { data: pats, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid account PAT schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to fetch account PATs";
+
+    console.error("[getPats]", { error, timestamp: new Date().toISOString() });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Creates a new personal access token (PAT).
+ *
+ * @param {string} token - The authorization token.
+ * @param {object} body - Object containing PAT name and description.
+ * @return {Promise<ApiResponse<Pat>>} A promise resolving with newly created PAT data or an error.
+ */
 export async function createPat(
   token: string,
   body: { description: string; name: string },
-): Promise<{
-  data: null | Pat;
-  error: Error | null;
-}> {
+): Promise<ApiResponse<Pat>> {
   try {
     const response = await fetch(`${import.meta.env.VITE_ZYG_URL}/pats/`, {
       body: JSON.stringify({ ...body }),
@@ -396,147 +412,106 @@ export async function createPat(
       },
       method: "POST",
     });
+
     if (!response.ok) {
-      const { status, statusText } = response;
-      const error = new Error(
-        `error creating account pat with status: ${status} and statusText: ${statusText}`,
-      );
-      return { data: null, error };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to create account PAT",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
 
-    try {
-      const data = await response.json();
-      console.log(data);
-      const pat = patResponseSchema.parse({ ...data });
-      return { data: pat, error: null };
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        console.error(err.message);
-      } else console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing account pat schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error("error creating account pat - something went wrong"),
-    };
+    const data = await response.json();
+    const pat = patSchema.parse(data);
+    return { data: pat, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid account PAT schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to create account PAT";
+
+    console.error("[createPat]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
-function makeThreadsStoreable(threads: ThreadResponse[]): ThreadMap {
-  const mapped: ThreadMap = {};
-  const transfomer = threadTransformer();
-  for (const thread of threads) {
-    const [threadId, normalized] = transfomer.normalize(thread);
-    mapped[threadId] = normalized;
-  }
-  return mapped;
-}
 
-function makeLabelsStoreable(labels: LabelResponse[]): LabelMap {
-  const mapped: LabelMap = {};
-  const transfomer = labelTransformer();
-  for (const label of labels) {
-    const [labelId, normalized] = transfomer.normalize(label);
-    mapped[labelId] = normalized;
-  }
-  return mapped;
-}
 
-function makeCustomersStoreable(customers: Customer[]): CustomerMap {
-  const mapped: CustomerMap = {};
-  const transformer = customerTransformer();
-  for (const customer of customers) {
-    const [customerId, normalized] = transformer.normalize(customer);
-    mapped[customerId] = normalized;
-  }
-  return mapped;
-}
 
-// function makeMembersStoreable(members: MemberResponse[]): MemberMap {
-//   const mapped: MemberMap = {};
-//   const transfomer = memberTransformer();
-//   for (const member of members) {
-//     const [memberId, normalized] = transfomer.normalize(member);
-//     mapped[memberId] = normalized;
-//   }
-//   return mapped;
-// }
 
-function makePatsStoreable(pats: Pat[]): PatMap {
-  const mapped: PatMap = {};
-  const transfomer = patTransformer();
-  for (const pat of pats) {
-    const [patId, normalized] = transfomer.normalize(pat);
-    mapped[patId] = normalized;
-  }
-  return mapped;
-}
 
+
+
+/**
+ * Gets an existing ZYG account or creates a new one.
+ *
+ * @param {string} token - The authorization token.
+ * @param {object} body - Object containing possible account name.
+ * @return {Promise<ApiResponse<Account>>} A promise resolving with account data or an error.
+ */
 export async function getOrCreateZygAccount(
   token: string,
   body?: { name: string },
-): Promise<{
-  data: Account | null;
-  error: Error | null;
-}> {
+): Promise<ApiResponse<Account>> {
   try {
-    const reqBody = body ? JSON.stringify({ ...body }) : JSON.stringify({});
+    const reqBody = body ? JSON.stringify(body) : "{}";
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/accounts/auth/`,
       {
         body: reqBody,
         headers: {
-          // "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         method: "POST",
       },
     );
+
     if (!response.ok) {
-      const { status, statusText } = response;
-      const error = new Error(
-        `error creating Zyg auth account with with status: ${status} and statusText: ${statusText}`,
-      );
-      return { data: null, error };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message:
+          errorData?.message || "Failed to create or get ZYG auth account",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
 
-    try {
-      const data = await response.json();
-      console.log(data);
-      const account = accountResponseSchema.parse({ ...data });
-      return { data: account, error: null };
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        console.error(err.message);
-      } else console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing account schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error(
-        "error fetching auth account details - something went wrong",
-      ),
-    };
+    const data = await response.json();
+    const account = accountSchema.parse(data);
+    return { data: account, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid account schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to create or get ZYG auth account";
+
+    console.error("[getOrCreateZygAccount]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Retrieves workspace customers.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID.
+ * @return {Promise<ApiResponse<Customer[]>>} A promise resolving with customer data or an error.
+ */
 export async function getWorkspaceCustomers(
   token: string,
   workspaceId: string,
-): Promise<{
-  data: Customer[] | null;
-  error: Error | null;
-}> {
+): Promise<ApiResponse<Customer[]>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/customers/`,
@@ -549,54 +524,50 @@ export async function getWorkspaceCustomers(
     );
 
     if (!response.ok) {
-      const { status, statusText } = response;
-      return {
-        data: null,
-        error: new Error(
-          `error fetching workspace customers: ${status} ${statusText}`,
-        ),
-      };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to fetch workspace customers",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
 
-    try {
-      const data = await response.json();
-      console.log(data);
-      const customers = data.map((item: any) => {
-        return customerResponseSchema.parse({ ...item });
-      });
-      return { data: customers, error: null };
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        console.error(err.message);
-      } else console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing workspace customers schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error(
-        "error fetching workspace customers - something went wrong",
-      ),
-    };
+    const data = await response.json();
+    const customers = data.map((item: any) => customerSchema.parse(item));
+    return { data: customers, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid workspace customers schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to fetch workspace customers";
+
+    console.error("[getWorkspaceCustomers]", {
+      error,
+      timestamp: new Date().toISOString(),
+      workspaceId,
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Creates a new workspace.
+ *
+ * @param {string} token - The authorization token.
+ * @param {object} body - Containing workspace name.
+ * @return {Promise<ApiResponse<{ workspaceId: string; workspaceName: string }>>} A promise resolving with workspace data or an error.
+ */
 export async function createWorkspace(
   token: string,
   body: { name: string },
-): Promise<{
-  data: null | { workspaceId: string; workspaceName: string };
-  error: Error | null;
-}> {
+): Promise<ApiResponse<{ workspaceId: string; workspaceName: string }>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/`,
       {
-        body: JSON.stringify({ ...body }),
+        body: JSON.stringify(body),
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -604,42 +575,51 @@ export async function createWorkspace(
         method: "POST",
       },
     );
+
     if (!response.ok) {
-      const { status, statusText } = response;
-      const error = new Error(
-        `error creating workspace with status: ${status} and statusText: ${statusText}`,
-      );
-      return { data: null, error };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to create workspace",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
-    const data = await response.json();
-    console.log(data);
-    const { name, workspaceId } = data;
+
+    const { name, workspaceId } = await response.json();
     return {
       data: { workspaceId, workspaceName: name },
       error: null,
     };
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error("error creating workspace - something went wrong"),
-    };
+  } catch (error) {
+    const errorMessage =
+      error instanceof HTTPError ? error.message : "Failed to create workspace";
+
+    console.error("[createWorkspace]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Updates an existing workspace.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID to update.
+ * @param {object} body - The new workspace parameters.
+ * @return {Promise<ApiResponse<{ workspaceId: string; workspaceName: string }>>} A promise resolving with the updated workspace data or an error.
+ */
 export async function updateWorkspace(
   token: string,
   workspaceId: string,
   body: { name: string },
-): Promise<{
-  data: null | { workspaceId: string; workspaceName: string };
-  error: Error | null;
-}> {
+): Promise<ApiResponse<{ workspaceId: string; workspaceName: string }>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/`,
       {
-        body: JSON.stringify({ ...body }),
+        body: JSON.stringify(body),
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -647,27 +627,30 @@ export async function updateWorkspace(
         method: "PATCH",
       },
     );
+
     if (!response.ok) {
-      const { status, statusText } = response;
-      const error = new Error(
-        `error updating workspace with status: ${status} and statusText: ${statusText}`,
-      );
-      return { data: null, error };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to update workspace",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
 
-    const data = await response.json();
-    console.log(data);
-    const { name, workspaceId: id } = data;
+    const { name, workspaceId: id } = await response.json();
     return {
       data: { workspaceId: id, workspaceName: name },
       error: null,
     };
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error("error updating workspace - something went wrong"),
-    };
+  } catch (error) {
+    const errorMessage =
+      error instanceof HTTPError ? error.message : "Failed to update workspace";
+
+    console.error("[updateWorkspace]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
@@ -726,12 +709,17 @@ export async function updateWorkspace(
 //   }
 // }
 
+/**
+ * Deletes a personal access token (PAT).
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} patId - The PAT ID.
+ * @return {Promise<ApiResponse<null>>} A promise resolving with null or an error.
+ */
 export async function deletePat(
   token: string,
   patId: string,
-): Promise<{
-  error: Error | null;
-}> {
+): Promise<ApiResponse<null>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/pats/${patId}/`,
@@ -744,134 +732,144 @@ export async function deletePat(
     );
 
     if (!response.ok) {
-      const { status, statusText } = response;
-      return {
-        error: new Error(
-          `error deleting pat with status: ${status} and statusText: ${statusText}`,
-        ),
-      };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to delete PAT",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
-    return { error: null };
-  } catch (err) {
-    console.error(err);
-    return {
-      error: new Error("error deleting pat - something went wrong"),
-    };
+
+    return { data: null, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof HTTPError ? error.message : "Failed to delete PAT";
+
+    console.error("[deletePat]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
 // @sanchitrk:
 // improve usage with react query with zustand store.
 // can we do this better?
-export async function bootstrapWorkspace(
-  token: string,
-  workspaceId: string,
-): Promise<IWorkspaceEntitiesBootstrap & IWorkspaceValueObjects> {
-  const data = initialWorkspaceData();
+// export async function bootstrapWorkspace(
+//   token: string,
+//   workspaceId: string,
+// ): Promise<IWorkspaceEntitiesBootstrap & IWorkspaceValueObjects> {
+//   const data = initialWorkspaceData();
+//
+//   const getWorkspaceP = getWorkspace(token, workspaceId);
+//   const getWorkspaceMemberP = getWorkspaceMember(token, workspaceId);
+//   const getWorkspaceCustomersP = getWorkspaceCustomers(token, workspaceId);
+//   const getWorkspaceMetricsP = getWorkspaceMetrics(token, workspaceId);
+//   const getWorkspaceThreadsP = getWorkspaceThreads(token, workspaceId);
+//   const getWorkspaceLabelsP = getWorkspaceLabels(token, workspaceId);
+//   // const getWorkspaceMembersP = getWorkspaceMembers(token, workspaceId);
+//   const getAccountPatsP = getPats(token);
+//
+//   const [
+//     workspaceData,
+//     memberData,
+//     customerData,
+//     metricsData,
+//     threadsData,
+//     labelsData,
+//     // membersData,
+//     patsData,
+//   ] = await Promise.all([
+//     getWorkspaceP,
+//     getWorkspaceMemberP,
+//     getWorkspaceCustomersP,
+//     getWorkspaceMetricsP,
+//     getWorkspaceThreadsP,
+//     getWorkspaceLabelsP,
+//     // getWorkspaceMembersP,
+//     getAccountPatsP,
+//   ]);
+//
+//   const { data: workspace, error: errWorkspace } = workspaceData;
+//   const { data: member, error: errMember } = memberData;
+//   const { data: customers, error: errCustomer } = customerData;
+//   const { data: metrics, error: errMetrics } = metricsData;
+//   const { data: threads, error: errThreads } = threadsData;
+//   const { data: labels, error: errLabels } = labelsData;
+//   const { data: pats, error: errPats } = patsData;
+//
+//   const hasErr =
+//     errWorkspace ||
+//     errMember ||
+//     errCustomer ||
+//     errMetrics ||
+//     errThreads ||
+//     errLabels ||
+//     errPats;
+//
+//   if (hasErr) {
+//     data.error = new Error("error bootstrapping workspace store information");
+//     data.isPending = false;
+//     return data;
+//   }
+//
+//   if (workspace) {
+//     data.workspace = workspace;
+//     data.hasData = true;
+//     data.isPending = false;
+//   }
+//
+//   if (member) {
+//     data.member = member;
+//   }
+//
+//   if (customers && customers.length > 0) {
+//     const customersMap = makeCustomersStoreable(customers);
+//     data.customers = customersMap;
+//   }
+//
+//   if (metrics) {
+//     const { count } = metrics;
+//     data.metrics = count;
+//   }
+//
+//   // if (members && members.length > 0) {
+//   //   const membersMap = makeMembersStoreable(members);
+//   //   data.members = membersMap;
+//   // }
+//
+//   if (threads && threads.length > 0) {
+//     const threadsMap = makeThreadsStoreable(threads);
+//     data.threads = threadsMap;
+//   }
+//
+//   if (labels && labels.length > 0) {
+//     const labelsMap = makeLabelsStoreable(labels);
+//     data.labels = labelsMap;
+//   }
+//
+//   if (pats && pats.length > 0) {
+//     const patsMap = makePatsStoreable(pats);
+//     data.pats = patsMap;
+//   }
+//
+//   return data;
+// }
 
-  // const getWorkspaceP = getWorkspace(token, workspaceId);
-  const getWorkspaceMemberP = getWorkspaceMember(token, workspaceId);
-  const getWorkspaceCustomersP = getWorkspaceCustomers(token, workspaceId);
-  const getWorkspaceMetricsP = getWorkspaceMetrics(token, workspaceId);
-  const getWorkspaceThreadsP = getWorkspaceThreads(token, workspaceId);
-  const getWorkspaceLabelsP = getWorkspaceLabels(token, workspaceId);
-  // const getWorkspaceMembersP = getWorkspaceMembers(token, workspaceId);
-  const getAccountPatsP = getPats(token);
-
-  const [
-    // workspaceData,
-    memberData,
-    customerData,
-    metricsData,
-    threadsData,
-    labelsData,
-    // membersData,
-    patsData,
-  ] = await Promise.all([
-    // getWorkspaceP,
-    getWorkspaceMemberP,
-    getWorkspaceCustomersP,
-    getWorkspaceMetricsP,
-    getWorkspaceThreadsP,
-    getWorkspaceLabelsP,
-    // getWorkspaceMembersP,
-    getAccountPatsP,
-  ]);
-
-  // const { data: workspace, error: errWorkspace } = workspaceData;
-  const { data: member, error: errMember } = memberData;
-  const { data: customers, error: errCustomer } = customerData;
-  const { data: metrics, error: errMetrics } = metricsData;
-  const { data: threads, error: errThreads } = threadsData;
-  const { data: labels, error: errLabels } = labelsData;
-  const { data: pats, error: errPats } = patsData;
-
-  const hasErr =
-    // errWorkspace ||
-    errMember ||
-    errCustomer ||
-    errMetrics ||
-    errThreads ||
-    errLabels ||
-    errPats;
-
-  if (hasErr) {
-    data.error = new Error("error bootstrapping workspace store information");
-    data.isPending = false;
-    return data;
-  }
-
-  // if (workspace) {
-  //   data.workspace = workspace;
-  //   data.hasData = true;
-  //   data.isPending = false;
-  // }
-
-  if (member) {
-    data.member = member;
-  }
-
-  if (customers && customers.length > 0) {
-    const customersMap = makeCustomersStoreable(customers);
-    data.customers = customersMap;
-  }
-
-  if (metrics) {
-    const { count } = metrics;
-    data.metrics = count;
-  }
-
-  // if (members && members.length > 0) {
-  //   const membersMap = makeMembersStoreable(members);
-  //   data.members = membersMap;
-  // }
-
-  if (threads && threads.length > 0) {
-    const threadsMap = makeThreadsStoreable(threads);
-    data.threads = threadsMap;
-  }
-
-  if (labels && labels.length > 0) {
-    const labelsMap = makeLabelsStoreable(labels);
-    data.labels = labelsMap;
-  }
-
-  if (pats && pats.length > 0) {
-    const patsMap = makePatsStoreable(pats);
-    data.pats = patsMap;
-  }
-
-  return data;
-}
-
+/**
+ * Fetches all messages for a specific thread within a workspace.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID.
+ * @param {string} threadId - The thread ID.
+ * @return {Promise<ApiResponse<ThreadMessageResponse[]>>} A promise resolving with thread messages data or an error.
+ */
 export async function getWorkspaceThreadMessages(
   token: string,
   workspaceId: string,
   threadId: string,
-): Promise<{
-  data: null | ThreadMessageResponse[];
-  error: Error | null;
-}> {
+): Promise<ApiResponse<ThreadMessageResponse[]>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/${threadId}/messages/`,
@@ -884,53 +882,52 @@ export async function getWorkspaceThreadMessages(
     );
 
     if (!response.ok) {
-      const { status, statusText } = response;
-      return {
-        data: null,
-        error: new Error(
-          `error fetching workspace thread chat messages: ${status} ${statusText}`,
-        ),
-      };
-    }
-
-    try {
-      const data = await response.json();
-      console.log(data);
-      const messages = data.map((item: any) => {
-        return threadMessageResponseSchema.parse({ ...item });
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message:
+          errorData?.message || "Failed to fetch workspace thread messages",
+        status: response.status,
+        statusText: response.statusText,
       });
-
-      return { data: messages, error: null };
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        console.error(err.message);
-      } else console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing workspace thread chat messages schema"),
-      };
     }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error(
-        "error fetching workspace thread chat messages - something went wrong",
-      ),
-    };
+
+    const data = await response.json();
+    const messages = data.map((item: any) => threadMessageSchema.parse(item));
+    return { data: messages, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid workspace thread messages schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to fetch workspace thread messages";
+
+    console.error("[getWorkspaceThreadMessages]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Creates a new label for a workspace.
+ *
+ * @param {string} token - Authorization token.
+ * @param {string} workspaceId - ID of the workspace to create the label for.
+ * @param {object} body - The new label parameters.
+ * @return {Promise<ApiResponse<LabelResponse>>} A promise resolving with the newly created label data or an error.
+ */
 export async function createWorkspaceLabel(
   token: string,
   workspaceId: string,
   body: { name: string },
-): Promise<{ data: LabelResponse | null; error: Error | null }> {
+): Promise<ApiResponse<LabelResponse>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/labels/`,
       {
-        body: JSON.stringify({ ...body }),
+        body: JSON.stringify(body),
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -938,48 +935,55 @@ export async function createWorkspaceLabel(
         method: "POST",
       },
     );
+
     if (!response.ok) {
-      const { status, statusText } = response;
-      const error = new Error(
-        `error creating label with status: ${status} and statusText: ${statusText}`,
-      );
-      return { data: null, error };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to create label",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
 
-    try {
-      const data = await response.json();
-      console.log(data);
-      const parsed = labelResponseSchema.parse({ ...data });
-      return { data: parsed, error: null };
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        console.error(err.message);
-      } else console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing workspace label schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error("error creating label - something went wrong"),
-    };
+    const data = await response.json();
+    const parsed = labelSchema.parse(data);
+    return { data: parsed, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid workspace label schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to create label";
+
+    console.error("[createWorkspaceLabel]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Updates a label for a specific workspace.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID.
+ * @param {string} labelId - The label ID.
+ * @param {object} body - The updated label parameters.
+ * @return {Promise<ApiResponse<LabelResponse>>} A promise resolving with the updated label data or an error.
+ */
 export async function updateWorkspaceLabel(
   token: string,
   workspaceId: string,
   labelId: string,
   body: { name: string },
-): Promise<{ data: LabelResponse | null; error: Error | null }> {
+): Promise<ApiResponse<LabelResponse>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/labels/${labelId}/`,
       {
-        body: JSON.stringify({ ...body }),
+        body: JSON.stringify(body),
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -987,48 +991,55 @@ export async function updateWorkspaceLabel(
         method: "PATCH",
       },
     );
+
     if (!response.ok) {
-      const { status, statusText } = response;
-      const error = new Error(
-        `error updating label with status: ${status} and statusText: ${statusText}`,
-      );
-      return { data: null, error };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to update label",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
 
-    try {
-      const data = await response.json();
-      console.log(data);
-      const parsed = labelResponseSchema.parse({ ...data });
-      return { data: parsed, error: null };
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        console.error(err.message);
-      } else console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing workspace label schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error("error workspace label - something went wrong"),
-    };
+    const data = await response.json();
+    const parsed = labelSchema.parse(data);
+    return { data: parsed, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid workspace label schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to update label";
+
+    console.error("[updateWorkspaceLabel]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Updates a specific thread within a workspace.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID.
+ * @param {string} threadId - The thread ID.
+ * @param {object} body - The updated thread parameters.
+ * @return {Promise<ApiResponse<ThreadResponse>>} A promise resolving with the updated thread data or an error.
+ */
 export async function updateThread(
   token: string,
   workspaceId: string,
   threadId: string,
   body: object,
-): Promise<{ data: null | ThreadResponse; error: Error | null }> {
+): Promise<ApiResponse<ThreadResponse>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/${threadId}/`,
       {
-        body: JSON.stringify({ ...body }),
+        body: JSON.stringify(body),
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -1036,45 +1047,48 @@ export async function updateThread(
         method: "PATCH",
       },
     );
+
     if (!response.ok) {
-      const { status, statusText } = response;
-      const error = new Error(
-        `error updating thread with status: ${status} and statusText: ${statusText}`,
-      );
-      return { data: null, error };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to update thread",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
 
-    try {
-      const data = await response.json();
-      console.log(data);
-      const parsed = threadResponseSchema.parse({ ...data });
-      return { data: parsed, error: null };
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        console.error(err.message);
-      } else console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing thread chat schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error("error thread - something went wrong"),
-    };
+    const data = await response.json();
+    const parsed = threadSchema.parse(data);
+    return { data: parsed, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid thread schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to update thread";
+
+    console.error("[updateThread]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Fetches all labels for a specific thread within a workspace.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID.
+ * @param {string} threadId - The thread ID.
+ * @return {Promise<ApiResponse<ThreadLabelResponse[]>>} A promise resolving with thread labels data or an error.
+ */
 export async function getThreadLabels(
   token: string,
   workspaceId: string,
   threadId: string,
-): Promise<{
-  data: null | ThreadLabelResponse[];
-  error: Error | null;
-}> {
+): Promise<ApiResponse<ThreadLabelResponse[]>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/${threadId}/labels/`,
@@ -1086,56 +1100,55 @@ export async function getThreadLabels(
         method: "GET",
       },
     );
+
     if (!response.ok) {
-      const { status, statusText } = response;
-      return {
-        data: null,
-        error: new Error(
-          `error fetching workspace thread labels: ${status} ${statusText}`,
-        ),
-      };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to fetch thread labels",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
 
-    try {
-      const data = await response.json();
-      const labels = data.map((item: any) => {
-        return threadLabelResponseSchema.parse({ ...item });
-      });
-      return { data: labels, error: null };
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        console.error(err.message);
-      } else console.log(err);
-      return {
-        data: null,
-        error: new Error("error parsing workspace thread label schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error(
-        "error fetching workspace thread labels - something went wrong",
-      ),
-    };
+    const data = await response.json();
+    const labels = data.map((item: any) => threadLabelSchema.parse(item));
+    return { data: labels, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid thread labels schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to fetch thread labels";
+
+    console.error("[getThreadLabels]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Updates or adds a label to a specific thread within a workspace.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID.
+ * @param {string} threadId - The thread ID.
+ * @param {object} body - The label parameters.
+ * @return {Promise<ApiResponse<ThreadLabelResponse>>} A promise resolving with the updated/added label data or an error.
+ */
 export async function putThreadLabel(
   token: string,
   workspaceId: string,
   threadId: string,
   body: { icon: string; name: string },
-): Promise<{
-  data: null | ThreadLabelResponse;
-  error: Error | null;
-}> {
+): Promise<ApiResponse<ThreadLabelResponse>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/${threadId}/labels/`,
       {
-        body: JSON.stringify({ ...body }),
+        body: JSON.stringify(body),
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -1143,46 +1156,50 @@ export async function putThreadLabel(
         method: "PUT",
       },
     );
+
     if (!response.ok) {
-      const { status, statusText } = response;
-      return {
-        data: null,
-        error: new Error(`error setting thread label: ${status} ${statusText}`),
-      };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to set thread label",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
 
-    try {
-      const data = await response.json();
-      console.log(data);
-      const label = threadLabelResponseSchema.parse({ ...data });
-      return { data: label, error: null };
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        console.error(err.message);
-      } else console.log(err);
-      return {
-        data: null,
-        error: new Error("error parsing workspace thread label schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error("error setting thread label - something went wrong"),
-    };
+    const data = await response.json();
+    const label = threadLabelSchema.parse(data);
+    return { data: label, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid thread label schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to set thread label";
+
+    console.error("[putThreadLabel]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Deletes a label from a specific thread within a workspace.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID.
+ * @param {string} threadId - The thread ID.
+ * @param {string} labelId - The ID of the label to be deleted.
+ * @return {Promise<ApiResponse<boolean>>} A promise resolving with deletion status or an error.
+ */
 export async function deleteThreadLabel(
   token: string,
   workspaceId: string,
   threadId: string,
   labelId: string,
-): Promise<{
-  data: boolean | null;
-  error: Error | null;
-}> {
+): Promise<ApiResponse<boolean>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/${threadId}/labels/${labelId}/`,
@@ -1194,149 +1211,156 @@ export async function deleteThreadLabel(
         method: "DELETE",
       },
     );
+
     if (!response.ok) {
-      const { status, statusText } = response;
-      return {
-        data: null,
-        error: new Error(
-          `error deleting thread label: ${status} ${statusText}`,
-        ),
-      };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to delete thread label",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
-    return {
-      data: true,
-      error: null,
-    };
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error("error deleting thread label - something went wrong"),
-    };
+
+    return { data: true, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof HTTPError
+        ? error.message
+        : "Failed to delete thread label";
+
+    console.error("[deleteThreadLabel]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Sends a chat message to a specific thread within a workspace.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID.
+ * @param {string} threadId - The thread ID.
+ * @param {object} body - The chat message parameters.
+ * @return {Promise<ApiResponse<ThreadMessageResponse>>} A promise resolving with the thread message data or an error.
+ */
 export async function sendThreadChatMessage(
   token: string,
   workspaceId: string,
   threadId: string,
   body: { message: string },
-): Promise<{
-  data: null | ThreadMessageResponse;
-  error: Error | null;
-}> {
+): Promise<ApiResponse<ThreadMessageResponse>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/chat/${threadId}/messages/`,
       {
-        body: JSON.stringify({ ...body }),
+        body: JSON.stringify(body),
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         method: "POST",
       },
     );
 
     if (!response.ok) {
-      const { status, statusText } = response;
-      return {
-        data: null,
-        error: new Error(
-          `error fetching workspace thread chat messages: ${status} ${statusText}`,
-        ),
-      };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to send thread chat messages",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
 
-    try {
-      const data = await response.json();
+    const data = await response.json();
+    const parsed = threadMessageSchema.parse(data);
+    return { data: parsed, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid thread chat messages schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to send thread chat messages";
 
-      console.log(data);
-      const parsed = threadMessageResponseSchema.parse({ ...data });
-      return { data: parsed, error: null };
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        console.error(err.message);
-      } else console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing workspace thread chat messages schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error(
-        "error sending workspace thread chat messages - something went wrong",
-      ),
-    };
+    console.error("[sendThreadChatMessage]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Sends a mail message to a specific thread within a workspace.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID.
+ * @param {string} threadId - The thread ID.
+ * @param {object} body - The mail message parameters.
+ * @return {Promise<ApiResponse<ThreadMessageResponse>>} A promise resolving with the thread message data or an error.
+ */
 export async function sendThreadMailMessage(
   token: string,
   workspaceId: string,
   threadId: string,
   body: { htmlBody: string },
-): Promise<{
-  data: null | ThreadMessageResponse;
-  error: Error | null;
-}> {
+): Promise<ApiResponse<ThreadMessageResponse>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/email/${threadId}/messages/`,
       {
-        body: JSON.stringify({ ...body }),
+        body: JSON.stringify(body),
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         method: "POST",
       },
     );
 
     if (!response.ok) {
-      const { status, statusText } = response;
-      return {
-        data: null,
-        error: new Error(
-          `error fetching workspace thread mail messages: ${status} ${statusText}`,
-        ),
-      };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to send thread mail messages",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
 
-    try {
-      const data = await response.json();
-      console.log(data);
-      const parsed = threadMessageResponseSchema.parse({ ...data });
-      return { data: parsed, error: null };
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        console.error(err.message);
-      } else console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing workspace thread mail message schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error(
-        "error sending workspace thread mail message - something went wrong",
-      ),
-    };
+    const data = await response.json();
+    const parsed = threadMessageSchema.parse(data);
+    return { data: parsed, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid thread mail messages schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to send thread mail messages";
+
+    console.error("[sendThreadMailMessage]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Fetches customer events for a specific customer within a workspace.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID.
+ * @param {string} customerId - The customer ID.
+ * @return {Promise<ApiResponse<CustomerEventResponse[]>>} A promise resolving with customer event data or an error.
+ */
 export async function getCustomerEvents(
   token: string,
   workspaceId: string,
   customerId: string,
-): Promise<{
-  data: CustomerEventResponse[] | null;
-  error: Error | null;
-}> {
+): Promise<ApiResponse<CustomerEventResponse[]>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/customers/events/${customerId}/`,
@@ -1348,44 +1372,50 @@ export async function getCustomerEvents(
         method: "GET",
       },
     );
+
     if (!response.ok) {
-      const { status, statusText } = response;
-      return {
-        data: null,
-        error: new Error(
-          `error fetching customer events: ${status} ${statusText}`,
-        ),
-      };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to fetch customer events",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
 
-    try {
-      const data = await response.json();
-      const events = data.map((item: any) => {
-        return customerEventSchema.parse({ ...item });
-      });
-      return { data: events, error: null };
-    } catch (err) {
-      console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing customer event schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error("something went wrong"),
-    };
+    const data = await response.json();
+    const events = data.map((item: any) => customerEventSchema.parse(item));
+    return { data: events, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid customer event schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to fetch customer events";
+
+    console.error("[getCustomerEvents]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Fetches a specific attachment for a message within a workspace.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID.
+ * @param {string} messageId - The message ID.
+ * @param {string} attachmentId - The attachment ID.
+ * @return {Promise<ApiResponse<MessageAttachmentResponse>>} A promise resolving with message attachment data or an error.
+ */
 export async function getMessageAttachment(
   token: string,
   workspaceId: string,
   messageId: string,
   attachmentId: string,
-): Promise<{ data: MessageAttachmentResponse | null; error: Error | null }> {
+): Promise<ApiResponse<MessageAttachmentResponse>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/messages/${messageId}/attachments/${attachmentId}/`,
@@ -1397,49 +1427,53 @@ export async function getMessageAttachment(
         method: "GET",
       },
     );
+
     if (!response.ok) {
-      const { status, statusText } = response;
-      return {
-        data: null,
-        error: new Error(
-          `error fetching customer events: ${status} ${statusText}`,
-        ),
-      };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to fetch message attachment",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
 
-    try {
-      const data = await response.json();
-      const attachment = messageAttachmentResponseSchema.parse({ ...data });
-      return { data: attachment, error: null };
-    } catch (err) {
-      console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing message attachment schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error("something went wrong"),
-    };
+    const data = await response.json();
+    const attachment = messageAttachmentSchema.parse(data);
+    return { data: attachment, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid message attachment schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to fetch message attachment";
+
+    console.error("[getMessageAttachment]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Creates an email setting for a workspace.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID.
+ * @param {object} body - The email setting parameters.
+ * @return {Promise<ApiResponse<PostmarkMailServerSetting>>} A promise resolving with the created email setting data or an error.
+ */
 export async function createEmailSetting(
   token: string,
   workspaceId: string,
   body: { email: string },
-): Promise<{
-  data: null | PostmarkMailServerSetting;
-  error: Error | null;
-}> {
+): Promise<ApiResponse<PostmarkMailServerSetting>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/postmark/servers/`,
       {
-        body: JSON.stringify({ ...body }),
+        body: JSON.stringify(body),
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -1447,40 +1481,46 @@ export async function createEmailSetting(
         method: "POST",
       },
     );
+
     if (!response.ok) {
-      const { status, statusText } = response;
-      const error = new Error(
-        `error creating email setting with status: ${status} and statusText: ${statusText}`,
-      );
-      return { data: null, error };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to create email setting",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
-    try {
-      const data = await response.json();
-      const setting = postmarkMailServerSettingSchema.parse({ ...data });
-      return { data: setting, error: null };
-    } catch (err) {
-      console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing email setting schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error("error creating email setting - something went wrong"),
-    };
+
+    const data = await response.json();
+    const setting = postmarkMailServerSettingSchema.parse(data);
+    return { data: setting, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid email setting schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to create email setting";
+
+    console.error("[createEmailSetting]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Fetches the email setting for a workspace.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID.
+ * @return {Promise<ApiResponse<PostmarkMailServerSetting>>} A promise resolving with the email setting data or an error.
+ */
 export async function getEmailSetting(
   token: string,
   workspaceId: string,
-): Promise<{
-  data: null | PostmarkMailServerSetting;
-  error: Error | null;
-}> {
+): Promise<ApiResponse<PostmarkMailServerSetting>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/postmark/servers/`,
@@ -1492,55 +1532,57 @@ export async function getEmailSetting(
         method: "GET",
       },
     );
+
     if (!response.ok) {
       if (response.status === 404) {
-        return {
-          data: null,
-          error: null,
-        };
+        return { data: null, error: null };
       }
-      // something went wrong
-      const { status, statusText } = response;
-      return {
-        data: null,
-        error: new Error(
-          `error fetching mail setting: ${status} ${statusText}`,
-        ),
-      };
+
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to fetch email setting",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
-    try {
-      const data = await response.json();
-      const setting = postmarkMailServerSettingSchema.parse({ ...data });
-      return { data: setting, error: null };
-    } catch (err) {
-      console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing email setting schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error("something went wrong"),
-    };
+
+    const data = await response.json();
+    const setting = postmarkMailServerSettingSchema.parse(data);
+    return { data: setting, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid email setting schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to fetch email setting";
+
+    console.error("[getEmailSetting]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Updates the email setting for a workspace.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID.
+ * @param {object} body - The email setting update parameters.
+ * @return {Promise<ApiResponse<PostmarkMailServerSetting>>} A promise resolving with the updated email setting data or an error.
+ */
 export async function updateEmailSetting(
   token: string,
   workspaceId: string,
   body: { enabled?: boolean; hasForwardingEnabled?: boolean },
-): Promise<{
-  data: null | PostmarkMailServerSetting;
-  error: Error | null;
-}> {
+): Promise<ApiResponse<PostmarkMailServerSetting>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/postmark/servers/`,
       {
-        body: JSON.stringify({ ...body }),
+        body: JSON.stringify(body),
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -1548,46 +1590,53 @@ export async function updateEmailSetting(
         method: "PATCH",
       },
     );
+
     if (!response.ok) {
-      const { status, statusText } = response;
-      const error = new Error(
-        `error updating email setting with status: ${status} and statusText: ${statusText}`,
-      );
-      return { data: null, error };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to update email setting",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
-    try {
-      const data = await response.json();
-      const setting = postmarkMailServerSettingSchema.parse({ ...data });
-      return { data: setting, error: null };
-    } catch (err) {
-      console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing email setting schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error("error updating mail setting - something went wrong"),
-    };
+
+    const data = await response.json();
+    const setting = postmarkMailServerSettingSchema.parse(data);
+    return { data: setting, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid email setting schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to update email setting";
+
+    console.error("[updateEmailSetting]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Add an email domain to a workspace's email settings.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID.
+ * @param {object} body - The email domain to add.
+ * @return {Promise<ApiResponse<PostmarkMailServerSetting>>} A promise resolving with the updated email setting data or an error.
+ */
 export async function addEmailDomain(
   token: string,
   workspaceId: string,
   body: { domain: string },
-): Promise<{
-  data: null | PostmarkMailServerSetting;
-  error: Error | null;
-}> {
+): Promise<ApiResponse<PostmarkMailServerSetting>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/postmark/servers/parts/dns/add/`,
       {
-        body: JSON.stringify({ ...body }),
+        body: JSON.stringify(body),
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -1595,40 +1644,46 @@ export async function addEmailDomain(
         method: "POST",
       },
     );
+
     if (!response.ok) {
-      const { status, statusText } = response;
-      const error = new Error(
-        `error adding domain with status: ${status} and statusText: ${statusText}`,
-      );
-      return { data: null, error };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to add email domain",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
-    try {
-      const data = await response.json();
-      const setting = postmarkMailServerSettingSchema.parse({ ...data });
-      return { data: setting, error: null };
-    } catch (err) {
-      console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing email setting schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error("error adding domain - something went wrong"),
-    };
+
+    const data = await response.json();
+    const setting = postmarkMailServerSettingSchema.parse(data);
+    return { data: setting, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid email setting schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to add email domain";
+
+    console.error("[addEmailDomain]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
 
+/**
+ * Verify DNS setting for a workspace's email settings.
+ *
+ * @param {string} token - The authorization token.
+ * @param {string} workspaceId - The workspace ID.
+ * @return {Promise<ApiResponse<PostmarkMailServerSetting>>} A promise resolving with the updated email setting data or an error.
+ */
 export async function verifyDNS(
   token: string,
   workspaceId: string,
-): Promise<{
-  data: null | PostmarkMailServerSetting;
-  error: Error | null;
-}> {
+): Promise<ApiResponse<PostmarkMailServerSetting>> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/postmark/servers/parts/dns/verify/`,
@@ -1641,75 +1696,31 @@ export async function verifyDNS(
         method: "PUT",
       },
     );
+
     if (!response.ok) {
-      const { status, statusText } = response;
-      const error = new Error(
-        `error verifying dns with status: ${status} and statusText: ${statusText}`,
-      );
-      return { data: null, error };
+      const errorData = await response.json().catch(() => null);
+      throw new HTTPError({
+        message: errorData?.message || "Failed to verify DNS",
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
-    try {
-      const data = await response.json();
-      const setting = postmarkMailServerSettingSchema.parse({ ...data });
-      return { data: setting, error: null };
-    } catch (err) {
-      console.error(err);
-      return {
-        data: null,
-        error: new Error("error parsing email setting schema"),
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return {
-      data: null,
-      error: new Error("error verifying dns - something went wrong"),
-    };
+
+    const data = await response.json();
+    const setting = postmarkMailServerSettingSchema.parse(data);
+    return { data: setting, error: null };
+  } catch (error) {
+    const errorMessage =
+      error instanceof z.ZodError
+        ? "Invalid email setting schema"
+        : error instanceof HTTPError
+          ? error.message
+          : "Failed to verify DNS";
+
+    console.error("[verifyDNS]", {
+      error,
+      timestamp: new Date().toISOString(),
+    });
+    return { data: null, error: new Error(errorMessage) };
   }
 }
-
-
-// export async function syncWorkspaceShape(
-//   token: string,
-//   workspaceId: string,
-// ): Promise<{
-//   data: null | PostmarkMailServerSetting;
-//   error: Error | null;
-// }> {
-//   try {
-//     const response = await fetch(
-//       `${import.meta.env.VITE_ZYG_URL}/v1/sync/workspaces/${workspaceId}/shapes/parts/workspace/`,
-//       {
-//         headers: {
-//           Authorization: `Bearer ${token}`,
-//           "Content-Type": "application/json",
-//         },
-//         method: "GET",
-//       },
-//     );
-//     if (!response.ok) {
-//       const { status, statusText } = response;
-//       const error = new Error(
-//         `error adding domain with status: ${status} and statusText: ${statusText}`,
-//       );
-//       return { data: null, error };
-//     }
-//     try {
-//       const data = await response.json();
-//       const setting = postmarkMailServerSettingSchema.parse({ ...data });
-//       return { data: setting, error: null };
-//     } catch (err) {
-//       console.error(err);
-//       return {
-//         data: null,
-//         error: new Error("error parsing email setting schema"),
-//       };
-//     }
-//   } catch (err) {
-//     console.error(err);
-//     return {
-//       data: null,
-//       error: new Error("error adding domain - something went wrong"),
-//     };
-//   }
-// }

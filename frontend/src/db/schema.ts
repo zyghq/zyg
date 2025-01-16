@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const accountResponseSchema = z.object({
+export const accountSchema = z.object({
   accountId: z.string(),
   createdAt: z.string(),
   email: z.string(),
@@ -9,14 +9,14 @@ export const accountResponseSchema = z.object({
   updatedAt: z.string(),
 });
 
-// export const workspaceResponseSchema = z.object({
-//   createdAt: z.string(),
-//   name: z.string(),
-//   updatedAt: z.string(),
-//   workspaceId: z.string(),
-// });
+export const workspaceSchema = z.object({
+  createdAt: z.string(),
+  name: z.string(),
+  updatedAt: z.string(),
+  workspaceId: z.string(),
+});
 
-export const authMemberResponseSchema = z.object({
+export const authMemberSchema = z.object({
   createdAt: z.string(),
   memberId: z.string(),
   name: z.string(),
@@ -24,7 +24,7 @@ export const authMemberResponseSchema = z.object({
   updatedAt: z.string(),
 });
 
-export const patResponseSchema = z.object({
+export const patSchema = z.object({
   accountId: z.string(),
   createdAt: z.string(),
   description: z.string().nullable().default(null),
@@ -33,14 +33,6 @@ export const patResponseSchema = z.object({
   token: z.string(),
   updatedAt: z.string(),
 });
-
-// export const memberResponseSchema = z.object({
-//   createdAt: z.string(),
-//   memberId: z.string(),
-//   name: z.string(),
-//   role: z.string(),
-//   updatedAt: z.string(),
-// });
 
 export const threadLabelMetricsSchema = z.object({
   count: z.number().default(0),
@@ -62,11 +54,11 @@ export const threadCountMetricsSchema = z.object({
   waitingOnCustomer: z.number().default(0),
 });
 
-export const workspaceMetricsResponseSchema = z.object({
+export const workspaceMetricsSchema = z.object({
   count: threadCountMetricsSchema,
 });
 
-export const customerResponseSchema = z.object({
+export const customerSchema = z.object({
   createdAt: z.string(),
   customerId: z.string(),
   email: z.string().nullable().default(null),
@@ -78,11 +70,11 @@ export const customerResponseSchema = z.object({
   updatedAt: z.string(),
 });
 
-export const threadResponseSchema = z.object({
+export const threadSchema = z.object({
   assignee: z
     .object({
       memberId: z.string(),
-      name: z.string(), // TODO: add support for avatarUrl
+      name: z.string(),
     })
     .nullable()
     .default(null),
@@ -90,7 +82,7 @@ export const threadResponseSchema = z.object({
   createdAt: z.string(),
   customer: z.object({
     customerId: z.string(),
-    name: z.string(), // TODO: add support for avatarUrl
+    name: z.string(),
   }),
   description: z.string(),
   inboundFirstSeqId: z.string().nullable().default(null),
@@ -108,7 +100,7 @@ export const threadResponseSchema = z.object({
   updatedAt: z.string(),
 });
 
-export const labelResponseSchema = z.object({
+export const labelSchema = z.object({
   createdAt: z.string(),
   icon: z.string(),
   labelId: z.string(),
@@ -116,7 +108,7 @@ export const labelResponseSchema = z.object({
   updatedAt: z.string(),
 });
 
-export const threadLabelResponseSchema = z.object({
+export const threadLabelSchema = z.object({
   addedBy: z.string(),
   createdAt: z.string(),
   icon: z.string(),
@@ -127,7 +119,7 @@ export const threadLabelResponseSchema = z.object({
   updatedAt: z.string(),
 });
 
-export const messageAttachmentResponseSchema = z.object({
+export const messageAttachmentSchema = z.object({
   attachmentId: z.string(),
   contentKey: z.string(),
   contentType: z.string(),
@@ -142,8 +134,8 @@ export const messageAttachmentResponseSchema = z.object({
   updatedAt: z.string(),
 });
 
-export const threadMessageResponseSchema = z.object({
-  attachments: z.array(messageAttachmentResponseSchema).default([]),
+export const threadMessageSchema = z.object({
+  attachments: z.array(messageAttachmentSchema).default([]),
   channel: z.string(),
   createdAt: z.string(),
   customer: z
@@ -168,26 +160,6 @@ export const threadMessageResponseSchema = z.object({
   updatedAt: z.string(),
 });
 
-export type MessageAttachmentResponse = z.infer<
-  typeof messageAttachmentResponseSchema
->;
-
-export type ThreadResponse = z.infer<typeof threadResponseSchema>;
-
-export type ThreadMessageResponse = z.infer<typeof threadMessageResponseSchema>;
-
-export type LabelResponse = z.infer<typeof labelResponseSchema>;
-export type ThreadLabelResponse = z.infer<typeof threadLabelResponseSchema>;
-
-// export type MemberResponse = z.infer<typeof memberResponseSchema>;
-
-export type WorkspaceMetricsResponse = z.infer<
-  typeof workspaceMetricsResponseSchema
->;
-
-export type CustomerResponse = z.infer<typeof customerResponseSchema>;
-
-export type PatResponse = z.infer<typeof patResponseSchema>;
 
 // Component schemas
 const ComponentText = z.object({
@@ -279,8 +251,6 @@ export const customerEventSchema = z.object({
   updatedAt: z.string(),
 });
 
-export type CustomerEventResponse = z.infer<typeof customerEventSchema>;
-
 export const postmarkMailServerSettingSchema = z.object({
   createdAt: z.string(),
   dkimHost: z.string().optional().nullable(),
@@ -304,7 +274,3 @@ export const postmarkMailServerSettingSchema = z.object({
   updatedAt: z.string(),
   workspaceId: z.string(),
 });
-
-export type PostmarkMailServerSetting = z.infer<
-  typeof postmarkMailServerSettingSchema
->;
