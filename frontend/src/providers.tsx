@@ -23,10 +23,12 @@ const createZustandContext = <TInitial, TStore extends StoreApi<any>>(
   };
 };
 
+// Create workspace store with context and provider
 const workspaceStore = createZustandContext(buildWorkspaceStore);
 export const WorkspaceStoreContext = workspaceStore.Context;
 export const WorkspaceStoreProvider = workspaceStore.Provider;
 
+// Use workspace store within context
 export function useWorkspaceStore() {
   const context = React.useContext(WorkspaceStoreContext);
   if (!context) {

@@ -17,12 +17,27 @@ import {
   WorkspaceMetrics,
 } from "@/db/models";
 import { memberRowToShape, membersToMap } from "@/db/shapes";
-import { CustomerMap, LabelMap, PatMap, ThreadMap } from "@/db/store";
+import {
+  CustomerMap,
+  LabelMap,
+  PatMap,
+  ThreadMap,
+  WorkspaceStoreState,
+} from "@/db/store";
 import { MemberRow, syncMembersShape } from "@/db/sync";
-import { WorkspaceStoreProvider } from "@/providers";
+import { useWorkspaceStore, WorkspaceStoreProvider } from "@/providers";
+import {
+  isChangeMessage,
+  isControlMessage,
+  Message,
+  Offset,
+  ShapeStream,
+} from "@electric-sql/client";
 import { preloadShape } from "@electric-sql/react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import React from "react";
+import { useStore } from "zustand";
 
 /**
  * Retrieves workspace data based on the provided token and workspace ID.
@@ -206,13 +221,102 @@ const syncMembersQueryOptions = (token: string, workspaceId: string) =>
       const shape = await preloadShape(
         syncMembersShape({ token, workspaceId }),
       );
+      const { handle, lastOffset } = shape;
       const rows = (await shape.rows) as unknown as MemberRow[];
       const members = rows.map((row) => memberRowToShape(row));
-      return membersToMap(members);
+      const membersMap = membersToMap(members);
+      return {
+        handle: handle,
+        members: membersMap,
+        offset: lastOffset,
+      };
     },
     queryKey: ["members"],
     staleTime: Infinity,
   });
+
+type ElectricSyncWrapperProps = {
+  children: React.ReactNode;
+  token: string;
+  workspaceId: string;
+};
+
+function ElectricSyncWrapper({
+  children,
+  token,
+  workspaceId,
+}: ElectricSyncWrapperProps) {
+  const workspaceStore = useWorkspaceStore();
+
+  const membersShapeOffset = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.viewMembersShapeOffset(state),
+  ) as Offset;
+
+  const membersShapeHandle = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.viewMembersShapeHandle(state),
+  );
+
+  const setInSync = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.setInSync,
+  );
+
+  const setMembersShapeOffset = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.setMembersShapeOffset,
+  );
+
+  const setMembersShapeHandle = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.setMembersShapeHandle,
+  );
+
+  const shape = React.useMemo(() => {
+    const shapeDefaultOpts = syncMembersShape({ token, workspaceId });
+    const shapeOpts = {
+      ...shapeDefaultOpts,
+      handle: membersShapeHandle || undefined,
+      offset: membersShapeOffset,
+    };
+    return new ShapeStream<MemberRow>(shapeOpts);
+  }, [token, workspaceId, membersShapeHandle, membersShapeOffset]);
+
+  const handleMemberSyncMessages = React.useCallback(
+    (messages: Message<MemberRow>[]) => {
+      messages.forEach((message) => {
+        if (isChangeMessage(message) && message.value.member_id) {
+          setInSync(false);
+          console.log("isChangeMessage!!", message);
+        } else if (
+          isControlMessage(message) &&
+          message.headers.control === "up-to-date"
+        ) {
+          console.log("isControlMessage!!", message);
+          setInSync(true);
+          if (shape.lastOffset && shape.shapeHandle) {
+            setMembersShapeOffset(shape.lastOffset);
+            setMembersShapeHandle(shape.shapeHandle as string);
+          }
+        }
+      });
+    },
+    [],
+  );
+
+  console.log("membersShapeOffset", membersShapeOffset);
+  console.log("membersShapeHandle", membersShapeHandle);
+
+  React.useEffect(() => {
+    const unsubscribe = shape.subscribe(handleMemberSyncMessages);
+    return () => {
+      unsubscribe();
+    };
+  }, [shape]);
+
+  return <>{children}</>;
+}
 
 export const Route = createFileRoute("/_account/workspaces/$workspaceId")({
   component: CurrentWorkspace,
@@ -261,18 +365,25 @@ function CurrentWorkspace() {
     labelsQueryOptions(token, workspaceId),
   );
   const { data: pats } = useSuspenseQuery(patsQueryOptions(token));
-  const { data: members } = useSuspenseQuery(
+
+  const { data: membersData } = useSuspenseQuery(
     syncMembersQueryOptions(token, workspaceId),
   );
+  const {
+    handle: membersShapeHandle,
+    members,
+    offset: membersShapeOffset,
+  } = membersData;
 
   const initialData = {
     customers: customers,
     error: null,
-    hasData: true,
-    isPending: false,
+    inSync: false,
     labels: labels,
     member: member,
     members: members,
+    membersShapeHandle: membersShapeHandle || null,
+    membersShapeOffset: membersShapeOffset || "-1",
     metrics: metrics,
     pats: pats,
     threadAppliedFilters: null,
@@ -283,7 +394,9 @@ function CurrentWorkspace() {
 
   return (
     <WorkspaceStoreProvider initialValue={initialData}>
-      <Outlet />
+      <ElectricSyncWrapper token={token} workspaceId={workspaceId}>
+        <Outlet />
+      </ElectricSyncWrapper>
     </WorkspaceStoreProvider>
   );
 }

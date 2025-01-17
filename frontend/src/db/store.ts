@@ -86,8 +86,9 @@ export type AssigneesFiltersType = string | string[] | undefined;
 // Unlike entities which represent backend system data, value objects are application level.
 export interface IWorkspaceValueObjects {
   error: Error | null;
-  hasData: boolean;
-  isPending: boolean;
+  inSync: boolean;
+  membersShapeHandle: null | string;
+  membersShapeOffset: string;
   threadAppliedFilters: null | ThreadAppliedFilters;
   threadSortKey: null | SortBy;
 }
@@ -140,6 +141,14 @@ interface IWorkspaceStoreActions {
 
   getWorkspaceName(state: WorkspaceStoreState): string;
 
+  isInSync(state: WorkspaceStoreState): boolean;
+
+  setInSync(f: boolean): void;
+
+  setMembersShapeHandle(handle: null | string): void;
+
+  setMembersShapeOffset(offset: string): void;
+
   setThreadSortKey(sortKey: SortBy): void;
 
   updateLabel(labelId: string, label: Label): void;
@@ -149,9 +158,8 @@ interface IWorkspaceStoreActions {
   updateThread(thread: Thread): void;
 
   updateWorkspaceName(name: string): void;
-
+  
   viewAssignees(state: WorkspaceStoreState): Assignee[];
-
   viewCurrentThreadQueue(state: WorkspaceStoreState): null | Thread[];
 
   viewCustomerEmail(
@@ -178,6 +186,10 @@ interface IWorkspaceStoreActions {
   viewMemberName(state: WorkspaceStoreState, memberId: string): string;
 
   viewMembers(state: WorkspaceStoreState): MemberShape[];
+
+  viewMembersShapeHandle(state: WorkspaceStoreState): null | string;
+
+  viewMembersShapeOffset(state: WorkspaceStoreState): string;
 
   viewMyThreads(
     state: WorkspaceStoreState,
@@ -393,6 +405,25 @@ export const buildWorkspaceStore = (
         state.workspace?.workspaceId || "",
       getWorkspaceName: (state: WorkspaceStoreState) =>
         state.workspace?.name || "",
+      isInSync: (state: WorkspaceStoreState) => state.inSync,
+      setInSync: (f: boolean) => {
+        set((state) => {
+          state.inSync = f;
+          return state;
+        });
+      },
+      setMembersShapeHandle: (handle: null | string) => {
+        set((state) => {
+          state.membersShapeHandle = handle;
+          return state;
+        });
+      },
+      setMembersShapeOffset: (offset: string) => {
+        set((state) => {
+          state.membersShapeOffset = offset;
+          return state;
+        });
+      },
       setThreadSortKey: (sortKey: SortBy) => {
         set((state) => {
           state.threadSortKey = sortKey;
@@ -541,6 +572,12 @@ export const buildWorkspaceStore = (
       },
       viewMembers: (state: WorkspaceStoreState) => {
         return state.members ? Object.values(state.members) : [];
+      },
+      viewMembersShapeHandle: (state: WorkspaceStoreState) => {
+        return state.membersShapeHandle;
+      },
+      viewMembersShapeOffset: (state: WorkspaceStoreState) => {
+        return state.membersShapeOffset;
       },
       viewMyThreads: (
         state: WorkspaceStoreState,

@@ -1,12 +1,12 @@
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { WorkspaceSidebar } from "@/components/workspace/sidebar";
-import { memberRowToShape, membersToMap } from "@/db/shapes";
+// import { memberRowToShape, membersToMap } from "@/db/shapes";
 import { WorkspaceStoreState } from "@/db/store";
-import { MemberRow, syncMembersShape } from "@/db/sync";
+// import { MemberRow, syncMembersShape } from "@/db/sync";
 import { useAccountStore, useWorkspaceStore } from "@/providers";
-import { useShape } from "@electric-sql/react";
+// import { useShape } from "@electric-sql/react";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
-import * as React from "react";
+// import * as React from "react";
 import { useStore } from "zustand";
 
 export const Route = createFileRoute(
@@ -16,19 +16,19 @@ export const Route = createFileRoute(
 });
 
 function WorkspaceLayout() {
-  const { token } = Route.useRouteContext();
-  const { workspaceId: paramWorkspaceId } = Route.useParams();
+  // const { token } = Route.useRouteContext();
+  // const { workspaceId: paramWorkspaceId } = Route.useParams();
 
-  const {
-    data: memberRows,
-    isError: isMembersError,
-    isLoading: isMembersLoading,
-    ...rest
-  } = useShape(syncMembersShape({ token, workspaceId: paramWorkspaceId })) as unknown as { data: MemberRow[]; isError: boolean; isLoading: boolean };
-
+  // const {
+  //   data: memberRows,
+  //   isError: isMembersError,
+  //   isLoading: isMembersLoading,
+  //   ...rest
+  // } = useShape(syncMembersShape({ token, workspaceId: paramWorkspaceId })) as unknown as { data: MemberRow[]; isError: boolean; isLoading: boolean };
+  //
   // const members = membersToMap(memberRows.map(memberRowToShape));
 
-  console.log('**** rest ***', rest)
+  // console.log('**** rest ***', rest)
 
   const accountStore = useAccountStore();
   const workspaceStore = useWorkspaceStore();
@@ -50,17 +50,15 @@ function WorkspaceLayout() {
     state.viewThreadSortKey(state),
   );
 
-  const updateMembers = useStore(
-    workspaceStore,
-    (state) => state.updateMembers,
-  );
+  // const updateMembers = useStore(
+  //   workspaceStore,
+  //   (state) => state.updateMembers,
+  // );
 
-  React.useEffect(() => {
-    if (isMembersError || isMembersLoading) return;
-    console.log("*************** useEffect: memberRows", memberRows);
-    // if (updateMembers) {
-    // }
-  }, [memberRows, updateMembers]);
+  // React.useEffect(() => {
+  //   if (isMembersError || isMembersLoading) return;
+  //   console.log("*************** useEffect: memberRows", memberRows);
+  // }, [memberRows, updateMembers]);
 
   return (
     <SidebarProvider>
