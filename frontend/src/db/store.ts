@@ -17,7 +17,7 @@ import {
   Workspace,
   WorkspaceMetrics,
 } from "@/db/models";
-import { MemberShape } from "@/db/shapes";
+import { MemberShape, MemberShapeUpdates } from "@/db/shapes";
 import _ from "lodash";
 import { immer } from "zustand/middleware/immer";
 import { createStore } from "zustand/vanilla";
@@ -153,13 +153,14 @@ interface IWorkspaceStoreActions {
 
   updateLabel(labelId: string, label: Label): void;
 
-  updateMembers(members: MemberShapeMap): void;
+  updateMember(member: MemberShapeUpdates): void;
 
   updateThread(thread: Thread): void;
 
   updateWorkspaceName(name: string): void;
-  
+
   viewAssignees(state: WorkspaceStoreState): Assignee[];
+
   viewCurrentThreadQueue(state: WorkspaceStoreState): null | Thread[];
 
   viewCustomerEmail(
@@ -444,14 +445,29 @@ export const buildWorkspaceStore = (
           }
         });
       },
-      updateMembers: (members: MemberShapeMap) => {
-        set((state) => ({
-          ...state,
-          members: {
-            ...state.members,
-            ...members,
-          },
-        }));
+      updateMember: (member: MemberShapeUpdates) => {
+        // Guard against invalid input and assert memberId is string
+        if (!member?.memberId) return;
+        const id: string = member.memberId;
+
+        set((state) => {
+          // If member doesn't exist in state, return unchanged state
+          if (!state.members?.[id]) {
+            return state;
+          }
+
+          // Return new state object with updated member
+          return {
+            ...state,
+            members: {
+              ...state.members,
+              [id]: {
+                ...state.members[id],
+                ...member,
+              },
+            },
+          };
+        });
       },
       updateThread: (thread) => {
         set((state) => {

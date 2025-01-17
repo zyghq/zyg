@@ -16,7 +16,7 @@ import {
   Workspace,
   WorkspaceMetrics,
 } from "@/db/models";
-import { memberRowToShape, membersToMap } from "@/db/shapes";
+import { memberRowToShape, membersToMap, takeMemberUpdates } from "@/db/shapes";
 import {
   CustomerMap,
   LabelMap,
@@ -24,7 +24,7 @@ import {
   ThreadMap,
   WorkspaceStoreState,
 } from "@/db/store";
-import { MemberRow, syncMembersShape } from "@/db/sync";
+import { MemberRow, MemberRowUpdates, syncMembersShape } from "@/db/sync";
 import { useWorkspaceStore, WorkspaceStoreProvider } from "@/providers";
 import {
   isChangeMessage,
@@ -267,10 +267,14 @@ function ElectricSyncWrapper({
     workspaceStore,
     (state: WorkspaceStoreState) => state.setMembersShapeOffset,
   );
-
   const setMembersShapeHandle = useStore(
     workspaceStore,
     (state: WorkspaceStoreState) => state.setMembersShapeHandle,
+  );
+
+  const updateMember = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.updateMember,
   );
 
   const shape = React.useMemo(() => {
@@ -288,7 +292,11 @@ function ElectricSyncWrapper({
       messages.forEach((message) => {
         if (isChangeMessage(message) && message.value.member_id) {
           setInSync(false);
-          console.log("isChangeMessage!!", message);
+          if (message.headers.operation === "update") {
+            const { value } = message;
+            const updates = takeMemberUpdates(value as MemberRowUpdates);
+            updateMember(updates);
+          }
         } else if (
           isControlMessage(message) &&
           message.headers.control === "up-to-date"

@@ -14,6 +14,18 @@ export type MemberRow = {
   workspace_id: string;
 };
 
+export type MemberRowUpdates = {
+  avatar_url?: string;
+  created_at?: string;
+  member_id?: string;
+  name?: string;
+  permissions?: Record<string, unknown>;
+  public_name?: string;
+  role?: string;
+  synced_at?: string;
+  updated_at?: string;
+};
+
 export function syncMembersShape({
   token,
   workspaceId,
