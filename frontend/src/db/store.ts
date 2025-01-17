@@ -10,14 +10,18 @@ import { getFromLocalStorage, setInLocalStorage } from "@/db/helpers";
 import {
   Account,
   AuthMember,
-  Customer,
   Label,
   Pat,
   Thread,
   Workspace,
   WorkspaceMetrics,
 } from "@/db/models";
-import { MemberShape, MemberShapeUpdates } from "@/db/shapes";
+import {
+  CustomerShape,
+  CustomerShapeUpdates,
+  MemberShape,
+  MemberShapeUpdates,
+} from "@/db/shapes";
 import _ from "lodash";
 import { immer } from "zustand/middleware/immer";
 import { createStore } from "zustand/vanilla";
@@ -25,7 +29,13 @@ import { createStore } from "zustand/vanilla";
 // Represents entities for KV dictionary values.
 // add more entities as supported by KV store
 // e.g: Workspace | User | etc.
-type EntitiesKV = Customer | Label | MemberShape | Pat | Thread | Workspace;
+type EntitiesKV =
+  | CustomerShape
+  | Label
+  | MemberShape
+  | Pat
+  | Thread
+  | Workspace;
 
 export type Dictionary<K extends number | string, V extends EntitiesKV> = {
   [key in K]: V;
@@ -37,13 +47,13 @@ export type MemberShapeMap = Dictionary<string, MemberShape>;
 
 export type PatMap = Dictionary<string, Pat>;
 
-export type CustomerMap = Dictionary<string, Customer>;
+export type CustomerShapeMap = Dictionary<string, CustomerShape>;
 
 export type ThreadMap = Dictionary<string, Thread>;
 
 // Represents the store entities.
 export interface IWorkspaceEntities {
-  customers: CustomerMap | null;
+  customers: CustomerShapeMap | null;
   labels: LabelMap | null;
   member: AuthMember;
   members: MemberShapeMap | null;
@@ -85,6 +95,8 @@ export type AssigneesFiltersType = string | string[] | undefined;
 // Represents workspace value objects.
 // Unlike entities which represent backend system data, value objects are application level.
 export interface IWorkspaceValueObjects {
+  customersShapeHandle: null | string;
+  customersShapeOffset: string;
   error: Error | null;
   inSync: boolean;
   membersShapeHandle: null | string;
@@ -143,6 +155,10 @@ interface IWorkspaceStoreActions {
 
   isInSync(state: WorkspaceStoreState): boolean;
 
+  setCustomersShapeHandle(handle: null | string): void;
+
+  setCustomersShapeOffset(offset: string): void;
+
   setInSync(f: boolean): void;
 
   setMembersShapeHandle(handle: null | string): void;
@@ -150,6 +166,8 @@ interface IWorkspaceStoreActions {
   setMembersShapeOffset(offset: string): void;
 
   setThreadSortKey(sortKey: SortBy): void;
+
+  updateCustomer(member: CustomerShapeUpdates): void;
 
   updateLabel(labelId: string, label: Label): void;
 
@@ -181,6 +199,10 @@ interface IWorkspaceStoreActions {
   ): null | string;
 
   viewCustomerRole(state: WorkspaceStoreState, customerId: string): string;
+
+  viewCustomersShapeHandle(state: WorkspaceStoreState): null | string;
+
+  viewCustomersShapeOffset(state: WorkspaceStoreState): string;
 
   viewLabels(state: WorkspaceStoreState): Label[];
 
@@ -407,12 +429,25 @@ export const buildWorkspaceStore = (
       getWorkspaceName: (state: WorkspaceStoreState) =>
         state.workspace?.name || "",
       isInSync: (state: WorkspaceStoreState) => state.inSync,
+      setCustomersShapeHandle: (handle: null | string) => {
+        set((state) => {
+          state.customersShapeHandle = handle;
+          return state;
+        });
+      },
+      setCustomersShapeOffset: (offset: string) => {
+        set((state) => {
+          state.customersShapeOffset = offset;
+          return state;
+        });
+      },
       setInSync: (f: boolean) => {
         set((state) => {
           state.inSync = f;
           return state;
         });
       },
+
       setMembersShapeHandle: (handle: null | string) => {
         set((state) => {
           state.membersShapeHandle = handle;
@@ -433,6 +468,30 @@ export const buildWorkspaceStore = (
             setInLocalStorage(key, sortKey);
           }, 0);
           return state;
+        });
+      },
+      updateCustomer: (customer: CustomerShapeUpdates) => {
+        // Guard against invalid input and assert memberId is string
+        if (!customer?.customerId) return;
+        const id: string = customer.customerId;
+
+        set((state) => {
+          // If member doesn't exist in state, return unchanged state
+          if (!state.customers?.[id]) {
+            return state;
+          }
+
+          // Return new state object with updated member
+          return {
+            ...state,
+            customers: {
+              ...state.customers,
+              [id]: {
+                ...state.customers[id],
+                ...customer,
+              },
+            },
+          };
         });
       },
       updateLabel: (labelId: string, label: Label) => {
@@ -577,6 +636,12 @@ export const buildWorkspaceStore = (
       viewCustomerRole: (state: WorkspaceStoreState, customerId: string) => {
         const customer = state.customers?.[customerId];
         return customer ? customer.role : "";
+      },
+      viewCustomersShapeHandle: (state: WorkspaceStoreState) => {
+        return state.customersShapeHandle;
+      },
+      viewCustomersShapeOffset: (state: WorkspaceStoreState) => {
+        return state.customersShapeOffset;
       },
       viewLabels: (state: WorkspaceStoreState) => {
         const labels = state.labels ? Object.values(state.labels) : [];

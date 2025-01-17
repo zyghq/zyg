@@ -2,7 +2,6 @@ import { HTTPError } from "@/db/errors";
 import {
   Account,
   AuthMember,
-  Customer,
   CustomerEventResponse,
   LabelResponse,
   MessageAttachmentResponse,
@@ -18,7 +17,6 @@ import {
   accountSchema,
   authMemberSchema,
   customerEventSchema,
-  customerSchema,
   labelSchema,
   messageAttachmentSchema,
   patSchema,
@@ -452,56 +450,56 @@ export async function getOrCreateZygAccount(
   }
 }
 
-/**
- * Retrieves workspace customers.
- *
- * @param {string} token - The authorization token.
- * @param {string} workspaceId - The workspace ID.
- * @return {Promise<ApiResponse<Customer[]>>} A promise resolving with customer data or an error.
- */
-export async function getWorkspaceCustomers(
-  token: string,
-  workspaceId: string,
-): Promise<ApiResponse<Customer[]>> {
-  try {
-    const response = await fetch(
-      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/customers/`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        method: "GET",
-      },
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      throw new HTTPError({
-        message: errorData?.message || "Failed to fetch workspace customers",
-        status: response.status,
-        statusText: response.statusText,
-      });
-    }
-
-    const data = await response.json();
-    const customers = data.map((item: any) => customerSchema.parse(item));
-    return { data: customers, error: null };
-  } catch (error) {
-    const errorMessage =
-      error instanceof z.ZodError
-        ? "Invalid workspace customers schema"
-        : error instanceof HTTPError
-          ? error.message
-          : "Failed to fetch workspace customers";
-
-    console.error("[getWorkspaceCustomers]", {
-      error,
-      timestamp: new Date().toISOString(),
-      workspaceId,
-    });
-    return { data: null, error: new Error(errorMessage) };
-  }
-}
+// /**
+//  * Retrieves workspace customers.
+//  *
+//  * @param {string} token - The authorization token.
+//  * @param {string} workspaceId - The workspace ID.
+//  * @return {Promise<ApiResponse<Customer[]>>} A promise resolving with customer data or an error.
+//  */
+// export async function getWorkspaceCustomers(
+//   token: string,
+//   workspaceId: string,
+// ): Promise<ApiResponse<Customer[]>> {
+//   try {
+//     const response = await fetch(
+//       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/customers/`,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//         },
+//         method: "GET",
+//       },
+//     );
+//
+//     if (!response.ok) {
+//       const errorData = await response.json().catch(() => null);
+//       throw new HTTPError({
+//         message: errorData?.message || "Failed to fetch workspace customers",
+//         status: response.status,
+//         statusText: response.statusText,
+//       });
+//     }
+//
+//     const data = await response.json();
+//     const customers = data.map((item: any) => customerSchema.parse(item));
+//     return { data: customers, error: null };
+//   } catch (error) {
+//     const errorMessage =
+//       error instanceof z.ZodError
+//         ? "Invalid workspace customers schema"
+//         : error instanceof HTTPError
+//           ? error.message
+//           : "Failed to fetch workspace customers";
+//
+//     console.error("[getWorkspaceCustomers]", {
+//       error,
+//       timestamp: new Date().toISOString(),
+//       workspaceId,
+//     });
+//     return { data: null, error: new Error(errorMessage) };
+//   }
+// }
 
 /**
  * Creates a new workspace.

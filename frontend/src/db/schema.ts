@@ -58,18 +58,6 @@ export const workspaceMetricsSchema = z.object({
   count: threadCountMetricsSchema,
 });
 
-export const customerSchema = z.object({
-  createdAt: z.string(),
-  customerId: z.string(),
-  email: z.string().nullable().default(null),
-  externalId: z.string().nullable().default(null),
-  isEmailVerified: z.boolean(),
-  name: z.string(),
-  phone: z.string().nullable().default(null),
-  role: z.string(),
-  updatedAt: z.string(),
-});
-
 export const threadSchema = z.object({
   assignee: z
     .object({
@@ -159,7 +147,6 @@ export const threadMessageSchema = z.object({
   threadId: z.string(),
   updatedAt: z.string(),
 });
-
 
 // Component schemas
 const ComponentText = z.object({

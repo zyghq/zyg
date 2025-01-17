@@ -144,11 +144,11 @@ func NewServer(
 		NewEnsureMemberAuth(wh.handlePostmarkUpdateMailServer, authService))
 
 	// v1 sync handlers
-	mux.Handle("GET /v1/sync/workspaces/{workspaceId}/shapes/parts/workspace/{$}",
-		NewEnsureMemberAuth(ss.syncWorkspaceShapeV1, authService))
-
 	mux.Handle("GET /v1/sync/workspaces/{workspaceId}/shapes/parts/members/{$}",
-		NewEnsureMemberAuth(ss.syncWorkspaceMemberShapeV1, authService))
+		NewEnsureMemberAuth(ss.syncWorkspaceMemberShapesV1, authService))
+
+	mux.Handle("GET /v1/sync/workspaces/{workspaceId}/shapes/parts/customers/{$}",
+		NewEnsureMemberAuth(ss.syncWorkspaceCustomerShapesV1, authService))
 
 	// Webhooks
 	// handles postmark inbound message webhook for workspace.

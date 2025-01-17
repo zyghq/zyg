@@ -2,7 +2,6 @@ import {
   accountSchema,
   authMemberSchema,
   customerEventSchema,
-  customerSchema,
   labelSchema,
   messageAttachmentSchema,
   patSchema,
@@ -14,7 +13,6 @@ import {
   workspaceMetricsSchema,
   workspaceSchema,
 } from "@/db/schema";
-import { CustomerMap } from "@/db/store";
 import { z } from "zod";
 
 export type Account = z.infer<typeof accountSchema>;
@@ -25,9 +23,6 @@ export type Workspace = z.infer<typeof workspaceSchema>;
 
 export type Pat = z.infer<typeof patSchema>;
 export type PatResponse = z.infer<typeof patSchema>;
-
-export type Customer = z.infer<typeof customerSchema>;
-export type CustomerResponse = z.infer<typeof customerSchema>;
 
 export type Label = z.infer<typeof labelSchema>;
 export type LabelResponse = z.infer<typeof labelSchema>;
@@ -157,19 +152,6 @@ export function labelsToMap(labels: LabelResponse[]): Record<string, Label> {
     },
     {} as Record<string, Label>,
   );
-}
-
-export function customersToMap(customers: CustomerResponse[]): CustomerMap {
-  return customers.reduce((acc, customer) => {
-    const { customerId, ...rest } = customer;
-
-    acc[customerId] = {
-      customerId,
-      ...rest,
-    };
-
-    return acc;
-  }, {} as CustomerMap);
 }
 
 export function patsToMap(pats: PatResponse[]): Record<string, Pat> {

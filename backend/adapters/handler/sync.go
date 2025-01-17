@@ -24,7 +24,7 @@ func NewSyncHandler(ws ports.WorkspaceServicer, ths ports.ThreadServicer) *SyncH
 	}
 }
 
-func (h *SyncHandler) syncWorkspaceShapeV1(
+func (h *SyncHandler) syncWorkspaceMemberShapesV1(
 	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	ctx := r.Context()
 	hub := sentry.GetHubFromContext(ctx)
@@ -103,7 +103,7 @@ func (h *SyncHandler) syncWorkspaceShapeV1(
 	}
 }
 
-func (h *SyncHandler) syncWorkspaceMemberShapeV1(
+func (h *SyncHandler) syncWorkspaceCustomerShapesV1(
 	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	ctx := r.Context()
 	hub := sentry.GetHubFromContext(ctx)

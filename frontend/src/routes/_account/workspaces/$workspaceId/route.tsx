@@ -1,7 +1,6 @@
 import {
   getPats,
   getWorkspace,
-  getWorkspaceCustomers,
   getWorkspaceLabels,
   getWorkspaceMember,
   getWorkspaceMetrics,
@@ -9,22 +8,29 @@ import {
 } from "@/db/api";
 import {
   AuthMember,
-  customersToMap,
   labelsToMap,
   patsToMap,
   threadsToMap,
   Workspace,
   WorkspaceMetrics,
 } from "@/db/models";
-import { memberRowToShape, membersToMap, takeMemberUpdates } from "@/db/shapes";
 import {
-  CustomerMap,
-  LabelMap,
-  PatMap,
-  ThreadMap,
-  WorkspaceStoreState,
-} from "@/db/store";
-import { MemberRow, MemberRowUpdates, syncMembersShape } from "@/db/sync";
+  customerRowToShape,
+  customersToMap,
+  memberRowToShape,
+  membersToMap,
+  takeCustomerUpdates,
+  takeMemberUpdates,
+} from "@/db/shapes";
+import { LabelMap, PatMap, ThreadMap, WorkspaceStoreState } from "@/db/store";
+import {
+  CustomerRow,
+  CustomerRowUpdates,
+  MemberRow,
+  MemberRowUpdates,
+  syncCustomersShape,
+  syncMembersShape,
+} from "@/db/sync";
 import { useWorkspaceStore, WorkspaceStoreProvider } from "@/providers";
 import {
   isChangeMessage,
@@ -75,25 +81,25 @@ async function getAuthMemberData(
   return data; // doesn't require any transformation
 }
 
-/**
- * Fetches and transforms customer data for a given workspace.
- *
- * @param {string} token - The authorization token used for API requests.
- * @param {string} workspaceId - The unique identifier for the workspace whose customer data is being retrieved.
- * @return {Promise<CustomerMap | null>} A promise that resolves to a map of transformed customer data or null if no data is available.
- * @throws {Error} If there is an error while fetching the customer data.
- */
-async function getCustomersData(
-  token: string,
-  workspaceId: string,
-): Promise<CustomerMap | null> {
-  const { data, error } = await getWorkspaceCustomers(token, workspaceId);
-  if (error) throw new Error(error.message);
-  if (data && data.length > 0) {
-    return customersToMap(data);
-  }
-  return null;
-}
+// /**
+//  * Fetches and transforms customer data for a given workspace.
+//  *
+//  * @param {string} token - The authorization token used for API requests.
+//  * @param {string} workspaceId - The unique identifier for the workspace whose customer data is being retrieved.
+//  * @return {Promise<CustomerMap | null>} A promise that resolves to a map of transformed customer data or null if no data is available.
+//  * @throws {Error} If there is an error while fetching the customer data.
+//  */
+// async function getCustomersData(
+//   token: string,
+//   workspaceId: string,
+// ): Promise<CustomerMap | null> {
+//   const { data, error } = await getWorkspaceCustomers(token, workspaceId);
+//   if (error) throw new Error(error.message);
+//   if (data && data.length > 0) {
+//     return customersToMap(data);
+//   }
+//   return null;
+// }
 
 /**
  * Retrieves metrics data for a specific workspace.
@@ -183,12 +189,6 @@ const memberQueryOptions = (token: string, workspaceId: string) =>
     queryKey: ["member"],
   });
 
-const customersQueryOptions = (token: string, workspaceId: string) =>
-  queryOptions({
-    queryFn: async () => getCustomersData(token, workspaceId),
-    queryKey: ["customers"],
-  });
-
 const metricsQueryOptions = (token: string, workspaceId: string) =>
   queryOptions({
     queryFn: async () => getMetricsData(token, workspaceId),
@@ -235,6 +235,27 @@ const syncMembersQueryOptions = (token: string, workspaceId: string) =>
     staleTime: Infinity,
   });
 
+const syncCustomersQueryOptions = (token: string, workspaceId: string) =>
+  queryOptions({
+    gcTime: Infinity,
+    queryFn: async () => {
+      const shape = await preloadShape(
+        syncCustomersShape({ token, workspaceId }),
+      );
+      const { handle, lastOffset } = shape;
+      const rows = (await shape.rows) as unknown as CustomerRow[];
+      const customers = rows.map((row) => customerRowToShape(row));
+      const customersMap = customersToMap(customers);
+      return {
+        customers: customersMap,
+        handle: handle,
+        offset: lastOffset,
+      };
+    },
+    queryKey: ["customers"],
+    staleTime: Infinity,
+  });
+
 type ElectricSyncWrapperProps = {
   children: React.ReactNode;
   token: string;
@@ -248,21 +269,25 @@ function ElectricSyncWrapper({
 }: ElectricSyncWrapperProps) {
   const workspaceStore = useWorkspaceStore();
 
+  // queries
   const membersShapeOffset = useStore(
     workspaceStore,
     (state: WorkspaceStoreState) => state.viewMembersShapeOffset(state),
   ) as Offset;
-
   const membersShapeHandle = useStore(
     workspaceStore,
     (state: WorkspaceStoreState) => state.viewMembersShapeHandle(state),
   );
-
-  const setInSync = useStore(
+  const customersShapeOffset = useStore(
     workspaceStore,
-    (state: WorkspaceStoreState) => state.setInSync,
+    (state: WorkspaceStoreState) => state.viewCustomersShapeOffset(state),
+  ) as Offset;
+  const customersShapeHandle = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.viewCustomersShapeHandle(state),
   );
 
+  // mutations
   const setMembersShapeOffset = useStore(
     workspaceStore,
     (state: WorkspaceStoreState) => state.setMembersShapeOffset,
@@ -272,12 +297,30 @@ function ElectricSyncWrapper({
     (state: WorkspaceStoreState) => state.setMembersShapeHandle,
   );
 
+  const setCustomersShapeOffset = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.setCustomersShapeOffset,
+  );
+  const setCustomersShapeHandle = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.setCustomersShapeHandle,
+  );
+
   const updateMember = useStore(
     workspaceStore,
     (state: WorkspaceStoreState) => state.updateMember,
   );
+  const updateCustomer = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.updateCustomer,
+  );
 
-  const shape = React.useMemo(() => {
+  const setInSync = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.setInSync,
+  );
+
+  const memberShape = React.useMemo(() => {
     const shapeDefaultOpts = syncMembersShape({ token, workspaceId });
     const shapeOpts = {
       ...shapeDefaultOpts,
@@ -286,6 +329,16 @@ function ElectricSyncWrapper({
     };
     return new ShapeStream<MemberRow>(shapeOpts);
   }, [token, workspaceId, membersShapeHandle, membersShapeOffset]);
+
+  const customerShape = React.useMemo(() => {
+    const shapeDefaultOpts = syncCustomersShape({ token, workspaceId });
+    const shapeOpts = {
+      ...shapeDefaultOpts,
+      handle: customersShapeHandle || undefined,
+      offset: customersShapeOffset,
+    };
+    return new ShapeStream<CustomerRow>(shapeOpts);
+  }, [token, workspaceId, customersShapeHandle, customersShapeOffset]);
 
   const handleMemberSyncMessages = React.useCallback(
     (messages: Message<MemberRow>[]) => {
@@ -301,11 +354,10 @@ function ElectricSyncWrapper({
           isControlMessage(message) &&
           message.headers.control === "up-to-date"
         ) {
-          console.log("isControlMessage!!", message);
           setInSync(true);
-          if (shape.lastOffset && shape.shapeHandle) {
-            setMembersShapeOffset(shape.lastOffset);
-            setMembersShapeHandle(shape.shapeHandle as string);
+          if (memberShape.lastOffset && memberShape.shapeHandle) {
+            setMembersShapeOffset(memberShape.lastOffset);
+            setMembersShapeHandle(memberShape.shapeHandle as string);
           }
         }
       });
@@ -313,15 +365,44 @@ function ElectricSyncWrapper({
     [],
   );
 
-  console.log("membersShapeOffset", membersShapeOffset);
-  console.log("membersShapeHandle", membersShapeHandle);
+  const handleCustomerSyncMessages = React.useCallback(
+    (messages: Message<CustomerRow>[]) => {
+      messages.forEach((message) => {
+        if (isChangeMessage(message) && message.value.customer_id) {
+          setInSync(false);
+          if (message.headers.operation === "update") {
+            const { value } = message;
+            const updates = takeCustomerUpdates(value as CustomerRowUpdates);
+            updateCustomer(updates);
+          }
+        } else if (
+          isControlMessage(message) &&
+          message.headers.control === "up-to-date"
+        ) {
+          setInSync(true);
+          if (customerShape.lastOffset && customerShape.shapeHandle) {
+            setCustomersShapeOffset(customerShape.lastOffset);
+            setCustomersShapeHandle(customerShape.shapeHandle as string);
+          }
+        }
+      });
+    },
+    [],
+  );
 
   React.useEffect(() => {
-    const unsubscribe = shape.subscribe(handleMemberSyncMessages);
+    const unsubscribe = memberShape.subscribe(handleMemberSyncMessages);
     return () => {
       unsubscribe();
     };
-  }, [shape]);
+  }, [memberShape]);
+
+  React.useEffect(() => {
+    const unsubscribe = customerShape.subscribe(handleCustomerSyncMessages);
+    return () => {
+      unsubscribe();
+    };
+  }, [customerShape]);
 
   return <>{children}</>;
 }
@@ -340,12 +421,14 @@ export const Route = createFileRoute("/_account/workspaces/$workspaceId")({
     await Promise.all([
       queryClient.ensureQueryData(workspaceQueryOptions(token, workspaceId)),
       queryClient.ensureQueryData(memberQueryOptions(token, workspaceId)),
-      queryClient.ensureQueryData(customersQueryOptions(token, workspaceId)),
       queryClient.ensureQueryData(metricsQueryOptions(token, workspaceId)),
       queryClient.ensureQueryData(threadsQueryOptions(token, workspaceId)),
       queryClient.ensureQueryData(labelsQueryOptions(token, workspaceId)),
       queryClient.ensureQueryData(patsQueryOptions(token)),
       queryClient.ensureQueryData(syncMembersQueryOptions(token, workspaceId)),
+      queryClient.ensureQueryData(
+        syncCustomersQueryOptions(token, workspaceId),
+      ),
     ]);
     return token;
   },
@@ -360,8 +443,8 @@ function CurrentWorkspace() {
   const { data: member } = useSuspenseQuery(
     memberQueryOptions(token, workspaceId),
   );
-  const { data: customers } = useSuspenseQuery(
-    customersQueryOptions(token, workspaceId),
+  const { data: customersData } = useSuspenseQuery(
+    syncCustomersQueryOptions(token, workspaceId),
   );
   const { data: metrics } = useSuspenseQuery(
     metricsQueryOptions(token, workspaceId),
@@ -383,8 +466,16 @@ function CurrentWorkspace() {
     offset: membersShapeOffset,
   } = membersData;
 
+  const {
+    customers,
+    handle: customersShapeHandle,
+    offset: customersShapeOffset,
+  } = customersData;
+
   const initialData = {
     customers: customers,
+    customersShapeHandle: customersShapeHandle || null,
+    customersShapeOffset: customersShapeOffset || "-1",
     error: null,
     inSync: false,
     labels: labels,
