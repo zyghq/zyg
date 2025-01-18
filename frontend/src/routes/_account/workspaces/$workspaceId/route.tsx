@@ -22,7 +22,7 @@ import {
   takeCustomerUpdates,
   takeMemberUpdates,
 } from "@/db/shapes";
-import { LabelMap, PatMap, ThreadMap, WorkspaceStoreState } from "@/db/store";
+import { LabelMap, PatMap, ThreadShapeMap, WorkspaceStoreState } from "@/db/store";
 import {
   CustomerRow,
   CustomerRowUpdates,
@@ -125,13 +125,13 @@ async function getMetricsData(
  *
  * @param {string} token - Authentication token used to access the workspace data.
  * @param {string} workspaceId - Identifier of the workspace to retrieve thread data for.
- * @return {Promise<null | ThreadMap>} A promise that resolves to a map of threads if data is available, or null if no data is found.
+ * @return {Promise<null | ThreadShapeMap>} A promise that resolves to a map of threads if data is available, or null if no data is found.
  * @throws {Error} If an error occurs during the data retrieval process.
  */
 async function getThreadsData(
   token: string,
   workspaceId: string,
-): Promise<null | ThreadMap> {
+): Promise<null | ThreadShapeMap> {
   const { data, error } = await getWorkspaceThreads(token, workspaceId);
   if (error) throw new Error(error.message);
   if (data && data.length > 0) {

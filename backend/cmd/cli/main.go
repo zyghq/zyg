@@ -545,7 +545,7 @@ func runSyncWorkspaceThread(cmd *cobra.Command, _ []string) error {
 
 	type ThreadLabel struct {
 		LabelId   string    `json:"labelId"`
-		Name      string    `json:"labelName"`
+		Name      string    `json:"name"`
 		CreatedAt time.Time `json:"createdAt"`
 		UpdatedAt time.Time `json:"updatedAt"`
 	}
@@ -564,7 +564,7 @@ func runSyncWorkspaceThread(cmd *cobra.Command, _ []string) error {
 	for _, label := range threadLabels {
 		labelsMap[label.LabelId] = map[string]interface{}{
 			"labelId":   label.LabelId,
-			"labelName": label.Name,
+			"name":      label.Name,
 			"createdAt": label.CreatedAt,
 			"updatedAt": label.UpdatedAt,
 		}
@@ -665,7 +665,7 @@ func runSyncWorkspaceThreads(cmd *cobra.Command, _ []string) error {
 
 	type ThreadLabel struct {
 		LabelId   string    `json:"labelId"`
-		Name      string    `json:"labelName"`
+		Name      string    `json:"name"`
 		CreatedAt time.Time `json:"createdAt"`
 		UpdatedAt time.Time `json:"updatedAt"`
 	}
@@ -693,7 +693,7 @@ func runSyncWorkspaceThreads(cmd *cobra.Command, _ []string) error {
 		for _, label := range threadLabels {
 			labelsMap[label.LabelId] = map[string]interface{}{
 				"labelId":   label.LabelId,
-				"labelName": label.Name,
+				"name":      label.Name,
 				"createdAt": label.CreatedAt,
 				"updatedAt": label.UpdatedAt,
 			}

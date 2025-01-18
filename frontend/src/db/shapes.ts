@@ -1,4 +1,4 @@
-import { CustomerShapeMap, MemberShapeMap } from "@/db/store";
+import { CustomerShapeMap, MemberShapeMap, ThreadShapeMap } from "@/db/store";
 import {
   CustomerRow,
   CustomerRowUpdates,
@@ -6,6 +6,7 @@ import {
   MemberRowUpdates,
 } from "@/db/sync";
 
+// Represents the Member shape from sync engine
 export type MemberShape = {
   avatarUrl: string;
   createdAt: string;
@@ -20,6 +21,7 @@ export type MemberShape = {
   workspaceId: string;
 };
 
+// Represents the Member shape updates from sync engine
 export type MemberShapeUpdates = {
   avatarUrl?: string;
   createdAt?: string;
@@ -32,6 +34,7 @@ export type MemberShapeUpdates = {
   updatedAt?: string;
 };
 
+// Maps sync engine `member` table row to Member shape
 export function memberRowToShape(row: MemberRow): MemberShape {
   return {
     avatarUrl: row.avatar_url,
@@ -73,6 +76,7 @@ export function takeMemberUpdates(
   return result;
 }
 
+// Represents the Customer shape from sync engine
 export type CustomerShape = {
   avatarUrl: string;
   createdAt: string;
@@ -89,6 +93,7 @@ export type CustomerShape = {
   workspaceId: string;
 };
 
+// Represents the Customer shape updates from sync engine
 export type CustomerShapeUpdates = {
   avatarUrl?: string;
   createdAt?: string;
@@ -103,6 +108,7 @@ export type CustomerShapeUpdates = {
   updatedAt?: string;
 };
 
+// Maps sync engine `customer` table row to Customer shape
 export function customerRowToShape(row: CustomerRow): CustomerShape {
   return {
     avatarUrl: row.avatar_url,
@@ -154,4 +160,44 @@ export function takeCustomerUpdates(
   if (customer.updated_at !== undefined) result.updatedAt = customer.updated_at;
 
   return result;
+}
+
+// Represents the label assigned to Thread shape
+export type ThreadLabelShape = {
+  createdAt: string;
+  labelId: string;
+  name: string;
+  updatedAt: string;
+};
+
+// Represents the Thread shape from sync engine
+export type ThreadShape = {
+  assignedAt: null | string;
+  assigneeId: null | string;
+  channel: string;
+  createdAt: string;
+  createdById: string;
+  customerId: string;
+  description: string;
+  inboundSeqId: null | string;
+  labels: null | ThreadLabelShape;
+  outboundSeqId: null | string;
+  previewText: string;
+  priority: string;
+  replied: boolean;
+  stage: string;
+  status: string;
+  statusChangedAt: string;
+  statusChangedById: string;
+  syncedAt: string;
+  threadId: string;
+  title: string;
+  updatedAt: string;
+  updatedById: string;
+  versionId: string;
+  workspaceId: string;
+};
+
+export function threadsToMap(threads: ThreadShape[]): ThreadShapeMap {
+  return new Map(threads.map((thread) => [thread.threadId, thread]));
 }

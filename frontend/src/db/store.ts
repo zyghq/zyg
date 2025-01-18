@@ -12,7 +12,6 @@ import {
   AuthMember,
   Label,
   Pat,
-  Thread,
   Workspace,
   WorkspaceMetrics,
 } from "@/db/models";
@@ -21,6 +20,7 @@ import {
   CustomerShapeUpdates,
   MemberShape,
   MemberShapeUpdates,
+  ThreadShape,
 } from "@/db/shapes";
 import _ from "lodash";
 import { immer } from "zustand/middleware/immer";
@@ -34,7 +34,7 @@ type EntitiesKV =
   | Label
   | MemberShape
   | Pat
-  | Thread
+  | ThreadShape
   | Workspace;
 
 export type Dictionary<K extends number | string, V extends EntitiesKV> = {
@@ -49,7 +49,7 @@ export type PatMap = Dictionary<string, Pat>;
 
 export type CustomerShapeMap = Dictionary<string, CustomerShape>;
 
-export type ThreadMap = Dictionary<string, Thread>;
+export type ThreadShapeMap = Map<string, ThreadShape>;
 
 // Represents the store entities.
 export interface IWorkspaceEntities {
@@ -59,7 +59,7 @@ export interface IWorkspaceEntities {
   members: MemberShapeMap | null;
   metrics: WorkspaceMetrics;
   pats: null | PatMap;
-  threads: null | ThreadMap;
+  threads: null | ThreadShapeMap;
   workspace: null | Workspace;
 }
 
@@ -147,7 +147,10 @@ interface IWorkspaceStoreActions {
 
   getMetrics(state: WorkspaceStoreState): WorkspaceMetrics;
 
-  getThreadItem(state: WorkspaceStoreState, threadId: string): null | Thread;
+  getThreadItem(
+    state: WorkspaceStoreState,
+    threadId: string,
+  ): null | ThreadShape;
 
   getWorkspaceId(state: WorkspaceStoreState): string;
 
@@ -173,13 +176,13 @@ interface IWorkspaceStoreActions {
 
   updateMember(member: MemberShapeUpdates): void;
 
-  updateThread(thread: Thread): void;
+  updateThread(thread: ThreadShape): void;
 
   updateWorkspaceName(name: string): void;
 
   viewAssignees(state: WorkspaceStoreState): Assignee[];
 
-  viewCurrentThreadQueue(state: WorkspaceStoreState): null | Thread[];
+  viewCurrentThreadQueue(state: WorkspaceStoreState): null | ThreadShape[];
 
   viewCustomerEmail(
     state: WorkspaceStoreState,
@@ -222,7 +225,7 @@ interface IWorkspaceStoreActions {
     stages: StagesFiltersType,
     priorities: PrioritiesFiltersType,
     sortBy: SortBy,
-  ): Thread[];
+  ): ThreadShape[];
 
   viewPats(state: WorkspaceStoreState): Pat[];
 
@@ -238,7 +241,7 @@ interface IWorkspaceStoreActions {
     stages: StagesFiltersType,
     priorities: PrioritiesFiltersType,
     sortBy: SortBy,
-  ): Thread[];
+  ): ThreadShape[];
 
   viewThreadSortKey(state: WorkspaceStoreState): SortBy;
 
@@ -249,10 +252,13 @@ interface IWorkspaceStoreActions {
     stages: StagesFiltersType,
     priorities: PrioritiesFiltersType,
     sortBy: SortBy,
-  ): Thread[];
+  ): ThreadShape[];
 }
 
-function filterByAssignees(threads: Thread[], assignees: AssigneesFiltersType) {
+function filterByAssignees(
+  threads: ThreadShape[],
+  assignees: AssigneesFiltersType,
+) {
   if (assignees && Array.isArray(assignees)) {
     const uniqueAssignees = [...new Set(assignees)];
     const filtered = [];
@@ -269,7 +275,7 @@ function filterByAssignees(threads: Thread[], assignees: AssigneesFiltersType) {
 }
 
 function filterByPriorities(
-  threads: Thread[],
+  threads: ThreadShape[],
   priorities: PrioritiesFiltersType,
 ) {
   if (priorities && Array.isArray(priorities)) {
@@ -288,7 +294,7 @@ function filterByPriorities(
   return threads;
 }
 
-function filterByStages(threads: Thread[], stages: StagesFiltersType) {
+function filterByStages(threads: ThreadShape[], stages: StagesFiltersType) {
   const stageMap: Record<string, string> = {
     hold: HOLD,
     needs_first_response: NEEDS_FIRST_RESPONSE,
@@ -314,7 +320,7 @@ function filterByStages(threads: Thread[], stages: StagesFiltersType) {
   return threads;
 }
 
-function sortThreads(threads: Thread[], sortBy: SortBy): Thread[] {
+function sortThreads(threads: ThreadShape[], sortBy: SortBy): ThreadShape[] {
   const priorityMap: { [key: string]: number } = {
     high: 1,
     low: 3,
@@ -579,7 +585,9 @@ export const buildWorkspaceStore = (
           })
           .filter((m): m is Assignee => m !== undefined);
       },
-      viewCurrentThreadQueue: (state: WorkspaceStoreState): null | Thread[] => {
+      viewCurrentThreadQueue: (
+        state: WorkspaceStoreState,
+      ): null | ThreadShape[] => {
         if (state.threadAppliedFilters) {
           const {
             assignees,

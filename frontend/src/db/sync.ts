@@ -1,3 +1,4 @@
+import { ThreadLabelShape } from "@/db/shapes";
 import { ShapeStreamOptions } from "@electric-sql/client";
 
 export type MemberRow = {
@@ -91,6 +92,83 @@ export function syncCustomersShape({
     },
     params: {
       table: "customer",
+    },
+    url,
+  };
+}
+
+
+
+export type ThreadRow = {
+  assigned_at: null | string;
+  assignee_id: null | string;
+  channel: string;
+  created_at: string;
+  created_by_id: string;
+  customer_id: string;
+  description: string;
+  inbound_seq_id: null | string;
+  labels: null | ThreadLabelShape;
+  outbound_seq_id: null | string;
+  preview_text: null | string;
+  priority: string;
+  replied: boolean;
+  stage: string;
+  status: string;
+  status_changed_at: string;
+  status_changed_by_id: string;
+  synced_at: string;
+  thread_id: string;
+  title: string;
+  updated_at: string;
+  updated_by_id: string;
+  version_id: string;
+  workspace_id: string;
+};
+
+
+export type ThreadRowUpdates = {
+  assigned_at?: null | string;
+  assignee_id?: null | string;
+  channel?: string;
+  created_at?: string;
+  created_by_id?: string;
+  customer_id?: string;
+  description?: string;
+  inbound_seq_id?: null | string;
+  labels?: null | ThreadLabelShape;
+  outbound_seq_id?: null | string;
+  preview_text?: null | string;
+  priority?: string;
+  replied?: boolean;
+  stage?: string;
+  status?: string;
+  status_changed_at?: string;
+  status_changed_by_id?: string;
+  synced_at?: string;
+  thread_id?: string;
+  title?: string;
+  updated_at?: string;
+  updated_by_id?: string;
+  version_id?: string;
+  workspace_id?: string;
+}
+
+export function syncThreadsShape({
+  token,
+  workspaceId,
+}: {
+  token: string;
+  workspaceId: string;
+}): ShapeStreamOptions {
+  const url = `${import.meta.env.VITE_ZYG_URL}/v1/sync/workspaces/${workspaceId}/shapes/parts/threads/`;
+  return {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    params: {
+      table: "thread",
     },
     url,
   };

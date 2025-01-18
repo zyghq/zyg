@@ -99,41 +99,7 @@ export function threadTransformer() {
   };
 }
 
-export function threadsToMap(
-  threads: ThreadResponse[],
-): Record<string, Thread> {
-  return threads.reduce(
-    (acc, thread) => {
-      const {
-        assignee,
-        customer,
-        inboundFirstSeqId,
-        inboundLastSeqId,
-        outboundFirstSeqId,
-        outboundLastSeqId,
-        threadId,
-        ...rest
-      } = thread;
 
-      const customerId = customer.customerId;
-      const assigneeId = assignee?.memberId || null;
-
-      acc[threadId] = {
-        threadId,
-        ...rest,
-        assigneeId,
-        customerId,
-        inboundFirstSeqId: inboundFirstSeqId || null,
-        inboundLastSeqId: inboundLastSeqId || null,
-        outboundFirstSeqId: outboundFirstSeqId || null,
-        outboundLastSeqId: outboundLastSeqId || null,
-      };
-
-      return acc;
-    },
-    {} as Record<string, Thread>,
-  );
-}
 
 export function labelsToMap(labels: LabelResponse[]): Record<string, Label> {
   return labels.reduce(

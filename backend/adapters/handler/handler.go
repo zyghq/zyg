@@ -150,6 +150,9 @@ func NewServer(
 	mux.Handle("GET /v1/sync/workspaces/{workspaceId}/shapes/parts/customers/{$}",
 		NewEnsureMemberAuth(ss.syncWorkspaceCustomerShapesV1, authService))
 
+	mux.Handle("GET /v1/sync/workspaces/{workspaceId}/shapes/parts/threads/{$}",
+		NewEnsureMemberAuth(ss.syncWorkspaceCustomerShapesV1, authService))
+
 	// Webhooks
 	// handles postmark inbound message webhook for workspace.
 	// This URL path must also be configured in the postmark inbound settings.
