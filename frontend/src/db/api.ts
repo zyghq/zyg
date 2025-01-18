@@ -204,57 +204,57 @@ export async function getWorkspaceMetrics(
   }
 }
 
-/**
- * Retrieves workspace threads.
- *
- * @param {string} token - The authorization token.
- * @param {string} workspaceId - The workspace ID.
- * @return {Promise<ApiResponse<ThreadResponse[]>>} A promise resolving with threads data or an error.
- */
-export async function getWorkspaceThreads(
-  token: string,
-  workspaceId: string,
-): Promise<ApiResponse<ThreadResponse[]>> {
-  try {
-    const response = await fetch(
-      `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        method: "GET",
-      },
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      throw new HTTPError({
-        message: errorData?.message || "Failed to fetch workspace threads",
-        status: response.status,
-        statusText: response.statusText,
-      });
-    }
-
-    const data = await response.json();
-    const threads = data.map((item: any) => threadSchema.parse(item));
-    return { data: threads, error: null };
-  } catch (error) {
-    const errorMessage =
-      error instanceof z.ZodError
-        ? "Invalid workspace threads schema"
-        : error instanceof HTTPError
-          ? error.message
-          : "Failed to fetch workspace threads";
-
-    console.error("[getWorkspaceThreads]", {
-      error,
-      timestamp: new Date().toISOString(),
-      workspaceId,
-    });
-    return { data: null, error: new Error(errorMessage) };
-  }
-}
+// /**
+//  * Retrieves workspace threads.
+//  *
+//  * @param {string} token - The authorization token.
+//  * @param {string} workspaceId - The workspace ID.
+//  * @return {Promise<ApiResponse<ThreadResponse[]>>} A promise resolving with threads data or an error.
+//  */
+// export async function getWorkspaceThreads(
+//   token: string,
+//   workspaceId: string,
+// ): Promise<ApiResponse<ThreadResponse[]>> {
+//   try {
+//     const response = await fetch(
+//       `${import.meta.env.VITE_ZYG_URL}/workspaces/${workspaceId}/threads/`,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//           "Content-Type": "application/json",
+//         },
+//         method: "GET",
+//       },
+//     );
+//
+//     if (!response.ok) {
+//       const errorData = await response.json().catch(() => null);
+//       throw new HTTPError({
+//         message: errorData?.message || "Failed to fetch workspace threads",
+//         status: response.status,
+//         statusText: response.statusText,
+//       });
+//     }
+//
+//     const data = await response.json();
+//     const threads = data.map((item: any) => threadSchema.parse(item));
+//     return { data: threads, error: null };
+//   } catch (error) {
+//     const errorMessage =
+//       error instanceof z.ZodError
+//         ? "Invalid workspace threads schema"
+//         : error instanceof HTTPError
+//           ? error.message
+//           : "Failed to fetch workspace threads";
+//
+//     console.error("[getWorkspaceThreads]", {
+//       error,
+//       timestamp: new Date().toISOString(),
+//       workspaceId,
+//     });
+//     return { data: null, error: new Error(errorMessage) };
+//   }
+// }
 
 /**
  * Retrieves workspace labels.

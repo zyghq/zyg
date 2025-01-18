@@ -4,6 +4,8 @@ import {
   CustomerRowUpdates,
   MemberRow,
   MemberRowUpdates,
+  ThreadRow,
+  ThreadRowUpdates,
 } from "@/db/sync";
 
 // Represents the Member shape from sync engine
@@ -198,6 +200,101 @@ export type ThreadShape = {
   workspaceId: string;
 };
 
+export type ThreadShapeUpdates = {
+  assignedAt?: null | string;
+  assigneeId?: null | string;
+  channel?: string;
+  createdAt?: string;
+  createdById?: string;
+  customerId?: string;
+  description?: string;
+  inboundSeqId?: null | string;
+  labels?: null | ThreadLabelShape;
+  outboundSeqId?: null | string;
+  previewText?: string;
+  priority?: string;
+  replied?: boolean;
+  stage?: string;
+  status?: string;
+  statusChangedAt?: string;
+  statusChangedById?: string;
+  syncedAt?: string;
+  threadId?: string;
+  title?: string;
+  updatedAt?: string;
+  updatedById?: string;
+  versionId?: string;
+  workspaceId?: string;
+};
+
+// Maps sync engine `thread` table row to Thread shape
+export function threadRowToShape(row: ThreadRow): ThreadShape {
+  return {
+    assignedAt: row.assigned_at,
+    assigneeId: row.assignee_id,
+    channel: row.channel,
+    createdAt: row.created_at,
+    createdById: row.created_by_id,
+    customerId: row.customer_id,
+    description: row.description,
+    inboundSeqId: row.inbound_seq_id,
+    labels: row.labels,
+    outboundSeqId: row.outbound_seq_id,
+    previewText: row.preview_text,
+    priority: row.priority,
+    replied: row.replied,
+    stage: row.stage,
+    status: row.status,
+    statusChangedAt: row.status_changed_at,
+    statusChangedById: row.status_changed_by_id,
+    syncedAt: row.synced_at,
+    threadId: row.thread_id,
+    title: row.title,
+    updatedAt: row.updated_at,
+    updatedById: row.updated_by_id,
+    versionId: row.version_id,
+    workspaceId: row.workspace_id,
+  };
+}
+
 export function threadsToMap(threads: ThreadShape[]): ThreadShapeMap {
   return new Map(threads.map((thread) => [thread.threadId, thread]));
+}
+
+export function takeThreadUpdates(thread: ThreadRowUpdates): ThreadRowUpdates {
+  const result: ThreadShapeUpdates = {};
+  if (thread.assigned_at !== undefined) result.assignedAt = thread.assigned_at;
+  if (thread.assignee_id !== undefined) result.assigneeId = thread.assignee_id;
+  if (thread.channel !== undefined) result.channel = thread.channel;
+  if (thread.created_at !== undefined) result.createdAt = thread.created_at;
+  if (thread.created_by_id !== undefined)
+    result.createdById = thread.created_by_id;
+  if (thread.customer_id !== undefined) result.customerId = thread.customer_id;
+  if (thread.description !== undefined) result.description = thread.description;
+  if (thread.inbound_seq_id !== undefined)
+    result.inboundSeqId = thread.inbound_seq_id;
+  if (thread.labels !== undefined) result.labels = thread.labels;
+  if (thread.outbound_seq_id !== undefined)
+    result.outboundSeqId = thread.outbound_seq_id;
+  if (thread.preview_text !== undefined)
+    result.previewText = thread.preview_text;
+  if (thread.priority !== undefined) result.priority = thread.priority;
+  if (thread.replied !== undefined) result.replied = thread.replied;
+  if (thread.stage !== undefined) result.stage = thread.stage;
+  if (thread.status !== undefined) result.status = thread.status;
+  if (thread.status_changed_at !== undefined)
+    result.statusChangedAt = thread.status_changed_at;
+  if (thread.status_changed_by_id !== undefined)
+    result.statusChangedById = thread.status_changed_by_id;
+  if (thread.synced_at !== undefined) result.syncedAt = thread.synced_at;
+  if (thread.thread_id !== undefined) result.threadId = thread.thread_id;
+  if (thread.title !== undefined) result.title = thread.title;
+  if (thread.updated_at !== undefined) result.updatedAt = thread.updated_at;
+  if (thread.updated_by_id !== undefined)
+    result.updatedById = thread.updated_by_id;
+  if (thread.version_id !== undefined) result.versionId = thread.version_id;
+  if (thread.workspace_id !== undefined)
+    result.workspaceId = thread.workspace_id;
+
+  return result;
 }

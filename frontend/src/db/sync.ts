@@ -97,8 +97,6 @@ export function syncCustomersShape({
   };
 }
 
-
-
 export type ThreadRow = {
   assigned_at: null | string;
   assignee_id: null | string;
@@ -110,7 +108,7 @@ export type ThreadRow = {
   inbound_seq_id: null | string;
   labels: null | ThreadLabelShape;
   outbound_seq_id: null | string;
-  preview_text: null | string;
+  preview_text: string;
   priority: string;
   replied: boolean;
   stage: string;
@@ -126,7 +124,6 @@ export type ThreadRow = {
   workspace_id: string;
 };
 
-
 export type ThreadRowUpdates = {
   assigned_at?: null | string;
   assignee_id?: null | string;
@@ -138,7 +135,7 @@ export type ThreadRowUpdates = {
   inbound_seq_id?: null | string;
   labels?: null | ThreadLabelShape;
   outbound_seq_id?: null | string;
-  preview_text?: null | string;
+  preview_text?: string;
   priority?: string;
   replied?: boolean;
   stage?: string;
@@ -152,7 +149,7 @@ export type ThreadRowUpdates = {
   updated_by_id?: string;
   version_id?: string;
   workspace_id?: string;
-}
+};
 
 export function syncThreadsShape({
   token,

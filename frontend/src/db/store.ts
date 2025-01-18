@@ -21,10 +21,14 @@ import {
   MemberShape,
   MemberShapeUpdates,
   ThreadShape,
+  ThreadShapeUpdates,
 } from "@/db/shapes";
+import { enableMapSet } from "immer";
 import _ from "lodash";
 import { immer } from "zustand/middleware/immer";
 import { createStore } from "zustand/vanilla";
+
+enableMapSet();
 
 // Represents entities for KV dictionary values.
 // add more entities as supported by KV store
@@ -103,6 +107,8 @@ export interface IWorkspaceValueObjects {
   membersShapeOffset: string;
   threadAppliedFilters: null | ThreadAppliedFilters;
   threadSortKey: null | SortBy;
+  threadsShapeHandle: null | string;
+  threadsShapeOffset: string;
 }
 
 export type PrioritiesFiltersType = Priority | Priority[] | undefined;
@@ -170,13 +176,17 @@ interface IWorkspaceStoreActions {
 
   setThreadSortKey(sortKey: SortBy): void;
 
+  setThreadsShapeHandle(handle: null | string): void;
+
+  setThreadsShapeOffset(offset: string): void;
+
   updateCustomer(member: CustomerShapeUpdates): void;
 
   updateLabel(labelId: string, label: Label): void;
 
   updateMember(member: MemberShapeUpdates): void;
 
-  updateThread(thread: ThreadShape): void;
+  updateThread(thread: ThreadShapeUpdates): void;
 
   updateWorkspaceName(name: string): void;
 
@@ -245,6 +255,10 @@ interface IWorkspaceStoreActions {
 
   viewThreadSortKey(state: WorkspaceStoreState): SortBy;
 
+  viewThreadsShapeHandle(state: WorkspaceStoreState): null | string;
+
+  viewThreadsShapeOffset(state: WorkspaceStoreState): string;
+
   viewUnassignedThreads(
     state: WorkspaceStoreState,
     status: StatusType,
@@ -255,46 +269,105 @@ interface IWorkspaceStoreActions {
   ): ThreadShape[];
 }
 
+// function filterByAssignees(
+//   threads: ThreadShape[],
+//   assignees: AssigneesFiltersType,
+// ) {
+//   if (assignees && Array.isArray(assignees)) {
+//     const uniqueAssignees = [...new Set(assignees)];
+//     const filtered = [];
+//     for (const assignee of uniqueAssignees) {
+//       filtered.push(...threads.filter((t) => t.assigneeId === assignee));
+//     }
+//     return filtered;
+//   }
+//   if (assignees) {
+//     return threads.filter((t) => t.assigneeId === assignees);
+//   }
+//   // no change
+//   return threads;
+// }
+
 function filterByAssignees(
   threads: ThreadShape[],
   assignees: AssigneesFiltersType,
-) {
-  if (assignees && Array.isArray(assignees)) {
-    const uniqueAssignees = [...new Set(assignees)];
-    const filtered = [];
-    for (const assignee of uniqueAssignees) {
-      filtered.push(...threads.filter((t) => t.assigneeId === assignee));
-    }
-    return filtered;
-  }
-  if (assignees) {
-    return threads.filter((t) => t.assigneeId === assignees);
-  }
-  // no change
-  return threads;
+): ThreadShape[] {
+  if (!assignees) return threads;
+
+  // Convert assignees to Set for O(1) lookup
+  const assigneeSet = Array.isArray(assignees)
+    ? new Set(assignees)
+    : new Set([assignees]);
+
+  return threads.filter((t) => t.assigneeId && assigneeSet.has(t.assigneeId));
 }
+
+// function filterByPriorities(
+//   threads: ThreadShape[],
+//   priorities: PrioritiesFiltersType,
+// ) {
+//   if (priorities && Array.isArray(priorities)) {
+//     const uniquePriorities = [...new Set(priorities)];
+//     const filtered = [];
+//     for (const priority of uniquePriorities) {
+//       filtered.push(...threads.filter((t) => t.priority === priority));
+//     }
+//     return filtered;
+//   }
+//
+//   if (priorities) {
+//     return threads.filter((t) => t.priority === priorities);
+//   }
+//   // no change
+//   return threads;
+// }
 
 function filterByPriorities(
   threads: ThreadShape[],
   priorities: PrioritiesFiltersType,
-) {
-  if (priorities && Array.isArray(priorities)) {
-    const uniquePriorities = [...new Set(priorities)];
-    const filtered = [];
-    for (const priority of uniquePriorities) {
-      filtered.push(...threads.filter((t) => t.priority === priority));
-    }
-    return filtered;
-  }
+): ThreadShape[] {
+  if (!priorities) return threads;
 
-  if (priorities) {
-    return threads.filter((t) => t.priority === priorities);
-  }
-  // no change
-  return threads;
+  // Convert priorities to Set for O(1) lookup
+  const prioritySet = Array.isArray(priorities)
+    ? new Set(priorities)
+    : new Set([priorities]);
+
+  return threads.filter((t) => prioritySet.has(t.priority as Priority));
 }
 
-function filterByStages(threads: ThreadShape[], stages: StagesFiltersType) {
+// function filterByStages(threads: ThreadShape[], stages: StagesFiltersType) {
+//   const stageMap: Record<string, string> = {
+//     hold: HOLD,
+//     needs_first_response: NEEDS_FIRST_RESPONSE,
+//     needs_next_response: NEEDS_NEXT_RESPONSE,
+//     resolved: RESOLVED,
+//     spam: SPAM,
+//     waiting_on_customer: WAITING_ON_CUSTOMER,
+//   };
+//
+//   if (stages) {
+//     if (Array.isArray(stages)) {
+//       const uniqueStages = [...new Set(stages)];
+//       return threads.filter((t) =>
+//         uniqueStages.some((stage) => t.stage === stageMap[stage]),
+//       );
+//     }
+//     if (stageMap[stages]) {
+//       return threads.filter((t) => t.stage === stageMap[stages]);
+//     }
+//   }
+//
+//   // no change
+//   return threads;
+// }
+
+function filterByStages(
+  threads: ThreadShape[],
+  stages: StagesFiltersType,
+): ThreadShape[] {
+  if (!stages) return threads;
+
   const stageMap: Record<string, string> = {
     hold: HOLD,
     needs_first_response: NEEDS_FIRST_RESPONSE,
@@ -304,46 +377,77 @@ function filterByStages(threads: ThreadShape[], stages: StagesFiltersType) {
     waiting_on_customer: WAITING_ON_CUSTOMER,
   };
 
-  if (stages) {
-    if (Array.isArray(stages)) {
-      const uniqueStages = [...new Set(stages)];
-      return threads.filter((t) =>
-        uniqueStages.some((stage) => t.stage === stageMap[stage]),
-      );
-    }
-    if (stageMap[stages]) {
-      return threads.filter((t) => t.stage === stageMap[stages]);
-    }
-  }
+  // Convert stages to mapped Set for O(1) lookup
+  const stageSet = Array.isArray(stages)
+    ? new Set(stages.map((stage) => stageMap[stage]))
+    : new Set([stageMap[stages]]);
 
-  // no change
-  return threads;
+  return threads.filter((t) => stageSet.has(t.stage));
 }
 
+const PRIORITY_MAP: Record<string, number> = {
+  high: 1,
+  low: 3,
+  normal: 2,
+  urgent: 0,
+} as const;
+
+// function sortThreads(threads: ThreadShape[], sortBy: SortBy): ThreadShape[] {
+//   const priorityMap: { [key: string]: number } = {
+//     high: 1,
+//     low: 3,
+//     normal: 2,
+//     urgent: 0,
+//   };
+//   switch (sortBy) {
+//     case "created-asc":
+//       return _.sortBy(threads, "createdAt");
+//     case "created-dsc":
+//       return _.sortBy(threads, "createdAt").reverse();
+//     case "inbound-message-dsc":
+//       return _.sortBy(threads, "inboundLastSeqId").reverse();
+//     case "outbound-message-dsc":
+//       return _.sortBy(threads, "outboundLastSeqId").reverse();
+//     case "priority-asc":
+//       return _.sortBy(threads, (thread) => priorityMap[thread.priority]);
+//     case "priority-dsc":
+//       return _.sortBy(threads, (thread) => -priorityMap[thread.priority]);
+//     case "status-changed-asc":
+//       return _.sortBy(threads, "statusChangedAt");
+//     case "status-changed-dsc":
+//       return _.sortBy(threads, "statusChangedAt").reverse();
+//     default:
+//       return threads;
+//   }
+// }
+//
+
 function sortThreads(threads: ThreadShape[], sortBy: SortBy): ThreadShape[] {
-  const priorityMap: { [key: string]: number } = {
-    high: 1,
-    low: 3,
-    normal: 2,
-    urgent: 0,
-  };
   switch (sortBy) {
     case "created-asc":
-      return _.sortBy(threads, "createdAt");
+      return _.orderBy(threads, "createdAt", "asc");
     case "created-dsc":
-      return _.sortBy(threads, "createdAt").reverse();
+      return _.orderBy(threads, "createdAt", "desc");
     case "inbound-message-dsc":
-      return _.sortBy(threads, "inboundLastSeqId").reverse();
+      return _.orderBy(threads, "inboundLastSeqId", "desc");
     case "outbound-message-dsc":
-      return _.sortBy(threads, "outboundLastSeqId").reverse();
+      return _.orderBy(threads, "outboundLastSeqId", "desc");
     case "priority-asc":
-      return _.sortBy(threads, (thread) => priorityMap[thread.priority]);
+      return _.orderBy(
+        threads,
+        (thread) => PRIORITY_MAP[thread.priority] ?? Infinity,
+        "asc",
+      );
     case "priority-dsc":
-      return _.sortBy(threads, (thread) => -priorityMap[thread.priority]);
+      return _.orderBy(
+        threads,
+        (thread) => PRIORITY_MAP[thread.priority] ?? -Infinity,
+        "desc",
+      );
     case "status-changed-asc":
-      return _.sortBy(threads, "statusChangedAt");
+      return _.orderBy(threads, "statusChangedAt", "asc");
     case "status-changed-dsc":
-      return _.sortBy(threads, "statusChangedAt").reverse();
+      return _.orderBy(threads, "statusChangedAt", "desc");
     default:
       return threads;
   }
@@ -429,7 +533,7 @@ export const buildWorkspaceStore = (
       getMemberName: (state: WorkspaceStoreState) => state.member?.name || "",
       getMetrics: (state: WorkspaceStoreState) => state.metrics,
       getThreadItem: (state: WorkspaceStoreState, threadId: string) =>
-        state.threads?.[threadId] || null,
+        state.threads?.get(threadId) ?? null,
       getWorkspaceId: (state: WorkspaceStoreState) =>
         state.workspace?.workspaceId || "",
       getWorkspaceName: (state: WorkspaceStoreState) =>
@@ -473,6 +577,18 @@ export const buildWorkspaceStore = (
           setTimeout(() => {
             setInLocalStorage(key, sortKey);
           }, 0);
+          return state;
+        });
+      },
+      setThreadsShapeHandle: (handle: null | string) => {
+        set((state) => {
+          state.threadsShapeHandle = handle;
+          return state;
+        });
+      },
+      setThreadsShapeOffset: (offset: string) => {
+        set((state) => {
+          state.threadsShapeOffset = offset;
           return state;
         });
       },
@@ -534,23 +650,50 @@ export const buildWorkspaceStore = (
           };
         });
       },
-      updateThread: (thread) => {
+      updateThread: (thread: ThreadShapeUpdates) => {
+        // Guard against invalid input
+        if (!thread?.threadId) return;
+        const id: string = thread.threadId;
+
         set((state) => {
-          if (state.threads) {
-            if (state.threads?.[thread.threadId]) {
-              // existing record
-              const { ...rest } = state.threads[thread.threadId];
-              // updates
-              const { ...updates } = thread;
-              state.threads[thread.threadId] = {
-                ...rest,
-                ...updates,
-              };
-            }
+          // If threads Map doesn't exist or thread doesn't exist, return unchanged state
+          if (!state.threads?.has(id)) {
+            return state;
           }
-          return state;
+
+          // Get existing thread
+          const existingThread = state.threads.get(id)!;
+
+          // Create new Map with updated thread
+          const newThreads = new Map(state.threads);
+          newThreads.set(id, {
+            ...existingThread,
+            ...thread,
+          });
+
+          // Return new state with updated threads Map
+          return {
+            ...state,
+            threads: newThreads,
+          };
         });
       },
+      // updateThread: (thread) => {
+      //   set((state) => {
+      //     if (!state.threads || !state.threads.has(thread.threadId))
+      //       return state;
+      //
+      //     // Get existing thread if it exists
+      //     const existingThread = state.threads.get(thread.threadId);
+      //
+      //     // Update the thread by merging existing with new data
+      //     state.threads.set(thread.threadId, {
+      //       ...existingThread, // spread existing data if any
+      //       ...thread, // spread new updates
+      //     });
+      //     return state;
+      //   });
+      // },
       updateWorkspaceName: (name: string) => {
         set((state) => {
           if (state.workspace) {
@@ -588,39 +731,51 @@ export const buildWorkspaceStore = (
       viewCurrentThreadQueue: (
         state: WorkspaceStoreState,
       ): null | ThreadShape[] => {
-        if (state.threadAppliedFilters) {
-          const {
-            assignees,
-            isUnassigned,
-            memberId,
-            priorities,
-            sortBy,
-            stages,
-            status,
-          } = state.threadAppliedFilters;
+        if (!state.threadAppliedFilters) return null;
+        if (!state.threads) return [];
 
-          const threads = state.threads ? Object.values(state.threads) : [];
+        const {
+          assignees,
+          isUnassigned,
+          memberId,
+          priorities,
+          sortBy,
+          stages,
+          status,
+        } = state.threadAppliedFilters;
 
-          let results = [];
-          results = threads.filter((t) => t.status === status);
+        // Convert Map to array once
+        let results = [...state.threads.values()];
 
-          if (memberId) {
-            results = threads.filter(
-              (t) => t.status === status && t.assigneeId === memberId,
-            );
-          } else if (isUnassigned) {
-            results = threads.filter(
-              (t) => t.status === status && !t.assigneeId,
-            );
+        // Apply filters in order of most restrictive first
+        // 1. Status filter (required)
+        results = results.filter((t) => t.status === status);
+
+        // 2. Assignment filters (mutually exclusive)
+        if (memberId) {
+          // Single assignee filter
+          results = results.filter((t) => t.assigneeId === memberId);
+        } else {
+          // Handle other assignment cases
+          if (isUnassigned) {
+            results = results.filter((t) => !t.assigneeId);
+          } else if (assignees) {
+            // Only apply assignees filter if not handling memberId or isUnassigned
+            results = filterByAssignees(results, assignees);
           }
-
-          results = filterByAssignees(results, assignees);
-          results = filterByStages(results, stages);
-          results = filterByPriorities(results, priorities);
-          results = sortThreads(results, sortBy);
-          return results;
         }
-        return null;
+
+        // 3. Apply remaining filters
+        if (stages) {
+          results = filterByStages(results, stages);
+        }
+
+        if (priorities) {
+          results = filterByPriorities(results, priorities);
+        }
+
+        // 4. Finally sort the filtered results
+        return sortThreads(results, sortBy);
       },
       viewCustomerEmail: (state: WorkspaceStoreState, customerId: string) => {
         const customer = state.customers?.[customerId];
@@ -676,25 +831,40 @@ export const buildWorkspaceStore = (
         stages: StagesFiltersType,
         priorities: PrioritiesFiltersType,
         sortBy: SortBy = defaultSortKey,
-      ) => {
-        const threads = state.threads ? Object.values(state.threads) : [];
-        const myThreads = threads.filter(
+      ): ThreadShape[] => {
+        if (!state.threads) return [];
+
+        // Convert Map to array once and apply base filters
+        let results = [...state.threads.values()].filter(
           (t) => t.status === status && t.assigneeId === memberId,
         );
-        const assigneesFiltered = filterByAssignees(myThreads, assignees);
-        const stagesFiltered = filterByStages(assigneesFiltered, stages);
-        const prioritiesFiltered = filterByPriorities(
-          stagesFiltered,
-          priorities,
-        );
-        return sortThreads(prioritiesFiltered, sortBy);
+
+        // Apply remaining filters conditionally
+        if (assignees) {
+          results = filterByAssignees(results, assignees);
+        }
+
+        if (stages) {
+          results = filterByStages(results, stages);
+        }
+
+        if (priorities) {
+          results = filterByPriorities(results, priorities);
+        }
+
+        // Apply sorting
+        return sortThreads(results, sortBy);
       },
       viewPats: (state: WorkspaceStoreState) => {
         const pats = state.pats ? Object.values(state.pats) : [];
         return _.sortBy(pats, "patId").reverse();
       },
-      viewThreadAssigneeId: (state: WorkspaceStoreState, threadId: string) =>
-        state.threads?.[threadId]?.assigneeId || null,
+      viewThreadAssigneeId: (
+        state: WorkspaceStoreState,
+        threadId: string,
+      ): null | string => {
+        return state.threads?.get(threadId)?.assigneeId ?? null;
+      },
       viewThreads: (
         state: WorkspaceStoreState,
         status: StatusType,
@@ -702,16 +872,29 @@ export const buildWorkspaceStore = (
         stages: StagesFiltersType,
         priorities: PrioritiesFiltersType,
         sortBy: SortBy = defaultSortKey,
-      ) => {
-        const threads = state.threads ? Object.values(state.threads) : [];
-        const statusFiltered = threads.filter((t) => t.status === status);
-        const assigneesFiltered = filterByAssignees(statusFiltered, assignees);
-        const stagesFiltered = filterByStages(assigneesFiltered, stages);
-        const prioritiesFiltered = filterByPriorities(
-          stagesFiltered,
-          priorities,
+      ): ThreadShape[] => {
+        if (!state.threads) return [];
+
+        // Convert Map to array once and apply base status filter
+        let results = [...state.threads.values()].filter(
+          (t) => t.status === status,
         );
-        return sortThreads(prioritiesFiltered, sortBy);
+
+        // Apply remaining filters conditionally
+        if (assignees) {
+          results = filterByAssignees(results, assignees);
+        }
+
+        if (stages) {
+          results = filterByStages(results, stages);
+        }
+
+        if (priorities) {
+          results = filterByPriorities(results, priorities);
+        }
+
+        // Apply sorting
+        return sortThreads(results, sortBy);
       },
       viewThreadSortKey: (state: WorkspaceStoreState) => {
         if (state.threadSortKey) {
@@ -726,28 +909,42 @@ export const buildWorkspaceStore = (
         // use default otherwise.
         return defaultSortKey;
       },
+      viewThreadsShapeHandle(state: WorkspaceStoreState): null | string {
+        return state.threadsShapeHandle;
+      },
+      viewThreadsShapeOffset(state: WorkspaceStoreState): string {
+        return state.threadsShapeOffset;
+      },
       viewUnassignedThreads: (
         state: WorkspaceStoreState,
         status: StatusType,
         assignees: AssigneesFiltersType,
         stages: StagesFiltersType,
         priorities: PrioritiesFiltersType,
-        sortBy = defaultSortKey,
-      ) => {
-        const threads = state.threads ? Object.values(state.threads) : [];
-        const unassignedThreads = threads.filter(
+        sortBy: SortBy = defaultSortKey,
+      ): ThreadShape[] => {
+        if (!state.threads) return [];
+
+        // Convert Map to array once and apply base filters
+        let results = [...state.threads.values()].filter(
           (t) => t.status === status && !t.assigneeId,
         );
-        const assigneesFiltered = filterByAssignees(
-          unassignedThreads,
-          assignees,
-        );
-        const stagesFiltered = filterByStages(assigneesFiltered, stages);
-        const prioritiesFiltered = filterByPriorities(
-          stagesFiltered,
-          priorities,
-        );
-        return sortThreads(prioritiesFiltered, sortBy);
+
+        // Apply remaining filters conditionally
+        if (assignees) {
+          results = filterByAssignees(results, assignees);
+        }
+
+        if (stages) {
+          results = filterByStages(results, stages);
+        }
+
+        if (priorities) {
+          results = filterByPriorities(results, priorities);
+        }
+
+        // Apply sorting
+        return sortThreads(results, sortBy);
       },
     })),
   );

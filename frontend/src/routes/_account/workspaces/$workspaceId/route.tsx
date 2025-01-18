@@ -4,13 +4,11 @@ import {
   getWorkspaceLabels,
   getWorkspaceMember,
   getWorkspaceMetrics,
-  getWorkspaceThreads,
 } from "@/db/api";
 import {
   AuthMember,
   labelsToMap,
   patsToMap,
-  threadsToMap,
   Workspace,
   WorkspaceMetrics,
 } from "@/db/models";
@@ -21,8 +19,11 @@ import {
   membersToMap,
   takeCustomerUpdates,
   takeMemberUpdates,
+  takeThreadUpdates,
+  threadRowToShape,
+  threadsToMap,
 } from "@/db/shapes";
-import { LabelMap, PatMap, ThreadShapeMap, WorkspaceStoreState } from "@/db/store";
+import { LabelMap, PatMap, WorkspaceStoreState } from "@/db/store";
 import {
   CustomerRow,
   CustomerRowUpdates,
@@ -30,6 +31,9 @@ import {
   MemberRowUpdates,
   syncCustomersShape,
   syncMembersShape,
+  syncThreadsShape,
+  ThreadRow,
+  ThreadRowUpdates,
 } from "@/db/sync";
 import { useWorkspaceStore, WorkspaceStoreProvider } from "@/providers";
 import {
@@ -120,25 +124,25 @@ async function getMetricsData(
   return count;
 }
 
-/**
- * Fetches and processes thread data for a given workspace.
- *
- * @param {string} token - Authentication token used to access the workspace data.
- * @param {string} workspaceId - Identifier of the workspace to retrieve thread data for.
- * @return {Promise<null | ThreadShapeMap>} A promise that resolves to a map of threads if data is available, or null if no data is found.
- * @throws {Error} If an error occurs during the data retrieval process.
- */
-async function getThreadsData(
-  token: string,
-  workspaceId: string,
-): Promise<null | ThreadShapeMap> {
-  const { data, error } = await getWorkspaceThreads(token, workspaceId);
-  if (error) throw new Error(error.message);
-  if (data && data.length > 0) {
-    return threadsToMap(data);
-  }
-  return null;
-}
+// /**
+//  * Fetches and processes thread data for a given workspace.
+//  *
+//  * @param {string} token - Authentication token used to access the workspace data.
+//  * @param {string} workspaceId - Identifier of the workspace to retrieve thread data for.
+//  * @return {Promise<null | ThreadShapeMap>} A promise that resolves to a map of threads if data is available, or null if no data is found.
+//  * @throws {Error} If an error occurs during the data retrieval process.
+//  */
+// async function getThreadsData(
+//   token: string,
+//   workspaceId: string,
+// ): Promise<null | ThreadShapeMap> {
+//   const { data, error } = await getWorkspaceThreads(token, workspaceId);
+//   if (error) throw new Error(error.message);
+//   if (data && data.length > 0) {
+//     return threadsToMap(data);
+//   }
+//   return null;
+// }
 
 /**
  * Retrieves label data for a specific workspace and converts it into a map structure.
@@ -193,12 +197,6 @@ const metricsQueryOptions = (token: string, workspaceId: string) =>
   queryOptions({
     queryFn: async () => getMetricsData(token, workspaceId),
     queryKey: ["metrics"],
-  });
-
-const threadsQueryOptions = (token: string, workspaceId: string) =>
-  queryOptions({
-    queryFn: async () => getThreadsData(token, workspaceId),
-    queryKey: ["threads"],
   });
 
 const labelsQueryOptions = (token: string, workspaceId: string) =>
@@ -256,6 +254,27 @@ const syncCustomersQueryOptions = (token: string, workspaceId: string) =>
     staleTime: Infinity,
   });
 
+const syncThreadsQueryOptions = (token: string, workspaceId: string) =>
+  queryOptions({
+    gcTime: Infinity,
+    queryFn: async () => {
+      const shape = await preloadShape(
+        syncThreadsShape({ token, workspaceId }),
+      );
+      const { handle, lastOffset } = shape;
+      const rows = (await shape.rows) as unknown as ThreadRow[];
+      const threads = rows.map((row) => threadRowToShape(row));
+      const threadsMap = threadsToMap(threads);
+      return {
+        handle: handle,
+        offset: lastOffset,
+        threads: threadsMap,
+      };
+    },
+    queryKey: ["threads"],
+    staleTime: Infinity,
+  });
+
 type ElectricSyncWrapperProps = {
   children: React.ReactNode;
   token: string;
@@ -286,6 +305,14 @@ function ElectricSyncWrapper({
     workspaceStore,
     (state: WorkspaceStoreState) => state.viewCustomersShapeHandle(state),
   );
+  const threadsShapeOffset = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.viewThreadsShapeOffset(state),
+  ) as Offset;
+  const threadsShapeHandle = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.viewThreadsShapeHandle(state),
+  );
 
   // mutations
   const setMembersShapeOffset = useStore(
@@ -306,6 +333,15 @@ function ElectricSyncWrapper({
     (state: WorkspaceStoreState) => state.setCustomersShapeHandle,
   );
 
+  const setThreadsShapeOffset = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.setThreadsShapeOffset,
+  );
+  const setThreadsShapeHandle = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.setThreadsShapeHandle,
+  );
+
   const updateMember = useStore(
     workspaceStore,
     (state: WorkspaceStoreState) => state.updateMember,
@@ -313,6 +349,10 @@ function ElectricSyncWrapper({
   const updateCustomer = useStore(
     workspaceStore,
     (state: WorkspaceStoreState) => state.updateCustomer,
+  );
+  const updateThread = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.updateThread,
   );
 
   const setInSync = useStore(
@@ -339,6 +379,16 @@ function ElectricSyncWrapper({
     };
     return new ShapeStream<CustomerRow>(shapeOpts);
   }, [token, workspaceId, customersShapeHandle, customersShapeOffset]);
+
+  const threadShape = React.useMemo(() => {
+    const shapeDefaultOpts = syncThreadsShape({ token, workspaceId });
+    const shapeOpts = {
+      ...shapeDefaultOpts,
+      handle: threadsShapeHandle || undefined,
+      offset: threadsShapeOffset,
+    };
+    return new ShapeStream<ThreadRow>(shapeOpts);
+  }, [token, workspaceId, threadsShapeHandle, threadsShapeOffset]);
 
   const handleMemberSyncMessages = React.useCallback(
     (messages: Message<MemberRow>[]) => {
@@ -390,6 +440,31 @@ function ElectricSyncWrapper({
     [],
   );
 
+  const handleThreadSyncMessages = React.useCallback(
+    (messages: Message<ThreadRow>[]) => {
+      messages.forEach((message) => {
+        if (isChangeMessage(message) && message.value.thread_id) {
+          setInSync(false);
+          if (message.headers.operation === "update") {
+            const { value } = message;
+            const updates = takeThreadUpdates(value as ThreadRowUpdates);
+            updateThread(updates);
+          }
+        } else if (
+          isControlMessage(message) &&
+          message.headers.control === "up-to-date"
+        ) {
+          setInSync(true);
+          if (threadShape.lastOffset && threadShape.shapeHandle) {
+            setThreadsShapeOffset(threadShape.lastOffset);
+            setThreadsShapeHandle(threadShape.shapeHandle as string);
+          }
+        }
+      });
+    },
+    [],
+  );
+
   React.useEffect(() => {
     const unsubscribe = memberShape.subscribe(handleMemberSyncMessages);
     return () => {
@@ -403,6 +478,13 @@ function ElectricSyncWrapper({
       unsubscribe();
     };
   }, [customerShape]);
+
+  React.useEffect(() => {
+    const unsubscribe = threadShape.subscribe(handleThreadSyncMessages);
+    return () => {
+      unsubscribe();
+    };
+  }, [threadShape]);
 
   return <>{children}</>;
 }
@@ -422,13 +504,13 @@ export const Route = createFileRoute("/_account/workspaces/$workspaceId")({
       queryClient.ensureQueryData(workspaceQueryOptions(token, workspaceId)),
       queryClient.ensureQueryData(memberQueryOptions(token, workspaceId)),
       queryClient.ensureQueryData(metricsQueryOptions(token, workspaceId)),
-      queryClient.ensureQueryData(threadsQueryOptions(token, workspaceId)),
       queryClient.ensureQueryData(labelsQueryOptions(token, workspaceId)),
       queryClient.ensureQueryData(patsQueryOptions(token)),
       queryClient.ensureQueryData(syncMembersQueryOptions(token, workspaceId)),
       queryClient.ensureQueryData(
         syncCustomersQueryOptions(token, workspaceId),
       ),
+      queryClient.ensureQueryData(syncThreadsQueryOptions(token, workspaceId)),
     ]);
     return token;
   },
@@ -443,14 +525,8 @@ function CurrentWorkspace() {
   const { data: member } = useSuspenseQuery(
     memberQueryOptions(token, workspaceId),
   );
-  const { data: customersData } = useSuspenseQuery(
-    syncCustomersQueryOptions(token, workspaceId),
-  );
   const { data: metrics } = useSuspenseQuery(
     metricsQueryOptions(token, workspaceId),
-  );
-  const { data: threads } = useSuspenseQuery(
-    threadsQueryOptions(token, workspaceId),
   );
   const { data: labels } = useSuspenseQuery(
     labelsQueryOptions(token, workspaceId),
@@ -460,6 +536,15 @@ function CurrentWorkspace() {
   const { data: membersData } = useSuspenseQuery(
     syncMembersQueryOptions(token, workspaceId),
   );
+
+  const { data: customersData } = useSuspenseQuery(
+    syncCustomersQueryOptions(token, workspaceId),
+  );
+
+  const { data: threadsData } = useSuspenseQuery(
+    syncThreadsQueryOptions(token, workspaceId),
+  );
+
   const {
     handle: membersShapeHandle,
     members,
@@ -471,6 +556,12 @@ function CurrentWorkspace() {
     handle: customersShapeHandle,
     offset: customersShapeOffset,
   } = customersData;
+
+  const {
+    handle: threadsShapeHandle,
+    offset: threadsShapeOffset,
+    threads,
+  } = threadsData;
 
   const initialData = {
     customers: customers,
@@ -488,6 +579,8 @@ function CurrentWorkspace() {
     threadAppliedFilters: null,
     threads: threads,
     threadSortKey: null,
+    threadsShapeHandle: threadsShapeHandle || null,
+    threadsShapeOffset: threadsShapeOffset || "-1",
     workspace: workspace,
   };
 
