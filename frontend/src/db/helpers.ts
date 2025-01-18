@@ -16,21 +16,21 @@ export function customerRoleVerboseName(key: string): string {
 export function ThreadSortKeyHumanized(key: SortBy): string {
   switch (key) {
     case "created-asc": // when the thread is created
-      return "Created, oldest first";
+      return "Created / Oldest First";
     case "created-dsc": // when the thread is created
-      return "Created, newest first";
+      return "Created / Newest First";
     case "inbound-message-dsc": // when the inbound message was received
-      return "Most recent message";
+      return "Recent Message";
     case "outbound-message-dsc": // when the outbound message was sent
-      return "Most recent reply";
+      return "Recent Reply";
     case "priority-asc": // when the thread priority is changed
-      return "Priority, highest first";
+      return "Priority / Highest First";
     case "priority-dsc": // when the thread priority is changed
-      return "Priority, lowest first";
+      return "Priority / Lowest First";
     case "status-changed-asc": // when the thread status is changed
-      return "Status changed at, oldest first";
+      return "Status Changed / Oldest First";
     case "status-changed-dsc": // when the thread status is changed
-      return "Status changed at, newest first";
+      return "Status Changed / Newest First";
     default:
       return key;
   }
@@ -56,14 +56,14 @@ export function threadStatusVerboseName(key: string): string {
 }
 
 export const sortKeys = [
-  "created-dsc",
-  "created-asc",
-  "status-changed-dsc",
-  "status-changed-asc",
   "inbound-message-dsc",
   "outbound-message-dsc",
   "priority-asc",
   "priority-dsc",
+  "status-changed-dsc",
+  "status-changed-asc",
+  "created-dsc",
+  "created-asc",
 ] as const;
 
 export const todoThreadStages = [
