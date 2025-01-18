@@ -429,9 +429,9 @@ function sortThreads(threads: ThreadShape[], sortBy: SortBy): ThreadShape[] {
     case "created-dsc":
       return _.orderBy(threads, "createdAt", "desc");
     case "inbound-message-dsc":
-      return _.orderBy(threads, "inboundLastSeqId", "desc");
+      return _.orderBy(threads, "inboundSeqId", "desc");
     case "outbound-message-dsc":
-      return _.orderBy(threads, "outboundLastSeqId", "desc");
+      return _.orderBy(threads, "outboundSeqId", "desc");
     case "priority-asc":
       return _.orderBy(
         threads,
