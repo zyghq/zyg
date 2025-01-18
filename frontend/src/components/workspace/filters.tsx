@@ -212,11 +212,10 @@ function PrioritiesSubMenu({
   priorities: PrioritiesFiltersType;
 }) {
   const [selectedPriorities, setSelectedPriorities] = React.useState<
-    string | string[]
-  >("");
+    string | string[] | undefined
+  >(undefined);
 
   React.useEffect(() => {
-    if (!priorities) return;
     // check if multiple priorities are selected
     if (Array.isArray(priorities)) {
       setSelectedPriorities([...priorities]);
@@ -225,9 +224,9 @@ function PrioritiesSubMenu({
       setSelectedPriorities([priorities]);
       // if no priorities are selected
     } else {
-      setSelectedPriorities("");
+      setSelectedPriorities(undefined);
     }
-  }, [priorities]);
+  }, [priorities, setSelectedPriorities]);
 
   return (
     <DropdownMenuSub>
