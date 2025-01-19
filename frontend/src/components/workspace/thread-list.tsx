@@ -1,12 +1,12 @@
 import { ThreadLinkItem } from "@/components/workspace/thread-list-item";
-import { Thread } from "@/db/models";
+import { ThreadShape } from "@/db/shapes";
 import { Virtuoso } from "react-virtuoso";
 
 export function ThreadList({
   threads,
   workspaceId,
 }: {
-  threads: Thread[];
+  threads: ThreadShape[];
   workspaceId: string;
 }) {
   return (

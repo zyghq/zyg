@@ -50,10 +50,10 @@ import {
 import {
   Label,
   MessageAttachmentResponse,
-  Thread,
   ThreadLabelResponse,
   ThreadMessageResponse,
 } from "@/db/models";
+import { ThreadShape } from "@/db/shapes";
 import { WorkspaceStoreState } from "@/db/store";
 import { cn } from "@/lib/utils";
 import { useWorkspaceStore } from "@/providers";
@@ -89,7 +89,10 @@ export const Route = createFileRoute(
   component: ThreadDetail,
 });
 
-function getPrevNextFromCurrent(threads: null | Thread[], threadId: string) {
+function getPrevNextFromCurrent(
+  threads: null | ThreadShape[],
+  threadId: string,
+) {
   if (!threads) return { nextItem: null, prevItem: null };
 
   const currentIndex = threads.findIndex(

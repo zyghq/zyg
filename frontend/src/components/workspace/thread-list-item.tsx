@@ -1,7 +1,7 @@
 import { stageIcon } from "@/components/icons";
 import { channelIcon } from "@/components/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Thread } from "@/db/models";
+import { ThreadShape } from "@/db/shapes";
 import { useWorkspaceStore } from "@/providers";
 import { PersonIcon } from "@radix-ui/react-icons";
 import { Link } from "@tanstack/react-router";
@@ -12,7 +12,7 @@ export function ThreadLinkItem({
   thread,
   workspaceId,
 }: {
-  thread: Thread;
+  thread: ThreadShape;
   workspaceId: string;
 }) {
   const workspaceStore = useWorkspaceStore();

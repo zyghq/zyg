@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThreadList } from "@/components/workspace/thread/threads";
-import { Thread } from "@/db/models";
+import { ThreadShape } from "@/db/shapes";
 import { PanelLeftIcon } from "lucide-react";
 import * as React from "react";
 
@@ -11,7 +11,7 @@ export function SidePanelThreadList({
   title,
   workspaceId,
 }: {
-  threads: Thread[];
+  threads: ThreadShape[];
   title: string;
   workspaceId: string;
 }) {

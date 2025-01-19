@@ -1,7 +1,7 @@
 import { channelIcon, stageIcon } from "@/components/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/db/helpers";
-import { Thread } from "@/db/models";
+import { ThreadShape } from "@/db/shapes";
 import { WorkspaceStoreState } from "@/db/store";
 import { cn } from "@/lib/utils";
 import { useWorkspaceStore } from "@/providers";
@@ -15,7 +15,7 @@ function ThreadItem({
   variant = "default",
   workspaceId,
 }: {
-  item: Thread;
+  item: ThreadShape;
   variant?: string;
   workspaceId: string;
 }) {
@@ -104,7 +104,7 @@ export function ThreadList({
   variant = "default",
   workspaceId,
 }: {
-  threads: Thread[];
+  threads: ThreadShape[];
   variant?: string;
   workspaceId: string;
 }) {
@@ -112,7 +112,7 @@ export function ThreadList({
     <div
       className={cn("flex flex-col gap-2", variant === "compress" && "gap-0")}
     >
-      {threads.map((item: Thread) => (
+      {threads.map((item: ThreadShape) => (
         <ThreadItem
           item={item}
           key={item.threadId}

@@ -43,8 +43,7 @@ import {
 } from "@/components/ui/select";
 import { updateThread } from "@/db/api";
 import { threadStatusVerboseName } from "@/db/helpers";
-import { threadTransformer } from "@/db/models";
-import { ThreadResponse } from "@/db/schema";
+import { ThreadResponse, threadTransformer } from "@/db/models";
 import { WorkspaceStoreState } from "@/db/store";
 import { cn } from "@/lib/utils";
 import { useWorkspaceStore } from "@/providers";

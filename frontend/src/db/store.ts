@@ -392,35 +392,6 @@ const PRIORITY_MAP: Record<string, number> = {
   urgent: 0,
 } as const;
 
-// function sortThreads(threads: ThreadShape[], sortBy: SortBy): ThreadShape[] {
-//   const priorityMap: { [key: string]: number } = {
-//     high: 1,
-//     low: 3,
-//     normal: 2,
-//     urgent: 0,
-//   };
-//   switch (sortBy) {
-//     case "created-asc":
-//       return _.sortBy(threads, "createdAt");
-//     case "created-dsc":
-//       return _.sortBy(threads, "createdAt").reverse();
-//     case "inbound-message-dsc":
-//       return _.sortBy(threads, "inboundLastSeqId").reverse();
-//     case "outbound-message-dsc":
-//       return _.sortBy(threads, "outboundLastSeqId").reverse();
-//     case "priority-asc":
-//       return _.sortBy(threads, (thread) => priorityMap[thread.priority]);
-//     case "priority-dsc":
-//       return _.sortBy(threads, (thread) => -priorityMap[thread.priority]);
-//     case "status-changed-asc":
-//       return _.sortBy(threads, "statusChangedAt");
-//     case "status-changed-dsc":
-//       return _.sortBy(threads, "statusChangedAt").reverse();
-//     default:
-//       return threads;
-//   }
-// }
-//
 
 function sortThreads(threads: ThreadShape[], sortBy: SortBy): ThreadShape[] {
   switch (sortBy) {
