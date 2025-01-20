@@ -384,3 +384,18 @@ export function eventSeverityIcon(severity: string, props: IconProps) {
       return <DotFilledIcon {...props} />;
   }
 }
+
+export function priorityIcon(priority: string, props: IconProps) {
+  switch (priority) {
+    case "high":
+      return PriorityIcons.high(props);
+    case "low":
+      return PriorityIcons.low(props);
+    case "normal":
+      return PriorityIcons.normal(props);
+    case "urgent":
+      return PriorityIcons.urgent(props);
+    default:
+      return <></>;
+  }
+}

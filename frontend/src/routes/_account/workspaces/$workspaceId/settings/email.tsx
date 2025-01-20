@@ -9,10 +9,10 @@ import {
   SupportEmailForm,
   VerifyDNS,
 } from "@/components/workspace/settings/email/forms.tsx";
-import { getEmailSetting } from "@/db/api.ts";
-import { PostmarkMailServerSetting } from "@/db/schema.ts";
-import { WorkspaceStoreState } from "@/db/store.ts";
-import { useWorkspaceStore } from "@/providers.tsx";
+import { getEmailSetting } from "@/db/api";
+import { PostmarkMailServerSetting } from "@/db/schema";
+import { WorkspaceStoreState } from "@/db/store";
+import { useWorkspaceStore } from "@/providers";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCopyToClipboard } from "@uidotdev/usehooks";

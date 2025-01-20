@@ -1,4 +1,4 @@
-import { ThreadLabelShape } from "@/db/shapes";
+import { ThreadLabelShapeMap } from "@/db/shapes";
 import { ShapeStreamOptions } from "@electric-sql/client";
 
 export type MemberRow = {
@@ -106,7 +106,7 @@ export type ThreadRow = {
   customer_id: string;
   description: string;
   inbound_seq_id: null | string;
-  labels: null | ThreadLabelShape;
+  labels: null | ThreadLabelShapeMap;
   outbound_seq_id: null | string;
   preview_text: string;
   priority: string;
@@ -133,7 +133,7 @@ export type ThreadRowUpdates = {
   customer_id?: string;
   description?: string;
   inbound_seq_id?: null | string;
-  labels?: null | ThreadLabelShape;
+  labels?: null | ThreadLabelShapeMap;
   outbound_seq_id?: null | string;
   preview_text?: string;
   priority?: string;

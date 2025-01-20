@@ -272,7 +272,6 @@ function UnassignedThreads() {
           </span>
         </div>
       </div>
-
       <ThreadList threads={todoThreads} workspaceId={workspaceId} />
     </React.Fragment>
   );

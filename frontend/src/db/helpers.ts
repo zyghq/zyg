@@ -13,7 +13,7 @@ export function customerRoleVerboseName(key: string): string {
   }
 }
 
-export function ThreadSortKeyHumanized(key: SortBy): string {
+export function threadSortKeyHumanized(key: SortBy): string {
   switch (key) {
     case "created-asc": // when the thread is created
       return "Created / Oldest First";
@@ -31,6 +31,21 @@ export function ThreadSortKeyHumanized(key: SortBy): string {
       return "Status Changed / Oldest First";
     case "status-changed-dsc": // when the thread status is changed
       return "Status Changed / Newest First";
+    default:
+      return key;
+  }
+}
+
+export function threadPriorityHumanized(key: string): string {
+  switch (key) {
+    case "high":
+      return "High";
+    case "low":
+      return "Low";
+    case "normal":
+      return "Normal";
+    case "urgent":
+      return "Urgent";
     default:
       return key;
   }

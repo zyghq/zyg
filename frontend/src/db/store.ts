@@ -392,7 +392,6 @@ const PRIORITY_MAP: Record<string, number> = {
   urgent: 0,
 } as const;
 
-
 function sortThreads(threads: ThreadShape[], sortBy: SortBy): ThreadShape[] {
   switch (sortBy) {
     case "created-asc":

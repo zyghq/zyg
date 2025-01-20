@@ -227,7 +227,6 @@ const Component = z.union([
   ComponentRow,
 ]);
 
-// Main customer event schema
 export const customerEventSchema = z.object({
   components: z.array(Component),
   createdAt: z.string(),

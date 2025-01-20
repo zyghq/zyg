@@ -171,6 +171,7 @@ export type ThreadLabelShape = {
   name: string;
   updatedAt: string;
 };
+export type ThreadLabelShapeMap = Record<string, ThreadLabelShape>;
 
 // Represents the Thread shape from sync engine
 export type ThreadShape = {
@@ -182,7 +183,7 @@ export type ThreadShape = {
   customerId: string;
   description: string;
   inboundSeqId: null | string;
-  labels: null | ThreadLabelShape;
+  labels: null | ThreadLabelShapeMap;
   outboundSeqId: null | string;
   previewText: string;
   priority: string;
@@ -209,7 +210,7 @@ export type ThreadShapeUpdates = {
   customerId?: string;
   description?: string;
   inboundSeqId?: null | string;
-  labels?: null | ThreadLabelShape;
+  labels?: null | ThreadLabelShapeMap;
   outboundSeqId?: null | string;
   previewText?: string;
   priority?: string;

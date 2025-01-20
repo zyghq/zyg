@@ -6,7 +6,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { sortKeys, ThreadSortKeyHumanized } from "@/db/helpers";
+import { sortKeys, threadSortKeyHumanized } from "@/db/helpers";
 import { DoubleArrowUpIcon } from "@radix-ui/react-icons";
 import React from "react";
 
@@ -42,7 +42,7 @@ export function Sorts({
               onSelect={(e) => e.preventDefault()}
               value={sortKey}
             >
-              {ThreadSortKeyHumanized(sortKey)}
+              {threadSortKeyHumanized(sortKey)}
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>
