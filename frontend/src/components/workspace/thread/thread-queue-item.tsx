@@ -24,6 +24,9 @@ export function ThreadQueueItem({
   const customerName = useStore(workspaceStore, (state) =>
     state.viewCustomerName(state, thread.customerId),
   );
+  const customerEmail = useStore(workspaceStore, (state) =>
+    state.viewCustomerEmail(state, thread.customerId),
+  );
 
   const renderLabels = (labels: ThreadLabelShape[]) => {
     return labels.map((label) => (
@@ -56,7 +59,9 @@ export function ThreadQueueItem({
           )}
           <div className="flex flex-col items-start gap-2 px-3 sm:flex-row">
             <Avatar className="mt-1 h-7 w-7">
-              <AvatarFallback>{getInitials(customerName) || "U"}</AvatarFallback>
+              <AvatarFallback>
+                {getInitials(customerName) || "U"}
+              </AvatarFallback>
               <AvatarImage
                 alt={thread.customerId}
                 src={`https://avatar.vercel.sh/${thread.customerId}`}
@@ -65,11 +70,11 @@ export function ThreadQueueItem({
             <div className="min-w-0 flex-1 space-y-2">
               <div className="flex flex-col justify-between sm:flex-row sm:items-center">
                 <div>
-                  <h3 className="truncate text-sm font-normal">
+                  <h3 className="truncate text-sm font-medium">
                     {customerName}
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    {"example.com"}
+                    {customerEmail}
                   </p>
                 </div>
                 {stageIcon(thread.stage, {
