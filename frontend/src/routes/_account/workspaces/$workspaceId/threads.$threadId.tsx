@@ -1,5 +1,7 @@
-import { NotFound } from "@/components/notfound"
-import { ThreadSidebar } from "@/components/thread/sidebar";
+import { NotFound } from "@/components/notfound";
+import { ThreadActionsSidebar } from "@/components/thread/thread-actions-sidebar";
+import { ThreadContent } from "@/components/thread/thread-content";
+import { ThreadQueueSidebar } from "@/components/thread/thread-queue-sidebar";
 import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
@@ -25,7 +27,7 @@ function ThreadDetailLayout() {
     state.getThreadItem(state, threadId),
   );
 
-  if (!activeThread) return <NotFound />
+  if (!activeThread) return <NotFound />;
 
   return (
     <SidebarProvider
@@ -36,14 +38,18 @@ function ThreadDetailLayout() {
         } as React.CSSProperties
       }
     >
-      <ThreadSidebar activeThread={activeThread} workspaceId={workspaceId} />
+      <ThreadQueueSidebar
+        activeThread={activeThread}
+        workspaceId={workspaceId}
+      />
       <SidebarInset>
         <header className="sticky top-0 flex h-14 shrink-0 items-center gap-2 border-b bg-background p-4">
           <SidebarTrigger aria-label="Toggle Sidebar" className="-ml-1" />
           <Separator className="mr-2 h-4" orientation="vertical" />
         </header>
-        {threadId}
+        <ThreadContent />
       </SidebarInset>
+      <ThreadActionsSidebar />
     </SidebarProvider>
   );
 }

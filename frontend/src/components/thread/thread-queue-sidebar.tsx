@@ -41,7 +41,7 @@ function getPrevNextFromCurrent(
   return { nextItem, prevItem };
 }
 
-export function ThreadSidebar({
+export function ThreadQueueSidebar({
   activeThread,
   workspaceId,
   ...props
