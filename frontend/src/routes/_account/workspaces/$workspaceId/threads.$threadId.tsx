@@ -22,6 +22,8 @@ export const Route = createFileRoute(
 
 function ThreadDetailLayout() {
   const { threadId, workspaceId } = Route.useParams();
+  const { token } = Route.useRouteContext();
+
   const workspaceStore = useWorkspaceStore();
   const activeThread = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.getThreadItem(state, threadId),
@@ -46,10 +48,13 @@ function ThreadDetailLayout() {
         <header className="sticky top-0 flex h-14 shrink-0 items-center gap-2 border-b bg-background p-4">
           <SidebarTrigger aria-label="Toggle Sidebar" className="-ml-1" />
           <Separator className="mr-2 h-4" orientation="vertical" />
+          <div className="flex truncate font-serif font-medium">
+            {activeThread?.title || ""}
+          </div>
         </header>
         <ThreadContent />
       </SidebarInset>
-      <ThreadActionsSidebar />
+      <ThreadActionsSidebar activeThread={activeThread} token={token} workspaceId={workspaceId} />
     </SidebarProvider>
   );
 }
