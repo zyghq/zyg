@@ -2,8 +2,13 @@ import { stageIcon } from "@/components/icons";
 import { channelIcon } from "@/components/icons";
 import { priorityIcon } from "@/components/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { threadPriorityHumanized } from "@/db/helpers.ts";
-import { ThreadShape } from "@/db/shapes";
+import {
+  ThreadLabelShape,
+  ThreadLabelShapeMap,
+  ThreadShape,
+} from "@/db/shapes";
 import { useWorkspaceStore } from "@/providers";
 import { PersonIcon } from "@radix-ui/react-icons";
 import { Link } from "@tanstack/react-router";
@@ -21,9 +26,22 @@ export function ThreadLinkItem({
   const customerName = useStore(workspaceStore, (state) =>
     state.viewCustomerName(state, thread.customerId),
   );
+
+  const renderLabels = (labels: ThreadLabelShape[]) => {
+    return labels.map((label) => (
+      <Badge
+        className="rounded-full bg-accent capitalize text-muted-foreground"
+        key={label.labelId}
+        variant="outline"
+      >
+        {label.name}
+      </Badge>
+    ));
+  };
+
   return (
     <Link
-      className="grid grid-cols-1 gap-2 border-b p-4 transition-colors duration-200 hover:bg-accent dark:hover:bg-accent sm:grid-cols-2 lg:grid-cols-5"
+      className="grid grid-cols-1 gap-1 border-b px-4 py-3 transition-colors duration-200 hover:bg-accent dark:hover:bg-accent sm:grid-cols-2 lg:grid-cols-5"
       params={{ threadId: thread.threadId, workspaceId }}
       to={"/workspaces/$workspaceId/threads/$threadId"}
     >
@@ -39,6 +57,12 @@ export function ThreadLinkItem({
             <p className="truncate text-xs text-muted-foreground lg:hidden">
               {thread.title}
             </p>
+            <div className="mt-1 flex flex-wrap items-start gap-0.5 lg:hidden">
+              {thread.labels &&
+                renderLabels(
+                  Object.values(thread.labels as ThreadLabelShapeMap),
+                )}
+            </div>
           </div>
         </div>
         <div className="mt-2 flex items-center sm:mt-0 lg:hidden">
@@ -58,6 +82,10 @@ export function ThreadLinkItem({
             {thread.previewText}
           </span>
         </p>
+        <div className="mt-1 flex flex-wrap items-start gap-0.5">
+          {thread.labels &&
+            renderLabels(Object.values(thread.labels as ThreadLabelShapeMap))}
+        </div>
       </div>
 
       <div className="hidden lg:col-span-1 lg:flex lg:items-center lg:justify-center">
@@ -70,7 +98,7 @@ export function ThreadLinkItem({
         </div>
       </div>
 
-      <div className="mt-2 flex items-center justify-between space-x-3 sm:mt-0 sm:justify-end lg:col-span-1">
+      <div className="mt-1 flex items-center justify-between space-x-3 sm:mt-0 sm:justify-end lg:col-span-1">
         <div className="flex items-center space-x-2 text-xs text-muted-foreground">
           {channelIcon(thread.channel, {
             className: "h-4 w-4",
