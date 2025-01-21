@@ -89,17 +89,17 @@ export function SetThreadStatusForm({
   workspaceId: string;
 }) {
   const refSubmitButton = React.useRef<HTMLButtonElement>(null);
-
   const form = useForm<z.infer<typeof StageFormSchema>>({
     defaultValues: {
       stage: stage,
     },
     resolver: zodResolver(StageFormSchema),
   });
-  const workspaceStore = useWorkspaceStore();
 
-  const { formState } = form;
+  const { formState, setError, setValue } = form;
   const { errors } = formState;
+
+  const workspaceStore = useWorkspaceStore();
 
   const mutation = useMutation({
     mutationFn: async (inputs: StageFormInputs) => {
@@ -117,7 +117,7 @@ export function SetThreadStatusForm({
     },
     onError: (error) => {
       console.error(error);
-      form.setError("root", {
+      setError("root", {
         message: "Something went wrong. Please try again later.",
         type: "serverError",
       });
@@ -134,11 +134,15 @@ export function SetThreadStatusForm({
   };
 
   async function onStageChange(value: string) {
-    form.setValue("stage", value);
+    setValue("stage", value);
     setTimeout(() => {
       refSubmitButton?.current?.click();
     }, 0);
   }
+
+  React.useEffect(() => {
+    setValue("stage", stage);
+  }, [stage, setValue]);
 
   return (
     <Form {...form}>
@@ -151,7 +155,7 @@ export function SetThreadStatusForm({
           name="stage"
           render={({ field }) => (
             <FormItem>
-              <Select defaultValue={field.value} onValueChange={onStageChange}>
+              <Select onValueChange={onStageChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger
                     aria-label="Select Thread Status"
@@ -486,14 +490,11 @@ export function SetThreadPriorityForm({
     },
     resolver: zodResolver(PriorityFormSchema),
   });
-  const workspaceStore = useWorkspaceStore();
 
-  const { formState } = form;
+  const { formState, setError, setValue } = form;
   const { errors } = formState;
 
-  React.useEffect(() => {
-    form.reset({ priority: priority });
-  }, [form, priority]);
+  const workspaceStore = useWorkspaceStore();
 
   const mutation = useMutation({
     mutationFn: async (inputs: PriorityFormInputs) => {
@@ -517,7 +518,7 @@ export function SetThreadPriorityForm({
     },
     onError: (error) => {
       console.error(error);
-      form.setError("root", {
+      setError("root", {
         message: "Something went wrong. Please try again later.",
         type: "serverError",
       });
@@ -534,11 +535,15 @@ export function SetThreadPriorityForm({
   };
 
   async function onPriorityChange(value: string) {
-    form.setValue("priority", value);
+    setValue("priority", value);
     setTimeout(() => {
       refSubmitButton?.current?.click();
     }, 0);
   }
+
+  React.useEffect(() => {
+    setValue("priority", priority);
+  }, [form, priority]);
 
   return (
     <Form {...form}>
@@ -551,10 +556,7 @@ export function SetThreadPriorityForm({
           name="priority"
           render={({ field }) => (
             <FormItem>
-              <Select
-                defaultValue={field.value}
-                onValueChange={onPriorityChange}
-              >
+              <Select onValueChange={onPriorityChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger
                     aria-label="Select Thread Priority"

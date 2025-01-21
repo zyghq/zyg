@@ -27,13 +27,12 @@ export function ThreadActionsSidebar({
   token,
   workspaceId,
 }: ThreadActionsSidebarProps) {
-  const threadStage = activeThread?.stage || "";
-
   const workspaceStore = useWorkspaceStore();
   const workspaceLabels = useStore(
     workspaceStore,
     (state: WorkspaceStoreState) => state.viewLabels(state),
   );
+
   const customerName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.viewCustomerName(state, activeThread?.customerId || ""),
   );
@@ -52,6 +51,10 @@ export function ThreadActionsSidebar({
     state.viewCustomerRole(state, activeThread?.customerId || ""),
   );
 
+  const threadStage = activeThread?.stage || "";
+  const assigneeId = activeThread?.assigneeId || "unassigned";
+  const priority = activeThread?.priority || "normal";
+
   const [, copyEmail] = useCopyToClipboard();
   const [, copyExternalId] = useCopyToClipboard();
   const [, copyPhone] = useCopyToClipboard();
@@ -59,7 +62,6 @@ export function ThreadActionsSidebar({
   return (
     <ScrollArea className="h-svh w-full max-w-sm border-l">
       <div className="flex flex-col">
-        {/* properties */}
         <div className="flex h-14 items-center justify-between border-b px-4 py-2">
           <span className="font-serif text-sm font-medium">Properties</span>
           <div className="flex">
@@ -88,7 +90,7 @@ export function ThreadActionsSidebar({
             </div>
             <div className="flex-1">
               <SetThreadPriorityForm
-                priority={activeThread.priority}
+                priority={priority}
                 threadId={activeThread.threadId}
                 token={token}
                 workspaceId={workspaceId}
@@ -101,7 +103,7 @@ export function ThreadActionsSidebar({
             </div>
             <div className="flex-1">
               <SetThreadAssigneeForm
-                assigneeId={activeThread.assigneeId || "unassigned"}
+                assigneeId={assigneeId}
                 threadId={activeThread.threadId}
                 token={token}
                 workspaceId={workspaceId}

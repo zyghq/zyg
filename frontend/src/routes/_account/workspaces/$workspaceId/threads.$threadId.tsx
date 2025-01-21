@@ -54,7 +54,11 @@ function ThreadDetailLayout() {
         </header>
         <ThreadContent />
       </SidebarInset>
-      <ThreadActionsSidebar activeThread={activeThread} token={token} workspaceId={workspaceId} />
+      <ThreadActionsSidebar
+        activeThread={activeThread}
+        token={token}
+        workspaceId={workspaceId}
+      />
     </SidebarProvider>
   );
 }
