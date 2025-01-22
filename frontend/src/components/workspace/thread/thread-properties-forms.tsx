@@ -264,7 +264,7 @@ function SetAssignee({
           <Button
             aria-expanded={open}
             aria-label="Select Assignee"
-            className="flex w-56 gap-x-2 border-none shadow-none hover:bg-accent focus:ring-0"
+            className="flex w-56 gap-x-2 border-none px-3 shadow-none hover:bg-accent focus:ring-0"
             role="combobox"
             variant="ghost"
           >
@@ -382,14 +382,10 @@ export function SetThreadAssigneeForm({
     resolver: zodResolver(AssigneeFormSchema),
   });
 
-  const workspaceStore = useWorkspaceStore();
-
-  const { formState } = form;
+  const { formState, setError, setValue } = form;
   const { errors } = formState;
 
-  React.useEffect(() => {
-    form.reset({ assignee: assigneeId });
-  }, [form, assigneeId]);
+  const workspaceStore = useWorkspaceStore();
 
   const mutation = useMutation({
     mutationFn: async (inputs: AssigneeFormInputs) => {
@@ -414,7 +410,7 @@ export function SetThreadAssigneeForm({
     },
     onError: (error) => {
       console.error(error);
-      form.setError("root", {
+      setError("root", {
         message: "Something went wrong. Please try again later.",
         type: "serverError",
       });
@@ -431,11 +427,15 @@ export function SetThreadAssigneeForm({
   };
 
   async function onAssigneeChange(value: string) {
-    form.setValue("assignee", value);
+    setValue("assignee", value);
     setTimeout(() => {
       refSubmitButton?.current?.click();
     }, 0);
   }
+
+  React.useEffect(() => {
+    setValue("assignee", assigneeId);
+  }, [assigneeId, setValue]);
 
   return (
     <Form {...form}>
