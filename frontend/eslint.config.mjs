@@ -40,7 +40,7 @@ export default [
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-require-imports": "off",
       "perfectionist/sort-modules": "off",
-      "perfectionist/ sort-objects": "off",
+      "perfectionist/sort-objects": "off",
       "react/no-unescaped-entities": "off",
       "react/prop-types": "off",
     },
