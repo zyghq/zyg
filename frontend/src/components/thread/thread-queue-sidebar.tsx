@@ -11,7 +11,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { ThreadQueue } from "@/components/workspace/thread/thread-queue";
-import { getFromLocalStorage, threadStatusVerboseName } from "@/db/helpers";
+import { getFromLocalStorage } from "@/db/helpers";
 import { ThreadShape } from "@/db/shapes";
 import { WorkspaceStoreState } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
@@ -60,8 +60,6 @@ export function ThreadQueueSidebar({
     currentQueue,
     activeThread?.threadId,
   );
-
-  const stage = activeThread.stage;
 
   const threadsPath =
     getFromLocalStorage("zyg:threadsQueuePath") ||
@@ -166,9 +164,7 @@ export function ThreadQueueSidebar({
           <div className="flex w-full items-center justify-between">
             <div>
               <div className="font-serif text-sm font-medium">Threads</div>
-              <div className="text-xs text-muted-foreground">
-                {threadStatusVerboseName(stage)}
-              </div>
+              <div className="text-xs text-muted-foreground">In Queue</div>
             </div>
             <div></div>
           </div>

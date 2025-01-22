@@ -11,6 +11,7 @@ import {
 import { customerRoleVerboseName, getInitials } from "@/db/helpers";
 import { ThreadShape } from "@/db/shapes";
 import { WorkspaceStoreState } from "@/db/store";
+import { cn } from "@/lib/utils";
 import { useWorkspaceStore } from "@/providers";
 import { DotsHorizontalIcon } from "@radix-ui/react-icons";
 import { useCopyToClipboard } from "@uidotdev/usehooks";
@@ -19,14 +20,18 @@ import { useStore } from "zustand";
 
 interface ThreadDetailsSidebarProps {
   activeThread: ThreadShape;
+  className?: string;
+  hide: boolean;
   token: string;
   workspaceId: string;
 }
 
 export function ThreadDetailsSidebar({
   activeThread,
+  hide,
   token,
   workspaceId,
+  ...props
 }: ThreadDetailsSidebarProps) {
   const workspaceStore = useWorkspaceStore();
   const workspaceLabels = useStore(
@@ -60,8 +65,15 @@ export function ThreadDetailsSidebar({
   const [, copyExternalId] = useCopyToClipboard();
   const [, copyPhone] = useCopyToClipboard();
 
+  if (hide) return null;
+
   return (
-    <ScrollArea className="flex h-svh w-full max-w-sm flex-col border-l">
+    <ScrollArea
+      className={cn(
+        "flex h-svh w-full max-w-sm flex-col border-l",
+        props.className || "",
+      )}
+    >
       {/* properties */}
       <div className="flex h-14 items-center justify-between border-b px-4 py-2">
         <span className="font-serif text-sm font-medium">Properties</span>
@@ -191,6 +203,7 @@ export function ThreadDetailsSidebar({
         <RecentCustomerEvents
           customerId={activeThread.customerId}
           token={token}
+          triggerClassname="px-2"
           workspaceId={workspaceId}
         />
       </div>

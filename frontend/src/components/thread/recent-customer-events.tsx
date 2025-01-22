@@ -7,17 +7,20 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { getCustomerEvents } from "@/db/api";
+import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 
 interface RecentCustomerEventsProps {
   customerId: string;
   token: string;
+  triggerClassname?: string;
   workspaceId: string;
 }
 
 export function RecentCustomerEvents({
   customerId,
   token,
+  triggerClassname,
   workspaceId,
 }: RecentCustomerEventsProps) {
   const {
@@ -44,7 +47,9 @@ export function RecentCustomerEvents({
   return (
     <Accordion className="w-full" collapsible type="single">
       <AccordionItem className="border-none" value="item-1">
-        <AccordionTrigger className="px-2 text-xs hover:no-underline">
+        <AccordionTrigger
+          className={cn("text-xs hover:no-underline", triggerClassname || "")}
+        >
           Recent Events
         </AccordionTrigger>
         <AccordionContent>
