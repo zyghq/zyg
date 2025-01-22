@@ -1,6 +1,6 @@
 import { NotFound } from "@/components/notfound";
-import { ThreadActionsSidebar } from "@/components/thread/thread-actions-sidebar";
 import { ThreadContent } from "@/components/thread/thread-content";
+import { ThreadDetailsSidebar } from "@/components/thread/thread-details-sidebar.tsx";
 import { ThreadQueueSidebar } from "@/components/thread/thread-queue-sidebar";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -54,7 +54,7 @@ function ThreadDetailLayout() {
         </header>
         <ThreadContent />
       </SidebarInset>
-      <ThreadActionsSidebar
+      <ThreadDetailsSidebar
         activeThread={activeThread}
         token={token}
         workspaceId={workspaceId}

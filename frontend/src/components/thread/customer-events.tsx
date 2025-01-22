@@ -2,7 +2,7 @@ import { RenderComponents } from "@/components/event/components";
 import { eventSeverityIcon } from "@/components/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { CustomerEventResponse } from "@/db/schema";
+import { CustomerEventResponse } from "@/db/models";
 import { ClockIcon } from "@radix-ui/react-icons";
 import { DefaultError } from "@tanstack/react-query";
 import { AlertCircle } from "lucide-react";
