@@ -1,8 +1,8 @@
-import { ThreadQueueItem } from "@/components/workspace/thread/thread-queue-item";
+import { QueueItem } from "@/components/thread/queue-item.tsx";
 import { ThreadShape } from "@/db/shapes";
 import { Virtuoso } from "react-virtuoso";
 
-export function ThreadQueue({
+export function Queue({
   threads,
   workspaceId,
 }: {
@@ -13,7 +13,7 @@ export function ThreadQueue({
     <div className="divide-y divide-border">
       <Virtuoso
         itemContent={(index) => (
-          <ThreadQueueItem thread={threads[index]} workspaceId={workspaceId} />
+          <QueueItem thread={threads[index]} workspaceId={workspaceId} />
         )}
         totalCount={threads.length}
         useWindowScroll

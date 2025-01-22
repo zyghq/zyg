@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ButtonProps } from "@/components/ui/button";
 import { sendThreadMailMessage } from "@/db/api";
-import { ThreadMessageResponse } from "@/db/schema";
+import { ThreadMessageResponse } from "@/db/models";
 import { useMutation } from "@tanstack/react-query";
 import CharacterCount from "@tiptap/extension-character-count";
 import Link from "@tiptap/extension-link";

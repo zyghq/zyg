@@ -1,4 +1,5 @@
 import { FooterMenu } from "@/components/sidebarcommans";
+import { Queue } from "@/components/thread/queue";
 import {
   Sidebar,
   SidebarContent,
@@ -10,7 +11,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { ThreadQueue } from "@/components/workspace/thread/thread-queue";
 import { getFromLocalStorage } from "@/db/helpers";
 import { ThreadShape } from "@/db/shapes";
 import { WorkspaceStoreState } from "@/db/store";
@@ -41,7 +41,7 @@ function getPrevNextFromCurrent(
   return { nextItem, prevItem };
 }
 
-export function ThreadQueueSidebar({
+export function QueueSidebar({
   activeThread,
   workspaceId,
   ...props
@@ -67,11 +67,11 @@ export function ThreadQueueSidebar({
 
   function renderQ(inQueue: null | ThreadShape[], active: null | ThreadShape) {
     if (inQueue && inQueue.length)
-      return <ThreadQueue threads={inQueue} workspaceId={workspaceId} />;
+      return <Queue threads={inQueue} workspaceId={workspaceId} />;
     else if (active) {
       const items = [];
       items.push(active);
-      return <ThreadQueue threads={items} workspaceId={workspaceId} />;
+      return <Queue threads={items} workspaceId={workspaceId} />;
     }
     return null;
   }

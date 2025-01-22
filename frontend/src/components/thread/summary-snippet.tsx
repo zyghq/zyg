@@ -5,7 +5,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-export function QuickThreadSummary() {
+export function SummarySnippet() {
   return (
     <Accordion className="flex flex-col" collapsible type="single">
       <AccordionItem className="border-none" value="item-1">

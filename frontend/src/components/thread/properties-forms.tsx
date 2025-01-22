@@ -1,8 +1,8 @@
-import { Icons, stageIcon } from "@/components/icons";
-import { PriorityIcons } from "@/components/icons";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Icons, stageIcon } from "@/components/icons.tsx";
+import { PriorityIcons } from "@/components/icons.tsx";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.tsx";
+import { Badge } from "@/components/ui/badge.tsx";
+import { Button } from "@/components/ui/button.tsx";
 import {
   Command,
   CommandEmpty,
@@ -11,7 +11,7 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "@/components/ui/command";
+} from "@/components/ui/command.tsx";
 import {
   Dialog,
   DialogContent,
@@ -20,41 +20,41 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog.tsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu.tsx";
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Label as LabelComponent } from "@/components/ui/label";
+} from "@/components/ui/form.tsx";
+import { Input } from "@/components/ui/input.tsx";
+import { Label as LabelComponent } from "@/components/ui/label.tsx";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/components/ui/popover.tsx";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { updateThread } from "@/db/api";
-import { deleteThreadLabel, getThreadLabels, putThreadLabel } from "@/db/api";
-import { threadStatusVerboseName } from "@/db/helpers";
-import { ThreadResponse, threadTransformer } from "@/db/models";
-import { Label, ThreadLabelResponse } from "@/db/models";
-import { WorkspaceStoreState } from "@/db/store";
-import { cn } from "@/lib/utils";
-import { useWorkspaceStore } from "@/providers";
+} from "@/components/ui/select.tsx";
+import { updateThread } from "@/db/api.ts";
+import { deleteThreadLabel, getThreadLabels, putThreadLabel } from "@/db/api.ts";
+import { threadStatusVerboseName } from "@/db/helpers.ts";
+import { ThreadResponse, threadTransformer } from "@/db/models.ts";
+import { Label, ThreadLabelResponse } from "@/db/models.ts";
+import { WorkspaceStoreState } from "@/db/store.ts";
+import { cn } from "@/lib/utils.ts";
+import { useWorkspaceStore } from "@/providers.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   BorderDashedIcon,

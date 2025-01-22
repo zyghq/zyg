@@ -1,4 +1,10 @@
-import { RecentCustomerEvents } from "@/components/thread/recent-customer-events.tsx";
+import {
+  SetThreadAssigneeForm,
+  SetThreadPriorityForm,
+  SetThreadStatusForm,
+  ThreadLabels,
+} from "@/components/thread/properties-forms";
+import { RecentCustomerEvents } from "@/components/thread/recent-customer-events";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -10,15 +16,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  SetThreadAssigneeForm,
-  SetThreadPriorityForm,
-  SetThreadStatusForm,
-  ThreadLabels,
-} from "@/components/workspace/thread/thread-properties-forms.tsx";
-import { customerRoleVerboseName, getInitials } from "@/db/helpers.ts";
-import { ThreadShape } from "@/db/shapes.ts";
-import { WorkspaceStoreState } from "@/db/store.ts";
+import { customerRoleVerboseName, getInitials } from "@/db/helpers";
+import { ThreadShape } from "@/db/shapes";
+import { WorkspaceStoreState } from "@/db/store";
 import { cn } from "@/lib/utils";
 import { useWorkspaceStore } from "@/providers";
 import { DotsHorizontalIcon } from "@radix-ui/react-icons";
@@ -33,7 +33,7 @@ interface ThreadDetailSheetProps {
   workspaceId: string;
 }
 
-export function ThreadDetailsSheet({
+export function DetailsSheet({
   activeThread,
   token,
   workspaceId,

@@ -1,13 +1,13 @@
-import { RecentCustomerEvents } from "@/components/thread/recent-customer-events";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   SetThreadAssigneeForm,
   SetThreadPriorityForm,
   SetThreadStatusForm,
   ThreadLabels,
-} from "@/components/workspace/thread/thread-properties-forms";
+} from "@/components/thread/properties-forms";
+import { RecentCustomerEvents } from "@/components/thread/recent-customer-events";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { customerRoleVerboseName, getInitials } from "@/db/helpers";
 import { ThreadShape } from "@/db/shapes";
 import { WorkspaceStoreState } from "@/db/store";
@@ -26,7 +26,7 @@ interface ThreadDetailsSidebarProps {
   workspaceId: string;
 }
 
-export function ThreadDetailsSidebar({
+export function DetailsSidebar({
   activeThread,
   hide,
   token,
@@ -70,7 +70,7 @@ export function ThreadDetailsSidebar({
   return (
     <ScrollArea
       className={cn(
-        "flex h-svh w-full max-w-sm flex-col border-l",
+        "flex h-svh w-full max-w-md flex-col border-l",
         props.className || "",
       )}
     >

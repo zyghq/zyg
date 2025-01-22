@@ -1,19 +1,19 @@
 import { priorityIcon } from "@/components/icons";
-import { stageIcon } from "@/components/icons.tsx";
+import { stageIcon } from "@/components/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { threadPriorityHumanized } from "@/db/helpers";
 import { getInitials } from "@/db/helpers";
 import { ThreadShape } from "@/db/shapes";
 import { ThreadLabelShape, ThreadLabelShapeMap } from "@/db/shapes";
-import { cn } from "@/lib/utils.ts";
-import { useWorkspaceStore } from "@/providers.tsx";
+import { cn } from "@/lib/utils";
+import { useWorkspaceStore } from "@/providers";
 import { PersonIcon } from "@radix-ui/react-icons";
 import { Link } from "@tanstack/react-router";
 import { formatDistanceToNow } from "date-fns";
 import { useStore } from "zustand";
 
-export function ThreadQueueItem({
+export function QueueItem({
   thread,
   workspaceId,
 }: {

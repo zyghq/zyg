@@ -1,9 +1,9 @@
 import { NotFound } from "@/components/notfound";
-import { QuickThreadSummary } from "@/components/thread/quick-thread-summary";
+import { DetailsSheet } from "@/components/thread/details-sheet.tsx";
+import { DetailsSidebar } from "@/components/thread/details-sidebar.tsx";
+import { QueueSidebar } from "@/components/thread/queue-sidebar.tsx";
+import { SummarySnippet } from "@/components/thread/summary-snippet";
 import { ThreadContent } from "@/components/thread/thread-content";
-import { ThreadDetailsSheet } from "@/components/thread/thread-details-sheet";
-import { ThreadDetailsSidebar } from "@/components/thread/thread-details-sidebar.tsx";
-import { ThreadQueueSidebar } from "@/components/thread/thread-queue-sidebar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -11,8 +11,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { WorkspaceStoreState } from "@/db/store.ts";
-import { useWorkspaceStore } from "@/providers.tsx";
+import { WorkspaceStoreState } from "@/db/store";
+import { useWorkspaceStore } from "@/providers";
 import { createFileRoute } from "@tanstack/react-router";
 import { PanelRight } from "lucide-react";
 import * as React from "react";
@@ -46,7 +46,7 @@ function ThreadDetailLayout() {
         } as React.CSSProperties
       }
     >
-      <ThreadQueueSidebar
+      <QueueSidebar
         activeThread={activeThread}
         workspaceId={workspaceId}
       />
@@ -68,17 +68,17 @@ function ThreadDetailLayout() {
             >
               <PanelRight />
             </Button>
-            <ThreadDetailsSheet
+            <DetailsSheet
               activeThread={activeThread}
               token={token}
               workspaceId={workspaceId}
             />
           </div>
-          <QuickThreadSummary />
+          <SummarySnippet />
         </header>
         <ThreadContent />
       </SidebarInset>
-      <ThreadDetailsSidebar
+      <DetailsSidebar
         activeThread={activeThread}
         className="hidden lg:block"
         hide={detailSidebarHidden}
