@@ -1,4 +1,5 @@
 import { NotFound } from "@/components/notfound";
+import { QuickThreadSummary } from "@/components/thread/quick-thread-summary";
 import { ThreadContent } from "@/components/thread/thread-content";
 import { ThreadDetailsSheet } from "@/components/thread/thread-details-sheet";
 import { ThreadDetailsSidebar } from "@/components/thread/thread-details-sidebar.tsx";
@@ -50,7 +51,7 @@ function ThreadDetailLayout() {
         workspaceId={workspaceId}
       />
       <SidebarInset>
-        <header className="sticky top-0 flex h-14 shrink-0 items-center gap-2 border-b bg-background p-4">
+        <header className="sticky top-0 flex shrink-0 flex-col gap-2 bg-background p-4 shadow-sm">
           <div className="flex w-full items-center space-x-2">
             <SidebarTrigger aria-label="Toggle Sidebar" className="shrink-0" />
             <Separator className="h-4 shrink-0" orientation="vertical" />
@@ -73,6 +74,7 @@ function ThreadDetailLayout() {
               workspaceId={workspaceId}
             />
           </div>
+          <QuickThreadSummary />
         </header>
         <ThreadContent />
       </SidebarInset>

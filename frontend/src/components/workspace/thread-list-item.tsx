@@ -77,7 +77,7 @@ export function ThreadLinkItem({
 
       <div className="hidden lg:col-span-2 lg:block">
         <p className="truncate text-sm">
-          <span className="font-medium">{thread.title}</span>
+          <span className="font-base">{thread.title}</span>
           <span className="ml-2 text-muted-foreground">
             {thread.previewText}
           </span>
