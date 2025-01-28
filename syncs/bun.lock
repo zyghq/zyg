@@ -5,6 +5,8 @@
       "name": "syncs",
       "dependencies": {
         "@neondatabase/serverless": "^0.10.4",
+        "@restatedev/restate-sdk": "^1.4.0",
+        "@restatedev/restate-sdk-clients": "^1.4.0",
         "dotenv": "^16.4.7",
         "drizzle-orm": "^0.39.0",
       },
@@ -74,6 +76,12 @@
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.19.12", "", { "os": "win32", "cpu": "x64" }, "sha512-T1QyPSDCyMXaO3pzBkF96E8xMkiRYbUEZADd29SyPGabqxMViNoii+NcK7eWJAEoU6RZyEm5lVSIjTmcdoB9HA=="],
 
     "@neondatabase/serverless": ["@neondatabase/serverless@0.10.4", "", { "dependencies": { "@types/pg": "8.11.6" } }, "sha512-2nZuh3VUO9voBauuh+IGYRhGU/MskWHt1IuZvHcJw6GLjDgtqj/KViKo7SIrLdGLdot7vFbiRRw+BgEy3wT9HA=="],
+
+    "@restatedev/restate-sdk": ["@restatedev/restate-sdk@1.4.0", "", { "dependencies": { "@restatedev/restate-sdk-core": "^1.4.0" } }, "sha512-rNiK6eoDWf6S1WIB1WEODGr0QZ3aI95/gdvZ+Lst8XqN4NKuz6vNZvGvID/SI/v2/gXMpq2XaYzYAp+BtimqDQ=="],
+
+    "@restatedev/restate-sdk-clients": ["@restatedev/restate-sdk-clients@1.4.0", "", { "dependencies": { "@restatedev/restate-sdk-core": "^1.4.0" } }, "sha512-1W+2lKE0PBpGUfXvE9bD4RnXL4DmR9pgUjiNsTRcd6KtlG05QxYKXR5yetXBm/RW2RMt85cSvl8FOc+X5jYabA=="],
+
+    "@restatedev/restate-sdk-core": ["@restatedev/restate-sdk-core@1.4.0", "", {}, "sha512-siSmtsMTCr+xxYB1cqjW0jDODzbkET1FUe+6X9txaMz8JqGLeEUdZHu6+SNtwZefFiLhvzk/f5Te3m6LTXy52Q=="],
 
     "@types/bun": ["@types/bun@1.2.1", "", { "dependencies": { "bun-types": "1.2.1" } }, "sha512-iiCeMAKMkft8EPQJxSbpVRD0DKqrh91w40zunNajce3nMNNFd/LnAquVisSZC+UpTMjDwtcdyzbWct08IvEqRA=="],
 
