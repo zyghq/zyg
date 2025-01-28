@@ -68,7 +68,7 @@ func (h *WorkspaceHandler) handleCreateWorkspace(
 		VersionID:   u.String(),
 		SyncedAt:    time.Now().UTC(),
 	}
-	inSync, err := h.ss.SyncWorkspace(ctx, sync)
+	inSync, err := h.ss.SyncWorkspaceRPC(ctx, sync)
 	if err != nil {
 		slog.Error("failed to sync workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -221,7 +221,7 @@ func (h *WorkspaceHandler) handleUpdateWorkspace(
 		VersionID:   u.String(),
 		SyncedAt:    time.Now().UTC(),
 	}
-	inSync, err := h.ss.SyncWorkspace(ctx, sync)
+	inSync, err := h.ss.SyncWorkspaceRPC(ctx, sync)
 	if err != nil {
 		slog.Error("failed to sync workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

@@ -17,7 +17,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/zyghq/zyg"
-	"github.com/zyghq/zyg/adapters/esync"
 	"github.com/zyghq/zyg/adapters/repository"
 	"github.com/zyghq/zyg/services"
 )
@@ -130,9 +129,6 @@ func initServices(conn *AppConnections) *AppServices {
 	customerStore := repository.NewCustomerDB(conn.DB)
 	threadStore := repository.NewThreadDB(conn.DB)
 
-	// Initialize sync store
-	syncStore := esync.NewSyncDB(conn.SyncDB)
-
 	// Initialize services
 	app := &AppServices{
 		AuthService:      services.NewAuthService(accountStore, memberStore),
@@ -140,7 +136,7 @@ func initServices(conn *AppConnections) *AppServices {
 		WorkspaceService: services.NewWorkspaceService(workspaceStore, memberStore, customerStore),
 		CustomerService:  services.NewCustomerService(customerStore),
 		ThreadService:    services.NewThreadService(threadStore),
-		SyncService:      services.NewSyncService(syncStore),
+		SyncService:      services.NewSyncService(),
 	}
 	log.Info().Msg("Application services initialized successfully.")
 	return app
@@ -223,7 +219,7 @@ func runSyncWorkspace(cmd *cobra.Command, _ []string) error {
 	}
 
 	log.Info().Msgf("Syncing workspace with ID: %s", workspaceID)
-	synced, err := app.SyncService.SyncWorkspace(ctx, shape)
+	synced, err := app.SyncService.SyncWorkspaceRPC(ctx, shape)
 	if err != nil {
 		return fmt.Errorf("failed to sync workspace %s: %w", workspaceID, err)
 	}

@@ -206,3 +206,11 @@ func ElectricBaseUrl() string {
 	}
 	return value
 }
+
+func RestateRPCURL() string {
+	value, ok := os.LookupEnv("RESTATE_RPC_URL")
+	if !ok {
+		return "http://localhost:8085"
+	}
+	return value
+}

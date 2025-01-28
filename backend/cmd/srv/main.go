@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/getsentry/sentry-go"
 	sentryhttp "github.com/getsentry/sentry-go/http"
-	"github.com/zyghq/zyg/adapters/esync"
 	"log/slog"
 	"net/http"
 	"os"
@@ -43,17 +42,6 @@ func run(ctx context.Context) error {
 	}
 	defer db.Close()
 
-	syncPGConnStr, err := zyg.GetEnv("SYNC_DATABASE_URL")
-	if err != nil {
-		return fmt.Errorf("failed to get SYNC_DATABASE_URL env got error: %v", err)
-	}
-
-	syncDB, err := pgxpool.New(ctx, syncPGConnStr)
-	if err != nil {
-		return fmt.Errorf("unable to create sync pg connection pool: %v", err)
-	}
-	defer syncDB.Close()
-
 	// make sure db is up and running
 	var tm time.Time
 	err = db.QueryRow(ctx, "SELECT NOW()").Scan(&tm)
@@ -61,12 +49,6 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("db query failed got error: %v", err)
 	}
 	slog.Info("app database", slog.String("time", tm.Format(time.RFC1123)))
-
-	err = syncDB.QueryRow(ctx, "SELECT NOW()").Scan(&tm)
-	if err != nil {
-		return fmt.Errorf("db query failed got error: %v", err)
-	}
-	slog.Info("sync database", slog.String("time", tm.Format(time.RFC1123)))
 
 	// Redis options
 	//opts := &redis.Options{
@@ -130,10 +112,6 @@ func run(ctx context.Context) error {
 	customerStore := repository.NewCustomerDB(db)
 	threadStore := repository.NewThreadDB(db)
 
-	// Initialize sync DB store.
-	// Not to be confused with application DB store.
-	syncStore := esync.NewSyncDB(syncDB)
-
 	// Initialize application services with application DB stores.
 	authService := services.NewAuthService(accountStore, memberStore)
 	accountService := services.NewAccountService(accountStore, workspaceStore)
@@ -141,8 +119,8 @@ func run(ctx context.Context) error {
 	customerService := services.NewCustomerService(customerStore)
 	threadService := services.NewThreadService(threadStore)
 
-	// Initialize sync service with sync DB store.
-	syncService := services.NewSyncService(syncStore)
+	// Initialize sync service
+	syncService := services.NewSyncService()
 
 	// init server
 	srv := handler.NewServer(
