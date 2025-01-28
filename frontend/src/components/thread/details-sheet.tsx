@@ -79,16 +79,13 @@ export function DetailsSheet({
           <PanelRight />
         </Button>
       </SheetTrigger>
-      <SheetContent className="px-3 w-full">
+      <SheetContent className="w-full px-3">
         <SheetHeader className="hidden">
           <SheetTitle>Open Thread Details Menu</SheetTitle>
           <SheetDescription>Thread Details Menu</SheetDescription>
         </SheetHeader>
         <ScrollArea
-          className={cn(
-            "flex w-full flex-col",
-            "h-[calc(100dvh-2rem)]"
-          )}
+          className={cn("flex w-full flex-col", "h-[calc(100dvh-2rem)]")}
         >
           {/* properties */}
           <div className="flex items-center justify-between border-b py-2">
@@ -214,6 +211,7 @@ export function DetailsSheet({
             <RecentCustomerEvents
               customerId={activeThread.customerId}
               token={token}
+              triggerClassname="pr-2"
               workspaceId={workspaceId}
             />
           </div>

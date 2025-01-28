@@ -33,8 +33,8 @@ export function EmailThread() {
       content: (
         <>
           <p>Yeah we been working on it, it seems it there are some deployment issues.</p>
-          <div className="pl-4 border-l-2 border-muted text-muted-foreground space-y-2">
-            <p className="text-sm">
+          <div className="pl-2 sm:pl-4 border-l-2 border-muted text-muted-foreground space-y-2 text-sm sm:text-base">
+            <p className="text-xs sm:text-sm">
               On Mon, 30 Sep 2024 at 07:40, Sanchit Rk{" "}
               <a className="text-primary dark:text-indigo-400" href="mailto:sanchitrk@gmail.com">
                 sanchitrk@gmail.com
@@ -79,7 +79,7 @@ export function EmailThread() {
   ]
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4 p-4">
+    <div className="max-w-3xl mx-auto space-y-4 p-2 sm:p-4">
       {emails.map((email, index) => (
         <Card
           className={`shadow-sm hover:shadow-md transition-shadow relative group cursor-pointer ${
@@ -93,12 +93,12 @@ export function EmailThread() {
               selectedCard === index ? "opacity-100" : "opacity-0"
             } pointer-events-none border-indigo-200 dark:border-indigo-500`}
           />
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 dark:text-gray-200">
-            <div className="flex items-center gap-1">
-              <span className="text-sm font-medium">
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0 pb-2 dark:text-gray-200">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1">
+              <span className="text-xs sm:text-sm font-medium truncate max-w-[200px] sm:max-w-none">
                 {email.sender} to {email.recipient}
               </span>
-              <span className="text-xs text-muted-foreground dark:text-gray-400">Shared</span>
+              <span className="text-xs text-muted-foreground dark:text-gray-400 sm:ml-2">Shared</span>
             </div>
             <div className="flex items-center gap-2">
               {email.hasActions && (
@@ -114,7 +114,7 @@ export function EmailThread() {
               <span className="text-xs text-muted-foreground dark:text-gray-400">{email.date}</span>
             </div>
           </CardHeader>
-          <CardContent className="space-y-2 dark:text-gray-300">{email.content}</CardContent>
+          <CardContent className="space-y-2 dark:text-gray-300 text-sm sm:text-base">{email.content}</CardContent>
         </Card>
       ))}
     </div>
@@ -160,4 +160,3 @@ function ForwardIcon(props: React.ComponentProps<"svg">) {
     </svg>
   )
 }
-
