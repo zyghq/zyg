@@ -7,9 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/google/uuid"
-	"github.com/zyghq/zyg/models"
-
 	"github.com/getsentry/sentry-go"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
@@ -207,19 +204,8 @@ func runSyncWorkspace(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to get workspace %s: %w", workspaceID, err)
 	}
 
-	u, _ := uuid.NewUUID()
-	shape := models.WorkspaceShape{
-		WorkspaceID: workspace.WorkspaceId,
-		Name:        workspace.Name,
-		PublicName:  workspace.Name,
-		CreatedAt:   workspace.CreatedAt,
-		UpdatedAt:   workspace.UpdatedAt,
-		SyncedAt:    time.Now().UTC(),
-		VersionID:   u.String(),
-	}
-
 	log.Info().Msgf("Syncing workspace with ID: %s", workspaceID)
-	synced, err := app.SyncService.SyncWorkspaceRPC(ctx, shape)
+	synced, err := app.SyncService.SyncWorkspaceRPC(ctx, workspace)
 	if err != nil {
 		return fmt.Errorf("failed to sync workspace %s: %w", workspaceID, err)
 	}
@@ -230,7 +216,7 @@ func runSyncWorkspace(cmd *cobra.Command, _ []string) error {
 
 func runSyncWorkspaceCustomers(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
-	log.Info().Msgf("Starting sync customers WorkspaceID: %s...", workspaceID)
+	log.Info().Msgf("Starting sync customers for WorkspaceID: %s...", workspaceID)
 
 	// Initialize Sentry
 	if err := initSentry(); err != nil {
@@ -256,58 +242,21 @@ func runSyncWorkspaceCustomers(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get customers for workspaceID %s: %w", workspaceID, err)
 	}
-	shapes := make([]models.CustomerShape, 0, len(customers))
-	var recentSyncedShape *models.CustomerShape
+
 	var syncCount int
-
 	for _, customer := range customers {
-		var externalId *string
-		var email *string
-		var phone *string
-		if customer.ExternalId.Valid {
-			externalId = &customer.ExternalId.String
-		}
-		if customer.Email.Valid {
-			email = &customer.Email.String
-		}
-		if customer.Phone.Valid {
-			phone = &customer.Phone.String
-		}
-		u, _ := uuid.NewUUID()
-		shape := models.CustomerShape{
-			CustomerID:      customer.CustomerId,
-			WorkspaceID:     customer.WorkspaceId,
-			ExternalID:      externalId,
-			Email:           email,
-			Phone:           phone,
-			Name:            customer.Name,
-			Role:            customer.Role,
-			AvatarURL:       customer.AvatarUrl(),
-			IsEmailVerified: customer.IsEmailVerified,
-			CreatedAt:       customer.CreatedAt,
-			UpdatedAt:       customer.UpdatedAt,
-			SyncedAt:        time.Now().UTC(),
-			VersionID:       u.String(),
-		}
-		shapes = append(shapes, shape)
-	}
-
-	for _, shape := range shapes {
-		log.Info().Msgf("Syncing customer with ID: %s", shape.CustomerID)
-		synced, err := app.SyncService.SyncCustomer(ctx, shape)
+		log.Info().Msgf("Syncing customer with ID: %s", customer.CustomerId)
+		synced, err := app.SyncService.SyncCustomerRPC(ctx, customer)
 		if err != nil {
-			return fmt.Errorf("failed to sync customer %s: %w", shape.CustomerID, err)
+			log.Error().Err(err).Msgf("failed to sync customer %s", customer.CustomerId)
+			break
 		}
 		log.Info().Msgf(
 			"Successfully synced customerID: %s, versionID: %s", synced.CustomerID, synced.VersionID)
-		recentSyncedShape = &shape
 		syncCount++
 	}
 
-	log.Info().Msgf("Synced total %d of %d customers", syncCount, len(shapes))
-	if recentSyncedShape != nil {
-		log.Info().Msgf("Last synced customer: %s", recentSyncedShape.CustomerID)
-	}
+	log.Info().Msgf("Synced total %d of %d customers", syncCount, len(customers))
 	return nil
 }
 
@@ -339,45 +288,21 @@ func runSyncWorkspaceMembers(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get members for workspaceID %s: %w", workspaceID, err)
 	}
-	shapes := make([]models.MemberShape, 0, len(members))
-	var recentSyncedShape *models.MemberShape
+
 	var syncCount int
-
 	for _, member := range members {
-		u, _ := uuid.NewUUID()
-		permissions := make(map[string]interface{})
-		shape := models.MemberShape{
-			MemberID:    member.MemberId,
-			WorkspaceID: member.WorkspaceId,
-			Name:        member.Name,
-			PublicName:  member.Name,
-			Role:        member.Role,
-			Permissions: permissions,
-			AvatarURL:   member.AvatarUrl(),
-			CreatedAt:   member.CreatedAt,
-			UpdatedAt:   member.UpdatedAt,
-			SyncedAt:    time.Now().UTC(),
-			VersionID:   u.String(),
-		}
-		shapes = append(shapes, shape)
-	}
-
-	for _, shape := range shapes {
-		log.Info().Msgf("Syncing member with ID: %s", shape.MemberID)
-		synced, err := app.SyncService.SyncMember(ctx, shape)
+		log.Info().Msgf("Syncing member with ID: %s", member.MemberId)
+		synced, err := app.SyncService.SyncMemberRPC(ctx, member)
 		if err != nil {
-			return fmt.Errorf("failed to sync customer %s: %w", shape.MemberID, err)
+			log.Error().Err(err).Msgf("failed to sync member %s", member.MemberId)
+			break
 		}
 		log.Info().Msgf(
 			"Successfully synced memberID: %s, versionID: %s", synced.MemberID, synced.VersionID)
-		recentSyncedShape = &shape
 		syncCount++
 	}
 
-	log.Info().Msgf("Synced total %d of %d customers", syncCount, len(shapes))
-	if recentSyncedShape != nil {
-		log.Info().Msgf("Last synced memberID: %s", recentSyncedShape.MemberID)
-	}
+	log.Info().Msgf("Synced total %d of %d members", syncCount, len(members))
 	return nil
 }
 
@@ -409,38 +334,8 @@ func runSyncWorkspaceCustomer(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to get customer %s: %w", customerID, err)
 	}
 
-	var externalId *string
-	var email *string
-	var phone *string
-
-	if customer.ExternalId.Valid {
-		externalId = &customer.ExternalId.String
-	}
-	if customer.Email.Valid {
-		email = &customer.Email.String
-	}
-	if customer.Phone.Valid {
-		phone = &customer.Phone.String
-	}
-
-	u, _ := uuid.NewUUID()
-	shape := models.CustomerShape{
-		CustomerID:      customer.CustomerId,
-		WorkspaceID:     customer.WorkspaceId,
-		ExternalID:      externalId,
-		Email:           email,
-		Phone:           phone,
-		Name:            customer.Name,
-		Role:            customer.Role,
-		AvatarURL:       customer.AvatarUrl(),
-		IsEmailVerified: customer.IsEmailVerified,
-		CreatedAt:       customer.CreatedAt,
-		UpdatedAt:       customer.UpdatedAt,
-		SyncedAt:        time.Now().UTC(),
-		VersionID:       u.String(),
-	}
-	log.Info().Msgf("Syncing customer with ID: %s", customerID)
-	synced, err := app.SyncService.SyncCustomer(ctx, shape)
+	log.Info().Msgf("Syncing customer with ID: %s", customer.CustomerId)
+	synced, err := app.SyncService.SyncCustomerRPC(ctx, customer)
 	if err != nil {
 		return fmt.Errorf("failed to sync customer %s: %w", customerID, err)
 	}
@@ -478,24 +373,8 @@ func runSyncWorkspaceMember(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to get member %s: %w", memberID, err)
 	}
 
-	u, _ := uuid.NewUUID()
-	permissions := make(map[string]interface{})
-	shape := models.MemberShape{
-		MemberID:    member.MemberId,
-		WorkspaceID: member.WorkspaceId,
-		Name:        member.Name,
-		PublicName:  member.Name,
-		Role:        member.Role,
-		Permissions: permissions,
-		AvatarURL:   member.AvatarUrl(),
-		CreatedAt:   member.CreatedAt,
-		UpdatedAt:   member.UpdatedAt,
-		SyncedAt:    time.Now().UTC(),
-		VersionID:   u.String(),
-	}
-
-	log.Info().Msgf("Syncing member with ID: %s", memberID)
-	synced, err := app.SyncService.SyncMember(ctx, shape)
+	log.Info().Msgf("Syncing member with ID: %s", member.MemberId)
+	synced, err := app.SyncService.SyncMemberRPC(ctx, member)
 	if err != nil {
 		return fmt.Errorf("failed to sync member %s: %w", memberID, err)
 	}
@@ -539,88 +418,8 @@ func runSyncWorkspaceThread(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to get labels for threadID %s: %w", threadID, err)
 	}
 
-	type ThreadLabel struct {
-		LabelId   string    `json:"labelId"`
-		Name      string    `json:"name"`
-		CreatedAt time.Time `json:"createdAt"`
-		UpdatedAt time.Time `json:"updatedAt"`
-	}
-
-	threadLabels := make([]ThreadLabel, 0, len(labels))
-	for _, label := range labels {
-		threadLabels = append(threadLabels, ThreadLabel{
-			LabelId:   label.LabelId,
-			Name:      label.Name,
-			CreatedAt: label.CreatedAt,
-			UpdatedAt: label.UpdatedAt,
-		})
-	}
-
-	labelsMap := make(map[string]interface{})
-	for _, label := range threadLabels {
-		labelsMap[label.LabelId] = map[string]interface{}{
-			"labelId":   label.LabelId,
-			"name":      label.Name,
-			"createdAt": label.CreatedAt,
-			"updatedAt": label.UpdatedAt,
-		}
-	}
-
-	var (
-		assigneeId, inboundSeqId, outboundSeqId *string
-	)
-
-	var assignedAt *time.Time
-	var previewText string
-
-	if thread.AssignedMember != nil {
-		assigneeId = &thread.AssignedMember.MemberId
-		assignedAt = &thread.AssignedMember.AssignedAt
-	}
-	if thread.InboundMessage != nil {
-		inboundSeqId = &thread.InboundMessage.LastSeqId
-	}
-	if thread.OutboundMessage != nil {
-		outboundSeqId = &thread.OutboundMessage.LastSeqId
-	}
-	if thread.InboundMessage != nil {
-		previewText = thread.InboundMessage.PreviewText
-	} else if thread.OutboundMessage != nil {
-		previewText = thread.OutboundMessage.PreviewText
-	}
-
-	u, _ := uuid.NewUUID()
-	shape := models.ThreadShape{
-		ThreadID:          thread.ThreadId,
-		WorkspaceID:       thread.WorkspaceId,
-		CustomerID:        thread.Customer.CustomerId,
-		AssigneeID:        assigneeId,
-		AssignedAt:        assignedAt,
-		Title:             thread.Title,
-		Description:       thread.Description,
-		PreviewText:       previewText,
-		Status:            thread.ThreadStatus.Status,
-		StatusChangedAt:   thread.ThreadStatus.StatusChangedAt,
-		StatusChangedByID: thread.ThreadStatus.StatusChangedBy.MemberId,
-		Stage:             thread.ThreadStatus.Stage,
-		Replied:           thread.Replied,
-		Priority:          thread.Priority,
-		Channel:           thread.Channel,
-		CreatedByID:       thread.CreatedBy.MemberId,
-		UpdatedByID:       thread.UpdatedBy.MemberId,
-		Labels:            labelsMap,
-		InboundSeqID:      inboundSeqId,
-		OutboundSeqID:     outboundSeqId,
-		CreatedAt:         thread.CreatedAt,
-		UpdatedAt:         thread.UpdatedAt,
-		SyncedAt:          time.Now().UTC(),
-		VersionID:         u.String(),
-	}
-
-	fmt.Println(shape.Labels)
-
 	log.Info().Msgf("Syncing thread with ID: %s", threadID)
-	synced, err := app.SyncService.SyncThread(ctx, shape)
+	synced, err := app.SyncService.SyncThread(ctx, thread, labels)
 	if err != nil {
 		return fmt.Errorf("failed to sync thread %s: %w", threadID, err)
 	}
@@ -659,107 +458,25 @@ func runSyncWorkspaceThreads(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("failed to get threads for workspaceID %s: %w", workspaceID, err)
 	}
 
-	type ThreadLabel struct {
-		LabelId   string    `json:"labelId"`
-		Name      string    `json:"name"`
-		CreatedAt time.Time `json:"createdAt"`
-		UpdatedAt time.Time `json:"updatedAt"`
-	}
-
-	var recentSyncedThread *models.ThreadShape
 	var syncCount int
 
 	for _, thread := range threads {
 		labels, err := app.ThreadService.ListThreadLabels(ctx, thread.ThreadId)
 		if err != nil {
-			return fmt.Errorf("failed to get labels for threadID %s: %w", threadID, err)
+			log.Error().Err(err).Msgf("failed to get labels for threadID %s", thread.ThreadId)
+			break
 		}
-
-		threadLabels := make([]ThreadLabel, 0, len(labels))
-		for _, label := range labels {
-			threadLabels = append(threadLabels, ThreadLabel{
-				LabelId:   label.LabelId,
-				Name:      label.Name,
-				CreatedAt: label.CreatedAt,
-				UpdatedAt: label.UpdatedAt,
-			})
-		}
-
-		labelsMap := make(map[string]interface{})
-		for _, label := range threadLabels {
-			labelsMap[label.LabelId] = map[string]interface{}{
-				"labelId":   label.LabelId,
-				"name":      label.Name,
-				"createdAt": label.CreatedAt,
-				"updatedAt": label.UpdatedAt,
-			}
-		}
-
-		var (
-			assigneeId, inboundSeqId, outboundSeqId *string
-		)
-
-		var assignedAt *time.Time
-		var previewText string
-
-		if thread.AssignedMember != nil {
-			assigneeId = &thread.AssignedMember.MemberId
-			assignedAt = &thread.AssignedMember.AssignedAt
-		}
-		if thread.InboundMessage != nil {
-			inboundSeqId = &thread.InboundMessage.LastSeqId
-		}
-		if thread.OutboundMessage != nil {
-			outboundSeqId = &thread.OutboundMessage.LastSeqId
-		}
-		if thread.InboundMessage != nil {
-			previewText = thread.InboundMessage.PreviewText
-		} else if thread.OutboundMessage != nil {
-			previewText = thread.OutboundMessage.PreviewText
-		}
-
-		u, _ := uuid.NewUUID()
-		shape := models.ThreadShape{
-			ThreadID:          thread.ThreadId,
-			WorkspaceID:       thread.WorkspaceId,
-			CustomerID:        thread.Customer.CustomerId,
-			AssigneeID:        assigneeId,
-			AssignedAt:        assignedAt,
-			Title:             thread.Title,
-			Description:       thread.Description,
-			PreviewText:       previewText,
-			Status:            thread.ThreadStatus.Status,
-			StatusChangedAt:   thread.ThreadStatus.StatusChangedAt,
-			StatusChangedByID: thread.ThreadStatus.StatusChangedBy.MemberId,
-			Stage:             thread.ThreadStatus.Stage,
-			Replied:           thread.Replied,
-			Priority:          thread.Priority,
-			Channel:           thread.Channel,
-			CreatedByID:       thread.CreatedBy.MemberId,
-			UpdatedByID:       thread.UpdatedBy.MemberId,
-			Labels:            labelsMap,
-			InboundSeqID:      inboundSeqId,
-			OutboundSeqID:     outboundSeqId,
-			CreatedAt:         thread.CreatedAt,
-			UpdatedAt:         thread.UpdatedAt,
-			SyncedAt:          time.Now().UTC(),
-			VersionID:         u.String(),
-		}
-
-		log.Info().Msgf("Syncing thread with ID: %s", threadID)
-		synced, err := app.SyncService.SyncThread(ctx, shape)
+		log.Info().Msgf("Syncing thread with ID: %s", thread.ThreadId)
+		synced, err := app.SyncService.SyncThread(ctx, thread, labels)
 		if err != nil {
-			return fmt.Errorf("failed to sync thread %s: %w", threadID, err)
+			log.Error().Err(err).Msgf("failed to sync thread %s", thread.ThreadId)
+			break
 		}
 		log.Info().Msgf(
 			"Successfully synced threadID: %s, versionID: %s", synced.ThreadID, synced.VersionID)
-		recentSyncedThread = &shape
 		syncCount++
 	}
 	log.Info().Msgf("Synced total %d of %d threads", syncCount, len(threads))
-	if recentSyncedThread != nil {
-		log.Info().Msgf("Last synced threadID: %s", recentSyncedThread.ThreadID)
-	}
 	return nil
 }
 

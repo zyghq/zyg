@@ -2,14 +2,15 @@ package models
 
 import "time"
 
+// WorkspaceShape represents workspace shape value object for sync.
 type WorkspaceShape struct {
 	WorkspaceID string    `json:"workspaceId"`
 	Name        string    `json:"name"`
 	PublicName  string    `json:"publicName"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
-	VersionID   string    `json:"versionId"`
-	SyncedAt    time.Time `json:"syncedAt"`
+	VersionID   string    `json:"versionId,omitempty"`
+	SyncedAt    time.Time `json:"syncedAt,omitempty"`
 }
 
 type WorkspaceInSync struct {
@@ -30,8 +31,8 @@ type CustomerShape struct {
 	IsEmailVerified bool      `json:"isEmailVerified"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
-	VersionID       string    `json:"versionId"`
-	SyncedAt        time.Time `json:"syncedAt"`
+	VersionID       string    `json:"versionId,omitempty"`
+	SyncedAt        time.Time `json:"syncedAt,omitempty"`
 }
 
 type CustomerInSync struct {
@@ -39,7 +40,6 @@ type CustomerInSync struct {
 	SyncedAt   time.Time `json:"syncedAt"`
 	VersionID  string    `json:"versionId"`
 }
-
 type MemberShape struct {
 	MemberID    string                 `json:"memberId"`
 	WorkspaceID string                 `json:"workspaceId"`

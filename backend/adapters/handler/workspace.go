@@ -4,14 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/getsentry/sentry-go"
-	"github.com/google/uuid"
+	"github.com/zyghq/zyg"
 	"io"
 	"log/slog"
 	"net/http"
 	"strings"
-	"time"
-
-	"github.com/zyghq/zyg"
 
 	"github.com/zyghq/zyg/models"
 	"github.com/zyghq/zyg/ports"
@@ -58,31 +55,19 @@ func (h *WorkspaceHandler) handleCreateWorkspace(
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	u, _ := uuid.NewUUID()
-	sync := models.WorkspaceShape{
-		WorkspaceID: workspace.WorkspaceId,
-		Name:        workspace.Name,
-		PublicName:  workspace.Name,
-		CreatedAt:   workspace.CreatedAt,
-		UpdatedAt:   workspace.UpdatedAt,
-		VersionID:   u.String(),
-		SyncedAt:    time.Now().UTC(),
-	}
-	inSync, err := h.ss.SyncWorkspaceRPC(ctx, sync)
+	inSync, err := h.ss.SyncWorkspaceRPC(ctx, workspace)
 	if err != nil {
 		slog.Error("failed to sync workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 	slog.Info("workspace synced", slog.Any("versionID", inSync.VersionID))
-
 	resp := WorkspaceResp{
 		WorkspaceId: workspace.WorkspaceId,
 		Name:        workspace.Name,
 		CreatedAt:   workspace.CreatedAt,
 		UpdatedAt:   workspace.UpdatedAt,
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
@@ -211,24 +196,13 @@ func (h *WorkspaceHandler) handleUpdateWorkspace(
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	u, _ := uuid.NewUUID()
-	sync := models.WorkspaceShape{
-		WorkspaceID: workspace.WorkspaceId,
-		Name:        workspace.Name,
-		PublicName:  workspace.Name,
-		CreatedAt:   workspace.CreatedAt,
-		UpdatedAt:   workspace.UpdatedAt,
-		VersionID:   u.String(),
-		SyncedAt:    time.Now().UTC(),
-	}
-	inSync, err := h.ss.SyncWorkspaceRPC(ctx, sync)
+	inSync, err := h.ss.SyncWorkspaceRPC(ctx, workspace)
 	if err != nil {
 		slog.Error("failed to sync workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 	slog.Info("workspace synced", slog.Any("versionID", inSync.VersionID))
-
 	resp := WorkspaceResp{
 		WorkspaceId: workspace.WorkspaceId,
 		Name:        workspace.Name,
