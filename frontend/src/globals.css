@@ -218,3 +218,12 @@
         @apply my-6 border-l-2 border-l-border pl-4;
     }
 }
+
+* {
+    scrollbar-width: thin;
+}
+
+html {
+    scroll-behavior: smooth;
+    word-break: break-word;
+}

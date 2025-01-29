@@ -23,7 +23,7 @@ import {
   threadRowToShape,
   threadsToMap,
 } from "@/db/shapes";
-import { LabelMap, PatMap, WorkspaceStoreState } from "@/db/store";
+import { LabelMap, PatMap } from "@/db/store";
 import {
   CustomerRow,
   CustomerRowUpdates,
@@ -46,7 +46,7 @@ import {
 import { preloadShape } from "@electric-sql/react";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import React from "react";
+import React, { useCallback, useEffect, useMemo, useTransition } from "react";
 import { useStore } from "zustand";
 
 /**
@@ -286,205 +286,201 @@ function ElectricSyncWrapper({
   token,
   workspaceId,
 }: ElectricSyncWrapperProps) {
+  const [isPending, startTransition] = useTransition();
   const workspaceStore = useWorkspaceStore();
 
-  // queries
-  const membersShapeOffset = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreState) => state.viewMembersShapeOffset(state),
+  // Queries with explicit state passing
+  const membersShapeOffset = useStore(workspaceStore, (state) =>
+    state.viewMembersShapeOffset(state),
   ) as Offset;
-  const membersShapeHandle = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreState) => state.viewMembersShapeHandle(state),
+  const membersShapeHandle = useStore(workspaceStore, (state) =>
+    state.viewMembersShapeHandle(state),
   );
-  const customersShapeOffset = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreState) => state.viewCustomersShapeOffset(state),
+  const customersShapeOffset = useStore(workspaceStore, (state) =>
+    state.viewCustomersShapeOffset(state),
   ) as Offset;
-  const customersShapeHandle = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreState) => state.viewCustomersShapeHandle(state),
+  const customersShapeHandle = useStore(workspaceStore, (state) =>
+    state.viewCustomersShapeHandle(state),
   );
-  const threadsShapeOffset = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreState) => state.viewThreadsShapeOffset(state),
+  const threadsShapeOffset = useStore(workspaceStore, (state) =>
+    state.viewThreadsShapeOffset(state),
   ) as Offset;
-  const threadsShapeHandle = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreState) => state.viewThreadsShapeHandle(state),
+  const threadsShapeHandle = useStore(workspaceStore, (state) =>
+    state.viewThreadsShapeHandle(state),
   );
 
-  // mutations
-  const setMembersShapeOffset = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreState) => state.setMembersShapeOffset,
-  );
-  const setMembersShapeHandle = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreState) => state.setMembersShapeHandle,
+  // Mutations
+  const { setMembersShapeOffset, setMembersShapeHandle, updateMember } =
+    useStore(workspaceStore, (state) => ({
+      setMembersShapeOffset: state.setMembersShapeOffset,
+      setMembersShapeHandle: state.setMembersShapeHandle,
+      updateMember: state.updateMember,
+    }));
+
+  const { setCustomersShapeOffset, setCustomersShapeHandle, updateCustomer } =
+    useStore(workspaceStore, (state) => ({
+      setCustomersShapeOffset: state.setCustomersShapeOffset,
+      setCustomersShapeHandle: state.setCustomersShapeHandle,
+      updateCustomer: state.updateCustomer,
+    }));
+
+  const {
+    setThreadsShapeOffset,
+    setThreadsShapeHandle,
+    updateThread,
+    setInSync,
+  } = useStore(workspaceStore, (state) => ({
+    setThreadsShapeOffset: state.setThreadsShapeOffset,
+    setThreadsShapeHandle: state.setThreadsShapeHandle,
+    updateThread: state.updateThread,
+    setInSync: state.setInSync,
+  }));
+
+  // Memoized shape streams
+  const memberShape = useMemo(
+    () =>
+      new ShapeStream<MemberRow>({
+        ...syncMembersShape({ token, workspaceId }),
+        handle: membersShapeHandle || undefined,
+        offset: membersShapeOffset,
+      }),
+    [token, workspaceId, membersShapeHandle, membersShapeOffset],
   );
 
-  const setCustomersShapeOffset = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreState) => state.setCustomersShapeOffset,
-  );
-  const setCustomersShapeHandle = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreState) => state.setCustomersShapeHandle,
-  );
-
-  const setThreadsShapeOffset = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreState) => state.setThreadsShapeOffset,
-  );
-  const setThreadsShapeHandle = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreState) => state.setThreadsShapeHandle,
+  const customerShape = useMemo(
+    () =>
+      new ShapeStream<CustomerRow>({
+        ...syncCustomersShape({ token, workspaceId }),
+        handle: customersShapeHandle || undefined,
+        offset: customersShapeOffset,
+      }),
+    [token, workspaceId, customersShapeHandle, customersShapeOffset],
   );
 
-  const updateMember = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreState) => state.updateMember,
-  );
-  const updateCustomer = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreState) => state.updateCustomer,
-  );
-  const updateThread = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreState) => state.updateThread,
+  const threadShape = useMemo(
+    () =>
+      new ShapeStream<ThreadRow>({
+        ...syncThreadsShape({ token, workspaceId }),
+        handle: threadsShapeHandle || undefined,
+        offset: threadsShapeOffset,
+      }),
+    [token, workspaceId, threadsShapeHandle, threadsShapeOffset],
   );
 
-  const setInSync = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreState) => state.setInSync,
-  );
-
-  const memberShape = React.useMemo(() => {
-    const shapeDefaultOpts = syncMembersShape({ token, workspaceId });
-    const shapeOpts = {
-      ...shapeDefaultOpts,
-      handle: membersShapeHandle || undefined,
-      offset: membersShapeOffset,
-    };
-    return new ShapeStream<MemberRow>(shapeOpts);
-  }, [token, workspaceId, membersShapeHandle, membersShapeOffset]);
-
-  const customerShape = React.useMemo(() => {
-    const shapeDefaultOpts = syncCustomersShape({ token, workspaceId });
-    const shapeOpts = {
-      ...shapeDefaultOpts,
-      handle: customersShapeHandle || undefined,
-      offset: customersShapeOffset,
-    };
-    return new ShapeStream<CustomerRow>(shapeOpts);
-  }, [token, workspaceId, customersShapeHandle, customersShapeOffset]);
-
-  const threadShape = React.useMemo(() => {
-    const shapeDefaultOpts = syncThreadsShape({ token, workspaceId });
-    const shapeOpts = {
-      ...shapeDefaultOpts,
-      handle: threadsShapeHandle || undefined,
-      offset: threadsShapeOffset,
-    };
-    return new ShapeStream<ThreadRow>(shapeOpts);
-  }, [token, workspaceId, threadsShapeHandle, threadsShapeOffset]);
-
-  const handleMemberSyncMessages = React.useCallback(
+  // Optimized sync handlers using `useTransition`
+  const handleMemberSyncMessages = useCallback(
     (messages: Message<MemberRow>[]) => {
-      messages.forEach((message) => {
-        if (isChangeMessage(message) && message.value.member_id) {
-          setInSync(false);
-          if (message.headers.operation === "update") {
-            const { value } = message;
-            const updates = takeMemberUpdates(value as MemberRowUpdates);
-            updateMember(updates);
+      startTransition(() => {
+        messages.forEach((message) => {
+          if (isChangeMessage(message) && message.value.member_id) {
+            setInSync(false);
+            if (message.headers.operation === "update") {
+              updateMember(
+                takeMemberUpdates(message.value as MemberRowUpdates),
+              );
+            }
+          } else if (
+            isControlMessage(message) &&
+            message.headers.control === "up-to-date"
+          ) {
+            setInSync(true);
+            if (memberShape.lastOffset && memberShape.shapeHandle) {
+              setMembersShapeOffset(memberShape.lastOffset);
+              setMembersShapeHandle(memberShape.shapeHandle as string);
+            }
           }
-        } else if (
-          isControlMessage(message) &&
-          message.headers.control === "up-to-date"
-        ) {
-          setInSync(true);
-          if (memberShape.lastOffset && memberShape.shapeHandle) {
-            setMembersShapeOffset(memberShape.lastOffset);
-            setMembersShapeHandle(memberShape.shapeHandle as string);
-          }
-        }
+        });
       });
     },
-    [],
+    [
+      setInSync,
+      setMembersShapeOffset,
+      setMembersShapeHandle,
+      updateMember,
+      memberShape,
+    ],
   );
 
-  const handleCustomerSyncMessages = React.useCallback(
+  const handleCustomerSyncMessages = useCallback(
     (messages: Message<CustomerRow>[]) => {
-      messages.forEach((message) => {
-        if (isChangeMessage(message) && message.value.customer_id) {
-          setInSync(false);
-          if (message.headers.operation === "update") {
-            const { value } = message;
-            const updates = takeCustomerUpdates(value as CustomerRowUpdates);
-            updateCustomer(updates);
+      startTransition(() => {
+        messages.forEach((message) => {
+          if (isChangeMessage(message) && message.value.customer_id) {
+            setInSync(false);
+            if (message.headers.operation === "update") {
+              updateCustomer(
+                takeCustomerUpdates(message.value as CustomerRowUpdates),
+              );
+            }
+          } else if (
+            isControlMessage(message) &&
+            message.headers.control === "up-to-date"
+          ) {
+            setInSync(true);
+            if (customerShape.lastOffset && customerShape.shapeHandle) {
+              setCustomersShapeOffset(customerShape.lastOffset);
+              setCustomersShapeHandle(customerShape.shapeHandle as string);
+            }
           }
-        } else if (
-          isControlMessage(message) &&
-          message.headers.control === "up-to-date"
-        ) {
-          setInSync(true);
-          if (customerShape.lastOffset && customerShape.shapeHandle) {
-            setCustomersShapeOffset(customerShape.lastOffset);
-            setCustomersShapeHandle(customerShape.shapeHandle as string);
-          }
-        }
+        });
       });
     },
-    [],
+    [
+      setInSync,
+      setCustomersShapeOffset,
+      setCustomersShapeHandle,
+      updateCustomer,
+      customerShape,
+    ],
   );
 
-  const handleThreadSyncMessages = React.useCallback(
+  const handleThreadSyncMessages = useCallback(
     (messages: Message<ThreadRow>[]) => {
-      messages.forEach((message) => {
-        if (isChangeMessage(message) && message.value.thread_id) {
-          setInSync(false);
-          if (message.headers.operation === "update") {
-            const { value } = message;
-            const updates = takeThreadUpdates(value as ThreadRowUpdates);
-            updateThread(updates);
+      startTransition(() => {
+        messages.forEach((message) => {
+          if (isChangeMessage(message) && message.value.thread_id) {
+            setInSync(false);
+            if (message.headers.operation === "update") {
+              updateThread(
+                takeThreadUpdates(message.value as ThreadRowUpdates),
+              );
+            }
+          } else if (
+            isControlMessage(message) &&
+            message.headers.control === "up-to-date"
+          ) {
+            setInSync(true);
+            if (threadShape.lastOffset && threadShape.shapeHandle) {
+              setThreadsShapeOffset(threadShape.lastOffset);
+              setThreadsShapeHandle(threadShape.shapeHandle as string);
+            }
           }
-        } else if (
-          isControlMessage(message) &&
-          message.headers.control === "up-to-date"
-        ) {
-          setInSync(true);
-          if (threadShape.lastOffset && threadShape.shapeHandle) {
-            setThreadsShapeOffset(threadShape.lastOffset);
-            setThreadsShapeHandle(threadShape.shapeHandle as string);
-          }
-        }
+        });
       });
     },
-    [],
+    [
+      setInSync,
+      setThreadsShapeOffset,
+      setThreadsShapeHandle,
+      updateThread,
+      threadShape,
+    ],
   );
 
-  React.useEffect(() => {
-    const unsubscribe = memberShape.subscribe(handleMemberSyncMessages);
-    return () => {
-      unsubscribe();
-    };
+  // Subscribe to shape streams
+  useEffect(() => {
+    return memberShape.subscribe(handleMemberSyncMessages);
   }, [memberShape]);
 
-  React.useEffect(() => {
-    const unsubscribe = customerShape.subscribe(handleCustomerSyncMessages);
-    return () => {
-      unsubscribe();
-    };
+  useEffect(() => {
+    return customerShape.subscribe(handleCustomerSyncMessages);
   }, [customerShape]);
 
-  React.useEffect(() => {
-    const unsubscribe = threadShape.subscribe(handleThreadSyncMessages);
-    return () => {
-      unsubscribe();
-    };
+  useEffect(() => {
+    return threadShape.subscribe(handleThreadSyncMessages);
   }, [threadShape]);
+
+  if (isPending) console.log("syncing data...");
 
   return <>{children}</>;
 }

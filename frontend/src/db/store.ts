@@ -77,8 +77,8 @@ export type SortBy =
   | "status-changed-asc"
   | "status-changed-dsc";
 
-type Priority = "high" | "low" | "normal" | "urgent";
-type StageType =
+export type Priority = "high" | "low" | "normal" | "urgent";
+export type StageType =
   | "hold"
   | "needs_first_response"
   | "needs_next_response"
@@ -86,7 +86,7 @@ type StageType =
   | "spam"
   | "waiting_on_customer";
 
-type StatusType = "done" | "todo";
+export type StatusType = "done" | "todo";
 
 export const defaultSortKey = "created-asc";
 
@@ -187,6 +187,12 @@ interface IWorkspaceStoreActions {
   updateMember(member: MemberShapeUpdates): void;
 
   updateThread(thread: ThreadShapeUpdates): void;
+
+  updateThreadAssignee(threadId: string, memberId: null | string): void;
+
+  updateThreadPriority(threadId: string, priority: Priority): void;
+
+  updateThreadStage(threadId: string, stage: StageType): void;
 
   updateWorkspaceName(name: string): void;
 
@@ -527,7 +533,6 @@ export const buildWorkspaceStore = (
           return state;
         });
       },
-
       setMembersShapeHandle: (handle: null | string) => {
         set((state) => {
           state.membersShapeHandle = handle;
@@ -648,22 +653,33 @@ export const buildWorkspaceStore = (
           };
         });
       },
-      // updateThread: (thread) => {
-      //   set((state) => {
-      //     if (!state.threads || !state.threads.has(thread.threadId))
-      //       return state;
-      //
-      //     // Get existing thread if it exists
-      //     const existingThread = state.threads.get(thread.threadId);
-      //
-      //     // Update the thread by merging existing with new data
-      //     state.threads.set(thread.threadId, {
-      //       ...existingThread, // spread existing data if any
-      //       ...thread, // spread new updates
-      //     });
-      //     return state;
-      //   });
-      // },
+      updateThreadStage(threadId: string, stage: StageType) {
+        set((state) => {
+          const thread = state.threads?.get(threadId);
+          if (thread) {
+            thread.stage = stage;
+          }
+          return state;
+        });
+      },
+      updateThreadAssignee(threadId: string, memberId: null | string) {
+        set((state) => {
+          const thread = state.threads?.get(threadId);
+          if (thread) {
+            thread.assigneeId = memberId;
+          }
+          return state;
+        });
+      },
+      updateThreadPriority(threadId: string, priority: Priority) {
+        set((state) => {
+          const thread = state.threads?.get(threadId);
+          if (thread) {
+            thread.priority = priority;
+          }
+          return state;
+        });
+      },
       updateWorkspaceName: (name: string) => {
         set((state) => {
           if (state.workspace) {

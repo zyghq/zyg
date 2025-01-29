@@ -1,6 +1,10 @@
 import { Icons, stageIcon } from "@/components/icons.tsx";
 import { PriorityIcons } from "@/components/icons.tsx";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.tsx";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
@@ -48,13 +52,17 @@ import {
   SelectValue,
 } from "@/components/ui/select.tsx";
 import { updateThread } from "@/db/api.ts";
-import { deleteThreadLabel, getThreadLabels, putThreadLabel } from "@/db/api.ts";
+import {
+  deleteThreadLabel,
+  getThreadLabels,
+  putThreadLabel,
+} from "@/db/api.ts";
 import { threadStatusVerboseName } from "@/db/helpers.ts";
-import { ThreadResponse, threadTransformer } from "@/db/models.ts";
+import { ThreadResponse } from "@/db/models.ts";
 import { Label, ThreadLabelResponse } from "@/db/models.ts";
-import { WorkspaceStoreState } from "@/db/store.ts";
-import { cn } from "@/lib/utils.ts";
-import { useWorkspaceStore } from "@/providers.tsx";
+import { Priority, StageType, WorkspaceStoreState } from "@/db/store.ts";
+import { cn } from "@/lib/utils";
+import { useWorkspaceStore } from "@/providers";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   BorderDashedIcon,
@@ -100,6 +108,10 @@ export function SetThreadStatusForm({
   const { errors } = formState;
 
   const workspaceStore = useWorkspaceStore();
+  const updateThreadStage = useStore(
+    workspaceStore,
+    (state) => state.updateThreadStage,
+  );
 
   const mutation = useMutation({
     mutationFn: async (inputs: StageFormInputs) => {
@@ -123,9 +135,8 @@ export function SetThreadStatusForm({
       });
     },
     onSuccess: (data) => {
-      const transformer = threadTransformer();
-      const [, thread] = transformer.normalize(data);
-      workspaceStore.getState().updateThread(thread);
+      const { stage } = data;
+      updateThreadStage(threadId, stage as StageType);
     },
   });
 
@@ -386,6 +397,10 @@ export function SetThreadAssigneeForm({
   const { errors } = formState;
 
   const workspaceStore = useWorkspaceStore();
+  const updateThreadAssignee = useStore(
+    workspaceStore,
+    (state) => state.updateThreadAssignee,
+  );
 
   const mutation = useMutation({
     mutationFn: async (inputs: AssigneeFormInputs) => {
@@ -416,9 +431,13 @@ export function SetThreadAssigneeForm({
       });
     },
     onSuccess: (data) => {
-      const transformer = threadTransformer();
-      const [, thread] = transformer.normalize(data);
-      workspaceStore.getState().updateThread(thread);
+      const { assignee } = data;
+      if (assignee) {
+        const { memberId } = assignee;
+        updateThreadAssignee(threadId, memberId);
+      } else {
+        updateThreadAssignee(threadId, null);
+      }
     },
   });
 
@@ -496,6 +515,11 @@ export function SetThreadPriorityForm({
 
   const workspaceStore = useWorkspaceStore();
 
+  const updateThreadPriority = useStore(
+    workspaceStore,
+    (state) => state.updateThreadPriority,
+  );
+
   const mutation = useMutation({
     mutationFn: async (inputs: PriorityFormInputs) => {
       const { priority } = inputs;
@@ -524,9 +548,8 @@ export function SetThreadPriorityForm({
       });
     },
     onSuccess: (data) => {
-      const transformer = threadTransformer();
-      const [, thread] = transformer.normalize(data);
-      workspaceStore.getState().updateThread(thread);
+      const { priority } = data;
+      updateThreadPriority(threadId, priority as Priority);
     },
   });
 
