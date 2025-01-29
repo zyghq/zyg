@@ -34,10 +34,6 @@ export function DetailsSidebar({
   ...props
 }: ThreadDetailsSidebarProps) {
   const workspaceStore = useWorkspaceStore();
-  const workspaceLabels = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreState) => state.viewLabels(state),
-  );
 
   const customerName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.viewCustomerName(state, activeThread?.customerId || ""),
@@ -128,7 +124,6 @@ export function DetailsSidebar({
           threadId={activeThread.threadId}
           token={token}
           workspaceId={workspaceId}
-          workspaceLabels={workspaceLabels}
         />
       </div>
       {/* customer */}

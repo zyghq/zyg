@@ -41,10 +41,6 @@ export function DetailsSheet({
   const [open, setOpen] = React.useState(false);
 
   const workspaceStore = useWorkspaceStore();
-  const workspaceLabels = useStore(
-    workspaceStore,
-    (state: WorkspaceStoreState) => state.viewLabels(state),
-  );
 
   const customerName = useStore(workspaceStore, (state: WorkspaceStoreState) =>
     state.viewCustomerName(state, activeThread?.customerId || ""),
@@ -136,7 +132,6 @@ export function DetailsSheet({
               threadId={activeThread.threadId}
               token={token}
               workspaceId={workspaceId}
-              workspaceLabels={workspaceLabels}
             />
           </div>
           {/* customer */}

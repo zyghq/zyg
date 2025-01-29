@@ -634,31 +634,41 @@ export function ThreadLabels({
   threadId,
   token,
   workspaceId,
-  workspaceLabels,
 }: {
   threadId: string;
   token: string;
   workspaceId: string;
-  workspaceLabels: Label[];
 }) {
-  const {
-    data: threadLabels,
-    error,
-    isPending,
-    refetch,
-  } = useQuery({
-    enabled: !!threadId,
-    queryFn: async () => {
-      const { data, error } = await getThreadLabels(
-        token,
-        workspaceId,
-        threadId,
-      );
-      if (error) throw new Error("failed to fetch thread labels");
-      return data as ThreadLabelResponse[];
-    },
-    queryKey: ["threadLabels", workspaceId, threadId, token],
-  });
+  const workspaceStore = useWorkspaceStore();
+  const workspaceLabels = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.viewLabels(state),
+  );
+
+  const threadLabels = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.viewThreadLabels(state, threadId),
+  );
+
+
+  // const {
+  //   data: threadLabels,
+  //   error,
+  //   isPending,
+  //   refetch,
+  // } = useQuery({
+  //   enabled: !!threadId,
+  //   queryFn: async () => {
+  //     const { data, error } = await getThreadLabels(
+  //       token,
+  //       workspaceId,
+  //       threadId,
+  //     );
+  //     if (error) throw new Error("failed to fetch thread labels");
+  //     return data as ThreadLabelResponse[];
+  //   },
+  //   queryKey: ["threadLabels", workspaceId, threadId, token],
+  // });
 
   const threadLabelMutation = useMutation({
     mutationFn: async (values: { icon: string; name: string }) => {
@@ -681,7 +691,7 @@ export function ThreadLabels({
       console.error(error);
     },
     onSuccess: async () => {
-      await refetch();
+      // await refetch();
     },
   });
 
@@ -706,7 +716,7 @@ export function ThreadLabels({
       console.error(error);
     },
     onSuccess: async () => {
-      await refetch();
+      // await refetch();
     },
   });
 
@@ -723,22 +733,22 @@ export function ThreadLabels({
   }
 
   const renderLabels = () => {
-    if (isPending) {
-      return (
-        <Badge variant="outline">
-          <BorderDashedIcon className="h-4 w-4" />
-        </Badge>
-      );
-    }
+    // if (isPending) {
+    //   return (
+    //     <Badge variant="outline">
+    //       <BorderDashedIcon className="h-4 w-4" />
+    //     </Badge>
+    //   );
+    // }
 
-    if (error) {
-      return (
-        <div className="flex items-center gap-1">
-          <Icons.oops className="h-5 w-5" />
-          <div className="text-xs text-red-500">Something went wrong</div>
-        </div>
-      );
-    }
+    // if (error) {
+    //   return (
+    //     <div className="flex items-center gap-1">
+    //       <Icons.oops className="h-5 w-5" />
+    //       <div className="text-xs text-red-500">Something went wrong</div>
+    //     </div>
+    //   );
+    // }
 
     return (
       <React.Fragment>
@@ -746,7 +756,6 @@ export function ThreadLabels({
           threadLabels?.map((label) => (
             <Badge key={label.labelId} variant="outline">
               <div className="flex items-center gap-1">
-                <div>{label.icon}</div>
                 <div className="capitalize text-muted-foreground">
                   {label.name}
                 </div>

@@ -20,6 +20,7 @@ import {
   CustomerShapeUpdates,
   MemberShape,
   MemberShapeUpdates,
+  ThreadLabelShape,
   ThreadShape,
   ThreadShapeUpdates,
 } from "@/db/shapes";
@@ -131,9 +132,12 @@ export type WorkspaceStoreState = IWorkspaceEntities &
   IWorkspaceValueObjects;
 
 interface IWorkspaceStoreActions {
+  // Currently being used in settings page
   addLabel(label: Label): void;
 
   addPat(pat: Pat): void;
+
+  addThreadLabel(threadId: string, label: ThreadLabelShape): void;
 
   applyThreadFilters(
     status: StatusType,
@@ -182,6 +186,7 @@ interface IWorkspaceStoreActions {
 
   updateCustomer(member: CustomerShapeUpdates): void;
 
+  // Currently being used in settings page, adding workspace labels
   updateLabel(labelId: string, label: Label): void;
 
   updateMember(member: MemberShapeUpdates): void;
@@ -223,6 +228,7 @@ interface IWorkspaceStoreActions {
 
   viewCustomersShapeOffset(state: WorkspaceStoreState): string;
 
+  // List workspace labels
   viewLabels(state: WorkspaceStoreState): Label[];
 
   viewMemberName(state: WorkspaceStoreState, memberId: string): string;
@@ -249,6 +255,11 @@ interface IWorkspaceStoreActions {
     state: WorkspaceStoreState,
     threadId: string,
   ): null | string;
+
+  viewThreadLabels(
+    state: WorkspaceStoreState,
+    threadId: string,
+  ): ThreadLabelShape[];
 
   viewThreads(
     state: WorkspaceStoreState,
@@ -437,30 +448,43 @@ export const buildWorkspaceStore = (
   return createStore<WorkspaceStoreState>()(
     immer((set) => ({
       ...initialState,
+      // Label Management
       addLabel: (label: Label) => {
         const { labelId } = label;
         set((state) => {
-          if (state.labels) {
-            state.labels[labelId] = { ...label };
-            return state;
-          } else {
-            state.labels = { [labelId]: { ...label } };
-            return state;
-          }
+          state.labels ??= {};
+          state.labels[labelId] = { ...label };
         });
       },
+
+      updateLabel: (labelId: string, label: Label) => {
+        set((state) => {
+          if (!state.labels) return;
+          state.labels[labelId] = { ...label };
+        });
+      },
+      viewMemberName: (state, memberId: string) =>
+        state.members?.[memberId]?.name ?? "",
+      viewThreadAssigneeId: (state, threadId: string) =>
+        state.threads?.get(threadId)?.assigneeId ?? null,
+
+      // Pat Management
       addPat: (pat: Pat) => {
         const { patId } = pat;
         set((state) => {
-          if (state.pats) {
-            state.pats[patId] = { ...pat };
-            return state;
-          } else {
-            state.pats = { [patId]: { ...pat } };
-            return state;
-          }
+          state.pats ??= {};
+          state.pats[patId] = { ...pat };
         });
       },
+
+      deletePat: (patId: string) => {
+        set((state) => {
+          if (!state.pats) return;
+          delete state.pats[patId];
+        });
+      },
+
+      // Thread Management
       applyThreadFilters: (
         status: StatusType,
         assignees: AssigneesFiltersType,
@@ -471,465 +495,313 @@ export const buildWorkspaceStore = (
         isUnassigned: boolean | null,
       ) => {
         set((state) => {
-          if (state.threadAppliedFilters) {
-            state.threadAppliedFilters = {
-              ...state.threadAppliedFilters,
-              assignees,
-              isUnassigned,
-              memberId,
-              priorities,
-              sortBy,
-              stages,
-              status,
-            };
-          } else {
-            state.threadAppliedFilters = {
-              assignees,
-              isUnassigned,
-              memberId,
-              priorities,
-              sortBy,
-              stages,
-              status,
-            };
-          }
-        });
-      },
-      deletePat: (patId: string) => {
-        set((state) => {
-          if (state.pats) {
-            delete state.pats[patId];
-            return state;
-          } else {
-            return state;
-          }
-        });
-      },
-      getMemberId: (state: WorkspaceStoreState) => state.member?.memberId || "",
-      getMemberName: (state: WorkspaceStoreState) => state.member?.name || "",
-      getMetrics: (state: WorkspaceStoreState) => state.metrics,
-      getThreadItem: (state: WorkspaceStoreState, threadId: string) =>
-        state.threads?.get(threadId) ?? null,
-      getWorkspaceId: (state: WorkspaceStoreState) =>
-        state.workspace?.workspaceId || "",
-      getWorkspaceName: (state: WorkspaceStoreState) =>
-        state.workspace?.name || "",
-      isInSync: (state: WorkspaceStoreState) => state.inSync,
-      setCustomersShapeHandle: (handle: null | string) => {
-        set((state) => {
-          state.customersShapeHandle = handle;
-          return state;
-        });
-      },
-      setCustomersShapeOffset: (offset: string) => {
-        set((state) => {
-          state.customersShapeOffset = offset;
-          return state;
-        });
-      },
-      setInSync: (f: boolean) => {
-        set((state) => {
-          state.inSync = f;
-          return state;
-        });
-      },
-      setMembersShapeHandle: (handle: null | string) => {
-        set((state) => {
-          state.membersShapeHandle = handle;
-          return state;
-        });
-      },
-      setMembersShapeOffset: (offset: string) => {
-        set((state) => {
-          state.membersShapeOffset = offset;
-          return state;
-        });
-      },
-      setThreadSortKey: (sortKey: SortBy) => {
-        set((state) => {
-          state.threadSortKey = sortKey;
-          const key = `zyg:${state.workspace?.workspaceId}:sortKey`;
-          setTimeout(() => {
-            setInLocalStorage(key, sortKey);
-          }, 0);
-          return state;
-        });
-      },
-      setThreadsShapeHandle: (handle: null | string) => {
-        set((state) => {
-          state.threadsShapeHandle = handle;
-          return state;
-        });
-      },
-      setThreadsShapeOffset: (offset: string) => {
-        set((state) => {
-          state.threadsShapeOffset = offset;
-          return state;
-        });
-      },
-      updateCustomer: (customer: CustomerShapeUpdates) => {
-        // Guard against invalid input and assert memberId is string
-        if (!customer?.customerId) return;
-        const id: string = customer.customerId;
-
-        set((state) => {
-          // If member doesn't exist in state, return unchanged state
-          if (!state.customers?.[id]) {
-            return state;
-          }
-
-          // Return new state object with updated member
-          return {
-            ...state,
-            customers: {
-              ...state.customers,
-              [id]: {
-                ...state.customers[id],
-                ...customer,
-              },
-            },
+          state.threadAppliedFilters = {
+            ...state.threadAppliedFilters,
+            status,
+            assignees,
+            stages,
+            priorities,
+            sortBy,
+            memberId,
+            isUnassigned,
           };
         });
       },
-      updateLabel: (labelId: string, label: Label) => {
-        set((state) => {
-          if (state.labels) {
-            state.labels[labelId] = { ...label };
-            return state;
-          } else {
-            return state;
-          }
-        });
-      },
-      updateMember: (member: MemberShapeUpdates) => {
-        // Guard against invalid input and assert memberId is string
-        if (!member?.memberId) return;
-        const id: string = member.memberId;
 
-        set((state) => {
-          // If member doesn't exist in state, return unchanged state
-          if (!state.members?.[id]) {
-            return state;
-          }
-
-          // Return new state object with updated member
-          return {
-            ...state,
-            members: {
-              ...state.members,
-              [id]: {
-                ...state.members[id],
-                ...member,
-              },
-            },
-          };
-        });
-      },
       updateThread: (thread: ThreadShapeUpdates) => {
-        // Guard against invalid input
         if (!thread?.threadId) return;
         const id: string = thread.threadId;
 
         set((state) => {
-          // If threads Map doesn't exist or thread doesn't exist, return unchanged state
-          if (!state.threads?.has(id)) {
-            return state;
-          }
+          if (!state.threads?.has(id)) return;
 
-          // Get existing thread
           const existingThread = state.threads.get(id)!;
-
-          // Create new Map with updated thread
-          const newThreads = new Map(state.threads);
-          newThreads.set(id, {
+          state.threads.set(id, {
             ...existingThread,
             ...thread,
           });
+        });
+      },
 
-          // Return new state with updated threads Map
-          return {
-            ...state,
-            threads: newThreads,
+      // Thread Property Updates
+      updateThreadStage: (threadId: string, stage: StageType) => {
+        set((state) => {
+          const thread = state.threads?.get(threadId);
+          if (thread) thread.stage = stage;
+        });
+      },
+
+      updateThreadAssignee: (threadId: string, memberId: null | string) => {
+        set((state) => {
+          const thread = state.threads?.get(threadId);
+          if (thread) thread.assigneeId = memberId;
+        });
+      },
+
+      updateThreadPriority: (threadId: string, priority: Priority) => {
+        set((state) => {
+          const thread = state.threads?.get(threadId);
+          if (thread) thread.priority = priority;
+        });
+      },
+
+      addThreadLabel: (threadId: string, label: ThreadLabelShape) => {
+        set((state) => {
+          const thread = state.threads?.get(threadId);
+          if (thread) {
+            thread.labels ??= {};
+            thread.labels[label.labelId] = label;
+          }
+        });
+      },
+
+      // Customer Management
+      updateCustomer: (customer: CustomerShapeUpdates) => {
+        if (!customer?.customerId) return;
+        const id: string = customer.customerId;
+
+        set((state) => {
+          if (!state.customers?.[id]) return;
+
+          state.customers[id] = {
+            ...state.customers[id],
+            ...customer,
           };
         });
       },
-      updateThreadStage(threadId: string, stage: StageType) {
+
+      // Member Management
+      updateMember: (member: MemberShapeUpdates) => {
+        if (!member?.memberId) return;
+        const id: string = member.memberId;
+
         set((state) => {
-          const thread = state.threads?.get(threadId);
-          if (thread) {
-            thread.stage = stage;
-          }
-          return state;
+          if (!state.members?.[id]) return;
+
+          state.members[id] = {
+            ...state.members[id],
+            ...member,
+          };
         });
       },
-      updateThreadAssignee(threadId: string, memberId: null | string) {
+
+      // Shape Management
+      setCustomersShapeHandle: (handle: null | string) =>
         set((state) => {
-          const thread = state.threads?.get(threadId);
-          if (thread) {
-            thread.assigneeId = memberId;
-          }
-          return state;
+          state.customersShapeHandle = handle;
+        }),
+
+      setCustomersShapeOffset: (offset: string) =>
+        set((state) => {
+          state.customersShapeOffset = offset;
+        }),
+
+      setMembersShapeHandle: (handle: null | string) =>
+        set((state) => {
+          state.membersShapeHandle = handle;
+        }),
+
+      setMembersShapeOffset: (offset: string) =>
+        set((state) => {
+          state.membersShapeOffset = offset;
+        }),
+
+      setThreadsShapeHandle: (handle: null | string) =>
+        set((state) => {
+          state.threadsShapeHandle = handle;
+        }),
+
+      setThreadsShapeOffset: (offset: string) =>
+        set((state) => {
+          state.threadsShapeOffset = offset;
+        }),
+
+      // Sync Management
+      setInSync: (f: boolean) =>
+        set((state) => {
+          state.inSync = f;
+        }),
+
+      // Sort Management
+      setThreadSortKey: (sortKey: SortBy) => {
+        set((state) => {
+          state.threadSortKey = sortKey;
+          const key = `zyg:${state.workspace?.workspaceId}:sortKey`;
+          setTimeout(() => setInLocalStorage(key, sortKey), 0);
         });
       },
-      updateThreadPriority(threadId: string, priority: Priority) {
-        set((state) => {
-          const thread = state.threads?.get(threadId);
-          if (thread) {
-            thread.priority = priority;
-          }
-          return state;
-        });
-      },
+
+      // Workspace Management
       updateWorkspaceName: (name: string) => {
         set((state) => {
-          if (state.workspace) {
-            state.workspace.name = name;
-            return state;
-          } else {
-            return state;
-          }
+          if (state.workspace) state.workspace.name = name;
         });
       },
-      viewAssignees: (state: WorkspaceStoreState) => {
-        // Get all threads
-        const threads = state.threads ? Object.values(state.threads) : [];
 
-        // Extract unique, valid assignee IDs
+      // Getters
+      getMemberId: (state) => state.member?.memberId || "",
+      getMemberName: (state) => state.member?.name || "",
+      getMetrics: (state) => state.metrics,
+      getThreadItem: (state, threadId) => state.threads?.get(threadId) ?? null,
+      getWorkspaceId: (state) => state.workspace?.workspaceId || "",
+      getWorkspaceName: (state) => state.workspace?.name || "",
+      isInSync: (state) => state.inSync,
+
+      // View Methods
+      viewThreadLabels: (state, threadId) => {
+        const thread = state.threads?.get(threadId);
+        return thread?.labels ? Object.values(thread.labels) : [];
+      },
+      viewAssignees: (state: WorkspaceStoreState): Assignee[] => {
+        const threads = state.threads ? [...state.threads.values()] : [];
         const assigneeIds = _.uniq(
           threads
             .map((t) => t.assigneeId)
-            .filter((a): a is string => a !== undefined),
+            .filter((id): id is string => Boolean(id)),
         );
 
-        // Map assignee IDs to members
         return assigneeIds
-          .map((a) => {
-            const member = state.members?.[a];
-            if (member) {
-              return {
-                assigneeId: member.memberId,
-                name: member.name || "n/a",
-              } as Assignee;
-            }
+          .map((id) => {
+            const member = state.members?.[id];
+            return member
+              ? {
+                  assigneeId: member.memberId,
+                  name: member.name || "n/a",
+                }
+              : undefined;
           })
-          .filter((m): m is Assignee => m !== undefined);
+          .filter((assignee): assignee is Assignee => Boolean(assignee));
       },
-      viewCurrentThreadQueue: (
-        state: WorkspaceStoreState,
-      ): null | ThreadShape[] => {
-        if (!state.threadAppliedFilters) return null;
-        if (!state.threads) return [];
+
+      viewCurrentThreadQueue: (state) => {
+        if (!state.threadAppliedFilters || !state.threads) {
+          return state.threadAppliedFilters ? [] : null;
+        }
 
         const {
+          status,
           assignees,
-          isUnassigned,
-          memberId,
+          stages,
           priorities,
           sortBy,
-          stages,
-          status,
+          memberId,
+          isUnassigned,
         } = state.threadAppliedFilters;
 
-        // Convert Map to array once
-        let results = [...state.threads.values()];
-
-        // Apply filters in order of most restrictive first
-        // 1. Status filter (required)
-        results = results.filter((t) => t.status === status);
-
-        // 2. Assignment filters (mutually exclusive)
-        if (memberId) {
-          // Single assignee filter
-          results = results.filter((t) => t.assigneeId === memberId);
-        } else {
-          // Handle other assignment cases
-          if (isUnassigned) {
-            results = results.filter((t) => !t.assigneeId);
-          } else if (assignees) {
-            // Only apply assignees filter if not handling memberId or isUnassigned
-            results = filterByAssignees(results, assignees);
-          }
-        }
-
-        // 3. Apply remaining filters
-        if (stages) {
-          results = filterByStages(results, stages);
-        }
-
-        if (priorities) {
-          results = filterByPriorities(results, priorities);
-        }
-
-        // 4. Finally sort the filtered results
-        return sortThreads(results, sortBy);
-      },
-      viewCustomerEmail: (state: WorkspaceStoreState, customerId: string) => {
-        const customer = state.customers?.[customerId];
-        return customer ? customer.email : null;
-      },
-      viewCustomerExternalId: (
-        state: WorkspaceStoreState,
-        customerId: string,
-      ) => {
-        const customer = state.customers?.[customerId];
-        return customer ? customer.externalId : null;
-      },
-      viewCustomerName: (state: WorkspaceStoreState, customerId: string) => {
-        const customer = state.customers?.[customerId];
-        return customer ? customer.name : "";
-      },
-      viewCustomerPhone: (state: WorkspaceStoreState, customerId: string) => {
-        const customer = state.customers?.[customerId];
-        return customer ? customer.phone : null;
-      },
-      viewCustomerRole: (state: WorkspaceStoreState, customerId: string) => {
-        const customer = state.customers?.[customerId];
-        return customer ? customer.role : "";
-      },
-      viewCustomersShapeHandle: (state: WorkspaceStoreState) => {
-        return state.customersShapeHandle;
-      },
-      viewCustomersShapeOffset: (state: WorkspaceStoreState) => {
-        return state.customersShapeOffset;
-      },
-      viewLabels: (state: WorkspaceStoreState) => {
-        const labels = state.labels ? Object.values(state.labels) : [];
-        return _.sortBy(labels, "labelId").reverse();
-      },
-      viewMemberName: (state: WorkspaceStoreState, memberId: string) => {
-        const member = state.members?.[memberId];
-        return member ? member.name || "" : "";
-      },
-      viewMembers: (state: WorkspaceStoreState) => {
-        return state.members ? Object.values(state.members) : [];
-      },
-      viewMembersShapeHandle: (state: WorkspaceStoreState) => {
-        return state.membersShapeHandle;
-      },
-      viewMembersShapeOffset: (state: WorkspaceStoreState) => {
-        return state.membersShapeOffset;
-      },
-      viewMyThreads: (
-        state: WorkspaceStoreState,
-        status: StatusType,
-        memberId: string,
-        assignees: AssigneesFiltersType,
-        stages: StagesFiltersType,
-        priorities: PrioritiesFiltersType,
-        sortBy: SortBy = defaultSortKey,
-      ): ThreadShape[] => {
-        if (!state.threads) return [];
-
-        // Convert Map to array once and apply base filters
-        let results = [...state.threads.values()].filter(
-          (t) => t.status === status && t.assigneeId === memberId,
-        );
-
-        // Apply remaining filters conditionally
-        if (assignees) {
-          results = filterByAssignees(results, assignees);
-        }
-
-        if (stages) {
-          results = filterByStages(results, stages);
-        }
-
-        if (priorities) {
-          results = filterByPriorities(results, priorities);
-        }
-
-        // Apply sorting
-        return sortThreads(results, sortBy);
-      },
-      viewPats: (state: WorkspaceStoreState) => {
-        const pats = state.pats ? Object.values(state.pats) : [];
-        return _.sortBy(pats, "patId").reverse();
-      },
-      viewThreadAssigneeId: (
-        state: WorkspaceStoreState,
-        threadId: string,
-      ): null | string => {
-        return state.threads?.get(threadId)?.assigneeId ?? null;
-      },
-      viewThreads: (
-        state: WorkspaceStoreState,
-        status: StatusType,
-        assignees: AssigneesFiltersType,
-        stages: StagesFiltersType,
-        priorities: PrioritiesFiltersType,
-        sortBy: SortBy = defaultSortKey,
-      ): ThreadShape[] => {
-        if (!state.threads) return [];
-
-        // Convert Map to array once and apply base status filter
         let results = [...state.threads.values()].filter(
           (t) => t.status === status,
         );
 
-        // Apply remaining filters conditionally
-        if (assignees) {
+        if (memberId) {
+          results = results.filter((t) => t.assigneeId === memberId);
+        } else if (isUnassigned) {
+          results = results.filter((t) => !t.assigneeId);
+        } else if (assignees) {
           results = filterByAssignees(results, assignees);
         }
 
-        if (stages) {
-          results = filterByStages(results, stages);
-        }
+        if (stages) results = filterByStages(results, stages);
+        if (priorities) results = filterByPriorities(results, priorities);
 
-        if (priorities) {
-          results = filterByPriorities(results, priorities);
-        }
-
-        // Apply sorting
         return sortThreads(results, sortBy);
       },
-      viewThreadSortKey: (state: WorkspaceStoreState) => {
-        if (state.threadSortKey) {
-          return state.threadSortKey;
-        }
-        // if not set in store, check from local storage.
+
+      viewThreadSortKey: (state) => {
+        if (state.threadSortKey) return state.threadSortKey;
+
         const key = `zyg:${state.workspace?.workspaceId}:sortKey`;
-        const sortKey = getFromLocalStorage(key);
-        if (sortKey) {
-          return sortKey as SortBy;
-        }
-        // use default otherwise.
-        return defaultSortKey;
+        return (getFromLocalStorage(key) as SortBy) || defaultSortKey;
       },
-      viewThreadsShapeHandle(state: WorkspaceStoreState): null | string {
-        return state.threadsShapeHandle;
-      },
-      viewThreadsShapeOffset(state: WorkspaceStoreState): string {
-        return state.threadsShapeOffset;
-      },
-      viewUnassignedThreads: (
-        state: WorkspaceStoreState,
-        status: StatusType,
-        assignees: AssigneesFiltersType,
-        stages: StagesFiltersType,
-        priorities: PrioritiesFiltersType,
-        sortBy: SortBy = defaultSortKey,
-      ): ThreadShape[] => {
+
+      // Customer View Methods
+      viewCustomerEmail: (state, customerId) =>
+        state.customers?.[customerId]?.email ?? null,
+      viewCustomerExternalId: (state, customerId) =>
+        state.customers?.[customerId]?.externalId ?? null,
+      viewCustomerName: (state, customerId) =>
+        state.customers?.[customerId]?.name ?? "",
+      viewCustomerPhone: (state, customerId) =>
+        state.customers?.[customerId]?.phone ?? null,
+      viewCustomerRole: (state, customerId) =>
+        state.customers?.[customerId]?.role ?? "",
+
+      // Shape View Methods
+      viewCustomersShapeHandle: (state) => state.customersShapeHandle,
+      viewCustomersShapeOffset: (state) => state.customersShapeOffset,
+      viewMembersShapeHandle: (state) => state.membersShapeHandle,
+      viewMembersShapeOffset: (state) => state.membersShapeOffset,
+      viewThreadsShapeHandle: (state) => state.threadsShapeHandle,
+      viewThreadsShapeOffset: (state) => state.threadsShapeOffset,
+
+      // Collection View Methods
+      viewLabels: (state) =>
+        _.sortBy(Object.values(state.labels ?? {}), "labelId").reverse(),
+      viewMembers: (state) => Object.values(state.members ?? {}),
+      viewPats: (state) =>
+        _.sortBy(Object.values(state.pats ?? {}), "patId").reverse(),
+
+      // Thread View Methods
+      viewThreads: (
+        state,
+        status,
+        assignees,
+        stages,
+        priorities,
+        sortBy = defaultSortKey,
+      ) => {
         if (!state.threads) return [];
 
-        // Convert Map to array once and apply base filters
+        let results = [...state.threads.values()].filter(
+          (t) => t.status === status,
+        );
+
+        if (assignees) results = filterByAssignees(results, assignees);
+        if (stages) results = filterByStages(results, stages);
+        if (priorities) results = filterByPriorities(results, priorities);
+
+        return sortThreads(results, sortBy);
+      },
+
+      viewMyThreads: (
+        state,
+        status,
+        memberId,
+        assignees,
+        stages,
+        priorities,
+        sortBy = defaultSortKey,
+      ) => {
+        if (!state.threads) return [];
+
+        let results = [...state.threads.values()].filter(
+          (t) => t.status === status && t.assigneeId === memberId,
+        );
+
+        if (assignees) results = filterByAssignees(results, assignees);
+        if (stages) results = filterByStages(results, stages);
+        if (priorities) results = filterByPriorities(results, priorities);
+
+        return sortThreads(results, sortBy);
+      },
+
+      viewUnassignedThreads: (
+        state,
+        status,
+        assignees,
+        stages,
+        priorities,
+        sortBy = defaultSortKey,
+      ) => {
+        if (!state.threads) return [];
+
         let results = [...state.threads.values()].filter(
           (t) => t.status === status && !t.assigneeId,
         );
 
-        // Apply remaining filters conditionally
-        if (assignees) {
-          results = filterByAssignees(results, assignees);
-        }
+        if (assignees) results = filterByAssignees(results, assignees);
+        if (stages) results = filterByStages(results, stages);
+        if (priorities) results = filterByPriorities(results, priorities);
 
-        if (stages) {
-          results = filterByStages(results, stages);
-        }
-
-        if (priorities) {
-          results = filterByPriorities(results, priorities);
-        }
-
-        // Apply sorting
         return sortThreads(results, sortBy);
       },
     })),
