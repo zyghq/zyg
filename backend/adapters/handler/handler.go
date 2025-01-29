@@ -34,7 +34,7 @@ func NewServer(
 	// initialize service handlers
 	ah := NewAccountHandler(accountService, workspaceService)
 	wh := NewWorkspaceHandler(workspaceService, accountService, customerService, syncService)
-	th := NewThreadHandler(workspaceService, threadService)
+	th := NewThreadHandler(workspaceService, threadService, syncService)
 	ch := NewCustomerHandler(workspaceService, customerService)
 	ss := NewSyncHandler(workspaceService, threadService)
 
@@ -49,11 +49,13 @@ func NewServer(
 	mux.Handle("GET /pats/{$}", NewEnsureAuthAccount(ah.handleGetPatList, authService))
 	mux.Handle("DELETE /pats/{patId}/{$}", NewEnsureAuthAccount(ah.handleDeletePat, authService))
 
+	// synced
 	mux.Handle("POST /workspaces/{$}", NewEnsureAuthAccount(wh.handleCreateWorkspace, authService))
 	mux.Handle("GET /workspaces/{$}", NewEnsureAuthAccount(wh.handleGetWorkspaces, authService))
 
 	mux.Handle("GET /workspaces/{workspaceId}/{$}",
 		NewEnsureMemberAuth(wh.handleGetWorkspace, authService))
+	// synced
 	mux.Handle("PATCH /workspaces/{workspaceId}/{$}",
 		NewEnsureMemberAuth(wh.handleUpdateWorkspace, authService))
 
@@ -69,6 +71,7 @@ func NewServer(
 	mux.Handle("GET /workspaces/{workspaceId}/members/{memberId}/{$}",
 		NewEnsureMemberAuth(wh.handleGetWorkspaceMember, authService))
 
+	// synced
 	mux.Handle("POST /workspaces/{workspaceId}/customers/{$}",
 		NewEnsureMemberAuth(wh.handleCreateWorkspaceCustomer, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/customers/{$}",
@@ -91,6 +94,7 @@ func NewServer(
 
 	mux.Handle("GET /workspaces/{workspaceId}/threads/{$}",
 		NewEnsureMemberAuth(th.handleGetThreads, authService))
+	// synced
 	mux.Handle("PATCH /workspaces/{workspaceId}/threads/{threadId}/{$}",
 		NewEnsureMemberAuth(th.handleUpdateThread, authService))
 
@@ -113,6 +117,7 @@ func NewServer(
 	mux.Handle("GET /workspaces/{workspaceId}/messages/{messageId}/attachments/{attachmentId}/{$}",
 		NewEnsureMemberAuth(th.handleGetMessageAttachment, authService))
 
+	// synced
 	mux.Handle("PUT /workspaces/{workspaceId}/threads/{threadId}/labels/{$}",
 		NewEnsureMemberAuth(th.handleSetThreadLabel, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/{threadId}/labels/{$}",

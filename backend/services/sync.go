@@ -235,8 +235,8 @@ func (sy *SyncService) SyncMemberRPC(
 	return inSync, nil
 }
 
-func (sy *SyncService) SyncThread(
-	ctx context.Context, thread models.Thread, labels []models.ThreadLabel) (models.ThreadInSync, error) {
+func (sy *SyncService) SyncThreadRPC(
+	ctx context.Context, thread models.Thread, labels *[]models.ThreadLabel) (models.ThreadInSync, error) {
 	hub := sentry.GetHubFromContext(ctx)
 	inSync := models.ThreadInSync{}
 
@@ -293,6 +293,73 @@ func (sy *SyncService) SyncThread(
 		requestBody.SetField("outboundSeqId", nil)
 	}
 
+	// only set labels if the labels is not nil, otherwise ignore setting the value in request body.
+	if labels != nil {
+		labelsMap := make(map[string]interface{})
+		for _, label := range *labels {
+			labelsMap[label.LabelId] = map[string]interface{}{
+				"labelId":   label.LabelId,
+				"name":      label.Name,
+				"createdAt": label.CreatedAt,
+				"updatedAt": label.UpdatedAt,
+			}
+		}
+		requestBody.SetField("labels", labelsMap)
+	}
+
+	jsonData, err := requestBody.ToJSON()
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to marshal json", slog.Any("err", err))
+		return models.ThreadInSync{}, err
+	}
+	url := fmt.Sprintf("%s/sync/%s/upsertThread", restateBaseUrl, thread.ThreadId)
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to create sync request", slog.Any("err", err))
+		return models.ThreadInSync{}, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to sync thread", slog.Any("err", err))
+		return models.ThreadInSync{}, err
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			return
+		}
+	}(resp.Body)
+
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		hub.CaptureException(err)
+		return models.ThreadInSync{}, err
+	}
+	err = json.Unmarshal(responseBody, &inSync)
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to unmarshal sync response", slog.Any("err", err))
+		return models.ThreadInSync{}, err
+	}
+	return inSync, nil
+}
+
+func (sy *SyncService) SyncThreadLabelsRPC(
+	ctx context.Context, threadId string, labels []models.ThreadLabel) (models.ThreadInSync, error) {
+	hub := sentry.GetHubFromContext(ctx)
+	inSync := models.ThreadInSync{}
+
+	restateBaseUrl := zyg.RestateRPCURL()
+	client := &http.Client{}
+
+	requestBody := RequestBody{
+		"threadId": threadId,
+	}
+
 	labelsMap := make(map[string]interface{})
 	for _, label := range labels {
 		labelsMap[label.LabelId] = map[string]interface{}{
@@ -310,7 +377,7 @@ func (sy *SyncService) SyncThread(
 		slog.Error("failed to marshal json", slog.Any("err", err))
 		return models.ThreadInSync{}, err
 	}
-	url := fmt.Sprintf("%s/sync/%s/upsertThread", restateBaseUrl, thread.ThreadId)
+	url := fmt.Sprintf("%s/sync/%s/addThreadLabels", restateBaseUrl, threadId)
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		hub.CaptureException(err)

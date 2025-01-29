@@ -20,10 +20,11 @@ import (
 type ThreadHandler struct {
 	ws  ports.WorkspaceServicer
 	ths ports.ThreadServicer
+	ss  ports.SyncServicer
 }
 
-func NewThreadHandler(ws ports.WorkspaceServicer, ths ports.ThreadServicer) *ThreadHandler {
-	return &ThreadHandler{ws: ws, ths: ths}
+func NewThreadHandler(ws ports.WorkspaceServicer, ths ports.ThreadServicer, ss ports.SyncServicer) *ThreadHandler {
+	return &ThreadHandler{ws: ws, ths: ths, ss: ss}
 }
 
 // handleGetThreads returns a list of threads associated with the given member's workspace.
@@ -61,6 +62,7 @@ func (h *ThreadHandler) handleUpdateThread(
 
 	ctx := r.Context()
 	threadId := r.PathValue("threadId")
+	hub := sentry.GetHubFromContext(ctx)
 
 	var reqp map[string]interface{}
 	err := json.NewDecoder(r.Body).Decode(&reqp)
@@ -75,6 +77,7 @@ func (h *ThreadHandler) handleUpdateThread(
 		return
 	}
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed to fetch thread", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -143,10 +146,23 @@ func (h *ThreadHandler) handleUpdateThread(
 
 	thread, err = h.ths.UpdateThread(ctx, thread, fields)
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed to update thread", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+
+	// sync thread without setting labels, keep as is.
+	// to clear the labels pass empty slice ref: &[]models.ThreadLabel
+	inSync, err := h.ss.SyncThreadRPC(ctx, thread, nil)
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to sync thread", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	slog.Info("thread synced", slog.Any("versionID", inSync.VersionID))
 	resp := ThreadResp{}.NewResponse(&thread)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -548,7 +564,9 @@ func (h *ThreadHandler) handleSetThreadLabel(
 		_ = r.Close()
 	}(r.Body)
 
+	ctx := r.Context()
 	threadId := r.PathValue("threadId")
+	hub := sentry.GetHubFromContext(ctx)
 
 	var reqp ThChatLabelReq
 	err := json.NewDecoder(r.Body).Decode(&reqp)
@@ -557,14 +575,13 @@ func (h *ThreadHandler) handleSetThreadLabel(
 		return
 	}
 
-	ctx := r.Context()
 	thExist, err := h.ths.ThreadExistsInWorkspace(ctx, member.WorkspaceId, threadId)
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed checking thread existence in workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-
 	if !thExist {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -572,6 +589,7 @@ func (h *ThreadHandler) handleSetThreadLabel(
 
 	label, isCreated, err := h.ws.CreateLabel(ctx, member.WorkspaceId, reqp.Name, reqp.Icon)
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed to create label", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -579,11 +597,23 @@ func (h *ThreadHandler) handleSetThreadLabel(
 
 	threadLabel, isAdded, err := h.ths.SetLabel(ctx, threadId, label.LabelId, models.LabelAddedBy{}.User())
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed to add label to thread", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
+	threadLabels := make([]models.ThreadLabel, 0, 1)
+	threadLabels = append(threadLabels, threadLabel)
+	inSync, err := h.ss.SyncThreadLabelsRPC(ctx, threadId, threadLabels)
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to sync thread labels", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	slog.Info("thread labels synced", slog.Any("versionID", inSync.VersionID))
 	resp := ThreadLabelResp{
 		ThreadLabelId: threadLabel.ThreadLabelId,
 		ThreadId:      threadLabel.ThreadId,

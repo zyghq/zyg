@@ -419,7 +419,7 @@ func runSyncWorkspaceThread(cmd *cobra.Command, _ []string) error {
 	}
 
 	log.Info().Msgf("Syncing thread with ID: %s", threadID)
-	synced, err := app.SyncService.SyncThread(ctx, thread, labels)
+	synced, err := app.SyncService.SyncThreadRPC(ctx, thread, &labels)
 	if err != nil {
 		return fmt.Errorf("failed to sync thread %s: %w", threadID, err)
 	}
@@ -467,7 +467,7 @@ func runSyncWorkspaceThreads(cmd *cobra.Command, _ []string) error {
 			break
 		}
 		log.Info().Msgf("Syncing thread with ID: %s", thread.ThreadId)
-		synced, err := app.SyncService.SyncThread(ctx, thread, labels)
+		synced, err := app.SyncService.SyncThreadRPC(ctx, thread, &labels)
 		if err != nil {
 			log.Error().Err(err).Msgf("failed to sync thread %s", thread.ThreadId)
 			break

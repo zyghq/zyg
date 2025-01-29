@@ -1,6 +1,7 @@
 import * as restate from "@restatedev/restate-sdk/fetch";
 import { drizzle } from "drizzle-orm/neon-http";
 import { eq, sql, and } from "drizzle-orm";
+import { json } from "drizzle-orm/pg-core";
 import * as schema from "./db/schema";
 
 const syncdb = drizzle(process.env.DATABASE_URL as string);
@@ -33,6 +34,16 @@ type InsertWorkspace = typeof schema.workspace.$inferInsert;
 type InsertMember = typeof schema.member.$inferInsert;
 type InsertCustomer = typeof schema.customer.$inferInsert;
 type InsertThread = typeof schema.thread.$inferInsert;
+
+type Label = {
+  name: string;
+  labelId: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type ThreadLabels = Record<string, Label>;
+type ThreadLabelsOrEmpty = ThreadLabels | {};
 
 const sync = restate.object({
   name: "sync",
@@ -341,6 +352,79 @@ const sync = restate.object({
       const newVersionId = ctx.rand.uuidv4();
       const updates = {
         ...thread,
+        versionId: newVersionId,
+      } as InsertThread;
+      const updatedThread: { threadId: string; versionId: string }[] =
+        await syncdb
+          .update(schema.thread)
+          .set({ ...updates })
+          .where(
+            and(
+              eq(schema.thread.threadId, thread.threadId),
+              eq(schema.thread.versionId, currVersionId),
+            ),
+          )
+          .returning({
+            threadId: schema.thread.threadId,
+            versionId: schema.thread.versionId,
+          });
+      if (updatedThread.length !== 1) {
+        throw new restate.TerminalError(
+          `Failed to update thread with thread ID ${thread.threadId} version ID ${newVersionId}`,
+        );
+      }
+      console.log(
+        `Updated thread with thread ID ${thread.threadId} version ID ${newVersionId}`,
+      );
+      return { threadId: thread.threadId, versionId: newVersionId };
+    },
+    addThreadLabels: async (
+      ctx: restate.ObjectContext,
+      thread: InsertThread,
+    ): Promise<{
+      threadId: string;
+      versionId: string;
+    }> => {
+      console.log("invoking addThreadLabel...");
+      const currVersionId = await ctx.run(
+        "read current thread version",
+        async () => {
+          // first read the current thread version from the database.
+          const results = await syncdb
+            .select({ versionId: schema.thread.versionId })
+            .from(schema.thread)
+            .where(eq(schema.thread.threadId, thread.threadId));
+          // if the thread does not exist, version is null
+          if (results.length !== 1) {
+            return null;
+          }
+          // found the thread with version ID return it.
+          return results[0].versionId;
+        },
+      );
+      if (!currVersionId) {
+        throw new restate.TerminalError(
+          `Thread with ID ${thread.threadId} does not exist`,
+        );
+      }
+
+      // query existing labels for the thread and add new labels
+      // merging the new labels with existing labels.
+      const existingLabelRows: any = await syncdb
+        .select({ labels: schema.thread.labels })
+        .from(schema.thread)
+        .where(eq(schema.thread.threadId, thread.threadId));
+
+      let existingLabels = existingLabelRows[0] || {};
+      const labelsUpdated = {
+        ...(existingLabels.labels as ThreadLabelsOrEmpty),
+        ...(thread.labels as ThreadLabels),
+      };
+
+      // apply update to thread labels with current version, updating to new version.
+      const newVersionId = ctx.rand.uuidv4();
+      const updates = {
+        labels: labelsUpdated,
         versionId: newVersionId,
       } as InsertThread;
       const updatedThread: { threadId: string; versionId: string }[] =

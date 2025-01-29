@@ -41,6 +41,7 @@ func (h *WorkspaceHandler) handleCreateWorkspace(
 	}(r.Body)
 
 	ctx := r.Context()
+	hub := sentry.GetHubFromContext(ctx)
 
 	var reqp WorkspaceReq
 	err := json.NewDecoder(r.Body).Decode(&reqp)
@@ -51,16 +52,20 @@ func (h *WorkspaceHandler) handleCreateWorkspace(
 
 	workspace, err := h.as.CreateWorkspace(ctx, *account, reqp.Name)
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed to create workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+
 	inSync, err := h.ss.SyncWorkspaceRPC(ctx, workspace)
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed to sync workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+
 	slog.Info("workspace synced", slog.Any("versionID", inSync.VersionID))
 	resp := WorkspaceResp{
 		WorkspaceId: workspace.WorkspaceId,
@@ -79,8 +84,11 @@ func (h *WorkspaceHandler) handleCreateWorkspace(
 
 func (h *WorkspaceHandler) handleGetWorkspaces(w http.ResponseWriter, r *http.Request, account *models.Account) {
 	ctx := r.Context()
+	hub := sentry.GetHubFromContext(ctx)
+
 	workspaces, err := h.as.ListAccountLinkedWorkspaces(ctx, account.AccountId)
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed fetch workspaces", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -96,7 +104,6 @@ func (h *WorkspaceHandler) handleGetWorkspaces(w http.ResponseWriter, r *http.Re
 		}
 		items = append(items, item)
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(items); err != nil {
@@ -109,14 +116,15 @@ func (h *WorkspaceHandler) handleGetWorkspaces(w http.ResponseWriter, r *http.Re
 func (h *WorkspaceHandler) handleGetWorkspace(
 	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	ctx := r.Context()
+	hub := sentry.GetHubFromContext(ctx)
 
 	workspace, err := h.ws.GetWorkspace(ctx, member.WorkspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
-
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed to fetch workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -152,6 +160,7 @@ func (h *WorkspaceHandler) handleUpdateWorkspace(
 	}
 
 	ctx := r.Context()
+	hub := sentry.GetHubFromContext(ctx)
 
 	workspace, err := h.ws.GetWorkspace(ctx, member.WorkspaceId)
 	if errors.Is(err, services.ErrWorkspaceNotFound) {
@@ -159,6 +168,7 @@ func (h *WorkspaceHandler) handleUpdateWorkspace(
 		return
 	}
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed to fetch workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -179,7 +189,6 @@ func (h *WorkspaceHandler) handleUpdateWorkspace(
 			CreatedAt:   workspace.CreatedAt,
 			UpdatedAt:   workspace.UpdatedAt,
 		}
-
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
@@ -192,16 +201,19 @@ func (h *WorkspaceHandler) handleUpdateWorkspace(
 
 	workspace, err = h.ws.UpdateWorkspace(ctx, workspace)
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed to update workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 	inSync, err := h.ss.SyncWorkspaceRPC(ctx, workspace)
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed to sync workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+
 	slog.Info("workspace synced", slog.Any("versionID", inSync.VersionID))
 	resp := WorkspaceResp{
 		WorkspaceId: workspace.WorkspaceId,
@@ -425,12 +437,14 @@ func (h *WorkspaceHandler) handleGetWorkspaceLabel(
 
 func (h *WorkspaceHandler) handleCreateWorkspaceCustomer(
 	w http.ResponseWriter, r *http.Request, member *models.Member) {
+
 	defer func(r io.ReadCloser) {
 		_, _ = io.Copy(io.Discard, r)
 		_ = r.Close()
 	}(r.Body)
 
 	ctx := r.Context()
+	hub := sentry.GetHubFromContext(ctx)
 
 	var reqp CreateCustomerReq
 	err := json.NewDecoder(r.Body).Decode(&reqp)
@@ -454,6 +468,7 @@ func (h *WorkspaceHandler) handleCreateWorkspaceCustomer(
 		return
 	}
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed to fetch workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -469,6 +484,7 @@ func (h *WorkspaceHandler) handleCreateWorkspaceCustomer(
 			reqp.Name,
 		)
 		if err != nil {
+			hub.CaptureException(err)
 			slog.Error("failed to fetch or create customer by externalId", slog.Any("err", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
@@ -481,6 +497,8 @@ func (h *WorkspaceHandler) handleCreateWorkspaceCustomer(
 			reqp.Name,
 		)
 		if err != nil {
+			hub.CaptureException(err)
+			slog.Error("failed to fetch or create customer by email", slog.Any("err", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
@@ -491,6 +509,8 @@ func (h *WorkspaceHandler) handleCreateWorkspaceCustomer(
 			reqp.Name,
 		)
 		if err != nil {
+			hub.CaptureException(err)
+			slog.Error("failed to fetch or create customer by phone", slog.Any("err", err))
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
@@ -498,9 +518,17 @@ func (h *WorkspaceHandler) handleCreateWorkspaceCustomer(
 		slog.Error("at least one of `externalId`, `email` or `phone` is required")
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
-
 	}
 
+	inSync, err := h.ss.SyncCustomerRPC(ctx, customer)
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to sync customer", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	slog.Info("customer synced", slog.Any("versionID", inSync.VersionID))
 	resp := CustomerResp{
 		CustomerId:      customer.CustomerId,
 		Name:            customer.Name,
