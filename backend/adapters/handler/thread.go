@@ -694,11 +694,13 @@ func (h *ThreadHandler) handleGetThreadLabels(
 func (h *ThreadHandler) handleDeleteThreadLabel(
 	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	ctx := r.Context()
+	hub := sentry.GetHubFromContext(ctx)
 
 	threadId := r.PathValue("threadId")
 	labelId := r.PathValue("labelId")
 	thExist, err := h.ths.ThreadExistsInWorkspace(ctx, member.WorkspaceId, threadId)
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed checking thread existence in workspace", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -714,16 +716,28 @@ func (h *ThreadHandler) handleDeleteThreadLabel(
 		return
 	}
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed to fetch workspace label", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 	err = h.ths.RemoveThreadLabel(ctx, threadId, label.LabelId)
 	if err != nil {
+		hub.CaptureException(err)
 		slog.Error("failed to delete label from thread", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+	labelIds := make([]string, 0, 1)
+	labelIds = append(labelIds, label.LabelId)
+	inSync, err := h.ss.SyncDeleteThreadLabelsRPC(ctx, threadId, labelIds)
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to sync thread labels", slog.Any("err", err))
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	slog.Info("thread labels synced", slog.Any("versionID", inSync.VersionID))
 	w.WriteHeader(http.StatusNoContent)
 }
 

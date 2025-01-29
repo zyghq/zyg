@@ -42,6 +42,11 @@ type Label = {
   updatedAt: string;
 };
 
+interface DeleteLabelIds {
+  threadId: string;
+  labelIds: string[];
+}
+
 type ThreadLabels = Record<string, Label>;
 type ThreadLabelsOrEmpty = ThreadLabels | {};
 
@@ -415,8 +420,8 @@ const sync = restate.object({
         .from(schema.thread)
         .where(eq(schema.thread.threadId, thread.threadId));
 
-      let existingLabels = existingLabelRows[0] || {};
-      const labelsUpdated = {
+      const existingLabels = existingLabelRows[0] || { labels: {} };
+      const mergedLabels = {
         ...(existingLabels.labels as ThreadLabelsOrEmpty),
         ...(thread.labels as ThreadLabels),
       };
@@ -424,7 +429,7 @@ const sync = restate.object({
       // apply update to thread labels with current version, updating to new version.
       const newVersionId = ctx.rand.uuidv4();
       const updates = {
-        labels: labelsUpdated,
+        labels: mergedLabels,
         versionId: newVersionId,
       } as InsertThread;
       const updatedThread: { threadId: string; versionId: string }[] =
@@ -450,6 +455,83 @@ const sync = restate.object({
         `Updated thread with thread ID ${thread.threadId} version ID ${newVersionId}`,
       );
       return { threadId: thread.threadId, versionId: newVersionId };
+    },
+    deleteThreadLabels: async (
+      ctx: restate.ObjectContext,
+      deletes: DeleteLabelIds,
+    ): Promise<{
+      threadId: string;
+      versionId: string;
+    }> => {
+      console.log("invoking deleteThreadLabels...");
+      const currVersionId = await ctx.run(
+        "read current thread version",
+        async () => {
+          // first read the current thread version from the database.
+          const results = await syncdb
+            .select({ versionId: schema.thread.versionId })
+            .from(schema.thread)
+            .where(eq(schema.thread.threadId, deletes.threadId));
+          // if the thread does not exist, version is null
+          if (results.length !== 1) {
+            return null;
+          }
+          // found the thread with version ID return it.
+          return results[0].versionId;
+        },
+      );
+      if (!currVersionId) {
+        throw new restate.TerminalError(
+          `Thread with ID ${deletes.threadId} does not exist`,
+        );
+      }
+
+      // query existing labels for the thread and add new labels
+      // merging the new labels with existing labels.
+      const existingLabelRows: any = await syncdb
+        .select({ labels: schema.thread.labels })
+        .from(schema.thread)
+        .where(eq(schema.thread.threadId, deletes.threadId));
+
+      const existingLabels = existingLabelRows[0] || { labels: {} };
+      const { labels } = existingLabels;
+
+      // Creates a new object excluding the specified labels
+      const filteredLabels = Object.fromEntries(
+        Object.entries(labels).filter(
+          ([key]) => !deletes.labelIds.includes(key),
+        ),
+      );
+
+      // apply update to thread labels with current version, updating to new version.
+      const newVersionId = ctx.rand.uuidv4();
+      const updates = {
+        labels: filteredLabels,
+        versionId: newVersionId,
+      } as InsertThread;
+      const updatedThread: { threadId: string; versionId: string }[] =
+        await syncdb
+          .update(schema.thread)
+          .set({ ...updates })
+          .where(
+            and(
+              eq(schema.thread.threadId, deletes.threadId),
+              eq(schema.thread.versionId, currVersionId),
+            ),
+          )
+          .returning({
+            threadId: schema.thread.threadId,
+            versionId: schema.thread.versionId,
+          });
+      if (updatedThread.length !== 1) {
+        throw new restate.TerminalError(
+          `Failed to update thread with thread ID ${deletes.threadId} version ID ${newVersionId}`,
+        );
+      }
+      console.log(
+        `Updated thread with thread ID ${deletes.threadId} version ID ${newVersionId}`,
+      );
+      return { threadId: deletes.threadId, versionId: newVersionId };
     },
   },
 });

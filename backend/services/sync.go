@@ -411,3 +411,57 @@ func (sy *SyncService) SyncThreadLabelsRPC(
 	}
 	return inSync, nil
 }
+
+func (sy *SyncService) SyncDeleteThreadLabelsRPC(
+	ctx context.Context, threadId string, labelIds []string) (models.ThreadInSync, error) {
+	hub := sentry.GetHubFromContext(ctx)
+	inSync := models.ThreadInSync{}
+
+	restateBaseUrl := zyg.RestateRPCURL()
+	client := &http.Client{}
+
+	requestBody := RequestBody{
+		"threadId": threadId,
+		"labelIds": labelIds,
+	}
+
+	jsonData, err := requestBody.ToJSON()
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to marshal json", slog.Any("err", err))
+		return models.ThreadInSync{}, err
+	}
+	url := fmt.Sprintf("%s/sync/%s/deleteThreadLabels", restateBaseUrl, threadId)
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to create sync request", slog.Any("err", err))
+		return models.ThreadInSync{}, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to sync thread", slog.Any("err", err))
+		return models.ThreadInSync{}, err
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			return
+		}
+	}(resp.Body)
+
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		hub.CaptureException(err)
+		return models.ThreadInSync{}, err
+	}
+	err = json.Unmarshal(responseBody, &inSync)
+	if err != nil {
+		hub.CaptureException(err)
+		slog.Error("failed to unmarshal sync response", slog.Any("err", err))
+		return models.ThreadInSync{}, err
+	}
+	return inSync, nil
+}

@@ -11,4 +11,5 @@ type SyncServicer interface {
 	SyncMemberRPC(ctx context.Context, member models.Member) (models.MemberInSync, error)
 	SyncThreadRPC(ctx context.Context, thread models.Thread, labels *[]models.ThreadLabel) (models.ThreadInSync, error)
 	SyncThreadLabelsRPC(ctx context.Context, threadId string, labels []models.ThreadLabel) (models.ThreadInSync, error)
+	SyncDeleteThreadLabelsRPC(ctx context.Context, threadId string, labelIds []string) (models.ThreadInSync, error)
 }

@@ -122,6 +122,7 @@ func NewServer(
 		NewEnsureMemberAuth(th.handleSetThreadLabel, authService))
 	mux.Handle("GET /workspaces/{workspaceId}/threads/{threadId}/labels/{$}",
 		NewEnsureMemberAuth(th.handleGetThreadLabels, authService))
+	// synced
 	mux.Handle("DELETE /workspaces/{workspaceId}/threads/{threadId}/labels/{labelId}/{$}",
 		NewEnsureMemberAuth(th.handleDeleteThreadLabel, authService))
 
