@@ -12,7 +12,8 @@ dependencies = [
     "hypercorn>=0.17.3",
     "logfire>=3.4.0",
     "pydantic>=2.10.6",
-    "pydantic-ai>=0.0.21",
+    "pydantic-ai[logfire]>=0.0.21",
+    "python-dotenv>=1.0.1",
     "restate-sdk==0.4.1",
     "ruff>=0.9.3",
 ]
