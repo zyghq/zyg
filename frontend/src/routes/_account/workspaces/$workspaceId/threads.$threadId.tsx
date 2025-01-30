@@ -46,10 +46,7 @@ function ThreadDetailLayout() {
         } as React.CSSProperties
       }
     >
-      <QueueSidebar
-        activeThread={activeThread}
-        workspaceId={workspaceId}
-      />
+      <QueueSidebar activeThread={activeThread} workspaceId={workspaceId} />
       <SidebarInset>
         <header className="sticky top-0 flex shrink-0 flex-col gap-2 bg-background p-4 shadow-sm">
           <div className="flex w-full items-center space-x-2">

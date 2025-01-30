@@ -1,5 +1,6 @@
-import { Icons, stageIcon } from "@/components/icons.tsx";
+import { stageIcon } from "@/components/icons.tsx";
 import { PriorityIcons } from "@/components/icons.tsx";
+import { Spinner } from "@/components/spinner";
 import {
   Avatar,
   AvatarFallback,
@@ -52,14 +53,11 @@ import {
   SelectValue,
 } from "@/components/ui/select.tsx";
 import { updateThread } from "@/db/api.ts";
-import {
-  deleteThreadLabel,
-  getThreadLabels,
-  putThreadLabel,
-} from "@/db/api.ts";
+import { deleteThreadLabel, putThreadLabel } from "@/db/api.ts";
 import { threadStatusVerboseName } from "@/db/helpers.ts";
 import { ThreadResponse } from "@/db/models.ts";
-import { Label, ThreadLabelResponse } from "@/db/models.ts";
+import { ThreadLabelResponse } from "@/db/models.ts";
+import { ThreadLabelShape } from "@/db/shapes";
 import { Priority, StageType, WorkspaceStoreState } from "@/db/store.ts";
 import { cn } from "@/lib/utils";
 import { useWorkspaceStore } from "@/providers";
@@ -72,7 +70,6 @@ import {
   PlusCircledIcon,
   PlusIcon,
 } from "@radix-ui/react-icons";
-import { useQuery } from "@tanstack/react-query";
 import { useMutation } from "@tanstack/react-query";
 import * as React from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
@@ -645,32 +642,19 @@ export function ThreadLabels({
     (state: WorkspaceStoreState) => state.viewLabels(state),
   );
 
-  const threadLabels = useStore(
+  const threadLabels = useStore(workspaceStore, (state: WorkspaceStoreState) =>
+    state.viewThreadLabels(state, threadId),
+  );
+  const addThreadLabel = useStore(
     workspaceStore,
-    (state: WorkspaceStoreState) => state.viewThreadLabels(state, threadId),
+    (state: WorkspaceStoreState) => state.addThreadLabel,
+  );
+  const removeThreadLabel = useStore(
+    workspaceStore,
+    (state: WorkspaceStoreState) => state.removeThreadLabel,
   );
 
-
-  // const {
-  //   data: threadLabels,
-  //   error,
-  //   isPending,
-  //   refetch,
-  // } = useQuery({
-  //   enabled: !!threadId,
-  //   queryFn: async () => {
-  //     const { data, error } = await getThreadLabels(
-  //       token,
-  //       workspaceId,
-  //       threadId,
-  //     );
-  //     if (error) throw new Error("failed to fetch thread labels");
-  //     return data as ThreadLabelResponse[];
-  //   },
-  //   queryKey: ["threadLabels", workspaceId, threadId, token],
-  // });
-
-  const threadLabelMutation = useMutation({
+  const addThreadLabelMutation = useMutation({
     mutationFn: async (values: { icon: string; name: string }) => {
       const { data, error } = await putThreadLabel(
         token,
@@ -690,8 +674,15 @@ export function ThreadLabels({
     onError: (error) => {
       console.error(error);
     },
-    onSuccess: async () => {
-      // await refetch();
+    onSuccess: async (data) => {
+      const { labelId, name, createdAt, updatedAt } = data;
+      const label = {
+        labelId,
+        name,
+        createdAt,
+        updatedAt,
+      } as ThreadLabelShape;
+      addThreadLabel(threadId, label);
     },
   });
 
@@ -710,15 +701,21 @@ export function ThreadLabels({
       if (!data) {
         throw new Error("no data returned");
       }
-      return data;
+      return {
+        ok: data,
+        labelId: labelId,
+      };
     },
     onError: (error) => {
       console.error(error);
     },
-    onSuccess: async () => {
-      // await refetch();
+    onSuccess: async (data) => {
+      if (data.ok) removeThreadLabel(threadId, data.labelId);
     },
   });
+
+  const { isPending: isAdding } = addThreadLabelMutation;
+  const { isPending: isDeleting } = deleteThreadLabelMutation;
 
   const isChecked = (labelId: string) => {
     return threadLabels?.some((label) => label.labelId === labelId);
@@ -728,28 +725,11 @@ export function ThreadLabels({
     if (isChecked(labelId)) {
       deleteThreadLabelMutation.mutate(labelId);
     } else {
-      threadLabelMutation.mutate({ icon: icon || "", name });
+      addThreadLabelMutation.mutate({ icon: icon || "", name });
     }
   }
 
   const renderLabels = () => {
-    // if (isPending) {
-    //   return (
-    //     <Badge variant="outline">
-    //       <BorderDashedIcon className="h-4 w-4" />
-    //     </Badge>
-    //   );
-    // }
-
-    // if (error) {
-    //   return (
-    //     <div className="flex items-center gap-1">
-    //       <Icons.oops className="h-5 w-5" />
-    //       <div className="text-xs text-red-500">Something went wrong</div>
-    //     </div>
-    //   );
-    // }
-
     return (
       <React.Fragment>
         {threadLabels.length > 0 ? (
@@ -767,6 +747,11 @@ export function ThreadLabels({
             <BorderDashedIcon className="h-4 w-4" />
           </Badge>
         )}
+        {isAdding || isDeleting ? (
+          <div className="flex items-center">
+            <Spinner className="text h-3 w-3 animate-spin text-muted-foreground" />
+          </div>
+        ) : null}
       </React.Fragment>
     );
   };
@@ -819,7 +804,7 @@ export function ThreadLabels({
         </DropdownMenu>
       </div>
       <div className="flex flex-wrap gap-1 py-1">{renderLabels()}</div>
-      {threadLabelMutation.isError && (
+      {addThreadLabelMutation.isError && (
         <div className="mt-1 text-xs text-red-500">Something went wrong</div>
       )}
     </div>

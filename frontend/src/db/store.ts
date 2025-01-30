@@ -133,12 +133,12 @@ export type WorkspaceStoreState = IWorkspaceEntities &
 
 interface IWorkspaceStoreActions {
   // Currently being used in settings page
+  // Adds label for the workspace.
   addLabel(label: Label): void;
 
   addPat(pat: Pat): void;
 
   addThreadLabel(threadId: string, label: ThreadLabelShape): void;
-
   applyThreadFilters(
     status: StatusType,
     assignees: AssigneesFiltersType,
@@ -167,6 +167,8 @@ interface IWorkspaceStoreActions {
   getWorkspaceName(state: WorkspaceStoreState): string;
 
   isInSync(state: WorkspaceStoreState): boolean;
+
+  removeThreadLabel(threadId: string, labelId: string): void;
 
   setCustomersShapeHandle(handle: null | string): void;
 
@@ -545,12 +547,22 @@ export const buildWorkspaceStore = (
         });
       },
 
+      // adds label to a specific thread.
       addThreadLabel: (threadId: string, label: ThreadLabelShape) => {
         set((state) => {
           const thread = state.threads?.get(threadId);
           if (thread) {
             thread.labels ??= {};
             thread.labels[label.labelId] = label;
+          }
+        });
+      },
+
+      removeThreadLabel: async (threadId: string, labelId: string) => {
+        set((state) => {
+          const thread = state.threads?.get(threadId);
+          if (thread) {
+            delete thread.labels?.[labelId];
           }
         });
       },

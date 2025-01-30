@@ -10,7 +10,7 @@ import {
   VerifyDNS,
 } from "@/components/workspace/settings/email/forms.tsx";
 import { getEmailSetting } from "@/db/api";
-import { PostmarkMailServerSetting } from "@/db/schema";
+import { PostmarkMailServerSetting } from "@/db/models";
 import { WorkspaceStoreState } from "@/db/store";
 import { useWorkspaceStore } from "@/providers";
 import { useQuery } from "@tanstack/react-query";
