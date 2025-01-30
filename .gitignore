@@ -85,3 +85,6 @@ redisdb/
 .env.sentry-build-plugin
 
 .env.electric
+
+# Logfire
+.logfire

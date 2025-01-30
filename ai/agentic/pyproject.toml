@@ -1,0 +1,18 @@
+[project]
+name = "agentic"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+authors = [
+    { name = "Arun", email = "arunprakash27ar@gmail.com" },
+    { name = "Sanchit Rk", email = "sanchitrrk@gmail.com" }
+]
+dependencies = [
+    "hypercorn>=0.17.3",
+    "logfire>=3.4.0",
+    "pydantic>=2.10.6",
+    "pydantic-ai>=0.0.21",
+    "restate-sdk==0.4.1",
+    "ruff>=0.9.3",
+]
