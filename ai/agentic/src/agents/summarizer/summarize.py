@@ -20,6 +20,8 @@ from .prompts import (
     QuestionAnswerSummary,
 )
 
+logger = logging.getLogger(__name__)
+
 API_KEY = os.getenv("GEMINI_API_KEY")
 if not API_KEY:
     raise ValueError("GEMINI_API_KEY environment variable is not set")
@@ -129,8 +131,6 @@ AGENTS: Dict[int, Agent] = {
 
 
 async def summarize_text_fn(request: SummarizeRequest) -> SummarizeResponse:
-    logger = logging.getLogger(__name__)
-
     try:
         # Determine which prompt version to use
         prompt_version = (
@@ -192,8 +192,8 @@ async def summarize_text_fn(request: SummarizeRequest) -> SummarizeResponse:
             prompt_version_used=prompt_version,
             metadata=metadata,
         )
-    except PromptError:
-        raise
+    except PromptError as e:
+        raise e
     except Exception as e:
         logger.error(f"Error generating summary: {str(e)}", exc_info=True)
         raise SummarizerError(detail=f"Error generating summary: {str(e)}")
