@@ -1,6 +1,5 @@
 import pluginJs from "@eslint/js";
 import prettier from "eslint-config-prettier";
-import perfectionist from "eslint-plugin-perfectionist";
 import pluginReact from "eslint-plugin-react";
 import globals from "globals";
 import tseslint from "typescript-eslint";
@@ -18,7 +17,6 @@ export default [
   },
   pluginReact.configs.flat["jsx-runtime"],
   ...tseslint.configs.recommended,
-  perfectionist.configs["recommended-natural"],
   {
     files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"],
     ignores: [
@@ -39,8 +37,6 @@ export default [
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-require-imports": "off",
-      "perfectionist/sort-modules": "off",
-      "perfectionist/sort-objects": "off",
       "react/no-unescaped-entities": "off",
       "react/prop-types": "off",
     },
