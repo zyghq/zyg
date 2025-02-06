@@ -222,30 +222,6 @@ CREATE TABLE postmark_mail_server_setting
 --     CONSTRAINT thread_qa_answer_thread_qa_id_fkey FOREIGN KEY (thread_qa_id) REFERENCES thread_qa (thread_id)
 -- );
 
-CREATE TABLE inbound_message
-(
-    message_id   VARCHAR(255) NOT NULL,
-    first_seq_id VARCHAR(255) NOT NULL,
-    last_seq_id  VARCHAR(255) NOT NULL,
-    preview_text TEXT         NOT NULL,
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT inbound_message_message_id_pkey PRIMARY KEY (message_id)
-);
-
-CREATE TABLE outbound_message
-(
-    message_id   VARCHAR(255) NOT NULL,
-    first_seq_id VARCHAR(255) NOT NULL,
-    last_seq_id  VARCHAR(255) NOT NULL,
-    preview_text TEXT         NOT NULL,
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT outbound_message_message_id_pkey PRIMARY KEY (message_id)
-);
-
 -- Represents a thread which is a conversation between a customer and members
 -- Each thread belongs to a workspace and is associated with a customer
 -- Threads can be assigned to members and have various statuses and priorities
@@ -265,10 +241,6 @@ CREATE TABLE thread
     replied              BOOLEAN      NOT NULL DEFAULT FALSE,             -- Whether a member has replied
     priority             VARCHAR(255) NOT NULL,                           -- Thread priority level
     channel              VARCHAR(127) NOT NULL,                           -- Communication channel used
---     deprecated
-    inbound_message_id   VARCHAR(255) NULL,                               -- Associated incoming message if any
---     deprecated
-    outbound_message_id  VARCHAR(255) NULL,                               -- Associated outgoing message if any
     last_inbound_at      TIMESTAMP    NULL,
     last_outbound_at     TIMESTAMP    NULL,
     created_by_id        VARCHAR(255) NOT NULL,                           -- Member who created the thread
@@ -281,10 +253,6 @@ CREATE TABLE thread
     CONSTRAINT thread_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
     CONSTRAINT thread_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES member (member_id),
     CONSTRAINT thread_status_changed_by_id_fkey FOREIGN KEY (status_changed_by_id) REFERENCES member (member_id),
-    CONSTRAINT thread_inbound_message_id_fkey FOREIGN KEY (inbound_message_id)
-        REFERENCES inbound_message (message_id),
-    CONSTRAINT thread_outbound_message_id_fkey FOREIGN KEY (outbound_message_id)
-        REFERENCES outbound_message (message_id),
     CONSTRAINT thread_created_by_id_fkey FOREIGN KEY (created_by_id) REFERENCES member (member_id),
     CONSTRAINT thread_updated_by_id_fkey FOREIGN KEY (updated_by_id) REFERENCES member (member_id)
 );
@@ -452,7 +420,6 @@ CREATE TABLE widget_session
 -- Each event is uniquely identified by the event_id
 -- Event can be linked to customer or thread
 -- Global events are not linked to customer or thread
--- TODO: add support for `threads`
 CREATE TABLE event
 (
     event_id     VARCHAR(255) NOT NULL,                      -- primary key

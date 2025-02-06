@@ -75,13 +75,10 @@ CREATE TABLE thread
     created_by_id        VARCHAR(255) NOT NULL,                           -- Member who created the thread
     updated_by_id        VARCHAR(255) NOT NULL,                           -- Member who last updated the thread
     labels               JSONB        NULL,
-
-    inbound_seq_id       VARCHAR(255) NULL,                               -- incrementing inbound sequence ID
-    outbound_seq_id      VARCHAR(255) NULL,                               -- incrementing outbound sequence ID
-
+    last_inbound_at      TIMESTAMP    NULL,
+    last_outbound_at     TIMESTAMP    NULL,
     created_at           TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
     updated_at           TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
-
     version_id           UUID         NOT NULL,
     synced_at            TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
 
