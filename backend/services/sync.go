@@ -243,20 +243,13 @@ func (sy *SyncService) SyncThreadRPC(
 	restateBaseUrl := zyg.RestateRPCURL()
 	client := &http.Client{}
 
-	var previewText string
-	if thread.InboundMessage != nil {
-		previewText = thread.InboundMessage.PreviewText
-	} else if thread.OutboundMessage != nil {
-		previewText = thread.OutboundMessage.PreviewText
-	}
-
 	requestBody := RequestBody{
 		"threadId":          thread.ThreadId,
 		"workspaceId":       thread.WorkspaceId,
 		"customerId":        thread.Customer.CustomerId,
 		"title":             thread.Title,
 		"description":       thread.Description,
-		"previewText":       previewText,
+		"previewText":       thread.PreviewText,
 		"status":            thread.ThreadStatus.Status,
 		"statusChangedAt":   thread.ThreadStatus.StatusChangedAt,
 		"statusChangedById": thread.ThreadStatus.StatusChangedBy.MemberId,
@@ -270,6 +263,18 @@ func (sy *SyncService) SyncThreadRPC(
 		"updatedAt":         thread.UpdatedAt,
 	}
 
+	if thread.LastInboundAt != nil {
+		requestBody.SetField("lastInboundAt", thread.LastInboundAt)
+	} else {
+		requestBody.SetField("lastInboundAt", nil)
+	}
+
+	if thread.LastOutboundAt != nil {
+		requestBody.SetField("lastOutboundAt", thread.LastOutboundAt)
+	} else {
+		requestBody.SetField("lastOutboundAt", nil)
+	}
+
 	// set or remove assigned member
 	if thread.AssignedMember != nil {
 		requestBody.SetField("assigneeId", thread.AssignedMember.MemberId)
@@ -277,20 +282,6 @@ func (sy *SyncService) SyncThreadRPC(
 	} else {
 		requestBody.SetField("assigneeId", nil)
 		requestBody.SetField("assignedAt", nil)
-	}
-
-	// set or remove inbound sequence ID
-	if thread.InboundMessage != nil {
-		requestBody.SetField("inboundSeqId", thread.InboundMessage.LastSeqId)
-	} else {
-		requestBody.SetField("inboundSeqId", nil)
-	}
-
-	// set or remove outbound sequence ID
-	if thread.OutboundMessage != nil {
-		requestBody.SetField("outboundSeqId", thread.OutboundMessage.LastSeqId)
-	} else {
-		requestBody.SetField("outboundSeqId", nil)
 	}
 
 	// only set labels if the labels is not nil, otherwise ignore setting the value in request body.

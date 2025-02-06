@@ -34,15 +34,15 @@ func NewThreadService(
 
 // CreateInboundThreadChat creates a new inbound thread chat for the customer.
 // This is usually triggered when a customer sends a message.
-// Inbound is always assumed as a customer message.
+// Inbound is always assumed as a customer sending the message.
 func (s *ThreadService) CreateInboundThreadChat(
 	ctx context.Context, workspaceId string, customer models.Customer,
-	createdBy models.MemberActor, messageText string,
-) (models.Thread, models.Message, error) {
+	createdBy models.MemberActor, messageText string) (models.Thread, models.Message, error) {
 	// Creates new thread for the in-app chat channel.
 	channel := models.ThreadChannel{}.InAppChat() // source channel the thread belongs to
 	newThread := models.NewThread(
 		workspaceId, customer.AsCustomerActor(), createdBy, channel,
+		models.SetThreadInboundTime(time.Now().UTC()), // set the inbound time
 	)
 	// Create new Customer inbound message.
 	newMessage := models.NewMessage(
@@ -51,17 +51,13 @@ func (s *ThreadService) CreateInboundThreadChat(
 		models.SetMessageTextBody(messageText),
 		models.SetMarkdownBody(messageText),
 	)
-	newThread.SetNextInboundSeq(newMessage.PreviewText())
+	newThread.PreviewText = newMessage.PreviewText()
 
-	threadMessage := models.ThreadMessage{
-		Thread:  newThread,
-		Message: newMessage,
-	}
-	insThread, insMessage, err := s.repo.InsertInboundThreadMessage(ctx, threadMessage)
+	thread, message, err := s.repo.InsertInboundThreadMessage(ctx, newThread, newMessage)
 	if err != nil {
 		return models.Thread{}, models.Message{}, ErrThreadChat
 	}
-	return insThread, insMessage, nil
+	return *thread, *message, nil
 }
 
 func (s *ThreadService) GetPostmarkInReplyThread(
@@ -90,8 +86,8 @@ func (s *ThreadService) IsPostmarkInboundMessageProcessed(ctx context.Context, m
 // If attachments exist, they are uploaded and persisted. Returns the updated or new thread and message, or an error if any.
 func (s *ThreadService) ProcessPostmarkInbound(
 	ctx context.Context, workspaceId string,
-	customer models.CustomerActor, createdBy models.MemberActor, inboundMessage *models.PostmarkInboundMessage,
-) (models.Thread, models.Message, error) {
+	customer models.CustomerActor, createdBy models.MemberActor,
+	inboundMessage *models.PostmarkInboundMessage) (models.Thread, models.Message, error) {
 	hub := sentry.GetHubFromContext(ctx)
 
 	// Check if an existing thread already exists for the inbound Postmark based on reply mail message ID
@@ -111,6 +107,7 @@ func (s *ThreadService) ProcessPostmarkInbound(
 					workspaceId, customer, createdBy, channel,
 					models.SetThreadTitle(inboundMessage.Subject),
 					models.SetThreadDescription(inboundMessage.TextBody),
+					models.SetThreadInboundTime(time.Now().UTC()), // set inbound time
 				)
 				return newThread, false, nil
 			}
@@ -128,6 +125,7 @@ func (s *ThreadService) ProcessPostmarkInbound(
 			workspaceId, customer, createdBy, channel,
 			models.SetThreadTitle(inboundMessage.Subject),
 			models.SetThreadDescription(inboundMessage.TextBody),
+			models.SetThreadInboundTime(time.Now().UTC()), // set inbound time
 		)
 		// Return new thread.
 		return newThread, false, nil
@@ -160,7 +158,9 @@ func (s *ThreadService) ProcessPostmarkInbound(
 		models.SetMessageTextBody(inboundMessage.TextBody),
 		models.SetMarkdownBody(markdownBody),
 	)
-	thread.SetNextInboundSeq(newMessage.PreviewText())
+	// Set new preview text from new message
+	thread.PreviewText = newMessage.PreviewText()
+
 	// Convert postmark inbound message into Postmark message log.
 	// The is persisted for both inbound and outbound messages.
 	// Inbound as received from Postmark.
@@ -168,16 +168,18 @@ func (s *ThreadService) ProcessPostmarkInbound(
 
 	// If thread exists, append to the existing thread.
 	if threadExists {
-		newMessage, err = s.repo.AppendPostmarkInboundThreadMessage(
-			ctx, thread.ThreadId, thread.InboundMessage, &postmarkMessageLog, newMessage)
+		thread.SetLatestInboundAt() // update latest inbound time for existing thread
+		newMessage, err = s.repo.AppendPostmarkInboundThreadMessage(ctx, thread, newMessage, &postmarkMessageLog)
 		if err != nil {
 			hub.CaptureException(err)
 			slog.Error("failed to append postmark inbound message to existing thread", slog.Any("err", err))
 			return models.Thread{}, models.Message{}, ErrPostmarkInbound
 		}
 	} else {
+		// insert new thread with message
 		thread, newMessage, err = s.repo.InsertPostmarkInboundThreadMessage(
-			ctx, thread, &postmarkMessageLog, newMessage)
+			ctx, thread, newMessage, &postmarkMessageLog,
+		)
 		if err != nil {
 			hub.CaptureException(err)
 			slog.Error("failed to insert postmark inbound message to new thread", slog.Any("err", err))
@@ -337,10 +339,9 @@ func (s *ThreadService) ListThreadLabels(
 	return labels, nil
 }
 
-// AppendInboundThreadChat adds inbound message to an existing thread.
+// AppendInboundThreadChat appends inbound message to an existing thread.
 func (s *ThreadService) AppendInboundThreadChat(
 	ctx context.Context, thread models.Thread, messageText string) (models.Message, error) {
-
 	channel := models.ThreadChannel{}.InAppChat()
 	newMessage := models.NewMessage(
 		thread.ThreadId, channel,
@@ -348,23 +349,19 @@ func (s *ThreadService) AppendInboundThreadChat(
 		models.SetMessageTextBody(messageText),
 		models.SetMarkdownBody(messageText),
 	)
-	thread.SetNextInboundSeq(newMessage.PreviewText())
+	thread.PreviewText = newMessage.PreviewText()
+	thread.SetLatestInboundAt()
 
-	threadMessage := models.ThreadMessage{
-		Thread:  &thread,
-		Message: newMessage,
-	}
-	message, err := s.repo.AppendInboundThreadMessage(ctx, threadMessage)
+	_, message, err := s.repo.AppendInboundThreadMessage(ctx, &thread, newMessage)
 	if err != nil {
 		return models.Message{}, ErrThreadMessage
 	}
-	return message, nil
+	return *message, nil
 }
 
 // AppendOutboundThreadChat appends a new chat message to an existing thread.
 func (s *ThreadService) AppendOutboundThreadChat(
 	ctx context.Context, thread models.Thread, member models.Member, messageText string) (models.Message, error) {
-
 	channel := models.ThreadChannel{}.InAppChat()
 	newMessage := models.NewMessage(
 		thread.ThreadId, channel,
@@ -372,17 +369,14 @@ func (s *ThreadService) AppendOutboundThreadChat(
 		models.SetMessageTextBody(messageText),
 		models.SetMarkdownBody(messageText),
 	)
-	thread.SetNextInboundSeq(newMessage.PreviewText())
+	thread.PreviewText = newMessage.PreviewText()
+	thread.SetLatestOutboundAt() // set outbound time
 
-	threadMessage := models.ThreadMessage{
-		Thread:  &thread,
-		Message: newMessage,
-	}
-	message, err := s.repo.AppendOutboundThreadMessage(ctx, threadMessage)
+	_, message, err := s.repo.AppendOutboundThreadMessage(ctx, &thread, newMessage)
 	if err != nil {
 		return models.Message{}, ErrThreadMessage
 	}
-	return message, nil
+	return *message, nil
 }
 
 func (s *ThreadService) SendThreadMailReply(
@@ -445,7 +439,8 @@ func (s *ThreadService) SendThreadMailReply(
 		models.SetMessageTextBody(textBodyFmt),
 		models.SetMarkdownBody(markdownBody),
 	)
-	thread.SetNextOutboundSeq(newMessage.PreviewText())
+	thread.PreviewText = newMessage.PreviewText()
+	thread.SetLatestOutboundAt() // set the outbound time
 
 	pmEmailReq := email.NewPostmarkEmailReq(
 		replySubject, from, customer.Email.String,
@@ -483,11 +478,10 @@ func (s *ThreadService) SendThreadMailReply(
 		CreatedAt:          time.Now(),
 		UpdatedAt:          time.Now(),
 	}
-	// Set outbound mail message ID for this message
+	// Set outbound mail message ID for this message with Postmark delivery domain
 	messageLog.SetOutboundMailMessageId(zyg.PostmarkDeliveryDomain())
 
-	newMessage, err = s.repo.AppendPostmarkInboundThreadMessage(
-		ctx, thread.ThreadId, thread.InboundMessage, &messageLog, newMessage)
+	newMessage, err = s.repo.AppendPostmarkInboundThreadMessage(ctx, &thread, newMessage, &messageLog)
 	if err != nil {
 		hub.CaptureException(err)
 		slog.Error("failed to append postmark inbound thread message", slog.Any("err", err))

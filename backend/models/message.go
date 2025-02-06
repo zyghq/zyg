@@ -158,12 +158,6 @@ func (p *PostmarkInboundMessage) ToPostmarkMessageLog(messageId string) Postmark
 	}
 }
 
-// ThreadMessage combines a Thread and its associated Message.
-type ThreadMessage struct {
-	Thread  *Thread
-	Message *Message
-}
-
 type PostmarkMessageLog struct {
 	MessageId          string
 	Payload            map[string]interface{}
@@ -185,9 +179,4 @@ type PostmarkMessageLog struct {
 // This should be only used for outbound mails as inbound mail already has it generated from the client.
 func (m *PostmarkMessageLog) SetOutboundMailMessageId(d string) {
 	m.MailMessageId = fmt.Sprintf("<%s@%s>", m.PostmarkMessageId, d)
-}
-
-type PostmarkMailThreadMessage struct {
-	PostmarkMessageLog *PostmarkMessageLog
-	ThreadMessage      *ThreadMessage
 }

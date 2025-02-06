@@ -265,8 +265,12 @@ CREATE TABLE thread
     replied              BOOLEAN      NOT NULL DEFAULT FALSE,             -- Whether a member has replied
     priority             VARCHAR(255) NOT NULL,                           -- Thread priority level
     channel              VARCHAR(127) NOT NULL,                           -- Communication channel used
+--     deprecated
     inbound_message_id   VARCHAR(255) NULL,                               -- Associated incoming message if any
+--     deprecated
     outbound_message_id  VARCHAR(255) NULL,                               -- Associated outgoing message if any
+    last_inbound_at      TIMESTAMP    NULL,
+    last_outbound_at     TIMESTAMP    NULL,
     created_by_id        VARCHAR(255) NOT NULL,                           -- Member who created the thread
     updated_by_id        VARCHAR(255) NOT NULL,                           -- Member who last updated the thread
     created_at           TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,

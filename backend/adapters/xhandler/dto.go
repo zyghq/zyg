@@ -132,72 +132,65 @@ type MemberActorResp struct {
 }
 
 type ThreadResp struct {
-	ThreadId           string
-	Customer           CustomerActorResp
-	Title              string
-	Description        string
-	Status             string
-	Replied            bool
-	Priority           string
-	Channel            string
-	PreviewText        string
-	Assignee           *MemberActorResp
-	InboundFirstSeqId  *string
-	InboundLastSeqId   *string
-	OutboundFirstSeqId *string
-	OutboundLastSeqId  *string
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
+	ThreadId       string
+	Customer       CustomerActorResp
+	Title          string
+	Description    string
+	Status         string
+	Replied        bool
+	Priority       string
+	Channel        string
+	PreviewText    string
+	Assignee       *MemberActorResp
+	LastInboundAt  *time.Time
+	LastOutboundAt *time.Time
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 func (th ThreadResp) MarshalJSON() ([]byte, error) {
 	aux := &struct {
-		ThreadId           string            `json:"threadId"`
-		Customer           CustomerActorResp `json:"customer"`
-		Title              string            `json:"title"`
-		Description        string            `json:"description"`
-		Status             string            `json:"status"`
-		Replied            bool              `json:"replied"`
-		Priority           string            `json:"priority"`
-		Channel            string            `json:"channel"`
-		PreviewText        string            `json:"previewText"`
-		Assignee           *MemberActorResp  `json:"assignee,omitempty"`
-		InboundFirstSeqId  *string           `json:"inboundFirstSeqId,omitempty"`
-		InboundLastSeqId   *string           `json:"inboundLastSeqId,omitempty"`
-		OutboundFirstSeqId *string           `json:"outboundFirstSeqId,omitempty"`
-		OutboundLastSeqId  *string           `json:"outboundLastSeqId,omitempty"`
-		CreatedAt          string            `json:"createdAt"`
-		UpdatedAt          string            `json:"updatedAt"`
+		ThreadId       string            `json:"threadId"`
+		Customer       CustomerActorResp `json:"customer"`
+		Title          string            `json:"title"`
+		Description    string            `json:"description"`
+		Status         string            `json:"status"`
+		Replied        bool              `json:"replied"`
+		Priority       string            `json:"priority"`
+		Channel        string            `json:"channel"`
+		PreviewText    string            `json:"previewText"`
+		Assignee       *MemberActorResp  `json:"assignee,omitempty"`
+		LastInboundAt  *time.Time        `json:"lastInboundAt,omit"`
+		LastOutboundAt *time.Time        `json:"lastOutboundAt,omitempty"`
+		CreatedAt      string            `json:"createdAt"`
+		UpdatedAt      string            `json:"updatedAt"`
 	}{
-		ThreadId:           th.ThreadId,
-		Customer:           th.Customer,
-		Title:              th.Title,
-		Description:        th.Description,
-		Status:             th.Status,
-		Replied:            th.Replied,
-		Priority:           th.Priority,
-		Channel:            th.Channel,
-		PreviewText:        th.PreviewText,
-		Assignee:           th.Assignee,
-		InboundFirstSeqId:  th.InboundFirstSeqId,
-		InboundLastSeqId:   th.InboundLastSeqId,
-		OutboundFirstSeqId: th.OutboundFirstSeqId,
-		OutboundLastSeqId:  th.OutboundLastSeqId,
-		CreatedAt:          th.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:          th.UpdatedAt.Format(time.RFC3339),
+		ThreadId:       th.ThreadId,
+		Customer:       th.Customer,
+		Title:          th.Title,
+		Description:    th.Description,
+		Status:         th.Status,
+		Replied:        th.Replied,
+		Priority:       th.Priority,
+		Channel:        th.Channel,
+		PreviewText:    th.PreviewText,
+		Assignee:       th.Assignee,
+		LastInboundAt:  th.LastInboundAt,
+		LastOutboundAt: th.LastOutboundAt,
+		CreatedAt:      th.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:      th.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
 }
 
 func (th ThreadResp) NewResponse(thread *models.Thread) ThreadResp {
 	var threadAssignee *MemberActorResp
-	var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string
+	var lastInboundAt, lastOutboundAt *time.Time
 
 	customer := CustomerActorResp{
 		CustomerId: thread.Customer.CustomerId,
 		Name:       thread.Customer.Name,
 	}
-
 	if thread.AssignedMember != nil {
 		threadAssignee = &MemberActorResp{
 			MemberId: thread.AssignedMember.MemberId,
@@ -205,34 +198,28 @@ func (th ThreadResp) NewResponse(thread *models.Thread) ThreadResp {
 		}
 	}
 
-	if thread.InboundMessage != nil {
-		inboundFirstSeqId = &thread.InboundMessage.FirstSeqId
-		inboundLastSeqId = &thread.InboundMessage.LastSeqId
+	if thread.LastInboundAt != nil {
+		lastInboundAt = thread.LastInboundAt
 	}
-
-	if thread.OutboundMessage != nil {
-		outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
-		outboundLastSeqId = &thread.OutboundMessage.LastSeqId
-
+	if thread.LastOutboundAt != nil {
+		lastOutboundAt = thread.LastOutboundAt
 	}
 
 	return ThreadResp{
-		ThreadId:           thread.ThreadId,
-		Customer:           customer,
-		Title:              thread.Title,
-		Description:        thread.Description,
-		Status:             thread.ThreadStatus.Status,
-		Replied:            thread.Replied,
-		Priority:           thread.Priority,
-		Channel:            thread.Channel,
-		PreviewText:        thread.CustomerPreviewText(),
-		Assignee:           threadAssignee,
-		InboundFirstSeqId:  inboundFirstSeqId,
-		InboundLastSeqId:   inboundLastSeqId,
-		OutboundFirstSeqId: outboundFirstSeqId,
-		OutboundLastSeqId:  outboundLastSeqId,
-		CreatedAt:          thread.CreatedAt,
-		UpdatedAt:          thread.UpdatedAt,
+		ThreadId:       thread.ThreadId,
+		Customer:       customer,
+		Title:          thread.Title,
+		Description:    thread.Description,
+		Status:         thread.ThreadStatus.Status,
+		Replied:        thread.Replied,
+		Priority:       thread.Priority,
+		Channel:        thread.Channel,
+		PreviewText:    thread.PreviewText,
+		Assignee:       threadAssignee,
+		LastInboundAt:  lastInboundAt,
+		LastOutboundAt: lastOutboundAt,
+		CreatedAt:      thread.CreatedAt,
+		UpdatedAt:      thread.UpdatedAt,
 	}
 }
 
@@ -287,70 +274,64 @@ func (m MessageResp) MarshalJSON() ([]byte, error) {
 }
 
 type ThreadChatResp struct {
-	ThreadId           string
-	Customer           CustomerActorResp
-	Title              string
-	Description        string
-	Status             string
-	Replied            bool
-	Priority           string
-	Channel            string
-	PreviewText        string
-	Assignee           *MemberActorResp
-	InboundFirstSeqId  *string
-	InboundLastSeqId   *string
-	OutboundFirstSeqId *string
-	OutboundLastSeqId  *string
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
-	Message            MessageResp `json:"message"`
+	ThreadId       string
+	Customer       CustomerActorResp
+	Title          string
+	Description    string
+	Status         string
+	Replied        bool
+	Priority       string
+	Channel        string
+	PreviewText    string
+	Assignee       *MemberActorResp
+	LastInboundAt  *time.Time
+	LastOutboundAt *time.Time
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	Message        MessageResp `json:"message"`
 }
 
-func (t ThreadChatResp) MarshalJSON() ([]byte, error) {
+func (th ThreadChatResp) MarshalJSON() ([]byte, error) {
 	aux := &struct {
-		ThreadId           string            `json:"threadId"`
-		Customer           CustomerActorResp `json:"customer"`
-		Title              string            `json:"title"`
-		Description        string            `json:"description"`
-		Status             string            `json:"status"`
-		Replied            bool              `json:"replied"`
-		Priority           string            `json:"priority"`
-		Channel            string            `json:"channel"`
-		PreviewText        string            `json:"previewText"`
-		Assignee           *MemberActorResp  `json:"assignee,omitempty"`
-		InboundFirstSeqId  *string           `json:"inboundFirstSeqId,omitempty"`
-		InboundLastSeqId   *string           `json:"inboundLastSeqId,omitempty"`
-		OutboundFirstSeqId *string           `json:"outboundFirstSeqId,omitempty"`
-		OutboundLastSeqId  *string           `json:"outboundLastSeqId,omitempty"`
-		CreatedAt          string            `json:"createdAt"`
-		UpdatedAt          string            `json:"updatedAt"`
-		Message            MessageResp       `json:"message"`
+		ThreadId       string            `json:"threadId"`
+		Customer       CustomerActorResp `json:"customer"`
+		Title          string            `json:"title"`
+		Description    string            `json:"description"`
+		Status         string            `json:"status"`
+		Replied        bool              `json:"replied"`
+		Priority       string            `json:"priority"`
+		Channel        string            `json:"channel"`
+		PreviewText    string            `json:"previewText"`
+		Assignee       *MemberActorResp  `json:"assignee,omitempty"`
+		LastInboundAt  *time.Time        `json:"lastInboundAt,omit"`
+		LastOutboundAt *time.Time        `json:"lastOutboundAt,omitempty"`
+		CreatedAt      string            `json:"createdAt"`
+		UpdatedAt      string            `json:"updatedAt"`
+		Message        MessageResp       `json:"message"`
 	}{
-		ThreadId:           t.ThreadId,
-		Customer:           t.Customer,
-		Title:              t.Title,
-		Description:        t.Description,
-		Status:             t.Status,
-		Replied:            t.Replied,
-		Priority:           t.Priority,
-		Channel:            t.Channel,
-		PreviewText:        t.PreviewText,
-		Assignee:           t.Assignee,
-		InboundFirstSeqId:  t.InboundFirstSeqId,
-		InboundLastSeqId:   t.InboundLastSeqId,
-		OutboundFirstSeqId: t.OutboundFirstSeqId,
-		OutboundLastSeqId:  t.OutboundLastSeqId,
-		CreatedAt:          t.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:          t.UpdatedAt.Format(time.RFC3339),
-		Message:            t.Message,
+		ThreadId:       th.ThreadId,
+		Customer:       th.Customer,
+		Title:          th.Title,
+		Description:    th.Description,
+		Status:         th.Status,
+		Replied:        th.Replied,
+		Priority:       th.Priority,
+		Channel:        th.Channel,
+		PreviewText:    th.PreviewText,
+		Assignee:       th.Assignee,
+		LastInboundAt:  th.LastInboundAt,
+		LastOutboundAt: th.LastOutboundAt,
+		CreatedAt:      th.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:      th.UpdatedAt.Format(time.RFC3339),
+		Message:        th.Message,
 	}
 	return json.Marshal(aux)
 }
 
-func (t ThreadChatResp) NewResponse(thread *models.Thread, message *models.Message) ThreadChatResp {
+func (th ThreadChatResp) NewResponse(thread *models.Thread, message *models.Message) ThreadChatResp {
 	var threadAssignee, messageMember *MemberActorResp
 	var messageCustomer *CustomerActorResp
-	var inboundFirstSeqId, inboundLastSeqId, outboundFirstSeqId, outboundLastSeqId *string
+	var lastInboundAt, lastOutboundAt *time.Time
 
 	if message.Customer != nil {
 		messageCustomer = &CustomerActorResp{
@@ -389,34 +370,29 @@ func (t ThreadChatResp) NewResponse(thread *models.Thread, message *models.Messa
 		}
 	}
 
-	if thread.InboundMessage != nil {
-		inboundFirstSeqId = &thread.InboundMessage.FirstSeqId
-		inboundLastSeqId = &thread.InboundMessage.LastSeqId
+	if thread.LastInboundAt != nil {
+		lastInboundAt = thread.LastInboundAt
 	}
-	if thread.OutboundMessage != nil {
-		outboundFirstSeqId = &thread.OutboundMessage.FirstSeqId
-		outboundLastSeqId = &thread.OutboundMessage.LastSeqId
-
+	if thread.LastOutboundAt != nil {
+		lastOutboundAt = thread.LastOutboundAt
 	}
 
 	return ThreadChatResp{
-		ThreadId:           thread.ThreadId,
-		Customer:           threadCustomer,
-		Title:              thread.Title,
-		Description:        thread.Description,
-		Status:             thread.ThreadStatus.Status,
-		Replied:            thread.Replied,
-		Priority:           thread.Priority,
-		Channel:            thread.Channel,
-		PreviewText:        thread.CustomerPreviewText(),
-		Assignee:           threadAssignee,
-		InboundFirstSeqId:  inboundFirstSeqId,
-		InboundLastSeqId:   inboundLastSeqId,
-		OutboundFirstSeqId: outboundFirstSeqId,
-		OutboundLastSeqId:  outboundLastSeqId,
-		CreatedAt:          thread.CreatedAt,
-		UpdatedAt:          thread.UpdatedAt,
-		Message:            messageResp,
+		ThreadId:       thread.ThreadId,
+		Customer:       threadCustomer,
+		Title:          thread.Title,
+		Description:    thread.Description,
+		Status:         thread.ThreadStatus.Status,
+		Replied:        thread.Replied,
+		Priority:       thread.Priority,
+		Channel:        thread.Channel,
+		PreviewText:    thread.PreviewText,
+		Assignee:       threadAssignee,
+		LastInboundAt:  lastInboundAt,
+		LastOutboundAt: lastOutboundAt,
+		CreatedAt:      thread.CreatedAt,
+		UpdatedAt:      thread.UpdatedAt,
+		Message:        messageResp,
 	}
 }
 

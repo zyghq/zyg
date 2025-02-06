@@ -169,57 +169,25 @@ func (c ThreadChannel) Email() string {
 	return email
 }
 
-// InboundMessage tracks the inbound message received from the Customer.
-// Common across channels.
-// TODO: rename this to InboundEvent - tracks inbound metadata
-// TODO: remove customer
-// TODO: use eventId instead of MessageId
-type InboundMessage struct {
-	MessageId   string
-	PreviewText string
-	FirstSeqId  string
-	LastSeqId   string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
-func (im InboundMessage) GenId() string {
-	return "im" + xid.New().String()
-}
-
-// OutboundMessage tracks the outbound message sent by the Member.
-// Common across channels.
-type OutboundMessage struct {
-	MessageId   string
-	PreviewText string
-	FirstSeqId  string
-	LastSeqId   string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
-
-func (om OutboundMessage) GenId() string {
-	return "om" + xid.New().String()
-}
-
 // A Thread represents conversation with a Customer on a specific issue or topic.
 type Thread struct {
-	ThreadId        string           // ThreadId represents the unique ID of the Thread.
-	WorkspaceId     string           // WorkspaceId is the ID of the Workspace this Thread belongs to.
-	Customer        CustomerActor    // The attached Customer.
-	AssignedMember  *AssignedMember  // The Member assigned to the Thread.
-	Title           string           // The Title of the Thread, which allows to quickly identify what it is about.
-	Description     string           // The Description of the Thread could be descriptive.
-	ThreadStatus    ThreadStatus     // The status of the Thread.
-	Replied         bool             // If the Member has anytime replied to the Thread.
-	Priority        string           // The Priority of the Thread as per ThreadPriority.
-	Channel         string           // The source channel this Thread belongs to as per ThreadChannel.
-	InboundMessage  *InboundMessage  // InboundMessage tracks the inbound message from Customer
-	OutboundMessage *OutboundMessage // OutboundMessage tracks the outbound message from Member
-	CreatedBy       MemberActor      // The Member who created this Thread.
-	UpdatedBy       MemberActor      // The Member who updated this Thread.
-	CreatedAt       time.Time        // When the Thread was created
-	UpdatedAt       time.Time        // When the Thread was last updated.
+	ThreadId       string          // ThreadId represents the unique ID of the Thread.
+	WorkspaceId    string          // WorkspaceId is the ID of the Workspace this Thread belongs to.
+	Customer       CustomerActor   // The attached Customer.
+	AssignedMember *AssignedMember // The Member assigned to the Thread.
+	Title          string          // The Title of the Thread, which allows to quickly identify what it is about.
+	Description    string          // The Description of the Thread could be descriptive.
+	PreviewText    string          // PreviewText represents the quick Thread one-liner.
+	ThreadStatus   ThreadStatus    // The status of the Thread.
+	Replied        bool            // If the Member has anytime replied to the Thread.
+	Priority       string          // The Priority of the Thread as per ThreadPriority.
+	Channel        string          // The source channel this Thread belongs to as per ThreadChannel.
+	LastInboundAt  *time.Time      // Tracks the last inbound message event
+	LastOutboundAt *time.Time      // Tracks the last outbound message event
+	CreatedBy      MemberActor     // The Member who created this Thread.
+	UpdatedBy      MemberActor     // The Member who updated this Thread.
+	CreatedAt      time.Time       // When the Thread was created
+	UpdatedAt      time.Time       // When the Thread was last updated.
 }
 
 type ThreadOption func(*Thread)
@@ -279,6 +247,28 @@ func SetThreadDescription(description string) ThreadOption {
 	}
 }
 
+//func SetThreadPreviewText(text string) ThreadOption {
+//	maxLength := 511
+//	if len(text) > maxLength {
+//		text = text[:maxLength]
+//	}
+//	return func(thread *Thread) {
+//		thread.PreviewText = text
+//	}
+//}
+
+func SetThreadInboundTime(time time.Time) ThreadOption {
+	return func(thread *Thread) {
+		thread.LastInboundAt = &time
+	}
+}
+
+//func SetThreadOutboundTime(time time.Time) ThreadOption {
+//	return func(thread *Thread) {
+//		thread.LastOutboundAt = &time
+//	}
+//}
+
 // AssignMember assigns the member to the thread and when the assignment was made.
 func (th *Thread) AssignMember(member MemberActor, assignedAt time.Time) {
 	th.AssignedMember = &AssignedMember{
@@ -292,102 +282,31 @@ func (th *Thread) ClearAssignedMember() {
 	th.AssignedMember = nil
 }
 
-// setNewInboundMessage adds the inbound message info to the Thread.
-// Inbound messages are messages from the Customer.
-func (th *Thread) setNewInboundMessage(previewText string) {
-	messageId := InboundMessage{}.GenId()
-	seqId := xid.New().String()
-	now := time.Now().UTC()
-	th.InboundMessage = &InboundMessage{
-		MessageId:   messageId,
-		PreviewText: previewText,
-		FirstSeqId:  seqId,
-		LastSeqId:   seqId, // starts with first seq.
-		CreatedAt:   now,
-		UpdatedAt:   now,
-	}
-}
-
-// SetNextInboundSeq updates the inbound message sequence with a new sequence ID and timestamp
-// or creates a new inbound message.
-func (th *Thread) SetNextInboundSeq(previewText string) {
-	seqId := xid.New().String()
-	now := time.Now().UTC()
-	if th.InboundMessage != nil {
-		th.InboundMessage.PreviewText = previewText
-		th.InboundMessage.LastSeqId = seqId
-		th.InboundMessage.UpdatedAt = now
-	} else {
-		th.setNewInboundMessage(previewText)
-	}
-}
-
-func (th *Thread) ClearInboundMessage() {
-	th.InboundMessage = nil
-}
-
-// setNewOutboundMessage adds the outbound message info to the Thread.
-// Outbound messages are messages from the Member.
-func (th *Thread) setNewOutboundMessage(previewText string) {
-	messageId := OutboundMessage{}.GenId()
-	seqId := xid.New().String()
-	now := time.Now().UTC()
-	th.OutboundMessage = &OutboundMessage{
-		MessageId:   messageId,
-		PreviewText: previewText,
-		FirstSeqId:  seqId,
-		LastSeqId:   seqId, // starts with first seq.
-		CreatedAt:   now,
-		UpdatedAt:   now,
-	}
-}
-
-func (th *Thread) SetNextOutboundSeq(previewText string) {
-	seqId := xid.New().String()
-	now := time.Now().UTC()
-	if th.OutboundMessage != nil {
-		th.OutboundMessage.PreviewText = previewText
-		th.OutboundMessage.LastSeqId = seqId
-		th.OutboundMessage.UpdatedAt = now
-	} else {
-		th.setNewOutboundMessage(previewText)
-	}
-}
-
-func (th *Thread) ClearOutboundMessage() {
-	th.OutboundMessage = nil
-}
-
 func (th *Thread) SetDefaultTitle() {
 	th.Title = "Support Request"
 }
 
-// PreviewText
-// TODO:
-//   - possibly show the latest or
-//   - have some kind logic based on upcoming thread stages.
-func (th *Thread) PreviewText() string {
-	if th.InboundMessage != nil {
-		return th.InboundMessage.PreviewText
-	}
-	if th.OutboundMessage != nil {
-		return th.OutboundMessage.PreviewText
-	}
-	return ""
+func (th *Thread) SetLatestInboundAt() {
+	now := time.Now().UTC()
+	th.LastInboundAt = &now
 }
 
-// CustomerPreviewText
-// TODO:
-//   - update based on PreviewText.
-func (th *Thread) CustomerPreviewText() string {
-	if th.OutboundMessage != nil {
-		return th.OutboundMessage.PreviewText
-	}
-	if th.InboundMessage != nil {
-		return th.InboundMessage.PreviewText
-	}
-	return ""
+func (th *Thread) SetLatestOutboundAt() {
+	now := time.Now().UTC()
+	th.LastOutboundAt = &now
 }
+
+// Deprecated
+// PreviewText - remove
+//func (th *Thread) PreviewText() string {
+//	if th.InboundMessage != nil {
+//		return th.InboundMessage.PreviewText
+//	}
+//	if th.OutboundMessage != nil {
+//		return th.OutboundMessage.PreviewText
+//	}
+//	return ""
+//}
 
 // SetDefaultStatus checks if the Thread has been already been replied,
 // If not then it sets the default status as NeedsFirstResponse.

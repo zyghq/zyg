@@ -24,9 +24,17 @@ go.work
 # Secrets or Envs
 *.env
 *.env.local
-env.sh
-env.local.sh
 
+# Sentry
+.env.sentry-build-plugin
+
+# Electric Sync
+.env.electric
+
+# Restate
+.env.restate
+
+env.local.sh
 
 # Python files and directories
 **/venv/**
@@ -78,13 +86,10 @@ secrets/
 pqdb/
 redisdb/
 
+**/restate-data/**
+
 # IDEs
 .idea/
-
-# Sentry
-.env.sentry-build-plugin
-
-.env.electric
 
 # Logfire
 .logfire
