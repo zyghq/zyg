@@ -1,7 +1,6 @@
 import * as restate from "@restatedev/restate-sdk/fetch";
 import { drizzle } from "drizzle-orm/neon-http";
 import { eq, sql, and } from "drizzle-orm";
-import { json } from "drizzle-orm/pg-core";
 import * as schema from "./db/schema";
 
 const syncdb = drizzle(process.env.DATABASE_URL as string);
