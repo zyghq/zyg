@@ -105,9 +105,9 @@ export type ThreadRow = {
   created_by_id: string;
   customer_id: string;
   description: string;
-  inbound_seq_id: null | string;
+  last_inbound_at: string | null;
+  last_outbound_at: string | null;
   labels: null | ThreadLabelShapeMap;
-  outbound_seq_id: null | string;
   preview_text: string;
   priority: string;
   replied: boolean;
@@ -132,9 +132,9 @@ export type ThreadRowUpdates = {
   created_by_id?: string;
   customer_id?: string;
   description?: string;
-  inbound_seq_id?: null | string;
+  last_inbound_at?: null | string;
   labels?: null | ThreadLabelShapeMap;
-  outbound_seq_id?: null | string;
+  last_outbound_at?: null | string;
   preview_text?: string;
   priority?: string;
   replied?: boolean;

@@ -9,7 +9,7 @@ export function EmailThread() {
   const emails = [
     {
       sender: "Sanchit Rk",
-      recipient: "190aea195b093afac57c57a7379601b2@inbound.postmark...",
+      recipient: "....@inbound.postmark...",
       date: "9/30/2024",
       content: (
         <>
@@ -71,7 +71,7 @@ export function EmailThread() {
     },
     {
       sender: "Sanchit Rk",
-      recipient: "190aea195b093afac57c57a7379601b2@inbound.postmarkapp.com",
+      recipient: "....@inbound.postmarkapp.com",
       date: "11/5/2024",
       content: <p>We do not have any urgency for this issue</p>,
       hasActions: false,

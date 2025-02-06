@@ -182,9 +182,9 @@ export type ThreadShape = {
   createdById: string;
   customerId: string;
   description: string;
-  inboundSeqId: null | string;
+  lastInboundAt: string | null;
+  lastOutboundAt: string | null;
   labels: null | ThreadLabelShapeMap;
-  outboundSeqId: null | string;
   previewText: string;
   priority: string;
   replied: boolean;
@@ -209,9 +209,9 @@ export type ThreadShapeUpdates = {
   createdById?: string;
   customerId?: string;
   description?: string;
-  inboundSeqId?: null | string;
+  lastInboundAt?: string | null;
+  lastOutboundAt?: string | null;
   labels?: null | ThreadLabelShapeMap;
-  outboundSeqId?: null | string;
   previewText?: string;
   priority?: string;
   replied?: boolean;
@@ -238,9 +238,9 @@ export function threadRowToShape(row: ThreadRow): ThreadShape {
     createdById: row.created_by_id,
     customerId: row.customer_id,
     description: row.description,
-    inboundSeqId: row.inbound_seq_id,
+    lastInboundAt: row.last_inbound_at,
+    lastOutboundAt: row.last_outbound_at,
     labels: row.labels,
-    outboundSeqId: row.outbound_seq_id,
     previewText: row.preview_text,
     priority: row.priority,
     replied: row.replied,
@@ -272,11 +272,11 @@ export function takeThreadUpdates(thread: ThreadRowUpdates): ThreadRowUpdates {
     result.createdById = thread.created_by_id;
   if (thread.customer_id !== undefined) result.customerId = thread.customer_id;
   if (thread.description !== undefined) result.description = thread.description;
-  if (thread.inbound_seq_id !== undefined)
-    result.inboundSeqId = thread.inbound_seq_id;
+  if (thread.last_inbound_at !== undefined)
+    result.lastInboundAt = thread.last_inbound_at;
   if (thread.labels !== undefined) result.labels = thread.labels;
-  if (thread.outbound_seq_id !== undefined)
-    result.outboundSeqId = thread.outbound_seq_id;
+  if (thread.last_outbound_at !== undefined)
+    result.lastOutboundAt = thread.last_outbound_at;
   if (thread.preview_text !== undefined)
     result.previewText = thread.preview_text;
   if (thread.priority !== undefined) result.priority = thread.priority;
