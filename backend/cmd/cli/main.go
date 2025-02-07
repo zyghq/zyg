@@ -2,14 +2,12 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -37,7 +35,6 @@ type AppServices struct {
 type AppConnections struct {
 	DB     *pgxpool.Pool
 	SyncDB *pgxpool.Pool
-	Redis  *redis.Client
 }
 
 func initConnections(ctx context.Context) (*AppConnections, error) {
@@ -78,41 +75,11 @@ func initConnections(ctx context.Context) (*AppConnections, error) {
 		return nil, fmt.Errorf("failed db query got error: %w", err)
 	}
 	log.Info().Msgf("sync database time: %s", tm.Format(time.RFC1123))
+	log.Info().Msg("Database connections initialized successfully.")
 
-	// Redis options
-	opts := &redis.Options{
-		Addr:     zyg.RedisAddr(),
-		Username: zyg.RedisUsername(),
-		Password: zyg.RedisPassword(),
-		DB:       0,
-	}
-
-	if zyg.RedisTLSEnabled() {
-		opts.TLSConfig = &tls.Config{
-			InsecureSkipVerify: true,
-		}
-	}
-
-	log.Debug().Msg("Connecting to redis...")
-	rdb := redis.NewClient(opts)
-
-	status, err := rdb.Ping(ctx).Result()
-	if err != nil {
-		return nil, fmt.Errorf("failed to ping redis got error: %v", err)
-	}
-	log.Info().Msgf("redis status PING: %s", status)
-
-	// Verify Redis connection
-	if _, err := rdb.Ping(ctx).Result(); err != nil {
-		return nil, fmt.Errorf("redis check failed: %w", err)
-	}
-	log.Debug().Msg("Successfully connected to redis")
-
-	log.Info().Msg("Database and redis connections initialized successfully.")
 	return &AppConnections{
 		DB:     db,
 		SyncDB: syncDB,
-		Redis:  rdb,
 	}, nil
 }
 
@@ -167,13 +134,6 @@ func cleanup(conn *AppConnections) {
 		log.Debug().Msg("Closing sync database connection...")
 		conn.SyncDB.Close()
 		log.Debug().Msg("Sync database connection closed.")
-	}
-	if conn.Redis != nil {
-		log.Debug().Msg("Closing redis connection...")
-		if err := conn.Redis.Close(); err != nil {
-			log.Error().Err(err).Msg("failed to close redis")
-		}
-		log.Debug().Msg("Redis connection closed.")
 	}
 	sentry.Flush(2 * time.Second)
 	log.Info().Msg("Cleanup complete.")

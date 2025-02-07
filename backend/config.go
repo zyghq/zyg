@@ -105,37 +105,37 @@ func S3Bucket() string {
 	return value
 }
 
-func RedisAddr() string {
-	value, ok := os.LookupEnv("REDIS_ADDR")
-	if !ok {
-		return "localhost:6379"
-	}
-	return value
-}
-
-func RedisUsername() string {
-	value, ok := os.LookupEnv("REDIS_USERNAME")
-	if !ok {
-		return "zygdev"
-	}
-	return value
-}
-
-func RedisPassword() string {
-	value, ok := os.LookupEnv("REDIS_PASSWORD")
-	if !ok {
-		return "redispass"
-	}
-	return value
-}
-
-func RedisTLSEnabled() bool {
-	enabled, err := strconv.ParseBool(os.Getenv("REDIS_TLS_ENABLED"))
-	if err != nil {
-		return false
-	}
-	return enabled
-}
+//func RedisAddr() string {
+//	value, ok := os.LookupEnv("REDIS_ADDR")
+//	if !ok {
+//		return "localhost:6379"
+//	}
+//	return value
+//}
+//
+//func RedisUsername() string {
+//	value, ok := os.LookupEnv("REDIS_USERNAME")
+//	if !ok {
+//		return "zygdev"
+//	}
+//	return value
+//}
+//
+//func RedisPassword() string {
+//	value, ok := os.LookupEnv("REDIS_PASSWORD")
+//	if !ok {
+//		return "redispass"
+//	}
+//	return value
+//}
+//
+//func RedisTLSEnabled() bool {
+//	enabled, err := strconv.ParseBool(os.Getenv("REDIS_TLS_ENABLED"))
+//	if err != nil {
+//		return false
+//	}
+//	return enabled
+//}
 
 func SentryDebugEnabled() bool {
 	enabled, err := strconv.ParseBool(os.Getenv("SENTRY_DEBUG_ENABLED"))

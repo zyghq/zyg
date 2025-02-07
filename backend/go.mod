@@ -16,11 +16,12 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgerrcode v0.0.0-20240316143900-6e2875d9b438
 	github.com/jackc/pgx/v5 v5.5.5
-	github.com/redis/go-redis/v9 v9.7.0
 	github.com/resend/resend-go/v2 v2.12.0
 	github.com/rs/cors v1.10.1
 	github.com/rs/xid v1.5.0
+	github.com/rs/zerolog v1.33.0
 	github.com/sanchitrk/namingo v0.1.2
+	github.com/spf13/cobra v1.8.1
 	github.com/zyghq/postmark v0.0.0-20241222082503-a96065eb030e
 	golang.org/x/net v0.31.0
 )
@@ -41,16 +42,12 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.28.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.2 // indirect
 	github.com/aws/smithy-go v1.22.1 // indirect
-	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/rs/zerolog v1.33.0 // indirect
-	github.com/spf13/cobra v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/crypto v0.29.0 // indirect
 	golang.org/x/sync v0.9.0 // indirect
