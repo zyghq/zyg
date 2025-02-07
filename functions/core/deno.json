@@ -1,0 +1,14 @@
+{
+  "tasks": {
+    "dev": "deno run --watch main.ts"
+  },
+  "imports": {
+    "@ai-sdk/google": "npm:@ai-sdk/google@^1.1.10",
+    "@restatedev/restate-sdk": "npm:@restatedev/restate-sdk@^1.4.0",
+    "@restatedev/restate-sdk-clients": "npm:@restatedev/restate-sdk-clients@^1.4.0",
+    "@std/assert": "jsr:@std/assert@1",
+    "ai": "npm:ai@^4.1.25",
+    "handlebars": "npm:handlebars@^4.7.8",
+    "zod": "npm:zod@^3.24.1"
+  }
+}
