@@ -8,3 +8,6 @@ export const LLM_RETRY_CONFIG = {
   maxRetryAttempts: 5, // Keep the 5 retry attempts
   maxRetryDurationMillis: 30000, // Allow up to 30s total for retries
 } as const;
+
+export const ZYG_SRV_BASE_URL = Deno.env.get("ZYG_SRV_BASE_URL") ??
+  "http://localhost:8080";

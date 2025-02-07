@@ -7,6 +7,8 @@ import { LLM_RETRY_CONFIG } from "./agentic/config.ts";
 interface ThreadSummaryRequest {
   system?: string;
   prompt: string;
+  workspaceId: string;
+  threadId: string;
 }
 
 const thread = restate.service({
