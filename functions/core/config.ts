@@ -1,3 +1,8 @@
+/**
+ * Configuration for core services.
+ * This file stores configuration settings used throughout the core services.
+ */
+
 export const DEFAULT_LLM_PROVIDER = Deno.env.get("DEFAULT_LLM_PROVIDER") ??
   "gemini-2.0-flash-lite-preview-02-05";
 

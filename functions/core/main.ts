@@ -1,30 +1,13 @@
+/**
+ * Entry point for the core server.
+ * This script initializes and starts the server that handles Restate endpoints.
+ * It:
+ * 1. Imports required Restate SDK and service definitions
+ * 2. Creates a bidirectional endpoint handler for the thread service
+ * 3. Starts a Deno server on port 9080 to handle incoming requests
+ */
 import * as restate from "@restatedev/restate-sdk/fetch";
-import { threadSummarizeFn } from "./agentic/functions.ts";
-import { threadSummarizeSystemPrompt } from "./agentic/prompts.ts";
-import { ThreadSummary } from "./agentic/schemas.ts";
-import { LLM_RETRY_CONFIG } from "./agentic/config.ts";
-
-interface ThreadSummaryRequest {
-  system?: string;
-  prompt: string;
-  workspaceId: string;
-  threadId: string;
-}
-
-const thread = restate.service({
-  name: "thread",
-  handlers: {
-    summarize: async (ctx: restate.Context, req: ThreadSummaryRequest) => {
-      const systemPrompt = req.system || threadSummarizeSystemPrompt();
-      const { summary } = await ctx.run<ThreadSummary>(
-        "llm",
-        () => threadSummarizeFn(systemPrompt, req.prompt),
-        LLM_RETRY_CONFIG,
-      );
-      return summary;
-    },
-  },
-});
+import { thread } from "./services.ts";
 
 const handler = restate
   .endpoint()
