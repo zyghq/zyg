@@ -1,9 +1,10 @@
 import * as restate from "@restatedev/restate-sdk/fetch";
+import { neon } from '@neon/serverless';
 import { drizzle } from "drizzle-orm/neon-http";
 import { and, eq, sql } from "drizzle-orm";
 import * as schema from "../db/schema.ts";
 
-const syncdb = drizzle(Deno.env.get("DATABASE_URL")!);
+const syncdb = drizzle(neon(Deno.env.get("DATABASE_URL")!));
 
 // Defines a service to check if the in-sync service is up and running
 export const inSync = restate.service({

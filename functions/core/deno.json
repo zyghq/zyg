@@ -4,6 +4,7 @@
   },
   "imports": {
     "@ai-sdk/google": "npm:@ai-sdk/google@^1.1.10",
+    "@neon/serverless": "jsr:@neon/serverless@^0.10.4",
     "@neondatabase/serverless": "npm:@neondatabase/serverless@^0.10.4",
     "@restatedev/restate-sdk": "npm:@restatedev/restate-sdk@^1.4.0",
     "@restatedev/restate-sdk-clients": "npm:@restatedev/restate-sdk-clients@^1.4.0",

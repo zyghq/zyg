@@ -17,7 +17,7 @@ export const thread = restate.service({
     summarize: async (ctx: restate.Context, req: ThreadSummaryRequest) => {
       const systemPrompt = req.system || threadSummarizeSystemPrompt();
       const { summary } = await ctx.run<ThreadSummary>(
-        "llm",
+        "llm summarize thread",
         () => threadSummarizeFn(systemPrompt, req.prompt),
         LLM_RETRY_CONFIG,
       );
