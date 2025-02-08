@@ -1,8 +1,8 @@
 import * as restate from "@restatedev/restate-sdk/fetch";
-import { threadSummarizeFn } from "./agentic/functions.ts";
-import { threadSummarizeSystemPrompt } from "./agentic/prompts.ts";
-import { ThreadSummary } from "./agentic/schemas.ts";
-import { LLM_RETRY_CONFIG } from "./config.ts";
+import { threadSummarizeFn } from "../agentic/functions.ts";
+import { threadSummarizeSystemPrompt } from "../agentic/prompts.ts";
+import { ThreadSummary } from "../agentic/schemas.ts";
+import { LLM_RETRY_CONFIG } from "../config.ts";
 
 interface ThreadSummaryRequest {
   system?: string;

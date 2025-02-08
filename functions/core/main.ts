@@ -7,10 +7,14 @@
  * 3. Starts a Deno server on port 9080 to handle incoming requests
  */
 import * as restate from "@restatedev/restate-sdk/fetch";
-import { thread } from "./services.ts";
+import { thread } from "./services/llm.ts";
+import { inSync, sync } from "./services/db.ts";
+import "dotenv/config";
 
 const handler = restate
   .endpoint()
+  .bind(inSync)
+  .bind(sync)
   .bind(thread)
   .bidirectional()
   .handler();
