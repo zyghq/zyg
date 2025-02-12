@@ -248,12 +248,8 @@ func SetThreadDescription(description string) ThreadOption {
 }
 
 //func SetThreadPreviewText(text string) ThreadOption {
-//	maxLength := 511
-//	if len(text) > maxLength {
-//		text = text[:maxLength]
-//	}
 //	return func(thread *Thread) {
-//		thread.PreviewText = text
+//		thread.SetPreviewText(text)
 //	}
 //}
 
@@ -262,12 +258,6 @@ func SetThreadInboundTime(time time.Time) ThreadOption {
 		thread.LastInboundAt = &time
 	}
 }
-
-//func SetThreadOutboundTime(time time.Time) ThreadOption {
-//	return func(thread *Thread) {
-//		thread.LastOutboundAt = &time
-//	}
-//}
 
 // AssignMember assigns the member to the thread and when the assignment was made.
 func (th *Thread) AssignMember(member MemberActor, assignedAt time.Time) {
@@ -296,17 +286,13 @@ func (th *Thread) SetLatestOutboundAt() {
 	th.LastOutboundAt = &now
 }
 
-// Deprecated
-// PreviewText - remove
-//func (th *Thread) PreviewText() string {
-//	if th.InboundMessage != nil {
-//		return th.InboundMessage.PreviewText
-//	}
-//	if th.OutboundMessage != nil {
-//		return th.OutboundMessage.PreviewText
-//	}
-//	return ""
-//}
+func (th *Thread) SetPreviewText(text string) {
+	maxLength := 255
+	if len(text) > maxLength {
+		text = text[:maxLength]
+	}
+	th.PreviewText = text
+}
 
 // SetDefaultStatus checks if the Thread has been already been replied,
 // If not then it sets the default status as NeedsFirstResponse.

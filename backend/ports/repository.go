@@ -49,23 +49,18 @@ type WorkspaceRepositorer interface {
 		ctx context.Context, workspaceId string, sk string) (models.WorkspaceSecret, error)
 	FetchSecretKeyByWorkspaceId(
 		ctx context.Context, workspaceId string) (models.WorkspaceSecret, error)
-	LookupWidgetById(
-		ctx context.Context, widgetId string) (models.Widget, error)
-	LookupWidgetSessionById(
-		ctx context.Context, widgetId string, sessionId string) (models.WidgetSession, error)
-	UpsertWidgetSessionById(
-		ctx context.Context, session models.WidgetSession) (models.WidgetSession, bool, error)
+
 	InsertSystemMember(
 		ctx context.Context, member models.Member) (models.Member, error)
 	LookupSystemMemberByOldest(
 		ctx context.Context, workspaceId string) (models.Member, error)
-	SavePostmarkMailServerSetting(
-		ctx context.Context, setting models.PostmarkMailServerSetting) (models.PostmarkMailServerSetting, error)
-	FetchPostmarkMailServerSettingById(
-		ctx context.Context, workspaceId string) (models.PostmarkMailServerSetting, error)
-	ModifyPostmarkMailServerSettingById(
-		ctx context.Context, setting models.PostmarkMailServerSetting, fields []string,
-	) (models.PostmarkMailServerSetting, error)
+	SavePostmarkSetting(
+		ctx context.Context, setting models.PostmarkServerSetting) (models.PostmarkServerSetting, error)
+	FetchPostmarkSettingById(
+		ctx context.Context, workspaceId string) (models.PostmarkServerSetting, error)
+	ModifyPostmarkSettingById(
+		ctx context.Context, setting models.PostmarkServerSetting, fields []string,
+	) (models.PostmarkServerSetting, error)
 }
 
 type MemberRepositorer interface {
@@ -80,60 +75,43 @@ type MemberRepositorer interface {
 type CustomerRepositorer interface {
 	LookupWorkspaceCustomerById(
 		ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error)
-	LookupWorkspaceCustomerByEmail(
-		ctx context.Context, workspaceId string, email string, role *string) (models.Customer, error)
+
 	UpsertCustomerByExtId(
 		ctx context.Context, customer models.Customer) (models.Customer, bool, error)
 	UpsertCustomerByEmail(
 		ctx context.Context, customer models.Customer) (models.Customer, bool, error)
 	UpsertCustomerByPhone(
 		ctx context.Context, customer models.Customer) (models.Customer, bool, error)
-	UpsertCustomerById(
-		ctx context.Context, customer models.Customer) (models.Customer, bool, error)
+
 	FetchCustomersByWorkspaceId(
 		ctx context.Context, workspaceId string, role *string) ([]models.Customer, error)
-	LookupSecretKeyByWidgetId(
-		ctx context.Context, widgetId string) (models.WorkspaceSecret, error)
+
 	ModifyCustomerById(
 		ctx context.Context, customer models.Customer) (models.Customer, error)
-	CheckEmailExists(
-		ctx context.Context, workspaceId string, email string) (bool, error)
-	InsertClaimedMail(
-		ctx context.Context, claimed models.ClaimedMail) (models.ClaimedMail, error)
-	DeleteCustomerClaimedMail(
-		ctx context.Context, workspaceId string, customerId string, email string) error
-	LookupClaimedMailByToken(
-		ctx context.Context, token string) (models.ClaimedMail, error)
-	LookupLatestClaimedMail(
-		ctx context.Context, workspaceId string, customerId string,
-	) (models.ClaimedMail, error)
+
 	InsertEvent(ctx context.Context, event models.Event) (models.Event, error)
 	FetchEventsByCustomerId(ctx context.Context, customerId string) ([]models.Event, error)
 }
 
 type ThreadRepositorer interface {
-	InsertInboundThreadMessage(
-		ctx context.Context, thread *models.Thread, message *models.Message) (*models.Thread, *models.Message, error)
-	AppendInboundThreadMessage(
-		ctx context.Context, thread *models.Thread, message *models.Message) (*models.Thread, *models.Message, error)
+	// SaveThreadActivity persists thread and activity in transaction,
+	// upserts the thread, and inserts new activity.
+	SaveThreadActivity(
+		ctx context.Context, thread *models.Thread, activity *models.Activity) (*models.Thread, *models.Activity, error)
 
-	InsertPostmarkInboundThreadMessage(
-		ctx context.Context, thread *models.Thread, message *models.Message,
-		postmarkMessageLog *models.PostmarkMessageLog) (*models.Thread, *models.Message, error)
-	AppendPostmarkInboundThreadMessage(
-		ctx context.Context, thread *models.Thread, message *models.Message,
-		postmarkMessageLog *models.PostmarkMessageLog) (*models.Message, error)
+	// SavePostmarkThreadActivity persists thread, activity, and postmark message log,
+	// upserts the thread, inserts new activity and postmark message log.
+	SavePostmarkThreadActivity(
+		ctx context.Context, thread *models.Thread, activity *models.Activity,
+		postmarkMessageLog *models.PostmarkMessageLog) (*models.Thread, *models.Activity, error)
 
-	AppendOutboundThreadMessage(
-		ctx context.Context, thread *models.Thread, message *models.Message) (*models.Thread, *models.Message, error)
-
-	CheckPostmarkInboundMessageExists(ctx context.Context, messageId string) (bool, error)
+	CheckPostmarkInboundExists(ctx context.Context, pmMessageId string) (bool, error)
 
 	InsertMessageAttachment(
-		ctx context.Context, message models.MessageAttachment) (models.MessageAttachment, error)
+		ctx context.Context, message models.ActivityAttachment) (models.ActivityAttachment, error)
 
 	FetchMessageAttachmentById(
-		ctx context.Context, messageId, attachmentId string) (models.MessageAttachment, error)
+		ctx context.Context, messageId, attachmentId string) (models.ActivityAttachment, error)
 
 	FindThreadByPostmarkReplyMessageId(
 		ctx context.Context, workspaceId string, inReplyMessageId string) (models.Thread, error)
@@ -144,8 +122,7 @@ type ThreadRepositorer interface {
 		ctx context.Context, workspaceId string, threadId string, channel *string) (models.Thread, error)
 	ModifyThreadById(
 		ctx context.Context, thread models.Thread, fields []string) (models.Thread, error)
-	FetchThreadsByCustomerId(
-		ctx context.Context, customerId string, channel *string) ([]models.Thread, error)
+
 	FetchThreadsByWorkspaceId(
 		ctx context.Context, workspaceId string, channel *string, role *string) ([]models.Thread, error)
 	FetchThreadsByAssignedMemberId(
@@ -162,10 +139,10 @@ type ThreadRepositorer interface {
 		ctx context.Context, threadId string) ([]models.ThreadLabel, error)
 
 	FetchMessagesByThreadId(
-		ctx context.Context, threadId string) ([]models.Message, error)
+		ctx context.Context, threadId string) ([]models.Activity, error)
 
 	FetchMessagesWithAttachmentsByThreadId(
-		ctx context.Context, threadId string) ([]models.MessageWithAttachments, error)
+		ctx context.Context, threadId string) ([]models.ActivityWithAttachments, error)
 
 	ComputeStatusMetricsByWorkspaceId(
 		ctx context.Context, workspaceId string) (models.ThreadMetrics, error)

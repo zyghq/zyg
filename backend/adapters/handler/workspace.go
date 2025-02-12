@@ -1062,10 +1062,9 @@ func (h *WorkspaceHandler) handlePostmarkUpdateMailServer(
 		} else {
 			f := enabled.(bool)
 			if f && setting.HasForwardingEnabled {
-
+				setting.IsEnabled = f
+				fields = append(fields, "enabled")
 			}
-			setting.IsEnabled = f
-			fields = append(fields, "enabled")
 		}
 	}
 

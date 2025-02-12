@@ -105,9 +105,6 @@ func NewServer(
 	mux.Handle("GET /workspaces/{workspaceId}/threads/parts/labels/{labelId}/{$}",
 		NewEnsureMemberAuth(th.handleGetLabelledThreads, authService))
 
-	mux.Handle("POST /workspaces/{workspaceId}/threads/chat/{threadId}/messages/{$}",
-		NewEnsureMemberAuth(th.handleCreateThreadChatMessage, authService))
-
 	mux.Handle("POST /workspaces/{workspaceId}/threads/email/{threadId}/messages/{$}",
 		NewEnsureMemberAuth(th.handleReplyThreadMail, authService))
 

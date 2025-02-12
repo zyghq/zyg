@@ -339,20 +339,18 @@ func (th ThreadResp) NewResponse(thread *models.Thread) ThreadResp {
 	}
 }
 
-type MessageResp struct {
-	ThreadId     string
-	MessageId    string
-	TextBody     string
-	MarkdownBody string
-	HTMLBody     string
+type ActivityResp struct {
+	ActivityID   string
+	ThreadID     string
+	ActivityType string
 	Customer     *CustomerActorResp
 	Member       *MemberActorResp
-	Channel      string
+	Body         map[string]interface{}
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
 
-func (m MessageResp) MarshalJSON() ([]byte, error) {
+func (m ActivityResp) MarshalJSON() ([]byte, error) {
 	var customer *CustomerActorResp
 	var member *MemberActorResp
 
@@ -364,37 +362,33 @@ func (m MessageResp) MarshalJSON() ([]byte, error) {
 	}
 
 	aux := &struct {
-		ThreadId     string             `json:"threadId"`
-		MessageId    string             `json:"messageId"`
-		TextBody     string             `json:"textBody"`
-		MarkdownBody string             `json:"markdownBody"`
-		HTMLBody     string             `json:"htmlBody"`
-		Customer     *CustomerActorResp `json:"customer,omitempty"`
-		Member       *MemberActorResp   `json:"member,omitempty"`
-		Channel      string             `json:"channel"`
-		CreatedAt    string             `json:"createdAt"`
-		UpdatedAt    string             `json:"updatedAt"`
+		ActivityID   string                 `json:"activityId"`
+		ThreadID     string                 `json:"threadId"`
+		ActivityType string                 `json:"activityType"`
+		Customer     *CustomerActorResp     `json:"customer,omitempty"`
+		Member       *MemberActorResp       `json:"member,omitempty"`
+		Body         map[string]interface{} `json:"body"`
+		CreatedAt    string                 `json:"createdAt"`
+		UpdatedAt    string                 `json:"updatedAt"`
 	}{
-		ThreadId:     m.ThreadId,
-		MessageId:    m.MessageId,
-		TextBody:     m.TextBody,
-		MarkdownBody: m.MarkdownBody,
-		HTMLBody:     m.HTMLBody,
+		ActivityID:   m.ActivityID,
+		ThreadID:     m.ThreadID,
+		ActivityType: m.ActivityType,
 		Customer:     customer,
 		Member:       member,
-		Channel:      m.Channel,
+		Body:         m.Body,
 		CreatedAt:    m.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:    m.UpdatedAt.Format(time.RFC3339),
 	}
 	return json.Marshal(aux)
 }
 
-type MessageWithAttachmentsResp struct {
-	MessageResp
-	Attachments []models.MessageAttachment `json:"attachments"`
+type ActivityWithAttachmentsResp struct {
+	ActivityResp
+	Attachments []models.ActivityAttachment `json:"attachments"`
 }
 
-func (m MessageWithAttachmentsResp) MarshalJSON() ([]byte, error) {
+func (m ActivityWithAttachmentsResp) MarshalJSON() ([]byte, error) {
 	var customer *CustomerActorResp
 	var member *MemberActorResp
 
@@ -405,10 +399,9 @@ func (m MessageWithAttachmentsResp) MarshalJSON() ([]byte, error) {
 		member = m.Member
 	}
 
-	// Create formatted attachments with RFC3339 time strings
-	formattedAttachments := make([]struct {
+	type attachment struct {
 		AttachmentId string `json:"attachmentId"`
-		MessageId    string `json:"messageId"`
+		ActivityID   string `json:"activityId"`
 		Name         string `json:"name"`
 		ContentType  string `json:"contentType"`
 		ContentKey   string `json:"contentKey"`
@@ -418,24 +411,15 @@ func (m MessageWithAttachmentsResp) MarshalJSON() ([]byte, error) {
 		MD5Hash      string `json:"md5Hash"`
 		CreatedAt    string `json:"createdAt"`
 		UpdatedAt    string `json:"updatedAt"`
-	}, len(m.Attachments))
+	}
+
+	formattedAttachments := make([]attachment, len(m.Attachments))
+	hasError := false
 
 	for i, att := range m.Attachments {
-		formattedAttachments[i] = struct {
-			AttachmentId string `json:"attachmentId"`
-			MessageId    string `json:"messageId"`
-			Name         string `json:"name"`
-			ContentType  string `json:"contentType"`
-			ContentKey   string `json:"contentKey"`
-			Spam         bool   `json:"spam"`
-			HasError     bool   `json:"hasError"`
-			Error        string `json:"error"`
-			MD5Hash      string `json:"md5Hash"`
-			CreatedAt    string `json:"createdAt"`
-			UpdatedAt    string `json:"updatedAt"`
-		}{
+		formattedAttachments[i] = attachment{
 			AttachmentId: att.AttachmentId,
-			MessageId:    att.MessageId,
+			ActivityID:   att.ActivityID,
 			Name:         att.Name,
 			ContentType:  att.ContentType,
 			ContentKey:   att.ContentKey,
@@ -446,33 +430,33 @@ func (m MessageWithAttachmentsResp) MarshalJSON() ([]byte, error) {
 			CreatedAt:    att.CreatedAt.Format(time.RFC3339),
 			UpdatedAt:    att.UpdatedAt.Format(time.RFC3339),
 		}
+		if att.HasError {
+			hasError = true
+		}
 	}
 
 	aux := &struct {
-		ThreadId            string             `json:"threadId"`
-		MessageId           string             `json:"messageId"`
-		TextBody            string             `json:"textBody"`
-		MarkdownBody        string             `json:"markdownBody"`
-		HTMLBody            string             `json:"htmlBody"`
-		Customer            *CustomerActorResp `json:"customer,omitempty"`
-		Member              *MemberActorResp   `json:"member,omitempty"`
-		Channel             string             `json:"channel"`
-		CreatedAt           string             `json:"createdAt"`
-		UpdatedAt           string             `json:"updatedAt"`
-		Attachments         interface{}        `json:"attachments"`
-		AttachmentsHasError bool               `json:"attachmentsHasError"`
+		ActivityID          string                 `json:"activityId"`
+		ThreadID            string                 `json:"threadId"`
+		ActivityType        string                 `json:"activityType"`
+		Customer            *CustomerActorResp     `json:"customer,omitempty"`
+		Member              *MemberActorResp       `json:"member,omitempty"`
+		Body                map[string]interface{} `json:"body"`
+		CreatedAt           string                 `json:"createdAt"`
+		UpdatedAt           string                 `json:"updatedAt"`
+		Attachments         []attachment           `json:"attachments"`
+		AttachmentsHasError bool                   `json:"attachmentsHasError"`
 	}{
-		ThreadId:     m.ThreadId,
-		MessageId:    m.MessageId,
-		TextBody:     m.TextBody,
-		MarkdownBody: m.MarkdownBody,
-		HTMLBody:     m.HTMLBody,
-		Customer:     customer,
-		Member:       member,
-		Channel:      m.Channel,
-		CreatedAt:    m.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:    m.UpdatedAt.Format(time.RFC3339),
-		Attachments:  formattedAttachments,
+		ActivityID:          m.ActivityID,
+		ThreadID:            m.ThreadID,
+		ActivityType:        m.ActivityType,
+		Customer:            customer,
+		Member:              member,
+		Body:                m.Body,
+		CreatedAt:           m.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:           m.UpdatedAt.Format(time.RFC3339),
+		Attachments:         formattedAttachments,
+		AttachmentsHasError: hasError,
 	}
 	return json.Marshal(aux)
 }

@@ -36,12 +36,13 @@ type AuthServicer interface {
 		ctx context.Context, token string) (models.Account, error)
 }
 
-type CustomerAuthServicer interface {
-	AuthenticateWorkspaceCustomer(
-		ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error)
-	GetWidgetLinkedSecretKey(
-		ctx context.Context, widgetId string) (models.WorkspaceSecret, error)
-}
+//
+//type CustomerAuthServicer interface {
+//	AuthenticateWorkspaceCustomer(
+//		ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error)
+//	GetWidgetLinkedSecretKey(
+//		ctx context.Context, widgetId string) (models.WorkspaceSecret, error)
+//}
 
 type WorkspaceServicer interface {
 	UpdateWorkspace(
@@ -76,8 +77,6 @@ type WorkspaceServicer interface {
 	CreateCustomerWithPhone(
 		ctx context.Context, workspaceId string, phone string, name string,
 	) (models.Customer, bool, error)
-	CreateUnverifiedCustomer(
-		ctx context.Context, workspaceId string, name string) (models.Customer, error)
 	CreateWidget(
 		ctx context.Context, workspaceId string, name string, configuration map[string]interface{},
 	) (models.Widget, error)
@@ -86,33 +85,21 @@ type WorkspaceServicer interface {
 		ctx context.Context, workspaceId string, length int) (models.WorkspaceSecret, error)
 	GetSecretKey(
 		ctx context.Context, workspaceId string) (models.WorkspaceSecret, error)
-	GetOrGenerateSecretKey(
-		ctx context.Context, workspaceId string) (models.WorkspaceSecret, error)
-	GetWidget(
-		ctx context.Context, widgetId string) (models.Widget, error)
 	GetCustomer(
 		ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error)
-	GetCustomerByEmail(
-		ctx context.Context, workspaceId string, email string) (models.Customer, error)
-	DoesEmailConflict(
-		ctx context.Context, workspaceId string, email string) (bool, error)
-	ValidateWidgetSession(
-		ctx context.Context, sk string, widgetId string, sessionId string) (models.Customer, error)
-	CreateWidgetSession(
-		ctx context.Context, sk string, workspaceId string, widgetId string,
-		sessionId string, name string) (models.Customer, bool, error)
+
 	PostmarkCreateMailServer(
-		ctx context.Context, workspaceId, email, domain string) (models.PostmarkMailServerSetting, error)
+		ctx context.Context, workspaceId, email, domain string) (models.PostmarkServerSetting, error)
 	GetPostmarkMailServerSetting(
-		ctx context.Context, workspaceId string) (models.PostmarkMailServerSetting, error)
+		ctx context.Context, workspaceId string) (models.PostmarkServerSetting, error)
 	PostmarkMailServerAddDomain(
-		ctx context.Context, setting models.PostmarkMailServerSetting, domain string,
-	) (models.PostmarkMailServerSetting, bool, error)
+		ctx context.Context, setting models.PostmarkServerSetting, domain string,
+	) (models.PostmarkServerSetting, bool, error)
 	PostmarkMailServerVerifyDomain(
-		ctx context.Context, setting models.PostmarkMailServerSetting) (models.PostmarkMailServerSetting, error)
+		ctx context.Context, setting models.PostmarkServerSetting) (models.PostmarkServerSetting, error)
 	PostmarkMailServerUpdate(
-		ctx context.Context, setting models.PostmarkMailServerSetting, fields []string,
-	) (models.PostmarkMailServerSetting, error)
+		ctx context.Context, setting models.PostmarkServerSetting, fields []string,
+	) (models.PostmarkServerSetting, error)
 }
 
 type CustomerServicer interface {
@@ -122,54 +109,31 @@ type CustomerServicer interface {
 	VerifyEmail(sk string, hash string, email string) bool
 	VerifyPhone(sk string, hash string, phone string) bool
 	UpdateCustomer(ctx context.Context, customer models.Customer) (models.Customer, error)
-	AddClaimedMail(
-		ctx context.Context, claimed models.ClaimedMail) (models.ClaimedMail, error)
-	RemoveCustomerClaimedMail(
-		ctx context.Context, workspaceId string, customerId string, email string) error
-	GetRecentValidClaimedMail(
-		ctx context.Context, workspaceId string, customerId string) (string, error)
+
 	GenerateMailVerificationToken(
 		sk string, workspaceId string, customerId string, email string,
 		expiresAt time.Time, redirectUrl string,
 	) (string, error)
-	VerifyMailVerificationToken(hmacSecret []byte, token string) (models.KycMailJWTClaims, error)
-	GetValidClaimedMailByToken(
-		ctx context.Context, token string) (models.ClaimedMail, error)
-	ClaimMailForVerification(
-		ctx context.Context, customer models.Customer, sk string,
-		email string, name *string, hasConflict bool, contextMessage string, redirectTo string,
-	) (models.ClaimedMail, error)
+
 	AddEvent(ctx context.Context, event models.Event) (models.Event, error)
+
 	ListEvents(ctx context.Context, customerId string) ([]models.Event, error)
 }
 
 type ThreadServicer interface {
-	CreateInboundThreadChat(
-		ctx context.Context, workspaceId string,
-		customer models.Customer, createdBy models.MemberActor, messageText string,
-	) (models.Thread, models.Message, error)
-	AppendInboundThreadChat(
-		ctx context.Context, thread models.Thread, messageText string) (models.Message, error)
-
-	AppendOutboundThreadChat(
-		ctx context.Context, thread models.Thread, member models.Member, message string) (models.Message, error)
-
-	GetRecentThreadMailMessageId(
-		ctx context.Context, threadId string) (string, error)
-
-	SendThreadMailReply(
-		ctx context.Context,
-		workspace models.Workspace, setting models.PostmarkMailServerSetting, thread models.Thread,
-		member models.Member, customer models.Customer,
-		textBody, htmlBody string,
-	) (models.Message, error)
-
-	IsPostmarkInboundMessageProcessed(ctx context.Context, messageId string) (bool, error)
+	GetRecentThreadMailMessageId(ctx context.Context, threadId string) (string, error)
+	IsPostmarkInboundProcessed(ctx context.Context, pmMessageId string) (bool, error)
 
 	ProcessPostmarkInbound(
 		ctx context.Context, workspaceId string,
-		customer models.CustomerActor, createdBy models.MemberActor, inboundMessage *models.PostmarkInboundMessage,
-	) (models.Thread, models.Message, error)
+		customer *models.Customer, createdBy *models.Member, inboundMessage *models.PostmarkInboundMessage,
+	) (models.Thread, models.Activity, error)
+	SendThreadMailReply(
+		ctx context.Context,
+		workspace *models.Workspace, setting *models.PostmarkServerSetting, thread *models.Thread,
+		member *models.Member, customer *models.Customer,
+		textBody, htmlBody string,
+	) (models.Thread, models.Activity, error)
 
 	GetPostmarkInReplyThread(
 		ctx context.Context, workspaceId, mailMessageId string) (*models.Thread, error)
@@ -179,8 +143,6 @@ type ThreadServicer interface {
 	UpdateThread(
 		ctx context.Context, thread models.Thread, fields []string) (models.Thread, error)
 
-	ListCustomerThreadChats(
-		ctx context.Context, customerId string) ([]models.Thread, error)
 	ListWorkspaceThreads(
 		ctx context.Context, workspaceId string) ([]models.Thread, error)
 	ListMemberThreads(
@@ -200,13 +162,12 @@ type ThreadServicer interface {
 	RemoveThreadLabel(
 		ctx context.Context, threadId string, labelId string) error
 
-	ListThreadMessages(
-		ctx context.Context, threadId string) ([]models.Message, error)
+	ListThreadMessageActivities(ctx context.Context, threadId string) ([]models.Activity, error)
 	ListThreadMessagesWithAttachments(
-		ctx context.Context, threadId string) ([]models.MessageWithAttachments, error)
+		ctx context.Context, threadId string) ([]models.ActivityWithAttachments, error)
 
 	GetMessageAttachment(
-		ctx context.Context, messageId, attachmentId string) (models.MessageAttachment, error)
+		ctx context.Context, messageId, attachmentId string) (models.ActivityAttachment, error)
 
 	GenerateMemberThreadMetrics(
 		ctx context.Context, workspaceId string, memberId string) (models.ThreadMemberMetrics, error)

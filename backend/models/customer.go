@@ -102,3 +102,7 @@ func (c Customer) MakeCopy() Customer {
 		UpdatedAt:       c.UpdatedAt,
 	}
 }
+
+func (c Customer) HasEmail() bool {
+	return c.Email.Valid
+}

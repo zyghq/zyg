@@ -16,7 +16,6 @@ import (
 )
 
 // handleGetWidgetConfig returns the widget configuration.
-// TODO: #71 get widget configuration from db/redis.
 func (h *CustomerHandler) handleGetWidgetConfig(w http.ResponseWriter, _ *http.Request) {
 	resp := WidgetConfig{
 		DomainsOnly:    false,
@@ -375,7 +374,7 @@ func (h *CustomerHandler) handleCreateThreadChat(
 	}
 
 	thread, message, err := h.ths.CreateInboundThreadChat(
-		ctx, customer.WorkspaceId, *customer, member.AsMemberActor(),
+		ctx, customer.WorkspaceId, customer, &member,
 		reqp.Message,
 	)
 	if err != nil {
@@ -508,7 +507,7 @@ func (h *CustomerHandler) handleGetThreadChatMessages(
 		return
 	}
 
-	messages, err := h.ths.ListThreadMessages(ctx, thread.ThreadId)
+	messages, err := h.ths.ListThreadMessageActivities(ctx, thread.ThreadId)
 	if err != nil {
 		slog.Error("failed to fetch thread messages", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

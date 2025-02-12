@@ -1,45 +1,42 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/rs/xid"
 )
 
-// Message represents multi-channel Thread message
 type Message struct {
-	MessageId    string
-	ThreadId     string
-	TextBody     string
-	MarkdownBody string
-	HTMLBody     string
-	Customer     *CustomerActor
-	Member       *MemberActor
-	Channel      string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	TextBody     string    `json:"textBody"`
+	MarkdownBody string    `json:"markdownBody"`
+	HTMLBody     string    `json:"htmlBody"`
+	Channel      string    `json:"channel"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+}
+
+func (m *Message) ToJSON() map[string]interface{} {
+	result := make(map[string]interface{})
+	data, err := json.Marshal(m)
+	if err != nil {
+		return result
+	}
+
+	err = json.Unmarshal(data, &result)
+	if err != nil {
+		return result
+	}
+
+	return result
 }
 
 type MessageOption func(message *Message)
 
-func (m *Message) GenId() string {
-	return "msg" + xid.New().String()
-}
-
-func (m *Message) PreviewText() string {
-	if len(m.TextBody) > 255 {
-		return m.TextBody[:255]
-	}
-	return m.TextBody
-}
-
-func NewMessage(threadId string, channel string, opts ...MessageOption) *Message {
-	messageId := (&Message{}).GenId()
+func NewMessage(channel string, opts ...MessageOption) *Message {
 	now := time.Now().UTC()
 	message := &Message{
-		MessageId: messageId,
-		ThreadId:  threadId,
 		Channel:   channel,
 		CreatedAt: now,
 		UpdatedAt: now,
@@ -49,20 +46,6 @@ func NewMessage(threadId string, channel string, opts ...MessageOption) *Message
 		opt(message)
 	}
 	return message
-}
-
-func SetMessageCustomer(customer CustomerActor) MessageOption {
-	return func(message *Message) {
-		message.Customer = &customer
-		message.Member = nil // it's either the Customer or the Member
-	}
-}
-
-func SetMessageMember(member MemberActor) MessageOption {
-	return func(message *Message) {
-		message.Member = &member
-		message.Customer = nil // it's either the Member or the Customer
-	}
 }
 
 func SetMessageTextBody(textBody string) MessageOption {
@@ -83,10 +66,9 @@ func SetHTMLBody(body string) MessageOption {
 	}
 }
 
-// MessageAttachment represents metadata and identification details for a file attachment linked to a message.
-type MessageAttachment struct {
+type ActivityAttachment struct {
 	AttachmentId string    `json:"attachmentId"`
-	MessageId    string    `json:"messageId"`
+	ActivityID   string    `json:"activityId"`
 	Name         string    `json:"name"`
 	ContentType  string    `json:"contentType"`
 	ContentKey   string    `json:"contentKey"`
@@ -99,13 +81,13 @@ type MessageAttachment struct {
 	UpdatedAt    time.Time `json:"updatedAt"`
 }
 
-func (m *MessageAttachment) GenId() string {
+func (m *ActivityAttachment) GenId() string {
 	return "at" + xid.New().String()
 }
 
-type MessageWithAttachments struct {
-	Message
-	Attachments []MessageAttachment
+type ActivityWithAttachments struct {
+	Activity
+	Attachments []ActivityAttachment
 }
 
 type PostmarkMessageAttachment struct {
@@ -142,10 +124,10 @@ type PostmarkInboundMessage struct {
 	Attachments []PostmarkMessageAttachment
 }
 
-func (p *PostmarkInboundMessage) ToPostmarkMessageLog(messageId string) PostmarkMessageLog {
+func (p *PostmarkInboundMessage) ToPostmarkMessageLog(activityID string) PostmarkMessageLog {
 	now := time.Now().UTC()
 	return PostmarkMessageLog{
-		MessageId:          messageId,
+		ActivityID:         activityID,
 		Payload:            p.Payload,
 		PostmarkMessageId:  p.PostmarkMessageId,
 		MailMessageId:      p.MailMessageId,
@@ -159,7 +141,7 @@ func (p *PostmarkInboundMessage) ToPostmarkMessageLog(messageId string) Postmark
 }
 
 type PostmarkMessageLog struct {
-	MessageId          string
+	ActivityID         string
 	Payload            map[string]interface{}
 	PostmarkMessageId  string
 	MailMessageId      string

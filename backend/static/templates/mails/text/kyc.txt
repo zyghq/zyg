@@ -1,7 +1,0 @@
-You started a conversation.
-
-{{ .PreviewText }}
-
-Verify your email {{ .MagicLink }}
-
-❤️ Zyg ・ Open source, made with love around the world ❤️

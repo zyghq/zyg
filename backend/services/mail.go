@@ -38,8 +38,8 @@ func getExtensionFromContentType(contentType string) string {
 	return ".bin"
 }
 
-func generateS3Key(workspaceId, threadId, messageId, filename string) string {
-	return fmt.Sprintf("%s/%s/%s/attachments/%s", workspaceId, threadId, messageId, filename)
+func generateS3Key(workspaceId, threadId, activityID, filename string) string {
+	return fmt.Sprintf("%s/%s/%s/attachments/%s", workspaceId, threadId, activityID, filename)
 }
 
 func generateS3URL(endpoint, bucket, key string) string {
@@ -66,38 +66,22 @@ func removeDataURLPrefix(base64String string) string {
 	return base64String
 }
 
-// ProcessMessageAttachment handles the processing and uploading of file attachments to S3.
-// It takes a base64-encoded file content, content type, filename and other metadata,
-// decodes the content, uploads it to S3 and returns a MessageAttachment object with
-// the result details and error if any.
-//
-// Parameters:
-// - ctx: Context for the operation
-// - workspaceId: ID of the workspace the attachment belongs to
-// - threadId: ID of the thread the attachment belongs to
-// - messageId: ID of the message the attachment belongs to
-// - base64Content: Base64 encoded file content
-// - contentType: MIME type of the file
-// - filename: Optional filename (will be generated if empty)
-// - s3Client: S3 client configuration
-//
-// Returns:
-// A MessageAttachment object containing the upload results or error details if failed and error object.
+// ProcessMessageAttachment processes the base64 media content for the activity
 func ProcessMessageAttachment(
-	ctx context.Context, workspaceId, threadId, messageId,
-	base64Content, contentType, filename string, s3Client store.S3Config) (models.MessageAttachment, error) {
+	ctx context.Context, workspaceId, threadId, activityID,
+	base64Content, contentType, filename string, s3Client store.S3Config) (models.ActivityAttachment, error) {
 	if base64Content == "" {
-		return models.MessageAttachment{
+		return models.ActivityAttachment{
 			HasError: true,
 			Error:    "base64Content cannot be empty",
 		}, errors.New("base64Content cannot be empty")
 	}
 
 	now := time.Now().UTC()
-	attachmentId := (&models.MessageAttachment{}).GenId()
-	attachment := models.MessageAttachment{
-		MessageId:    messageId,
+	attachmentId := (&models.ActivityAttachment{}).GenId()
+	attachment := models.ActivityAttachment{
 		AttachmentId: attachmentId,
+		ActivityID:   activityID,
 		Name:         getFilename(filename, contentType),
 		ContentType:  contentType,
 		CreatedAt:    now,
@@ -112,7 +96,7 @@ func ProcessMessageAttachment(
 		return attachment, errors.New("failed to decode base64 content")
 	}
 
-	s3Key := generateS3Key(workspaceId, threadId, attachment.MessageId, attachment.Name)
+	s3Key := generateS3Key(workspaceId, threadId, attachment.ActivityID, attachment.Name)
 
 	// Upload decoded data to S3
 	_, err = s3Client.Client.PutObject(ctx, &s3.PutObjectInput{

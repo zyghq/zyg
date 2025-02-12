@@ -126,8 +126,8 @@ func SetPostmarkTag(tag string) PostmarkEmailReqOption {
 }
 
 func SendPostmarkMail(
-	ctx context.Context, setting models.PostmarkMailServerSetting, email *postmark.Email,
-) (postmark.EmailResponse, error) {
+	ctx context.Context,
+	setting *models.PostmarkServerSetting, email *postmark.Email) (postmark.EmailResponse, error) {
 	client := postmark.NewClient(setting.ServerToken, "")
 	r, err := client.SendEmail(ctx, *email)
 	if err != nil {

@@ -31,23 +31,23 @@ func ParseJWTToken(
 	return ac, fmt.Errorf("error parsing jwt token")
 }
 
-func ParseCustomerJWTToken(
-	token string, hmacSecret []byte) (cc models.CustomerJWTClaims, err error) {
-	t, err := jwt.ParseWithClaims(
-		token, &models.CustomerJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("%v", token.Header["alg"])
-			}
-			return hmacSecret, nil
-		})
-
-	if err != nil {
-		return cc, fmt.Errorf("%v", err)
-	} else if claims, ok := t.Claims.(*models.CustomerJWTClaims); ok {
-		return *claims, nil
-	}
-	return cc, fmt.Errorf("error parsing jwt token")
-}
+//func ParseCustomerJWTToken(
+//	token string, hmacSecret []byte) (cc models.CustomerJWTClaims, err error) {
+//	t, err := jwt.ParseWithClaims(
+//		token, &models.CustomerJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+//			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+//				return nil, fmt.Errorf("%v", token.Header["alg"])
+//			}
+//			return hmacSecret, nil
+//		})
+//
+//	if err != nil {
+//		return cc, fmt.Errorf("%v", err)
+//	} else if claims, ok := t.Claims.(*models.CustomerJWTClaims); ok {
+//		return *claims, nil
+//	}
+//	return cc, fmt.Errorf("error parsing jwt token")
+//}
 
 type AuthService struct {
 	accountRepo ports.AccountRepositorer
@@ -109,39 +109,39 @@ func (s *AuthService) ValidatePersonalAccessToken(
 	return account, nil
 }
 
-type CustomerAuthService struct {
-	repo ports.CustomerRepositorer
-}
+//type CustomerAuthService struct {
+//	repo ports.CustomerRepositorer
+//}
 
-func NewCustomerAuthService(repo ports.CustomerRepositorer) *CustomerAuthService {
-	return &CustomerAuthService{
-		repo: repo,
-	}
-}
-
-func (s *CustomerAuthService) AuthenticateWorkspaceCustomer(
-	ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error) {
-	customer, err := s.repo.LookupWorkspaceCustomerById(ctx, workspaceId, customerId, role)
-	if errors.Is(err, repository.ErrEmpty) {
-		return models.Customer{}, ErrCustomerNotFound
-	}
-
-	if err != nil {
-		return models.Customer{}, ErrCustomer
-	}
-	return customer, nil
-}
-
-func (s *CustomerAuthService) GetWidgetLinkedSecretKey(
-	ctx context.Context, widgetId string) (models.WorkspaceSecret, error) {
-	sk, err := s.repo.LookupSecretKeyByWidgetId(ctx, widgetId)
-
-	if errors.Is(err, repository.ErrEmpty) {
-		return models.WorkspaceSecret{}, ErrSecretKeyNotFound
-	}
-
-	if err != nil {
-		return models.WorkspaceSecret{}, ErrSecretKey
-	}
-	return sk, nil
-}
+//func NewCustomerAuthService(repo ports.CustomerRepositorer) *CustomerAuthService {
+//	return &CustomerAuthService{
+//		repo: repo,
+//	}
+//}
+//
+//func (s *CustomerAuthService) AuthenticateWorkspaceCustomer(
+//	ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error) {
+//	customer, err := s.repo.LookupWorkspaceCustomerById(ctx, workspaceId, customerId, role)
+//	if errors.Is(err, repository.ErrEmpty) {
+//		return models.Customer{}, ErrCustomerNotFound
+//	}
+//
+//	if err != nil {
+//		return models.Customer{}, ErrCustomer
+//	}
+//	return customer, nil
+//}
+//
+//func (s *CustomerAuthService) GetWidgetLinkedSecretKey(
+//	ctx context.Context, widgetId string) (models.WorkspaceSecret, error) {
+//	sk, err := s.repo.LookupSecretKeyByWidgetId(ctx, widgetId)
+//
+//	if errors.Is(err, repository.ErrEmpty) {
+//		return models.WorkspaceSecret{}, ErrSecretKeyNotFound
+//	}
+//
+//	if err != nil {
+//		return models.WorkspaceSecret{}, ErrSecretKey
+//	}
+//	return sk, nil
+//}

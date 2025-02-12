@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"github.com/getsentry/sentry-go"
 	"github.com/zyghq/postmark"
-	"log/slog"
 	"os"
 	"time"
 
@@ -249,26 +248,6 @@ func (ws *WorkspaceService) CreateCustomerWithPhone(
 	return customer, created, nil
 }
 
-func (ws *WorkspaceService) CreateUnverifiedCustomer(
-	ctx context.Context, workspaceId string, name string) (models.Customer, error) {
-	if name == "" {
-		name = models.Customer{}.AnonName()
-	}
-	customerId := models.Customer{}.GenId()
-	customer := models.Customer{
-		CustomerId:      customerId,
-		WorkspaceId:     workspaceId,
-		IsEmailVerified: false,
-		Name:            name,
-		Role:            models.Customer{}.Visitor(),
-	}
-	customer, _, err := ws.customerRepo.UpsertCustomerById(ctx, customer)
-	if err != nil {
-		return models.Customer{}, err
-	}
-	return customer, nil
-}
-
 func (ws *WorkspaceService) CreateWidget(
 	ctx context.Context, workspaceId string, name string,
 	configuration map[string]interface{}) (models.Widget, error) {
@@ -338,29 +317,29 @@ func (ws *WorkspaceService) GetSecretKey(
 	return sk, nil
 }
 
-func (ws *WorkspaceService) GetOrGenerateSecretKey(
-	ctx context.Context, workspaceId string) (models.WorkspaceSecret, error) {
-	sk, err := ws.GetSecretKey(ctx, workspaceId)
-	if errors.Is(err, ErrSecretKeyNotFound) {
-		return ws.GenerateWorkspaceSecret(ctx, workspaceId, zyg.DefaultSecretKeyLength)
-	}
-	if err != nil {
-		return models.WorkspaceSecret{}, ErrSecretKey
-	}
-	return sk, nil
-}
+//func (ws *WorkspaceService) GetOrGenerateSecretKey(
+//	ctx context.Context, workspaceId string) (models.WorkspaceSecret, error) {
+//	sk, err := ws.GetSecretKey(ctx, workspaceId)
+//	if errors.Is(err, ErrSecretKeyNotFound) {
+//		return ws.GenerateWorkspaceSecret(ctx, workspaceId, zyg.DefaultSecretKeyLength)
+//	}
+//	if err != nil {
+//		return models.WorkspaceSecret{}, ErrSecretKey
+//	}
+//	return sk, nil
+//}
 
-func (ws *WorkspaceService) GetWidget(
-	ctx context.Context, widgetId string) (models.Widget, error) {
-	widget, err := ws.workspaceRepo.LookupWidgetById(ctx, widgetId)
-	if errors.Is(err, repository.ErrEmpty) {
-		return models.Widget{}, ErrWidgetNotFound
-	}
-	if err != nil {
-		return models.Widget{}, ErrWidget
-	}
-	return widget, nil
-}
+//func (ws *WorkspaceService) GetWidget(
+//	ctx context.Context, widgetId string) (models.Widget, error) {
+//	widget, err := ws.workspaceRepo.LookupWidgetById(ctx, widgetId)
+//	if errors.Is(err, repository.ErrEmpty) {
+//		return models.Widget{}, ErrWidgetNotFound
+//	}
+//	if err != nil {
+//		return models.Widget{}, ErrWidget
+//	}
+//	return widget, nil
+//}
 
 func (ws *WorkspaceService) GetCustomer(
 	ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error) {
@@ -374,90 +353,90 @@ func (ws *WorkspaceService) GetCustomer(
 	return customer, nil
 }
 
-func (ws *WorkspaceService) DoesEmailConflict(
-	ctx context.Context, workspaceId string, email string) (bool, error) {
-	exists, err := ws.customerRepo.CheckEmailExists(ctx, workspaceId, email)
-	if err != nil {
-		// any error assume that the email is existing.
-		// be pessimistic.
-		return true, ErrCustomer
-	}
-	return exists, nil
-}
+//func (ws *WorkspaceService) DoesEmailConflict(
+//	ctx context.Context, workspaceId string, email string) (bool, error) {
+//	exists, err := ws.customerRepo.CheckEmailExists(ctx, workspaceId, email)
+//	if err != nil {
+//		// any error assume that the email is existing.
+//		// be pessimistic.
+//		return true, ErrCustomer
+//	}
+//	return exists, nil
+//}
 
-func (ws *WorkspaceService) ValidateWidgetSession(
-	ctx context.Context, sk string, widgetId string, sessionId string) (models.Customer, error) {
-	// fetch widget session for the provided widget session ID.
-	session, err := ws.workspaceRepo.LookupWidgetSessionById(ctx, widgetId, sessionId)
-	if errors.Is(err, repository.ErrEmpty) {
-		return models.Customer{}, ErrWidgetSessionInvalid
-	}
-	if err != nil {
-		return models.Customer{}, ErrWidgetSession
-	}
+//func (ws *WorkspaceService) ValidateWidgetSession(
+//	ctx context.Context, sk string, widgetId string, sessionId string) (models.Customer, error) {
+//	// fetch widget session for the provided widget session ID.
+//	session, err := ws.workspaceRepo.LookupWidgetSessionById(ctx, widgetId, sessionId)
+//	if errors.Is(err, repository.ErrEmpty) {
+//		return models.Customer{}, ErrWidgetSessionInvalid
+//	}
+//	if err != nil {
+//		return models.Customer{}, ErrWidgetSession
+//	}
+//
+//	// decode data from the widget session.
+//	// if there is an error, we assume the widget session is invalid.
+//	data, err := session.Decode(sk)
+//	if err != nil {
+//		slog.Error("failed to decode session", slog.Any("err", err))
+//		return models.Customer{}, ErrWidgetSessionInvalid
+//	}
+//
+//	customer, err := ws.customerRepo.LookupWorkspaceCustomerById(
+//		ctx, data.WorkspaceId, data.CustomerId, nil)
+//	if err != nil {
+//		return models.Customer{}, ErrWidgetSessionInvalid
+//	}
+//	// check the calculated identity hash against the one in the widget session.
+//	if customer.IdentityHash() != data.IdentityHash {
+//		return models.Customer{}, ErrWidgetSessionInvalid
+//	}
+//	return customer, nil
+//}
 
-	// decode data from the widget session.
-	// if there is an error, we assume the widget session is invalid.
-	data, err := session.Decode(sk)
-	if err != nil {
-		slog.Error("failed to decode session", slog.Any("err", err))
-		return models.Customer{}, ErrWidgetSessionInvalid
-	}
+//func (ws *WorkspaceService) CreateWidgetSession(
+//	ctx context.Context, sk string, workspaceId string, widgetId string,
+//	sessionId string, name string) (models.Customer, bool, error) {
+//	var created bool
+//
+//	// create a new unverified customer with the provided name.
+//	customer, err := ws.CreateUnverifiedCustomer(ctx, workspaceId, name)
+//	if err != nil {
+//		return models.Customer{}, created, ErrWidgetSession
+//	}
+//
+//	// creates a new widget session with session data for the new customer ID
+//	// and calculated identity hash.
+//	session := (&models.WidgetSession{}).CreateSession(sessionId, widgetId)
+//	data := session.CreateSessionData(workspaceId, customer.CustomerId, customer.IdentityHash())
+//	// set the encoded data for the provided secret key.
+//	err = session.SetEncodeData(sk, data)
+//	if err != nil {
+//		return models.Customer{}, created, ErrWidgetSession
+//	}
+//	// insert the new widget session into the db.
+//	_, created, err = ws.workspaceRepo.UpsertWidgetSessionById(ctx, session)
+//	if err != nil {
+//		return models.Customer{}, created, ErrWidgetSession
+//	}
+//	return customer, created, nil
+//}
 
-	customer, err := ws.customerRepo.LookupWorkspaceCustomerById(
-		ctx, data.WorkspaceId, data.CustomerId, nil)
-	if err != nil {
-		return models.Customer{}, ErrWidgetSessionInvalid
-	}
-	// check the calculated identity hash against the one in the widget session.
-	if customer.IdentityHash() != data.IdentityHash {
-		return models.Customer{}, ErrWidgetSessionInvalid
-	}
-	return customer, nil
-}
-
-func (ws *WorkspaceService) CreateWidgetSession(
-	ctx context.Context, sk string, workspaceId string, widgetId string,
-	sessionId string, name string) (models.Customer, bool, error) {
-	var created bool
-
-	// create a new unverified customer with the provided name.
-	customer, err := ws.CreateUnverifiedCustomer(ctx, workspaceId, name)
-	if err != nil {
-		return models.Customer{}, created, ErrWidgetSession
-	}
-
-	// creates a new widget session with session data for the new customer ID
-	// and calculated identity hash.
-	session := (&models.WidgetSession{}).CreateSession(sessionId, widgetId)
-	data := session.CreateSessionData(workspaceId, customer.CustomerId, customer.IdentityHash())
-	// set the encoded data for the provided secret key.
-	err = session.SetEncodeData(sk, data)
-	if err != nil {
-		return models.Customer{}, created, ErrWidgetSession
-	}
-	// insert the new widget session into the db.
-	_, created, err = ws.workspaceRepo.UpsertWidgetSessionById(ctx, session)
-	if err != nil {
-		return models.Customer{}, created, ErrWidgetSession
-	}
-	return customer, created, nil
-}
-
-func (ws *WorkspaceService) GetCustomerByEmail(
-	ctx context.Context, workspaceId string, email string) (models.Customer, error) {
-	customer, err := ws.customerRepo.LookupWorkspaceCustomerByEmail(ctx, workspaceId, email, nil)
-	if errors.Is(err, repository.ErrEmpty) {
-		return models.Customer{}, ErrCustomerNotFound
-	}
-	if err != nil {
-		return models.Customer{}, ErrCustomer
-	}
-	return customer, nil
-}
+//func (ws *WorkspaceService) GetCustomerByEmail(
+//	ctx context.Context, workspaceId string, email string) (models.Customer, error) {
+//	customer, err := ws.customerRepo.LookupWorkspaceCustomerByEmail(ctx, workspaceId, email, nil)
+//	if errors.Is(err, repository.ErrEmpty) {
+//		return models.Customer{}, ErrCustomerNotFound
+//	}
+//	if err != nil {
+//		return models.Customer{}, ErrCustomer
+//	}
+//	return customer, nil
+//}
 
 func (ws *WorkspaceService) PostmarkCreateMailServer(
-	ctx context.Context, workspaceId, email, domain string) (models.PostmarkMailServerSetting, error) {
+	ctx context.Context, workspaceId, email, domain string) (models.PostmarkServerSetting, error) {
 	hub := sentry.GetHubFromContext(ctx)
 	// Requires Account Token to manage servers.
 	client := postmark.NewClient("", zyg.PostmarkAccountToken())
@@ -475,7 +454,7 @@ func (ws *WorkspaceService) PostmarkCreateMailServer(
 	server, err := client.CreateServer(ctx, server)
 	if err != nil {
 		hub.CaptureException(err)
-		return models.PostmarkMailServerSetting{}, err
+		return models.PostmarkServerSetting{}, err
 	}
 	// Capture message in Sentry as this helps in keeping track of interactions with Postmark in all env.
 	// We also want to make sure to audit.
@@ -486,7 +465,7 @@ func (ws *WorkspaceService) PostmarkCreateMailServer(
 	}
 	now := time.Now().UTC()
 	// Save in workspace Postmark setting
-	setting := models.PostmarkMailServerSetting{
+	setting := models.PostmarkServerSetting{
 		WorkspaceId:          workspaceId,
 		ServerId:             server.ID,
 		ServerToken:          serverToken,
@@ -501,36 +480,36 @@ func (ws *WorkspaceService) PostmarkCreateMailServer(
 		HasDNS:               false,
 		IsDNSVerified:        false,
 	}
-	setting, err = ws.workspaceRepo.SavePostmarkMailServerSetting(ctx, setting)
+	setting, err = ws.workspaceRepo.SavePostmarkSetting(ctx, setting)
 	if err != nil {
 		hub.CaptureException(err)
-		return models.PostmarkMailServerSetting{}, err
+		return models.PostmarkServerSetting{}, err
 	}
 	return setting, nil
 }
 
 func (ws *WorkspaceService) GetPostmarkMailServerSetting(
-	ctx context.Context, workspaceId string) (models.PostmarkMailServerSetting, error) {
+	ctx context.Context, workspaceId string) (models.PostmarkServerSetting, error) {
 	hub := sentry.GetHubFromContext(ctx)
-	setting, err := ws.workspaceRepo.FetchPostmarkMailServerSettingById(ctx, workspaceId)
+	setting, err := ws.workspaceRepo.FetchPostmarkSettingById(ctx, workspaceId)
 
 	if errors.Is(err, repository.ErrEmpty) {
-		return models.PostmarkMailServerSetting{}, ErrPostmarkSettingNotFound
+		return models.PostmarkServerSetting{}, ErrPostmarkSettingNotFound
 	}
 	if errors.Is(err, repository.ErrQuery) {
 		hub.CaptureException(err)
-		return models.PostmarkMailServerSetting{}, ErrPostmarkSetting
+		return models.PostmarkServerSetting{}, ErrPostmarkSetting
 	}
 	if err != nil {
 		hub.CaptureException(err)
-		return models.PostmarkMailServerSetting{}, err
+		return models.PostmarkServerSetting{}, err
 	}
 	return setting, nil
 }
 
 func (ws *WorkspaceService) PostmarkMailServerAddDomain(
-	ctx context.Context, setting models.PostmarkMailServerSetting, domain string,
-) (models.PostmarkMailServerSetting, bool, error) {
+	ctx context.Context, setting models.PostmarkServerSetting, domain string,
+) (models.PostmarkServerSetting, bool, error) {
 	var created bool
 	var addedDomain postmark.DomainDetail
 	var err error
@@ -545,7 +524,7 @@ func (ws *WorkspaceService) PostmarkMailServerAddDomain(
 		addedDomain, err = client.GetDomain(ctx, *setting.DNSDomainId)
 		if err != nil {
 			hub.CaptureException(err)
-			return models.PostmarkMailServerSetting{}, created, err
+			return models.PostmarkServerSetting{}, created, err
 		}
 	} else {
 		req := postmark.CreateDomainRequest{
@@ -554,7 +533,7 @@ func (ws *WorkspaceService) PostmarkMailServerAddDomain(
 		addedDomain, err = client.CreateDomain(ctx, req)
 		if err != nil {
 			hub.CaptureException(err)
-			return models.PostmarkMailServerSetting{}, created, err
+			return models.PostmarkServerSetting{}, created, err
 		}
 		created = true
 	}
@@ -584,17 +563,17 @@ func (ws *WorkspaceService) PostmarkMailServerAddDomain(
 	setting.ReturnPathDomainCNAME = &addedDomain.ReturnPathDomainCNAMEValue
 	setting.ReturnPathDomainVerified = addedDomain.ReturnPathDomainVerified
 
-	setting, err = ws.workspaceRepo.SavePostmarkMailServerSetting(ctx, setting)
+	setting, err = ws.workspaceRepo.SavePostmarkSetting(ctx, setting)
 	if err != nil {
 		hub.CaptureException(err)
-		return models.PostmarkMailServerSetting{}, created, err
+		return models.PostmarkServerSetting{}, created, err
 	}
 	return setting, created, nil
 }
 
 func (ws *WorkspaceService) PostmarkMailServerVerifyDomain(
-	ctx context.Context, setting models.PostmarkMailServerSetting,
-) (models.PostmarkMailServerSetting, error) {
+	ctx context.Context, setting models.PostmarkServerSetting,
+) (models.PostmarkServerSetting, error) {
 
 	hub := sentry.GetHubFromContext(ctx)
 	client := postmark.NewClient("", zyg.PostmarkAccountToken())
@@ -603,13 +582,13 @@ func (ws *WorkspaceService) PostmarkMailServerVerifyDomain(
 	verifiedDKIM, err := client.VerifyDKIM(ctx, *setting.DNSDomainId)
 	if err != nil {
 		hub.CaptureException(err)
-		return models.PostmarkMailServerSetting{}, err
+		return models.PostmarkServerSetting{}, err
 	}
 
 	verifiedReturnPath, err := client.VerifyReturnPath(ctx, *setting.DNSDomainId)
 	if err != nil {
 		hub.CaptureException(err)
-		return models.PostmarkMailServerSetting{}, err
+		return models.PostmarkServerSetting{}, err
 	}
 
 	// Pick the latest DKIM Host and TXT Value
@@ -641,20 +620,20 @@ func (ws *WorkspaceService) PostmarkMailServerVerifyDomain(
 		setting.IsDNSVerified = false
 	}
 
-	setting, err = ws.workspaceRepo.SavePostmarkMailServerSetting(ctx, setting)
+	setting, err = ws.workspaceRepo.SavePostmarkSetting(ctx, setting)
 	if err != nil {
 		hub.CaptureException(err)
-		return models.PostmarkMailServerSetting{}, err
+		return models.PostmarkServerSetting{}, err
 	}
 	return setting, nil
 }
 
 func (ws *WorkspaceService) PostmarkMailServerUpdate(
-	ctx context.Context, setting models.PostmarkMailServerSetting, fields []string,
-) (models.PostmarkMailServerSetting, error) {
-	setting, err := ws.workspaceRepo.ModifyPostmarkMailServerSettingById(ctx, setting, fields)
+	ctx context.Context, setting models.PostmarkServerSetting, fields []string,
+) (models.PostmarkServerSetting, error) {
+	setting, err := ws.workspaceRepo.ModifyPostmarkSettingById(ctx, setting, fields)
 	if err != nil {
-		return models.PostmarkMailServerSetting{}, err
+		return models.PostmarkServerSetting{}, err
 	}
 	return setting, nil
 }

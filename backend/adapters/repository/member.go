@@ -64,7 +64,6 @@ func (m *MemberDB) LookupByWorkspaceAccountId(
 	return member, nil
 }
 
-// FetchMembersByWorkspaceId returns the members by workspace ID.
 func (m *MemberDB) FetchMembersByWorkspaceId(
 	ctx context.Context, workspaceId string) ([]models.Member, error) {
 	var member models.Member
@@ -107,8 +106,6 @@ func (m *MemberDB) FetchMembersByWorkspaceId(
 	return members, nil
 }
 
-// FetchByWorkspaceMemberId returns the member by workspace ID and member ID.
-// The member is uniquely identified by the combination of `workspace_id` and `member_id`
 func (m *MemberDB) FetchByWorkspaceMemberId(
 	ctx context.Context, workspaceId string, memberId string) (models.Member, error) {
 	var member models.Member

@@ -39,7 +39,6 @@ CREATE TABLE account
 -- Represents the account PAT table - Personal Access Token
 -- This table is used to store the account PAT information of the account pertaining to auth.
 -- PAT is used to authenticate the account similar to API key.
--- TODO: deprecate it, rather use member token.
 CREATE TABLE account_pat
 (
     account_id  VARCHAR(255) NOT NULL, -- fk to account
@@ -118,28 +117,6 @@ CREATE TABLE customer
     CONSTRAINT customer_workspace_id_phone_key UNIQUE (workspace_id, phone)
 );
 
-CREATE TABLE claimed_mail
-(
-    claim_id      VARCHAR(255) NOT NULL,
-    workspace_id  VARCHAR(255) NOT NULL,
-    customer_id   VARCHAR(255) NOT NULL,
-    email         VARCHAR(255) NOT NULL,
-    has_conflict  BOOLEAN      NOT NULL DEFAULT TRUE,
-    expires_at    TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
-    token         TEXT         NOT NULL,
-    is_mail_sent  BOOLEAN      NOT NULL DEFAULT FALSE,
-    platform      VARCHAR(255) NULL,
-    sender_id     VARCHAR(255) NULL,
-    sender_status VARCHAR(255) NULL,
-    sent_at       TIMESTAMP    NULL,
-    created_at    TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
-    updated_at    TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT claimed_mail_id_pkey PRIMARY KEY (claim_id),
-    CONSTRAINT claimed_mail_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace,
-    CONSTRAINT claimed_mail_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer
-);
-
 CREATE TABLE customer_event
 (
     event_id    VARCHAR(255) NOT NULL,               -- primary key
@@ -156,7 +133,7 @@ CREATE TABLE customer_event
     CONSTRAINT customer_event_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id)
 );
 
-CREATE TABLE postmark_mail_server_setting
+CREATE TABLE postmark_setting
 (
     workspace_id                VARCHAR(255) NOT NULL,
     server_id                   BIGINT       NOT NULL,
@@ -180,47 +157,9 @@ CREATE TABLE postmark_mail_server_setting
     created_at                  TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
     updated_at                  TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT postmark_mail_server_setting_workspace_id_pkey PRIMARY KEY (workspace_id),
-    CONSTRAINT postmark_mail_server_setting_inbound_email_key UNIQUE (inbound_email)
+    CONSTRAINT postmark_setting_workspace_id_pkey PRIMARY KEY (workspace_id),
+    CONSTRAINT postmark_setting_inbound_email_key UNIQUE (inbound_email)
 );
-
--- @sanchitrk: changed usage?
--- Represents the workspace Thread QA table
--- This table is used to store the QA thread information linked to the workspace.
--- CREATE TABLE thread_qa (
---     workspace_id VARCHAR(255) NOT NULL,
---     customer_id VARCHAR(255) NOT NULL,
---     thread_id VARCHAR(255) NOT NULL,
---     parent_thread_id VARCHAR(255) NULL,
---     query TEXT NOT NULL,
---     title TEXT NOT NULL,
---     summary TEXT NOT NULL,
---     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
---     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
---     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
---
---     CONSTRAINT thread_qa_thread_id_pkey PRIMARY KEY (thread_id),
---     CONSTRAINT thread_qa_parent_thread_id_fkey FOREIGN KEY (parent_thread_id) REFERENCES thread_qa (thread_id),
---     CONSTRAINT thread_qa_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
---     CONSTRAINT thread_qa_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
---     CONSTRAINT thread_qa_thread_id_parent_thread_id UNIQUE (thread_id, parent_thread_id)
--- );
-
--- @sanchitrk: changed usage?
--- CREATE TABLE thread_qa_answer (
---     workspace_id VARCHAR(255) NOT NULL,
---     thread_qa_id VARCHAR(255) NOT NULL,
---     answer_id VARCHAR(255) NOT NULL,
---     answer TEXT NOT NULL,
---     eval INT NULL DEFAULT NULL,
---     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
---     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
---     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
---
---     CONSTRAINT thread_qa_answer_answer_id_pkey PRIMARY KEY (answer_id),
---     CONSTRAINT thread_qa_answer_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
---     CONSTRAINT thread_qa_answer_thread_qa_id_fkey FOREIGN KEY (thread_qa_id) REFERENCES thread_qa (thread_id)
--- );
 
 -- Represents a thread which is a conversation between a customer and members
 -- Each thread belongs to a workspace and is associated with a customer
@@ -257,42 +196,28 @@ CREATE TABLE thread
     CONSTRAINT thread_updated_by_id_fkey FOREIGN KEY (updated_by_id) REFERENCES member (member_id)
 );
 
--- Represents the multichannel thread message.
--- This table stores messages that are part of a thread, supporting multiple communication channels.
--- Messages can be from either a customer or a member (but not both).
--- Each message has both a text_body (plain text) and body (formatted/rich text).
-CREATE TABLE message
+create table activity
 (
-    message_id    VARCHAR(255) NOT NULL,               -- Unique identifier for the message
-    thread_id     VARCHAR(255) NOT NULL,               -- Thread this message belongs to
-    text_body     TEXT         NOT NULL,               -- Plain text content of the message
-    markdown_body TEXT         NOT NULL,               -- Rich text/formatted content of the message
-    html_body     TEXT         NOT NULL,               -- Rich text/formatted HTML content of the message
-    customer_id   VARCHAR(255) NULL,                   -- Customer who sent the message (if from customer)
-    member_id     VARCHAR(255) NULL,                   -- Member who sent the message (if from member)
-    channel       VARCHAR(255) NOT NULL,               -- Communication channel used (email, chat, etc)
-    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp when the message was created
-    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp when the message was last updated
+    activity_id   varchar(255) not null,
+    thread_id     varchar(255) not null,
+    activity_type varchar(255) not null,
+    body          jsonb        not null,
+    customer_id   varchar(255) null,
+    member_id     varchar(255) null,
+    created_at    timestamp default current_timestamp,
+    updated_at    timestamp default current_timestamp,
 
-    -- Defining the primary key for the table
-    CONSTRAINT message_message_id_pkey PRIMARY KEY (message_id),
-
-    -- Foreign key constraints
-    CONSTRAINT message_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES thread (thread_id),
-    CONSTRAINT message_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
-    CONSTRAINT message_member_id_fkey FOREIGN KEY (member_id) REFERENCES member (member_id),
-
-    -- Check constraint to enforce valid sender (only one of customer_id or member_id can be set)
-    CONSTRAINT message_sender_check CHECK (
-        (customer_id IS NULL AND member_id IS NOT NULL) OR
-        (customer_id IS NOT NULL AND member_id IS NULL)
-        )
+    CONSTRAINT activity_activity_id_pkey PRIMARY KEY (activity_id),
+    CONSTRAINT activity_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES thread (thread_id),
+    CONSTRAINT activity_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
+    CONSTRAINT activity_member_id_fkey FOREIGN KEY (member_id) REFERENCES member (member_id),
+    CONSTRAINT activity_participant_check CHECK (num_nonnulls(customer_id, member_id) = 1)
 );
 
-CREATE TABLE message_attachment
+CREATE TABLE activity_attachment
 (
     attachment_id VARCHAR(255) NOT NULL,
-    message_id    VARCHAR(255) NOT NULL,
+    activity_id    VARCHAR(255) NOT NULL,
     name          VARCHAR(255) NOT NULL,
     content_type  VARCHAR(511) NOT NULL,
     content_key   VARCHAR(511) NOT NULL,
@@ -304,14 +229,14 @@ CREATE TABLE message_attachment
     created_at    timestamp             DEFAULT CURRENT_TIMESTAMP,
     updated_at    timestamp             DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT message_attachment_id_pkey PRIMARY KEY (attachment_id),
-    CONSTRAINT message_attachment_message_id_fkey FOREIGN KEY (message_id) REFERENCES message (message_id)
+    CONSTRAINT activity_attachment_id_pkey PRIMARY KEY (attachment_id),
+    CONSTRAINT activity_attachment_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES activity (activity_id)
 );
 
 
 CREATE TABLE postmark_message_log
 (
-    message_id            VARCHAR(255) NOT NULL, -- References parent message
+    activity_id           VARCHAR(255) NOT NULL, -- References parent activity
     payload               JSONB        NOT NULL, -- Request payload
     postmark_message_id   VARCHAR(255) NOT NULL, -- Postmark's internal message ID
     mail_message_id       VARCHAR(255) NOT NULL, -- Email `Message-ID` header
@@ -326,8 +251,8 @@ CREATE TABLE postmark_message_log
     created_at            TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
     updated_at            TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT postmark_log_message_id_pkey PRIMARY KEY (message_id),
-    CONSTRAINT postmark_log_message_id_fkey FOREIGN KEY (message_id) REFERENCES message (message_id),
+    CONSTRAINT postmark_log_message_id_pkey PRIMARY KEY (activity_id),
+    CONSTRAINT postmark_log_message_id_fkey FOREIGN KEY (activity_id) REFERENCES activity (activity_id),
 
     CONSTRAINT postmark_log_pm_message_id_key UNIQUE (postmark_message_id),
     CONSTRAINT postmark_log_mail_message_id_key UNIQUE (mail_message_id)
@@ -413,6 +338,98 @@ CREATE TABLE widget_session
 -- ************************************ --
 -- tables below have been changed or deprecated.
 -- ************************************ --
+
+-- Represents the multichannel thread message.
+-- This table stores messages that are part of a thread, supporting multiple communication channels.
+-- Messages can be from either a customer or a member (but not both).
+-- Each message has both a text_body (plain text) and body (formatted/rich text).
+-- CREATE TABLE message
+-- (
+--     message_id    VARCHAR(255) NOT NULL,               -- Unique identifier for the message
+--     thread_id     VARCHAR(255) NOT NULL,               -- Thread this message belongs to
+--     text_body     TEXT         NOT NULL,               -- Plain text content of the message
+--     markdown_body TEXT         NOT NULL,               -- Rich text/formatted content of the message
+--     html_body     TEXT         NOT NULL,               -- Rich text/formatted HTML content of the message
+--     customer_id   VARCHAR(255) NULL,                   -- Customer who sent the message (if from customer)
+--     member_id     VARCHAR(255) NULL,                   -- Member who sent the message (if from member)
+--     channel       VARCHAR(255) NOT NULL,               -- Communication channel used (email, chat, etc)
+--     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp when the message was created
+--     updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp when the message was last updated
+--
+--     -- Defining the primary key for the table
+--     CONSTRAINT message_message_id_pkey PRIMARY KEY (message_id),
+--
+--     -- Foreign key constraints
+--     CONSTRAINT message_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES thread (thread_id),
+--     CONSTRAINT message_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
+--     CONSTRAINT message_member_id_fkey FOREIGN KEY (member_id) REFERENCES member (member_id),
+--
+--     -- Check constraint to enforce valid sender (only one of customer_id or member_id can be set)
+--     CONSTRAINT message_sender_check CHECK (
+--         (customer_id IS NULL AND member_id IS NOT NULL) OR
+--         (customer_id IS NOT NULL AND member_id IS NULL)
+--         )
+-- );
+
+-- @sanchitrk: changed usage?
+-- Represents the workspace Thread QA table
+-- This table is used to store the QA thread information linked to the workspace.
+-- CREATE TABLE thread_qa (
+--     workspace_id VARCHAR(255) NOT NULL,
+--     customer_id VARCHAR(255) NOT NULL,
+--     thread_id VARCHAR(255) NOT NULL,
+--     parent_thread_id VARCHAR(255) NULL,
+--     query TEXT NOT NULL,
+--     title TEXT NOT NULL,
+--     summary TEXT NOT NULL,
+--     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--
+--     CONSTRAINT thread_qa_thread_id_pkey PRIMARY KEY (thread_id),
+--     CONSTRAINT thread_qa_parent_thread_id_fkey FOREIGN KEY (parent_thread_id) REFERENCES thread_qa (thread_id),
+--     CONSTRAINT thread_qa_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
+--     CONSTRAINT thread_qa_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
+--     CONSTRAINT thread_qa_thread_id_parent_thread_id UNIQUE (thread_id, parent_thread_id)
+-- );
+
+-- @sanchitrk: changed usage?
+-- CREATE TABLE thread_qa_answer (
+--     workspace_id VARCHAR(255) NOT NULL,
+--     thread_qa_id VARCHAR(255) NOT NULL,
+--     answer_id VARCHAR(255) NOT NULL,
+--     answer TEXT NOT NULL,
+--     eval INT NULL DEFAULT NULL,
+--     sequence BIGINT NOT NULL DEFAULT fn_next_id(),
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--
+--     CONSTRAINT thread_qa_answer_answer_id_pkey PRIMARY KEY (answer_id),
+--     CONSTRAINT thread_qa_answer_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id),
+--     CONSTRAINT thread_qa_answer_thread_qa_id_fkey FOREIGN KEY (thread_qa_id) REFERENCES thread_qa (thread_id)
+-- );
+
+-- CREATE TABLE claimed_mail
+-- (
+--     claim_id      VARCHAR(255) NOT NULL,
+--     workspace_id  VARCHAR(255) NOT NULL,
+--     customer_id   VARCHAR(255) NOT NULL,
+--     email         VARCHAR(255) NOT NULL,
+--     has_conflict  BOOLEAN      NOT NULL DEFAULT TRUE,
+--     expires_at    TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
+--     token         TEXT         NOT NULL,
+--     is_mail_sent  BOOLEAN      NOT NULL DEFAULT FALSE,
+--     platform      VARCHAR(255) NULL,
+--     sender_id     VARCHAR(255) NULL,
+--     sender_status VARCHAR(255) NULL,
+--     sent_at       TIMESTAMP    NULL,
+--     created_at    TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
+--     updated_at    TIMESTAMP             DEFAULT CURRENT_TIMESTAMP,
+--
+--     CONSTRAINT claimed_mail_id_pkey PRIMARY KEY (claim_id),
+--     CONSTRAINT claimed_mail_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace,
+--     CONSTRAINT claimed_mail_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer
+-- );
 
 -- sanchitrk: changed usage?
 -- Represents the Event table

@@ -11,7 +11,7 @@ import (
 	"log/slog"
 )
 
-func postmarkMailServerSettingCols() builq.Columns {
+func postmarkSettingCols() builq.Columns {
 	return builq.Columns{
 		"workspace_id",
 		"server_id",
@@ -37,10 +37,10 @@ func postmarkMailServerSettingCols() builq.Columns {
 	}
 }
 
-func (wrk *WorkspaceDB) SavePostmarkMailServerSetting(
-	ctx context.Context, setting models.PostmarkMailServerSetting) (models.PostmarkMailServerSetting, error) {
+func (wrk *WorkspaceDB) SavePostmarkSetting(
+	ctx context.Context, setting models.PostmarkServerSetting) (models.PostmarkServerSetting, error) {
 	q := builq.New()
-	cols := postmarkMailServerSettingCols()
+	cols := postmarkSettingCols()
 
 	var (
 		inboundEmail  sql.NullString
@@ -116,7 +116,7 @@ func (wrk *WorkspaceDB) SavePostmarkMailServerSetting(
 		setting.UpdatedAt,
 	}
 
-	q("INSERT INTO postmark_mail_server_setting (%s)", cols)
+	q("INSERT INTO postmark_setting (%s)", cols)
 	q("VALUES (%+$)", insertParams)
 	q("ON CONFLICT (workspace_id) DO UPDATE SET")
 	q("server_id = EXCLUDED.server_id,")
@@ -143,7 +143,7 @@ func (wrk *WorkspaceDB) SavePostmarkMailServerSetting(
 	stmt, _, err := q.Build()
 	if err != nil {
 		slog.Error("failed to build query", slog.Any("err", err))
-		return models.PostmarkMailServerSetting{}, ErrQuery
+		return models.PostmarkServerSetting{}, ErrQuery
 	}
 
 	if zyg.DBQueryDebug() {
@@ -164,11 +164,11 @@ func (wrk *WorkspaceDB) SavePostmarkMailServerSetting(
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("err", err))
-		return models.PostmarkMailServerSetting{}, ErrEmpty
+		return models.PostmarkServerSetting{}, ErrEmpty
 	}
 	if err != nil {
 		slog.Error("failed to insert query", slog.Any("err", err))
-		return models.PostmarkMailServerSetting{}, ErrQuery
+		return models.PostmarkServerSetting{}, ErrQuery
 	}
 
 	if inboundEmail.Valid {
@@ -198,9 +198,9 @@ func (wrk *WorkspaceDB) SavePostmarkMailServerSetting(
 	return setting, nil
 }
 
-func (wrk *WorkspaceDB) FetchPostmarkMailServerSettingById(
-	ctx context.Context, workspaceId string) (models.PostmarkMailServerSetting, error) {
-	var setting models.PostmarkMailServerSetting
+func (wrk *WorkspaceDB) FetchPostmarkSettingById(
+	ctx context.Context, workspaceId string) (models.PostmarkServerSetting, error) {
+	var setting models.PostmarkServerSetting
 	var (
 		inboundEmail  sql.NullString
 		dnsVerifiedAt sql.NullTime
@@ -210,15 +210,15 @@ func (wrk *WorkspaceDB) FetchPostmarkMailServerSettingById(
 	)
 
 	q := builq.New()
-	cols := postmarkMailServerSettingCols()
+	cols := postmarkSettingCols()
 
-	q("SELECT %s FROM postmark_mail_server_setting", cols)
+	q("SELECT %s FROM postmark_setting", cols)
 	q("WHERE workspace_id = %$", workspaceId)
 
 	stmt, _, err := q.Build()
 	if err != nil {
 		slog.Error("failed to build query", slog.Any("err", err))
-		return models.PostmarkMailServerSetting{}, ErrQuery
+		return models.PostmarkServerSetting{}, ErrQuery
 	}
 
 	if zyg.DBQueryDebug() {
@@ -239,11 +239,11 @@ func (wrk *WorkspaceDB) FetchPostmarkMailServerSettingById(
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("err", err))
-		return models.PostmarkMailServerSetting{}, ErrEmpty
+		return models.PostmarkServerSetting{}, ErrEmpty
 	}
 	if err != nil {
 		slog.Error("failed to query", slog.Any("err", err))
-		return models.PostmarkMailServerSetting{}, ErrQuery
+		return models.PostmarkServerSetting{}, ErrQuery
 	}
 
 	if inboundEmail.Valid {
@@ -273,11 +273,11 @@ func (wrk *WorkspaceDB) FetchPostmarkMailServerSettingById(
 	return setting, nil
 }
 
-func (wrk *WorkspaceDB) ModifyPostmarkMailServerSettingById(
-	ctx context.Context, setting models.PostmarkMailServerSetting, fields []string) (models.PostmarkMailServerSetting, error) {
+func (wrk *WorkspaceDB) ModifyPostmarkSettingById(
+	ctx context.Context, setting models.PostmarkServerSetting, fields []string) (models.PostmarkServerSetting, error) {
 	upsertQ := builq.New()
 	upsertParams := make([]any, 0, len(fields)+1) // updates + workspaceID
-	cols := postmarkMailServerSettingCols()
+	cols := postmarkSettingCols()
 
 	// nullables
 	var (
@@ -288,7 +288,7 @@ func (wrk *WorkspaceDB) ModifyPostmarkMailServerSettingById(
 		returnPathDomain, returnPathDomainCname sql.NullString
 	)
 
-	upsertQ("UPDATE postmark_mail_server_setting SET")
+	upsertQ("UPDATE postmark_setting SET")
 
 	for _, field := range fields {
 		switch field {
@@ -309,7 +309,7 @@ func (wrk *WorkspaceDB) ModifyPostmarkMailServerSettingById(
 	stmt, _, err := upsertQ.Build()
 	if err != nil {
 		slog.Error("failed to build query", slog.Any("err", err))
-		return models.PostmarkMailServerSetting{}, ErrQuery
+		return models.PostmarkServerSetting{}, ErrQuery
 	}
 
 	if zyg.DBQueryDebug() {
@@ -330,11 +330,11 @@ func (wrk *WorkspaceDB) ModifyPostmarkMailServerSettingById(
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		slog.Error("no rows returned", slog.Any("err", err))
-		return models.PostmarkMailServerSetting{}, ErrEmpty
+		return models.PostmarkServerSetting{}, ErrEmpty
 	}
 	if err != nil {
 		slog.Error("failed to insert query", slog.Any("err", err))
-		return models.PostmarkMailServerSetting{}, ErrQuery
+		return models.PostmarkServerSetting{}, ErrQuery
 	}
 
 	if inboundEmail.Valid {

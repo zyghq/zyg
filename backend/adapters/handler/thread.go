@@ -261,77 +261,6 @@ func (h *ThreadHandler) handleGetLabelledThreads(
 	}
 }
 
-func (h *ThreadHandler) handleCreateThreadChatMessage(
-	w http.ResponseWriter, r *http.Request, member *models.Member) {
-	defer func(r io.ReadCloser) {
-		_, _ = io.Copy(io.Discard, r)
-		_ = r.Close()
-	}(r.Body)
-
-	threadId := r.PathValue("threadId")
-
-	var reqp ThChatReq
-	err := json.NewDecoder(r.Body).Decode(&reqp)
-	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	ctx := r.Context()
-
-	thread, err := h.ths.GetWorkspaceThread(ctx, member.WorkspaceId, threadId, nil)
-	if errors.Is(err, services.ErrThreadNotFound) {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-	if err != nil {
-		slog.Error("failed to fetch thread", slog.Any("err", err))
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	message, err := h.ths.AppendOutboundThreadChat(ctx, thread, *member, reqp.Message)
-	if err != nil {
-		slog.Error("failed to append thread chat message", slog.Any("err", err))
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	var messageCustomer *CustomerActorResp
-	var messageMember *MemberActorResp
-	if message.Customer != nil {
-		messageCustomer = &CustomerActorResp{
-			CustomerId: message.Customer.CustomerId,
-			Name:       message.Customer.Name,
-		}
-	} else if message.Member != nil {
-		messageMember = &MemberActorResp{
-			MemberId: message.Member.MemberId,
-			Name:     message.Member.Name,
-		}
-	}
-
-	resp := MessageResp{
-		ThreadId:     message.ThreadId,
-		MessageId:    message.MessageId,
-		TextBody:     message.TextBody,
-		MarkdownBody: message.MarkdownBody,
-		HTMLBody:     message.HTMLBody,
-		Customer:     messageCustomer,
-		Member:       messageMember,
-		Channel:      message.Channel,
-		CreatedAt:    message.CreatedAt,
-		UpdatedAt:    message.UpdatedAt,
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		slog.Error("failed to encode json", slog.Any("err", err))
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-}
-
 func (h *ThreadHandler) handleReplyThreadMail(
 	w http.ResponseWriter, r *http.Request, member *models.Member) {
 	defer func(r io.ReadCloser) {
@@ -401,8 +330,8 @@ func (h *ThreadHandler) handleReplyThreadMail(
 		return
 	}
 
-	message, err := h.ths.SendThreadMailReply(
-		ctx, workspace, setting, thread, *member, customer, reqp.TextBody, reqp.HTMLBody)
+	thread, activity, err := h.ths.SendThreadMailReply(
+		ctx, &workspace, &setting, &thread, member, &customer, reqp.TextBody, reqp.HTMLBody)
 	if err != nil {
 		hub.CaptureException(err)
 		slog.Error("failed to send thread mail reply", slog.Any("err", err))
@@ -410,31 +339,29 @@ func (h *ThreadHandler) handleReplyThreadMail(
 		return
 	}
 
-	var messageCustomer *CustomerActorResp
-	var messageMember *MemberActorResp
-	if message.Customer != nil {
-		messageCustomer = &CustomerActorResp{
-			CustomerId: message.Customer.CustomerId,
-			Name:       message.Customer.Name,
+	var activityCustomer *CustomerActorResp
+	var activityMember *MemberActorResp
+	if activity.Customer != nil {
+		activityCustomer = &CustomerActorResp{
+			CustomerId: activity.Customer.CustomerId,
+			Name:       activity.Customer.Name,
 		}
-	} else if message.Member != nil {
-		messageMember = &MemberActorResp{
-			MemberId: message.Member.MemberId,
-			Name:     message.Member.Name,
+	} else if activity.Member != nil {
+		activityMember = &MemberActorResp{
+			MemberId: activity.Member.MemberId,
+			Name:     activity.Member.Name,
 		}
 	}
 
-	resp := MessageResp{
-		ThreadId:     message.ThreadId,
-		MessageId:    message.MessageId,
-		TextBody:     message.TextBody,
-		MarkdownBody: message.MarkdownBody,
-		HTMLBody:     message.HTMLBody,
-		Customer:     messageCustomer,
-		Member:       messageMember,
-		Channel:      message.Channel,
-		CreatedAt:    message.CreatedAt,
-		UpdatedAt:    message.UpdatedAt,
+	resp := ActivityResp{
+		ActivityID:   activity.ActivityID,
+		ThreadID:     activity.ThreadID,
+		ActivityType: activity.ActivityType,
+		Customer:     activityCustomer,
+		Member:       activityMember,
+		Body:         activity.Body,
+		CreatedAt:    activity.CreatedAt,
+		UpdatedAt:    activity.UpdatedAt,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -461,43 +388,41 @@ func (h *ThreadHandler) handleGetThreadMessages(
 		return
 	}
 
-	messages, err := h.ths.ListThreadMessagesWithAttachments(ctx, thread.ThreadId)
+	activities, err := h.ths.ListThreadMessagesWithAttachments(ctx, thread.ThreadId)
 	if err != nil {
 		slog.Error("failed to fetch thread messages", slog.Any("err", err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	items := make([]MessageWithAttachmentsResp, 0, 100)
-	for _, message := range messages {
-		var messageCustomer *CustomerActorResp
-		var messageMember *MemberActorResp
-		if message.Customer != nil {
-			messageCustomer = &CustomerActorResp{
-				CustomerId: message.Customer.CustomerId,
-				Name:       message.Customer.Name,
+	items := make([]ActivityWithAttachmentsResp, 0, 100)
+	for _, activity := range activities {
+		var activityCustomer *CustomerActorResp
+		var activityMember *MemberActorResp
+		if activity.Customer != nil {
+			activityCustomer = &CustomerActorResp{
+				CustomerId: activity.Customer.CustomerId,
+				Name:       activity.Customer.Name,
 			}
-		} else if message.Member != nil {
-			messageMember = &MemberActorResp{
-				MemberId: message.Member.MemberId,
-				Name:     message.Member.Name,
+		} else if activity.Member != nil {
+			activityMember = &MemberActorResp{
+				MemberId: activity.Member.MemberId,
+				Name:     activity.Member.Name,
 			}
 		}
 
-		resp := MessageWithAttachmentsResp{
-			MessageResp: MessageResp{
-				ThreadId:     message.ThreadId,
-				MessageId:    message.MessageId,
-				TextBody:     message.TextBody,
-				MarkdownBody: message.MarkdownBody,
-				HTMLBody:     message.HTMLBody,
-				Customer:     messageCustomer,
-				Member:       messageMember,
-				Channel:      message.Channel,
-				CreatedAt:    message.CreatedAt,
-				UpdatedAt:    message.UpdatedAt,
+		resp := ActivityWithAttachmentsResp{
+			ActivityResp: ActivityResp{
+				ActivityID:   activity.ActivityID,
+				ThreadID:     activity.ThreadID,
+				ActivityType: activity.ActivityType,
+				Customer:     activityCustomer,
+				Member:       activityMember,
+				Body:         activity.Body,
+				CreatedAt:    activity.CreatedAt,
+				UpdatedAt:    activity.UpdatedAt,
 			},
-			Attachments: message.Attachments,
+			Attachments: activity.Attachments,
 		}
 		items = append(items, resp)
 	}
@@ -872,7 +797,8 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 		return
 	}
 
-	// Log inbound request for history and auditability.
+	// Log inbound request payload for history and auditability.
+	// logging makes sure that we capture Postmark event and don't lose, helps in re-running too.
 	err = h.ths.LogPostmarkInboundRequest(ctx, workspaceId, inboundReq.MessageID, inboundReq.Payload)
 	if err != nil {
 		slog.Error("failed to log postmark inbound request", slog.Any("err", err))
@@ -880,7 +806,7 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 	}
 
 	// Check if the Postmark inbound message request has already been processed.
-	isProcessed, err := h.ths.IsPostmarkInboundMessageProcessed(ctx, inboundReq.MessageID)
+	isProcessed, err := h.ths.IsPostmarkInboundProcessed(ctx, inboundReq.MessageID)
 	if err != nil {
 		hub.CaptureException(err)
 		slog.Error("failed to check inbound message request processed", slog.Any("err", err))
@@ -915,10 +841,8 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 	}
 
 	// Process the Postmark inbound message.
-	thread, message, err := h.ths.ProcessPostmarkInbound(
-		ctx, workspace.WorkspaceId, customer.AsCustomerActor(),
-		member.AsMemberActor(), &inboundMessage,
-	)
+	thread, activity, err := h.ths.ProcessPostmarkInbound(
+		ctx, workspace.WorkspaceId, &customer, &member, &inboundMessage)
 	if err != nil {
 		hub.CaptureException(err)
 		slog.Error("failed to process postmark inbound message", slog.Any("err", err))
@@ -926,7 +850,7 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 		return
 	}
 	slog.Info("processed postmark inbound message",
-		slog.Any("threadId", thread.ThreadId), slog.Any("messageId", message.MessageId))
+		slog.Any("threadId", thread.ThreadId), slog.Any("activityID", activity.ActivityID))
 
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write([]byte("ok"))

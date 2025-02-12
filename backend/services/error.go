@@ -22,30 +22,18 @@ const (
 	ErrLabel         = serviceErr("label error")
 	ErrLabelNotFound = serviceErr("label not found")
 
-	ErrThreadChat = serviceErr("thread chat error")
-
 	ErrThread         = serviceErr("thread error")
 	ErrThreadNotFound = serviceErr("thread not found")
 
 	ErrThreadMetrics = serviceErr("thread chat metrics error")
 
-	ErrThreadMessage = serviceErr("thread message error")
+	ErrThreadActivity = serviceErr("thread activity error")
 
 	ErrCustomer         = serviceErr("customer error")
 	ErrCustomerNotFound = serviceErr("customer not found")
 
 	ErrSecretKeyNotFound = serviceErr("secret key not found")
 	ErrSecretKey         = serviceErr("secret key error")
-
-	ErrWidget         = serviceErr("widget error")
-	ErrWidgetNotFound = serviceErr("widget not found")
-
-	ErrWidgetSession        = serviceErr("widget session error")
-	ErrWidgetSessionInvalid = serviceErr("widget session invalid")
-
-	ErrClaimedMail         = serviceErr("claimed mail error")
-	ErrClaimedMailNotFound = serviceErr("claimed mail not found")
-	ErrClaimedMailExpired  = serviceErr("claimed mail expired")
 
 	ErrCustomerEvent = serviceErr("customer event error")
 
