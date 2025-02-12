@@ -233,7 +233,6 @@ CREATE TABLE activity_attachment
     CONSTRAINT activity_attachment_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES activity (activity_id)
 );
 
-
 CREATE TABLE postmark_message_log
 (
     activity_id           VARCHAR(255) NOT NULL, -- References parent activity
@@ -291,21 +290,6 @@ CREATE TABLE thread_label
     CONSTRAINT thread_label_thread_label_id_key UNIQUE (thread_id, label_id)
 );
 
--- Represents the widget table
--- This table is used to store the widgets linked to the workspace.
-CREATE TABLE widget
-(
-    workspace_id  VARCHAR(255) NOT NULL,
-    widget_id     VARCHAR(255) NOT NULL,
-    name          VARCHAR(255) NOT NULL,
-    configuration JSONB        NOT NULL,
-    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT widget_widget_id_pkey PRIMARY KEY (widget_id),
-    CONSTRAINT widget_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id)
-);
-
 -- Represents the secret key table
 -- This table is used to store the secret key linked to the workspace.
 CREATE TABLE workspace_secret
@@ -320,24 +304,39 @@ CREATE TABLE workspace_secret
     CONSTRAINT workspace_secret_hmac_key UNIQUE (hmac)
 );
 
--- Represents the widget session table
--- This table is used to store the widget session linked to the widget.
-CREATE TABLE widget_session
-(
-    session_id VARCHAR(255) NOT NULL,
-    widget_id  VARCHAR(255) NOT NULL,
-    data       TEXT         NOT NULL,
-    expire_at  TIMESTAMP    NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT widget_session_session_id_pkey PRIMARY KEY (session_id),
-    CONSTRAINT widget_session_widget_id_fkey FOREIGN KEY (widget_id) REFERENCES widget (widget_id)
-);
-
 -- ************************************ --
 -- tables below have been changed or deprecated.
 -- ************************************ --
+
+-- Represents the widget session table
+-- This table is used to store the widget session linked to the widget.
+-- CREATE TABLE widget_session
+-- (
+--     session_id VARCHAR(255) NOT NULL,
+--     widget_id  VARCHAR(255) NOT NULL,
+--     data       TEXT         NOT NULL,
+--     expire_at  TIMESTAMP    NOT NULL,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--
+--     CONSTRAINT widget_session_session_id_pkey PRIMARY KEY (session_id),
+--     CONSTRAINT widget_session_widget_id_fkey FOREIGN KEY (widget_id) REFERENCES widget (widget_id)
+-- );
+
+-- Represents the widget table
+-- This table is used to store the widgets linked to the workspace.
+-- CREATE TABLE widget
+-- (
+--     workspace_id  VARCHAR(255) NOT NULL,
+--     widget_id     VARCHAR(255) NOT NULL,
+--     name          VARCHAR(255) NOT NULL,
+--     configuration JSONB        NOT NULL,
+--     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--
+--     CONSTRAINT widget_widget_id_pkey PRIMARY KEY (widget_id),
+--     CONSTRAINT widget_workspace_id_fkey FOREIGN KEY (workspace_id) REFERENCES workspace (workspace_id)
+-- );
 
 -- Represents the multichannel thread message.
 -- This table stores messages that are part of a thread, supporting multiple communication channels.

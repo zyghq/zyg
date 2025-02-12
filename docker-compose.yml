@@ -19,16 +19,16 @@ services:
     ports:
       - "5432:5432"
 
-  redis:
-    container_name: redis
-    image: redis
-    restart: always
-    command: redis-server --requirepass ${REDIS_PASSWORD} --user ${REDIS_USERNAME} on '>${REDIS_PASSWORD}' '~*' allcommands
-    env_file: .env
-    networks:
-      - stack
-    ports:
-      - "6379:6379"
+  # redis:
+  #   container_name: redis
+  #   image: redis
+  #   restart: always
+  #   command: redis-server --requirepass ${REDIS_PASSWORD} --user ${REDIS_USERNAME} on '>${REDIS_PASSWORD}' '~*' allcommands
+  #   env_file: .env
+  #   networks:
+  #     - stack
+  #   ports:
+  #     - "6379:6379"
 
   srv:
     container_name: srv
@@ -44,7 +44,6 @@ services:
     restart: always
     depends_on:
       - database
-      - redis
     env_file: .env
     networks:
       - stack
