@@ -2,7 +2,6 @@ package models
 
 import "time"
 
-// WorkspaceShape represents workspace shape value object for sync.
 type WorkspaceShape struct {
 	WorkspaceID string    `json:"workspaceId"`
 	Name        string    `json:"name"`

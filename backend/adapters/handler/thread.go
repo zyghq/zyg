@@ -3,13 +3,14 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"github.com/getsentry/sentry-go"
-	"github.com/zyghq/zyg"
-	"github.com/zyghq/zyg/adapters/store"
 	"io"
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/getsentry/sentry-go"
+	"github.com/zyghq/zyg"
+	"github.com/zyghq/zyg/adapters/store"
 
 	"github.com/zyghq/zyg/integrations/email"
 	"github.com/zyghq/zyg/models"
@@ -771,7 +772,7 @@ func (h *ThreadHandler) handlePostmarkInboundWebhook(w http.ResponseWriter, r *h
 	err := json.NewDecoder(r.Body).Decode(&reqp)
 	if err != nil {
 		hub.CaptureException(err)
-		slog.Error("error decoding json payload", slog.Any("error", err))
+		slog.Error("failed to decode json payload", slog.Any("error", err))
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}

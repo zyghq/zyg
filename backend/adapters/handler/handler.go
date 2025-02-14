@@ -1,9 +1,10 @@
 package handler
 
 import (
-	"github.com/zyghq/zyg"
 	"net/http"
 	"time"
+
+	"github.com/zyghq/zyg"
 
 	"github.com/rs/cors"
 	"github.com/zyghq/zyg/ports"
@@ -23,6 +24,7 @@ func handleGetIndex(w http.ResponseWriter, _ *http.Request) {
 // It takes multiple service interfaces as parameters for dependency injection.
 func NewServer(
 	authService ports.AuthServicer,
+	userService ports.UserServicer,
 	accountService ports.AccountServicer,
 	workspaceService ports.WorkspaceServicer,
 	customerService ports.CustomerServicer,
@@ -37,14 +39,12 @@ func NewServer(
 	th := NewThreadHandler(workspaceService, threadService, syncService)
 	ch := NewCustomerHandler(workspaceService, customerService)
 	ss := NewSyncHandler(workspaceService, threadService)
+	us := NewUserHandler(userService)
 
 	webhookUsername := zyg.WebhookUsername()
 	webhookPassword := zyg.WebhookPassword()
 
 	mux.HandleFunc("GET /{$}", handleGetIndex)
-
-	//mux.HandleFunc("GET /auth/login/{$}", handleWorkOSAuthLogin)
-	//mux.HandleFunc("GET /auth/callback/{$}", handleWorkOSAuthCallback)
 
 	mux.HandleFunc("POST /accounts/auth/{$}", ah.handleGetOrCreateAccount)
 
@@ -165,6 +165,9 @@ func NewServer(
 	// This URL path must also be configured in the postmark inbound settings.
 	mux.HandleFunc("POST /webhooks/{workspaceId}/postmark/inbound/{$}",
 		BasicAuthWebhook(th.handlePostmarkInboundWebhook, webhookUsername, webhookPassword))
+
+	// handle webhooks from WorkOS
+	mux.HandleFunc("POST /webhooks/workos/{$}", WorkOSWebhookVerify(us.handleWorkOSWebhook))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},

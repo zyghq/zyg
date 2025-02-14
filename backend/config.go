@@ -2,9 +2,10 @@ package zyg
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"os"
 	"strconv"
+
+	"github.com/google/uuid"
 )
 
 const DefaultSecretKeyLength = 64
@@ -33,10 +34,10 @@ func WorkOSClientID() string {
 	return value
 }
 
-func WorkOSCookiePassword() string {
-	value, ok := os.LookupEnv("WORKOS_COOKIE_PASSWORD")
+func WorkOSWebhookSecret() string {
+	value, ok := os.LookupEnv("WORKOS_WEBHOOK_SECRET")
 	if !ok {
-		return "password"
+		return "secret"
 	}
 	return value
 }

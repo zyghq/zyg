@@ -414,46 +414,6 @@ func insertPostmarkMessageLogTx(
 	return messageLog, nil
 }
 
-// SaveThreadActivity upserts thread and inserts new thread activity
-func (th *ThreadDB) SaveThreadActivity(
-	ctx context.Context, thread *models.Thread, activity *models.Activity) (*models.Thread, *models.Activity, error) {
-	// start transaction
-	// If fails then stop the execution and return the error.
-	tx, err := th.db.Begin(ctx)
-	if err != nil {
-		slog.Error("failed to start db tx", slog.Any("err", err))
-		return &models.Thread{}, &models.Activity{}, ErrQuery
-	}
-
-	defer func(tx pgx.Tx, ctx context.Context) {
-		if err := tx.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
-			slog.Error("failed to rollback transaction", slog.Any("err", err))
-		}
-	}(tx, ctx)
-
-	// 1. upsert thread
-	// 2. insert new thread activity
-
-	thread, err = upsertThreadTx(ctx, tx, thread)
-	if err != nil {
-		slog.Error("failed to upsert thread", slog.Any("err", err))
-		return &models.Thread{}, &models.Activity{}, ErrQuery
-	}
-
-	activity, err = insertThreadActivityTx(ctx, tx, activity)
-	if err != nil {
-		slog.Error("failed to insert activity", slog.Any("err", err))
-		return &models.Thread{}, &models.Activity{}, ErrQuery
-	}
-
-	err = tx.Commit(ctx)
-	if err != nil {
-		slog.Error("failed to commit query", slog.Any("err", err))
-		return &models.Thread{}, &models.Activity{}, ErrTxQuery
-	}
-	return thread, activity, nil
-}
-
 func (th *ThreadDB) SavePostmarkThreadActivity(
 	ctx context.Context, thread *models.Thread, activity *models.Activity,
 	postmarkMessageLog *models.PostmarkMessageLog) (*models.Thread, *models.Activity, error) {

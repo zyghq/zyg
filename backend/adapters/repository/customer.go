@@ -328,60 +328,6 @@ func (c *CustomerDB) FetchCustomersByWorkspaceId(
 	return customers, nil
 }
 
-func (c *CustomerDB) ModifyCustomerById(
-	ctx context.Context, customer models.Customer) (models.Customer, error) {
-	q := builq.New()
-	cols := customerCols()
-	updateParams := []any{
-		customer.ExternalId,
-		customer.Email,
-		customer.Phone,
-		customer.Name,
-		customer.IsEmailVerified,
-		customer.Role,
-		customer.CustomerId,
-	}
-
-	q("UPDATE customer SET")
-	q("external_id = %$,", customer.ExternalId)
-	q("email = %$,", customer.Email)
-	q("phone = %$,", customer.Phone)
-	q("name = %$,", customer.Name)
-	q("is_email_verified = %$,", customer.IsEmailVerified)
-	q("role = %$,", customer.Role)
-	q("updated_at = NOW()")
-	q("WHERE customer_id = %$", customer.CustomerId)
-	q("RETURNING %s", cols)
-
-	stmt, _, err := q.Build()
-	if err != nil {
-		slog.Error("failed to build update query", slog.Any("error", err))
-		return models.Customer{}, ErrQuery
-	}
-
-	if zyg.DBQueryDebug() {
-		debug := q.DebugBuild()
-		debugQuery(debug)
-	}
-
-	err = c.db.QueryRow(ctx, stmt, updateParams...).Scan(
-		&customer.CustomerId, &customer.WorkspaceId,
-		&customer.ExternalId, &customer.Email,
-		&customer.Phone, &customer.Name,
-		&customer.IsEmailVerified, &customer.Role,
-		&customer.CreatedAt, &customer.UpdatedAt,
-	)
-	if errors.Is(err, pgx.ErrNoRows) {
-		slog.Error("no rows returned", slog.Any("error", err))
-		return models.Customer{}, ErrEmpty
-	}
-	if err != nil {
-		slog.Error("failed to query", slog.Any("error", err))
-		return models.Customer{}, ErrQuery
-	}
-	return customer, nil
-}
-
 func (c *CustomerDB) InsertEvent(
 	ctx context.Context, event models.Event) (models.Event, error) {
 

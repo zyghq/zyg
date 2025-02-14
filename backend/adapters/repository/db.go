@@ -1,9 +1,14 @@
 package repository
 
 import (
-	"github.com/jackc/pgx/v5/pgxpool"
 	"log/slog"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+type UserDB struct {
+	db *pgxpool.Pool
+}
 
 type AccountDB struct {
 	db *pgxpool.Pool
@@ -23,6 +28,12 @@ type CustomerDB struct {
 
 type ThreadDB struct {
 	db *pgxpool.Pool
+}
+
+func NewUserDB(db *pgxpool.Pool) *UserDB {
+	return &UserDB{
+		db: db,
+	}
 }
 
 func NewAccountDB(db *pgxpool.Pool) *AccountDB {

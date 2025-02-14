@@ -96,19 +96,7 @@ func (ws *WorkspaceService) GetWorkspace(
 	return workspace, nil
 }
 
-func (ws *WorkspaceService) GetAccountLinkedMember(
-	ctx context.Context, workspaceId string, accountId string) (models.Member, error) {
-	member, err := ws.memberRepo.LookupByWorkspaceAccountId(ctx, workspaceId, accountId)
 
-	if errors.Is(err, repository.ErrEmpty) {
-		return models.Member{}, ErrMemberNotFound
-	}
-
-	if err != nil {
-		return models.Member{}, ErrMember
-	}
-	return member, nil
-}
 
 func (ws *WorkspaceService) ListMembers(
 	ctx context.Context, workspaceId string) ([]models.Member, error) {

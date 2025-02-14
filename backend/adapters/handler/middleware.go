@@ -1,12 +1,18 @@
 package handler
 
 import (
+	"bytes"
 	"crypto/subtle"
-	"github.com/getsentry/sentry-go"
+	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"time"
 
+	"github.com/getsentry/sentry-go"
+
+	"github.com/workos/workos-go/v3/pkg/webhooks"
+	"github.com/zyghq/zyg"
 	"github.com/zyghq/zyg/ports"
 )
 
@@ -117,6 +123,33 @@ func BasicAuthWebhook(handler http.HandlerFunc, username, password string) http.
 			return
 		}
 		// Call the protected handler
+		handler(w, r)
+	}
+}
+
+func WorkOSWebhookVerify(handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			slog.Error("failed to read workos webhook body", slog.Any("error", err))
+			msg := fmt.Sprintf("failed to read workos webhook body: %v", err)
+			http.Error(w, msg, http.StatusInternalServerError)
+			return
+		}
+
+		webhook := webhooks.NewClient(zyg.WorkOSWebhookSecret())
+		_, err = webhook.ValidatePayload(r.Header.Get("workos-signature"), string(body))
+		if err != nil {
+			slog.Error("failed to validate workos webhook signature", slog.Any("error", err))
+			msg := fmt.Sprintf("failed to validate workos webhook signature: %v", err)
+			http.Error(w, msg, http.StatusBadRequest)
+			return
+		}
+
+		// Note: after reading the body for signature validation,
+		// we need to restore the body again for the handler
+		r.Body = io.NopCloser(bytes.NewBuffer(body))
+
 		handler(w, r)
 	}
 }

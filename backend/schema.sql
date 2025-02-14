@@ -18,6 +18,22 @@
 -- Thanks.
 -- --------------------------------------------------
 
+-- Represents the workos user table
+-- Mapped directly based on the WorkOS user object
+create table workos_user (
+    user_id VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    profile_picture_url VARCHAR(511) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT workos_user_user_id_pkey PRIMARY KEY (user_id),
+    CONSTRAINT workos_user_email_key UNIQUE (email) 
+);
+
 -- Represents the auth account table
 -- This table is used to store the account information of the user pertaining to auth.
 -- Attributes will depend on the auth provider.

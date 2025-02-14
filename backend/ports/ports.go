@@ -2,10 +2,13 @@ package ports
 
 import (
 	"context"
-	"time"
 
 	"github.com/zyghq/zyg/models"
 )
+
+type UserServicer interface {
+	CreateWorkOSUser(ctx context.Context, user *models.WorkOSUser) (*models.WorkOSUser, error)
+}
 
 type AccountServicer interface {
 	CreateAuthAccount(
@@ -36,14 +39,6 @@ type AuthServicer interface {
 		ctx context.Context, token string) (models.Account, error)
 }
 
-//
-//type CustomerAuthServicer interface {
-//	AuthenticateWorkspaceCustomer(
-//		ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error)
-//	GetWidgetLinkedSecretKey(
-//		ctx context.Context, widgetId string) (models.WorkspaceSecret, error)
-//}
-
 type WorkspaceServicer interface {
 	UpdateWorkspace(
 		ctx context.Context, workspace models.Workspace) (models.Workspace, error)
@@ -57,8 +52,6 @@ type WorkspaceServicer interface {
 		ctx context.Context, workspaceId string, labelId string) (models.Label, error)
 	ListLabels(
 		ctx context.Context, workspaceId string) ([]models.Label, error)
-	GetAccountLinkedMember(
-		ctx context.Context, workspaceId string, accountId string) (models.Member, error)
 	ListMembers(
 		ctx context.Context, workspaceId string) ([]models.Member, error)
 	GetMember(
@@ -85,6 +78,7 @@ type WorkspaceServicer interface {
 		ctx context.Context, workspaceId string, length int) (models.WorkspaceSecret, error)
 	GetSecretKey(
 		ctx context.Context, workspaceId string) (models.WorkspaceSecret, error)
+
 	GetCustomer(
 		ctx context.Context, workspaceId string, customerId string, role *string) (models.Customer, error)
 
@@ -103,27 +97,13 @@ type WorkspaceServicer interface {
 }
 
 type CustomerServicer interface {
-	GenerateCustomerJwt(
-		customer models.Customer, sk string) (string, error)
-	VerifyExternalId(sk string, hash string, externalId string) bool
-	VerifyEmail(sk string, hash string, email string) bool
-	VerifyPhone(sk string, hash string, phone string) bool
-	UpdateCustomer(ctx context.Context, customer models.Customer) (models.Customer, error)
-
-	GenerateMailVerificationToken(
-		sk string, workspaceId string, customerId string, email string,
-		expiresAt time.Time, redirectUrl string,
-	) (string, error)
-
 	AddEvent(ctx context.Context, event models.Event) (models.Event, error)
-
 	ListEvents(ctx context.Context, customerId string) ([]models.Event, error)
 }
 
 type ThreadServicer interface {
 	GetRecentThreadMailMessageId(ctx context.Context, threadId string) (string, error)
 	IsPostmarkInboundProcessed(ctx context.Context, pmMessageId string) (bool, error)
-
 	ProcessPostmarkInbound(
 		ctx context.Context, workspaceId string,
 		customer *models.Customer, createdBy *models.Member, inboundMessage *models.PostmarkInboundMessage,
@@ -134,7 +114,6 @@ type ThreadServicer interface {
 		member *models.Member, customer *models.Customer,
 		textBody, htmlBody string,
 	) (models.Thread, models.Activity, error)
-
 	GetPostmarkInReplyThread(
 		ctx context.Context, workspaceId, mailMessageId string) (*models.Thread, error)
 

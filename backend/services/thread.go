@@ -6,6 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
+	"time"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/getsentry/sentry-go"
@@ -13,8 +16,6 @@ import (
 	"github.com/zyghq/zyg/adapters/store"
 	"github.com/zyghq/zyg/integrations/email"
 	"github.com/zyghq/zyg/utils"
-	"log/slog"
-	"time"
 
 	"github.com/zyghq/zyg/adapters/repository"
 	"github.com/zyghq/zyg/models"
@@ -31,90 +32,6 @@ func NewThreadService(
 		repo: repo,
 	}
 }
-
-//func (s *ThreadService) CreateInboundThreadChat(
-//	ctx context.Context, workspaceId string,
-//	customer *models.Customer,
-//	createdBy *models.Member, messageText string) (models.Thread, models.Activity, error) {
-//	// start new thread
-//	channel := models.ThreadChannel{}.InAppChat() // source channel the thread belongs to
-//	newThread := models.NewThread(
-//		workspaceId, customer.AsCustomerActor(),
-//		createdBy.AsMemberActor(), channel,
-//		models.SetThreadPreviewText(messageText),
-//		models.SetThreadInboundTime(time.Now().UTC()), // set the inbound time
-//	)
-//	// create new message
-//	newMessage := models.NewMessage(
-//		channel,
-//		models.SetMessageTextBody(messageText),
-//		models.SetMarkdownBody(messageText),
-//	)
-//	// create new activity that embeds the message
-//	newActivity := models.NewActivity(
-//		newThread.ThreadId,
-//		models.ActivityThreadMessage,
-//		models.SetActivityCustomer(customer.AsCustomerActor()),
-//		models.SetActivityBody(newMessage.ToJSON()),
-//	)
-//
-//	newThread, newActivity, err := s.repo.SaveThreadActivity(ctx, newThread, newActivity)
-//	if err != nil {
-//		return models.Thread{}, models.Activity{}, ErrThreadChat
-//	}
-//	return *newThread, *newActivity, nil
-//}
-
-//func (s *ThreadService) AppendInboundThreadChat(
-//	ctx context.Context, thread *models.Thread, messageText string) (models.Thread, models.Activity, error) {
-//	thread.SetLatestInboundAt()
-//	thread.SetPreviewText(messageText)
-//
-//	newMessage := models.NewMessage(
-//		models.ThreadChannel{}.InAppChat(),
-//		models.SetMessageTextBody(messageText),
-//		models.SetMarkdownBody(messageText),
-//	)
-//	// create new activity that embeds the message
-//	newActivity := models.NewActivity(
-//		thread.ThreadId,
-//		models.ActivityThreadMessage,
-//		models.SetActivityCustomer(thread.Customer),
-//		models.SetActivityBody(newMessage.ToJSON()),
-//	)
-//
-//	thread, newActivity, err := s.repo.SaveThreadActivity(ctx, thread, newActivity)
-//	if err != nil {
-//		return models.Thread{}, models.Activity{}, ErrThreadActivity
-//	}
-//	return *thread, *newActivity, nil
-//}
-
-//func (s *ThreadService) AppendOutboundThreadChat(
-//	ctx context.Context, thread *models.Thread,
-//	member *models.Member, messageText string) (models.Thread, models.Activity, error) {
-//	thread.SetLatestOutboundAt() // set outbound time
-//	thread.SetPreviewText(messageText)
-//
-//	newMessage := models.NewMessage(
-//		models.ThreadChannel{}.InAppChat(),
-//		models.SetMessageTextBody(messageText),
-//		models.SetMarkdownBody(messageText),
-//	)
-//	// create new activity that embeds the message
-//	newActivity := models.NewActivity(
-//		thread.ThreadId,
-//		models.ActivityThreadMessage,
-//		models.SetActivityMember(member.AsMemberActor()),
-//		models.SetActivityBody(newMessage.ToJSON()),
-//	)
-//
-//	thread, newActivity, err := s.repo.SaveThreadActivity(ctx, thread, newActivity)
-//	if err != nil {
-//		return models.Thread{}, models.Activity{}, ErrThreadActivity
-//	}
-//	return *thread, *newActivity, nil
-//}
 
 func (s *ThreadService) GetPostmarkInReplyThread(
 	ctx context.Context, workspaceId string, mailMessageId string) (*models.Thread, error) {

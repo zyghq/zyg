@@ -2,6 +2,7 @@ package ports
 
 import (
 	"context"
+
 	"github.com/zyghq/zyg/models"
 )
 
@@ -86,21 +87,13 @@ type CustomerRepositorer interface {
 	FetchCustomersByWorkspaceId(
 		ctx context.Context, workspaceId string, role *string) ([]models.Customer, error)
 
-	ModifyCustomerById(
-		ctx context.Context, customer models.Customer) (models.Customer, error)
-
 	InsertEvent(ctx context.Context, event models.Event) (models.Event, error)
 	FetchEventsByCustomerId(ctx context.Context, customerId string) ([]models.Event, error)
 }
 
 type ThreadRepositorer interface {
-	// SaveThreadActivity persists thread and activity in transaction,
-	// upserts the thread, and inserts new activity.
-	SaveThreadActivity(
-		ctx context.Context, thread *models.Thread, activity *models.Activity) (*models.Thread, *models.Activity, error)
-
-	// SavePostmarkThreadActivity persists thread, activity, and postmark message log,
-	// upserts the thread, inserts new activity and postmark message log.
+	// SavePostmarkThreadActivity upserts thread, inserts activity, and postmark message log,
+	// in a single transaction.
 	SavePostmarkThreadActivity(
 		ctx context.Context, thread *models.Thread, activity *models.Activity,
 		postmarkMessageLog *models.PostmarkMessageLog) (*models.Thread, *models.Activity, error)

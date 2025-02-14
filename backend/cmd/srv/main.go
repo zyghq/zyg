@@ -4,12 +4,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/getsentry/sentry-go"
-	sentryhttp "github.com/getsentry/sentry-go/http"
 	"log/slog"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/getsentry/sentry-go"
+	sentryhttp "github.com/getsentry/sentry-go/http"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -114,7 +115,10 @@ func run(ctx context.Context) error {
 
 	// Initialize application services with application DB stores.
 	authService := services.NewAuthService(accountStore, memberStore)
+
 	accountService := services.NewAccountService(accountStore, workspaceStore)
+	userService := services.NewUserService()
+
 	workspaceService := services.NewWorkspaceService(workspaceStore, memberStore, customerStore)
 	customerService := services.NewCustomerService(customerStore)
 	threadService := services.NewThreadService(threadStore)
@@ -125,6 +129,7 @@ func run(ctx context.Context) error {
 	// init server
 	srv := handler.NewServer(
 		authService,
+		userService,
 		accountService,
 		workspaceService,
 		customerService,
