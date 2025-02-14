@@ -13,10 +13,8 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as AccountRouteImport } from './routes/_account/route'
 import { Route as IndexImport } from './routes/index'
-import { Route as authSignupImport } from './routes/(auth)/signup'
 import { Route as authSignoutImport } from './routes/(auth)/signout'
 import { Route as authSigninImport } from './routes/(auth)/signin'
-import { Route as authRecoverImport } from './routes/(auth)/recover'
 import { Route as AccountWorkspacesIndexImport } from './routes/_account/workspaces/index'
 import { Route as AccountWorkspacesAddImport } from './routes/_account/workspaces/add'
 import { Route as AccountWorkspacesWorkspaceIdRouteImport } from './routes/_account/workspaces/$workspaceId/route'
@@ -67,12 +65,6 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const authSignupRoute = authSignupImport.update({
-  id: '/(auth)/signup',
-  path: '/signup',
-  getParentRoute: () => rootRoute,
-} as any)
-
 const authSignoutRoute = authSignoutImport.update({
   id: '/(auth)/signout',
   path: '/signout',
@@ -82,12 +74,6 @@ const authSignoutRoute = authSignoutImport.update({
 const authSigninRoute = authSigninImport.update({
   id: '/(auth)/signin',
   path: '/signin',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const authRecoverRoute = authRecoverImport.update({
-  id: '/(auth)/recover',
-  path: '/recover',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -367,13 +353,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRoute
     }
-    '/(auth)/recover': {
-      id: '/(auth)/recover'
-      path: '/recover'
-      fullPath: '/recover'
-      preLoaderRoute: typeof authRecoverImport
-      parentRoute: typeof rootRoute
-    }
     '/(auth)/signin': {
       id: '/(auth)/signin'
       path: '/signin'
@@ -386,13 +365,6 @@ declare module '@tanstack/react-router' {
       path: '/signout'
       fullPath: '/signout'
       preLoaderRoute: typeof authSignoutImport
-      parentRoute: typeof rootRoute
-    }
-    '/(auth)/signup': {
-      id: '/(auth)/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof authSignupImport
       parentRoute: typeof rootRoute
     }
     '/_account/workspaces/$workspaceId': {
@@ -819,10 +791,8 @@ const AccountRouteRouteWithChildren = AccountRouteRoute._addFileChildren(
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '': typeof AccountRouteRouteWithChildren
-  '/recover': typeof authRecoverRoute
   '/signin': typeof authSigninRoute
   '/signout': typeof authSignoutRoute
-  '/signup': typeof authSignupRoute
   '/workspaces/$workspaceId': typeof AccountWorkspacesWorkspaceIdWorkspaceRouteRouteWithChildren
   '/workspaces/add': typeof AccountWorkspacesAddRoute
   '/workspaces': typeof AccountWorkspacesIndexRoute
@@ -863,10 +833,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '': typeof AccountRouteRouteWithChildren
-  '/recover': typeof authRecoverRoute
   '/signin': typeof authSigninRoute
   '/signout': typeof authSignoutRoute
-  '/signup': typeof authSignupRoute
   '/workspaces/$workspaceId': typeof AccountWorkspacesWorkspaceIdWorkspaceIndexRoute
   '/workspaces/add': typeof AccountWorkspacesAddRoute
   '/workspaces': typeof AccountWorkspacesIndexRoute
@@ -906,10 +874,8 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/_account': typeof AccountRouteRouteWithChildren
-  '/(auth)/recover': typeof authRecoverRoute
   '/(auth)/signin': typeof authSigninRoute
   '/(auth)/signout': typeof authSignoutRoute
-  '/(auth)/signup': typeof authSignupRoute
   '/_account/workspaces/$workspaceId': typeof AccountWorkspacesWorkspaceIdRouteRouteWithChildren
   '/_account/workspaces/add': typeof AccountWorkspacesAddRoute
   '/_account/workspaces/': typeof AccountWorkspacesIndexRoute
@@ -953,10 +919,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | ''
-    | '/recover'
     | '/signin'
     | '/signout'
-    | '/signup'
     | '/workspaces/$workspaceId'
     | '/workspaces/add'
     | '/workspaces'
@@ -996,10 +960,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | ''
-    | '/recover'
     | '/signin'
     | '/signout'
-    | '/signup'
     | '/workspaces/$workspaceId'
     | '/workspaces/add'
     | '/workspaces'
@@ -1037,10 +999,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_account'
-    | '/(auth)/recover'
     | '/(auth)/signin'
     | '/(auth)/signout'
-    | '/(auth)/signup'
     | '/_account/workspaces/$workspaceId'
     | '/_account/workspaces/add'
     | '/_account/workspaces/'
@@ -1083,19 +1043,15 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountRouteRoute: typeof AccountRouteRouteWithChildren
-  authRecoverRoute: typeof authRecoverRoute
   authSigninRoute: typeof authSigninRoute
   authSignoutRoute: typeof authSignoutRoute
-  authSignupRoute: typeof authSignupRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRouteRoute: AccountRouteRouteWithChildren,
-  authRecoverRoute: authRecoverRoute,
   authSigninRoute: authSigninRoute,
   authSignoutRoute: authSignoutRoute,
-  authSignupRoute: authSignupRoute,
 }
 
 export const routeTree = rootRoute
@@ -1110,10 +1066,8 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/_account",
-        "/(auth)/recover",
         "/(auth)/signin",
-        "/(auth)/signout",
-        "/(auth)/signup"
+        "/(auth)/signout"
       ]
     },
     "/": {
@@ -1127,17 +1081,11 @@ export const routeTree = rootRoute
         "/_account/workspaces/"
       ]
     },
-    "/(auth)/recover": {
-      "filePath": "(auth)/recover.tsx"
-    },
     "/(auth)/signin": {
       "filePath": "(auth)/signin.tsx"
     },
     "/(auth)/signout": {
       "filePath": "(auth)/signout.tsx"
-    },
-    "/(auth)/signup": {
-      "filePath": "(auth)/signup.tsx"
     },
     "/_account/workspaces/$workspaceId": {
       "filePath": "_account/workspaces/$workspaceId/route.tsx",

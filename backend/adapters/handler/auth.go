@@ -18,6 +18,11 @@ type AuthenticatedAccountHandler func(http.ResponseWriter, *http.Request, *model
 
 type AuthenticatedMemberHandler func(http.ResponseWriter, *http.Request, *models.Member)
 
+//var (
+//	key   = []byte(zyg.WorkOSCookiePassword())
+//	sessionStore = sessions.NewCookieStore(key)
+//)
+
 func CheckAuthCredentials(r *http.Request) (string, string, error) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
@@ -92,3 +97,70 @@ func AuthenticateMember(
 		return models.Member{}, fmt.Errorf("unsupported scheme `%s` cannot authenticate", scheme)
 	}
 }
+
+//func handleWorkOSAuthLogin(w http.ResponseWriter, r *http.Request) {
+//	apiKey := zyg.WorkOSAPIKey()
+//	clientID := zyg.WorkOSClientID()
+//
+//	usermanagement.SetAPIKey(apiKey)
+//	url, err := usermanagement.GetAuthorizationURL(usermanagement.GetAuthorizationURLOpts{
+//		Provider:    "authkit",
+//		ClientID:    clientID,
+//		RedirectURI: fmt.Sprintf("%s/auth/callback/", zyg.SrvBaseURL()),
+//	})
+//	if err != nil {
+//		slog.Error("failed to get auth url from workos", slog.Any("error", err))
+//		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+//		return
+//	}
+//	http.Redirect(w, r, url.String(), http.StatusSeeOther)
+//}
+
+//func handleWorkOSAuthCallback(w http.ResponseWriter, r *http.Request) {
+//	ctx := r.Context()
+//	apiKey := zyg.WorkOSAPIKey()
+//	clientID := zyg.WorkOSClientID()
+//
+//	usermanagement.SetAPIKey(apiKey)
+//	code := r.URL.Query().Get("code")
+//	if code == "" {
+//		slog.Error("code is empty")
+//		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+//		return
+//	}
+//
+//	response, err := usermanagement.AuthenticateWithCode(
+//		ctx,
+//		usermanagement.AuthenticateWithCodeOpts{
+//			ClientID: clientID,
+//			Code:     code,
+//		},
+//	)
+//	if err != nil {
+//		slog.Error("failed to authenticate with code", slog.Any("error", err))
+//		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+//		return
+//	}
+//
+//	session, _ := sessionStore.Get(r, "wos-session")
+//	session.Options = &sessions.Options{
+//		Path:     "/",
+//		HttpOnly: true,
+//		Secure:   false,
+//		SameSite: http.SameSiteLaxMode,
+//	}
+//	session.Values["authenticated"] = true
+//	if err := session.Save(r, w); err != nil {
+//		slog.Error("failed to save cookie session", slog.Any("error", err))
+//		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+//		return
+//	}
+//
+//	fmt.Println("******************** auth profile ***********************")
+//	fmt.Println(response)
+//	fmt.Println("******************** auth profile ***********************")
+//
+//	// redirect to frontend app URL
+//	redirectURL := fmt.Sprintf("%s/workspaces/", zyg.AppBaseURL())
+//	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+//}

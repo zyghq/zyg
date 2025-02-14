@@ -17,6 +17,30 @@ func GetEnv(key string) (string, error) {
 	return value, nil
 }
 
+func WorkOSAPIKey() string {
+	value, ok := os.LookupEnv("WORKOS_API_KEY")
+	if !ok {
+		return "sk-********"
+	}
+	return value
+}
+
+func WorkOSClientID() string {
+	value, ok := os.LookupEnv("WORKOS_CLIENT_ID")
+	if !ok {
+		return "client-********"
+	}
+	return value
+}
+
+func WorkOSCookiePassword() string {
+	value, ok := os.LookupEnv("WORKOS_COOKIE_PASSWORD")
+	if !ok {
+		return "password"
+	}
+	return value
+}
+
 func GetAvatarBaseURL() string {
 	value, ok := os.LookupEnv("AVATAR_BASE_URL")
 	if !ok {
@@ -165,6 +189,20 @@ func WebhookUrl() string {
 	u := WebhookUsername()
 	p := WebhookPassword()
 	return fmt.Sprintf("%s://%s:%s@%s", proto, u, p, domain)
+}
+
+func SrvBaseURL() string {
+	proto := ServerProto()
+	domain := ServerDomain()
+	return fmt.Sprintf("%s://%s", proto, domain)
+}
+
+func AppBaseURL() string {
+	value, ok := os.LookupEnv("ZYG_APP_BASE_URL")
+	if !ok {
+		return "http://localhost:3000"
+	}
+	return value
 }
 
 func PostmarkDeliveryDomain() string {

@@ -1,14 +1,15 @@
-import { ThemeProvider } from "@/providers";
+import { AuthKitProvider } from "@workos-inc/authkit-react";
 import * as Sentry from "@sentry/react";
 import { createClient } from "@supabase/supabase-js";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
+import { ThemeProvider } from "@/providers";
 import ReactDOM from "react-dom/client";
 
 import "./globals.css";
 
 Sentry.init({
-  dsn: "https://520d1dc4721849c3c4a8cd548896b039@o4508454426181632.ingest.us.sentry.io/4508454430441472",
+  dsn: import.meta.env.VITE_SENTRY_DSN,
   enabled: import.meta.env.VITE_SENTRY_ENABLED === "1" || false,
   environment: import.meta.env.VITE_SENTRY_ENV || "staging",
   integrations: [
@@ -65,7 +66,12 @@ if (!rootElement.innerHTML) {
   root.render(
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <AuthKitProvider
+          clientId={import.meta.env.VITE_WORKOS_CLIENT_ID}
+          devMode={true}
+        >
+          <RouterProvider router={router} />
+        </AuthKitProvider>
       </QueryClientProvider>
     </ThemeProvider>,
   );

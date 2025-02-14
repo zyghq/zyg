@@ -137,6 +137,12 @@ importers:
       '@uidotdev/usehooks':
         specifier: ^2.4.1
         version: 2.4.1(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@workos-inc/authkit-js':
+        specifier: ^0.9.0
+        version: 0.9.0
+      '@workos-inc/authkit-react':
+        specifier: ^0.9.0
+        version: 0.9.0(react@19.0.0)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -1981,6 +1987,14 @@ packages:
     resolution: {integrity: sha512-y0byko2b2tSVVf5Gpng1eEhX1OvPC7x8yns1Fx8jDzlJp4LS6CMkCPfLw47cjyoMrshQDoQw4qcgjsU9VvlCew==}
     peerDependencies:
       vite: ^4 || ^5 || ^6
+
+  '@workos-inc/authkit-js@0.9.0':
+    resolution: {integrity: sha512-zcl2W9LpmoIqDTnFnv6vHfWKJjZUTxZIdw5IfPL5DDTKrvH49qIRudmMIP4dCWYXIKcnMVA5lGU/PuHsimTjDQ==}
+
+  '@workos-inc/authkit-react@0.9.0':
+    resolution: {integrity: sha512-5JJOGwslFw5eL5uEr5vYZghS/BxTWY66d4nAnopk/L46HLqUNIgjfnVBzztGWOZk1pGUFx8s5DSoXFsdGWt0gw==}
+    peerDependencies:
+      react: '>=17'
 
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
@@ -5611,6 +5625,13 @@ snapshots:
       vite: 6.0.7(@types/node@22.10.5)(jiti@1.21.7)(tsx@4.19.2)(yaml@2.7.0)
     transitivePeerDependencies:
       - '@swc/helpers'
+
+  '@workos-inc/authkit-js@0.9.0': {}
+
+  '@workos-inc/authkit-react@0.9.0(react@19.0.0)':
+    dependencies:
+      '@workos-inc/authkit-js': 0.9.0
+      react: 19.0.0
 
   acorn-jsx@5.3.2(acorn@8.14.0):
     dependencies:

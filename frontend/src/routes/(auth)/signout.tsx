@@ -1,27 +1,20 @@
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { ArrowLeftIcon } from "@radix-ui/react-icons";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import {
   createFileRoute,
-  Link,
   redirect,
-  useRouter,
   useRouterState,
 } from "@tanstack/react-router";
-import React from "react";
+import { useAuth } from "@workos-inc/authkit-react";
+import { createClient } from "@workos-inc/authkit-js";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Spinner } from "@/components/spinner";
 
 export const Route = createFileRoute("/(auth)/signout")({
-  beforeLoad: async ({ context }) => {
-    const { supabaseClient } = context;
-    const { data, error } = await supabaseClient.auth.getSession();
-    const isAuthenticated = !error && data?.session;
-    if (!isAuthenticated) {
+  beforeLoad: async () => {
+    const authKit = await createClient(import.meta.env.VITE_WORKOS_CLIENT_ID);
+    const user = authKit.getUser();
+    if (!user) {
       throw redirect({ to: "/signin" });
     }
   },
@@ -29,56 +22,54 @@ export const Route = createFileRoute("/(auth)/signout")({
 });
 
 function SignOutComponent() {
-  const { supabaseClient } = Route.useRouteContext();
-  const router = useRouter();
-  const navigate = Route.useNavigate();
-  const isLoading = useRouterState({ select: (s) => s.isLoading });
-  const [isError, setIsError] = React.useState(false);
-
-  async function confirmSignOut() {
-    const { error } = await supabaseClient.auth.signOut();
-    if (error) {
-      setIsError(true);
-      return;
-    }
-    await router.invalidate();
-    await navigate({ to: "/signin" });
+  const { signOut, isLoading, user, signIn } = useAuth();
+  const isRouteLoading = useRouterState({ select: (s) => s.isLoading });
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
+        <Spinner
+          size={32}
+          className="h-5 w-5 animate-spin text-muted-foreground"
+        />
+      </div>
+    );
   }
 
   return (
-    <div className="flex min-h-screen flex-col justify-center p-4">
-      <Card className="mx-auto w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Sign out</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            Are you sure you want to sign out?
-          </p>
-        </CardContent>
-        <CardFooter className="flex justify-between">
-          <Button aria-label="Log In" asChild variant="outline">
-            <Link to="/workspaces">
-              <ArrowLeftIcon className="mr-1 h-4 w-4" />
-              <span>Workspaces</span>
-            </Link>
-          </Button>
-          <Button
-            aria-label="Sign Out"
-            disabled={isLoading}
-            onClick={() => confirmSignOut()}
-          >
-            Yes, I'll be back
-          </Button>
-        </CardFooter>
-        {isError && (
-          <CardFooter className="flex justify-center">
-            <p className="text-red-500 text-sm">
-              Something went wrong. Please try again later.
-            </p>
+    <div className="flex min-h-screen flex-col items-center justify-center p-4">
+      {user ? (
+        <Card className="w-96 shadow-md">
+          <CardContent className="pt-6">
+            <div className="flex items-center space-x-4">
+              <Avatar className="h-12 w-12">
+                <AvatarImage
+                  src={user.profilePictureUrl ?? undefined}
+                  alt={user.firstName ?? undefined}
+                />
+                <AvatarFallback>{user.firstName}</AvatarFallback>
+              </Avatar>
+              <div>
+                <h2 className="text-xl font-normal">{user.firstName}</h2>
+                <p className="text-sm text-muted-foreground">{user.email}</p>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button
+              disabled={isRouteLoading || isLoading}
+              variant="default"
+              className="w-full"
+              onClick={() => signOut()}
+            >
+              Sign Out
+            </Button>
           </CardFooter>
-        )}
-      </Card>
+        </Card>
+      ) : (
+        <Button variant="ghost" onClick={() => signIn()}>
+          Sign In
+        </Button>
+      )}
     </div>
   );
 }

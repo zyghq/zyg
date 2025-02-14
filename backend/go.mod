@@ -21,6 +21,7 @@ require (
 	github.com/rs/zerolog v1.33.0
 	github.com/sanchitrk/namingo v0.1.2
 	github.com/spf13/cobra v1.8.1
+	github.com/workos/workos-go/v3 v3.2.0
 	github.com/zyghq/postmark v0.0.0-20241222082503-a96065eb030e
 	golang.org/x/net v0.31.0
 )
@@ -41,6 +42,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.28.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.2 // indirect
 	github.com/aws/smithy-go v1.22.1 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/gorilla/securecookie v1.1.2 // indirect
+	github.com/gorilla/sessions v1.4.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect

@@ -53,6 +53,8 @@
     "@tiptap/starter-kit": "^2.11.0",
     "@types/lodash": "^4.17.14",
     "@uidotdev/usehooks": "^2.4.1",
+    "@workos-inc/authkit-js": "^0.9.0",
+    "@workos-inc/authkit-react": "^0.9.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.4",

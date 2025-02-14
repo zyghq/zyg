@@ -42,6 +42,10 @@ func NewServer(
 	webhookPassword := zyg.WebhookPassword()
 
 	mux.HandleFunc("GET /{$}", handleGetIndex)
+
+	//mux.HandleFunc("GET /auth/login/{$}", handleWorkOSAuthLogin)
+	//mux.HandleFunc("GET /auth/callback/{$}", handleWorkOSAuthCallback)
+
 	mux.HandleFunc("POST /accounts/auth/{$}", ah.handleGetOrCreateAccount)
 
 	// Todo: deprecate PAT usage, instead create workspace member tokens, with permissions.
