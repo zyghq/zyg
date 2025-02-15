@@ -6,7 +6,7 @@ import (
 )
 
 type WorkOSUser struct {
-	UserId            string    `json:"userId"`
+	UserID            string    `json:"userId"`
 	Email             string    `json:"email"`
 	FirstName         string    `json:"firstName"`
 	LastName          string    `json:"lastName"`
@@ -23,11 +23,13 @@ type WorkOSEvent struct {
 }
 
 func InitWorkOSEventFromPayload(payload []byte) (WorkOSEvent, error) {
+	// json tags are specific to the WorkOS event payload,
+	// hence the dependency.
 	type payloadAux struct {
 		Id    string `json:"id"`
 		Event string `json:"event"`
 		Data  struct {
-			UserId            string    `json:"id"`
+			UserID            string    `json:"id"`
 			Email             string    `json:"email"`
 			FirstName         string    `json:"first_name"`
 			LastName          string    `json:"last_name"`

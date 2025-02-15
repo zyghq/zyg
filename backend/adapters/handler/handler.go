@@ -38,8 +38,8 @@ func NewServer(
 	wh := NewWorkspaceHandler(workspaceService, accountService, customerService, syncService)
 	th := NewThreadHandler(workspaceService, threadService, syncService)
 	ch := NewCustomerHandler(workspaceService, customerService)
-	ss := NewSyncHandler(workspaceService, threadService)
-	us := NewUserHandler(userService)
+	sh := NewSyncHandler(workspaceService, threadService)
+	uh := NewUserHandler(userService)
 
 	webhookUsername := zyg.WebhookUsername()
 	webhookPassword := zyg.WebhookPassword()
@@ -48,7 +48,6 @@ func NewServer(
 
 	mux.HandleFunc("POST /accounts/auth/{$}", ah.handleGetOrCreateAccount)
 
-	// Todo: deprecate PAT usage, instead create workspace member tokens, with permissions.
 	mux.Handle("POST /pats/{$}", NewEnsureAuthAccount(ah.handleCreatePat, authService))
 	mux.Handle("GET /pats/{$}", NewEnsureAuthAccount(ah.handleGetPatList, authService))
 	mux.Handle("DELETE /pats/{patId}/{$}", NewEnsureAuthAccount(ah.handleDeletePat, authService))
@@ -152,13 +151,13 @@ func NewServer(
 
 	// v1 sync handlers
 	mux.Handle("GET /v1/sync/workspaces/{workspaceId}/shapes/parts/members/{$}",
-		NewEnsureMemberAuth(ss.syncWorkspaceMemberShapesV1, authService))
+		NewEnsureMemberAuth(sh.syncWorkspaceMemberShapesV1, authService))
 
 	mux.Handle("GET /v1/sync/workspaces/{workspaceId}/shapes/parts/customers/{$}",
-		NewEnsureMemberAuth(ss.syncWorkspaceCustomerShapesV1, authService))
+		NewEnsureMemberAuth(sh.syncWorkspaceCustomerShapesV1, authService))
 
 	mux.Handle("GET /v1/sync/workspaces/{workspaceId}/shapes/parts/threads/{$}",
-		NewEnsureMemberAuth(ss.syncWorkspaceCustomerShapesV1, authService))
+		NewEnsureMemberAuth(sh.syncWorkspaceCustomerShapesV1, authService))
 
 	// Webhooks
 	// handles postmark inbound message webhook for workspace.
@@ -167,7 +166,7 @@ func NewServer(
 		BasicAuthWebhook(th.handlePostmarkInboundWebhook, webhookUsername, webhookPassword))
 
 	// handle webhooks from WorkOS
-	mux.HandleFunc("POST /webhooks/workos/{$}", WorkOSWebhookVerify(us.handleWorkOSWebhook))
+	mux.HandleFunc("POST /webhooks/workos/{$}", WorkOSWebhookVerify(uh.handleWorkOSWebhook))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},

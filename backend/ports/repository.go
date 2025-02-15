@@ -6,6 +6,10 @@ import (
 	"github.com/zyghq/zyg/models"
 )
 
+type UserRepositorer interface {
+	SaveWorkOSUser(ctx context.Context, user *models.WorkOSUser) (*models.WorkOSUser, error)
+}
+
 type AccountRepositorer interface {
 	UpsertByAuthUserId(
 		ctx context.Context, account models.Account) (models.Account, bool, error)

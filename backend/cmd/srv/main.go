@@ -106,8 +106,9 @@ func run(ctx context.Context) error {
 	defer sentry.Flush(2 * time.Second)
 
 	// Initialize application DB stores
-	// Not to be confused with sync DB store.
 	accountStore := repository.NewAccountDB(db)
+	userStore := repository.NewUserDB(db)
+
 	workspaceStore := repository.NewWorkspaceDB(db)
 	memberStore := repository.NewMemberDB(db)
 	customerStore := repository.NewCustomerDB(db)
@@ -117,7 +118,7 @@ func run(ctx context.Context) error {
 	authService := services.NewAuthService(accountStore, memberStore)
 
 	accountService := services.NewAccountService(accountStore, workspaceStore)
-	userService := services.NewUserService()
+	userService := services.NewUserService(userStore)
 
 	workspaceService := services.NewWorkspaceService(workspaceStore, memberStore, customerStore)
 	customerService := services.NewCustomerService(customerStore)

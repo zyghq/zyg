@@ -168,8 +168,8 @@ func upsertThreadTx(ctx context.Context, tx pgx.Tx, thread *models.Thread) (*mod
 		assignedAt = sql.NullTime{Time: thread.AssignedMember.AssignedAt, Valid: true}
 	}
 
-	insertB := builq.Builder{}
 	cols := threadCols()
+	insertB := builq.Builder{}
 	insertParams := []any{
 		thread.ThreadId, thread.WorkspaceId, thread.Customer.CustomerId,
 		assignedMemberId, assignedAt,

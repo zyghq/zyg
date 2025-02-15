@@ -2,18 +2,26 @@ package services
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/zyghq/zyg/models"
+
+	"github.com/zyghq/zyg/ports"
 )
 
-type UserService struct{}
+type UserService struct {
+	userRepo ports.UserRepositorer
+}
 
-func NewUserService() *UserService {
-	return &UserService{}
+func NewUserService(userRepo ports.UserRepositorer) *UserService {
+	return &UserService{
+		userRepo: userRepo,
+	}
 }
 
 func (s *UserService) CreateWorkOSUser(ctx context.Context, user *models.WorkOSUser) (*models.WorkOSUser, error) {
-	fmt.Println("SERVICES: Creating WorkOS user", user)
+	user, err := s.userRepo.SaveWorkOSUser(ctx, user)
+	if err != nil {
+		return &models.WorkOSUser{}, ErrUser
+	}
 	return user, nil
 }

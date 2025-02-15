@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -46,8 +45,7 @@ func (h *UserHandler) handleWorkOSWebhook(w http.ResponseWriter, r *http.Request
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
-
-	fmt.Println("WORKOS EVENT", workOSEvent.Event)
+	slog.Info("got workos webhook event", slog.String("event", workOSEvent.Event))
 
 	user, err := h.us.CreateWorkOSUser(ctx, &workOSEvent.WorkOSUser)
 	if err != nil {

@@ -10,6 +10,7 @@ type UserServicer interface {
 	CreateWorkOSUser(ctx context.Context, user *models.WorkOSUser) (*models.WorkOSUser, error)
 }
 
+// AccountServicer and corresponding implementations, will be deprecated for UserService.
 type AccountServicer interface {
 	CreateAuthAccount(
 		ctx context.Context, authUserId string, email string, name string, provider string,

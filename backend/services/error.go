@@ -7,6 +7,9 @@ func (err serviceErr) Error() string {
 }
 
 const (
+	ErrUser         = serviceErr("user error")
+	ErrUserNotFound = serviceErr("user not found")
+
 	ErrAccount         = serviceErr("account error")
 	ErrAccountNotFound = serviceErr("account not found")
 
